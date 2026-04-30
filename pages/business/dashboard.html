@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>我的仪表盘 - 智能问数</title>
+  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/business.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="top-left"><div class="logo">数</div><div class="product-name">智能问数</div></div>
+    <nav class="top-menu">
+      <button class="menu-item" onclick="goTo('smart-query.html')">智能问数</button>
+      <button class="menu-item active">我的仪表盘</button>
+      <button class="menu-item" onclick="goTo('board.html')">我的看板</button>
+      <button class="menu-item" onclick="goTo('report.html')">我的报告</button>
+    </nav>
+    <div class="top-actions">
+      <button class="admin-link icon-btn" onclick="goTo('../admin/data-source.html')"><span class="btn-icon">⚙</span>管理后台</button>
+      <button class="user-trigger" onclick="goTo('profile.html')"><div class="avatar">张</div><strong>张三</strong><span class="dropdown-arrow">⌄</span></button>
+    </div>
+  </header>
+
+  <main class="business-page">
+    <aside class="module-sidebar">
+      <div class="module-side-head">
+        <div class="side-head-row">
+          <h3>图表目录</h3>
+          <span class="info-tip" data-tip="右键节点可新增/重命名/删除；按住目录可拖拽调整层级与位置">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"></circle>
+              <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 3.5"></path>
+              <circle cx="12" cy="16.5" r="0.6" fill="currentColor"></circle>
+            </svg>
+          </span>
+        </div>
+        <input class="search-box" id="treeSearch" style="margin-top:12px;" placeholder="搜索目录" />
+      </div>
+      <div class="tree-list dir-tree" id="dirTree">
+        <div class="tree-node expanded" data-id="n1" data-level="1" draggable="true">
+          <div class="tree-row active">
+            <span class="tree-toggle">▾</span>
+            <span class="tree-icon"></span>
+            <span class="tree-label">销售分析</span>
+            <span class="tree-count">8</span>
+          </div>
+          <div class="tree-children">
+            <div class="tree-node expanded" data-id="n1-1" data-level="2" draggable="true">
+              <div class="tree-row">
+                <span class="tree-toggle">▾</span>
+                <span class="tree-icon"></span>
+                <span class="tree-label">区域销售</span>
+                <span class="tree-count">5</span>
+              </div>
+              <div class="tree-children">
+                <div class="tree-node leaf" data-id="n1-1-1" data-level="3" draggable="true">
+                  <div class="tree-row">
+                    <span class="tree-toggle empty"></span>
+                    <span class="tree-icon"></span>
+                    <span class="tree-label">华东大区</span>
+                    <span class="tree-count">3</span>
+                  </div>
+                </div>
+                <div class="tree-node leaf" data-id="n1-1-2" data-level="3" draggable="true">
+                  <div class="tree-row">
+                    <span class="tree-toggle empty"></span>
+                    <span class="tree-icon"></span>
+                    <span class="tree-label">华北大区</span>
+                    <span class="tree-count">2</span>
+                  </div>
+                </div>
+                <div class="tree-node leaf" data-id="n1-1-3" data-level="3" draggable="true">
+                  <div class="tree-row">
+                    <span class="tree-toggle empty"></span>
+                    <span class="tree-icon"></span>
+                    <span class="tree-label">华南大区</span>
+                    <span class="tree-count">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="tree-node collapsed" data-id="n1-2" data-level="2" draggable="true">
+              <div class="tree-row">
+                <span class="tree-toggle">▸</span>
+                <span class="tree-icon"></span>
+                <span class="tree-label">渠道转化</span>
+                <span class="tree-count">4</span>
+              </div>
+              <div class="tree-children">
+                <div class="tree-node leaf" data-id="n1-2-1" data-level="3" draggable="true">
+                  <div class="tree-row">
+                    <span class="tree-toggle empty"></span>
+                    <span class="tree-icon"></span>
+                    <span class="tree-label">线上渠道</span>
+                    <span class="tree-count">2</span>
+                  </div>
+                </div>
+                <div class="tree-node leaf" data-id="n1-2-2" data-level="3" draggable="true">
+                  <div class="tree-row">
+                    <span class="tree-toggle empty"></span>
+                    <span class="tree-icon"></span>
+                    <span class="tree-label">线下渠道</span>
+                    <span class="tree-count">2</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="tree-node leaf" data-id="n1-3" data-level="2" draggable="true">
+              <div class="tree-row">
+                <span class="tree-toggle empty"></span>
+                <span class="tree-icon"></span>
+                <span class="tree-label">目标达成</span>
+                <span class="tree-count">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tree-node expanded" data-id="n2" data-level="1" draggable="true">
+          <div class="tree-row">
+            <span class="tree-toggle">▾</span>
+            <span class="tree-icon"></span>
+            <span class="tree-label">客户分析</span>
+            <span class="tree-count">6</span>
+          </div>
+          <div class="tree-children">
+            <div class="tree-node expanded" data-id="n2-1" data-level="2" draggable="true">
+              <div class="tree-row">
+                <span class="tree-toggle">▾</span>
+                <span class="tree-icon"></span>
+                <span class="tree-label">客户画像</span>
+                <span class="tree-count">4</span>
+              </div>
+              <div class="tree-children">
+                <div class="tree-node leaf" data-id="n2-1-1" data-level="3" draggable="true">
+                  <div class="tree-row">
+                    <span class="tree-toggle empty"></span>
+                    <span class="tree-icon"></span>
+                    <span class="tree-label">行业分布</span>
+                    <span class="tree-count">2</span>
+                  </div>
+                </div>
+                <div class="tree-node leaf" data-id="n2-1-2" data-level="3" draggable="true">
+                  <div class="tree-row">
+                    <span class="tree-toggle empty"></span>
+                    <span class="tree-icon"></span>
+                    <span class="tree-label">等级分布</span>
+                    <span class="tree-count">2</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="tree-node leaf" data-id="n2-2" data-level="2" draggable="true">
+              <div class="tree-row">
+                <span class="tree-toggle empty"></span>
+                <span class="tree-icon"></span>
+                <span class="tree-label">客户复购</span>
+                <span class="tree-count">2</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tree-node collapsed" data-id="n3" data-level="1" draggable="true">
+          <div class="tree-row">
+            <span class="tree-toggle">▸</span>
+            <span class="tree-icon"></span>
+            <span class="tree-label">库存分析</span>
+            <span class="tree-count">3</span>
+          </div>
+          <div class="tree-children">
+            <div class="tree-node expanded" data-id="n3-1" data-level="2" draggable="true">
+              <div class="tree-row">
+                <span class="tree-toggle">▾</span>
+                <span class="tree-icon"></span>
+                <span class="tree-label">仓库分布</span>
+                <span class="tree-count">3</span>
+              </div>
+              <div class="tree-children">
+                <div class="tree-node leaf" data-id="n3-1-1" data-level="3" draggable="true">
+                  <div class="tree-row">
+                    <span class="tree-toggle empty"></span>
+                    <span class="tree-icon"></span>
+                    <span class="tree-label">华东仓</span>
+                    <span class="tree-count">2</span>
+                  </div>
+                </div>
+                <div class="tree-node leaf" data-id="n3-1-2" data-level="3" draggable="true">
+                  <div class="tree-row">
+                    <span class="tree-toggle empty"></span>
+                    <span class="tree-icon"></span>
+                    <span class="tree-label">华北仓</span>
+                    <span class="tree-count">1</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tree-node leaf" data-id="n4" data-level="1" draggable="true">
+          <div class="tree-row">
+            <span class="tree-toggle empty"></span>
+            <span class="tree-icon"></span>
+            <span class="tree-label">财务分析</span>
+            <span class="tree-count">2</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右键菜单 -->
+      <div class="context-menu hidden" id="treeContextMenu">
+        <button data-action="add-child"><span class="ctx-icon">＋</span>新增子目录</button>
+        <button data-action="add-sibling"><span class="ctx-icon">↳</span>新增同级目录</button>
+        <button data-action="rename"><span class="ctx-icon">✎</span>重命名</button>
+        <button data-action="delete" class="danger"><span class="ctx-icon">🗑</span>删除</button>
+      </div>
+    </aside>
+
+    <section class="module-content" id="dashboardModule">
+      <div class="module-content-head">
+        <div>
+          <h2>我的仪表盘</h2>
+          <p style="margin:6px 0 0;color:#6b7280;font-size:13px;">来源智能问数，沉淀个人常用图表资产。</p>
+        </div>
+        <div class="toolbar dash-toolbar">
+          <button class="danger-btn icon-btn hidden" id="btnBatchDelete"><span class="btn-icon">🗑</span>批量删除 <span class="num-badge" id="batchCount">0</span></button>
+          <div class="view-switcher" id="viewSwitcher">
+            <button class="view-btn active" data-view="tile" title="平铺视图">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            </button>
+            <button class="view-btn" data-view="table" title="表格视图">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="module-scroll">
+        <!-- 平铺视图 -->
+        <div class="dash-tile-wrap" id="tileView">
+        <div class="dash-tile-grid" id="tileGrid"></div>
+        <div class="dash-table-foot tile-foot">
+          <div class="foot-info">总共 <strong id="tileTotal">12</strong> 条数据</div>
+          <div class="foot-pager">
+            <button class="page-btn" disabled>‹</button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn" disabled>›</button>
+            <span class="page-size">12 条/页</span>
+          </div>
+        </div>
+        </div>
+
+        <!-- 表格视图 -->
+        <div class="dash-table-wrap hidden" id="tableView">
+          <table class="dash-table" id="dashTable">
+            <thead>
+              <tr>
+                <th class="col-check"><label class="cb"><input type="checkbox" id="checkAll" /><span class="cb-box"></span></label></th>
+                <th>仪表盘名称</th>
+                <th class="col-mid">修改人</th>
+                <th class="col-mid">修改时间</th>
+                <th class="col-actions">操作</th>
+              </tr>
+            </thead>
+            <tbody id="dashTableBody"></tbody>
+          </table>
+          <div class="dash-table-foot">
+            <div class="foot-info">总共 <strong id="rowTotal">12</strong> 条数据</div>
+            <div class="foot-pager">
+              <button class="page-btn" disabled>‹</button>
+              <button class="page-btn active">1</button>
+              <button class="page-btn" disabled>›</button>
+              <span class="page-size">30 条/页</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 预览抽屉（取智能问数普通问答的结果结构） -->
+  <div class="drawer-mask hidden" id="previewMask"></div>
+  <aside class="drawer preview-drawer hidden" id="previewDrawer">
+    <div class="drawer-head">
+      <div>
+        <h3 id="previewTitle">仪表盘预览</h3>
+        <p id="previewMeta">分析主题：销售分析 · 查询时间：2026-04-28 08:43 · 数据更新时间：2026-04-28 08:00</p>
+      </div>
+      <button class="close" data-act="close">×</button>
+    </div>
+
+    <div class="drawer-body">
+      <section class="insight-box">
+        <h3>分析结论</h3>
+        <p id="previewConclusion"></p>
+        <div class="tag-row" id="previewTags"></div>
+      </section>
+
+      <section class="chart-card preview-chart-card" id="previewChartCard">
+        <div class="chart-top">
+          <h3 id="previewChartTitle">趋势图</h3>
+          <span class="chart-meta" id="previewChartMeta">数据来源：销售订单表</span>
+        </div>
+        <div class="preview-chart-area" id="previewChartArea"></div>
+      </section>
+
+      <section class="preview-table-card">
+        <div class="chart-top">
+          <h3>明细数据</h3>
+          <span class="chart-meta">单位：万元</span>
+        </div>
+        <div class="inline-table">
+          <table id="previewTable"></table>
+        </div>
+      </section>
+
+      <div class="preview-action-bar">
+        <div class="answer-action-left">
+          <span class="answer-action-title">这个回答准确吗？</span>
+          <button class="answer-action-btn" type="button" title="喜欢">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="action-icon"><path d="M7 10v12"></path><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88z"></path></svg>
+          </button>
+          <button class="answer-action-btn" type="button" title="不喜欢">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="action-icon"><path d="M17 14V2"></path><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88z"></path></svg>
+          </button>
+          <button class="answer-action-btn" type="button" title="反馈">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="action-icon"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="drawer-foot">
+      <button class="ghost-btn" data-act="close">关闭</button>
+      <button class="secondary-btn">加入看板</button>
+      <button class="secondary-btn">加入报告</button>
+      <button class="primary-btn">追问</button>
+    </div>
+  </aside>
+
+  <!-- 删除确认弹窗（与智能问数历史记录删除同款） -->
+  <div class="modal-mask hidden" id="confirmMask"></div>
+  <section class="modal small hidden" id="confirmModal">
+    <div class="modal-head">
+      <div>
+        <h3 id="confirmTitle">删除确认</h3>
+        <p id="confirmSubtitle">删除后将无法恢复。</p>
+      </div>
+      <button class="close" data-act="cancel">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="ai-tip" id="confirmMessage">确定要删除该条数据吗？</div>
+    </div>
+    <div class="modal-foot">
+      <button class="ghost-btn" data-act="cancel">取消</button>
+      <button class="primary-btn" data-act="ok">确认删除</button>
+    </div>
+  </section>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    (function () {
+      const tree = document.getElementById('dirTree');
+      const ctxMenu = document.getElementById('treeContextMenu');
+      const searchInput = document.getElementById('treeSearch');
+      let currentNode = null;
+      let dragNode = null;
+
+      // ---- 仪表盘示例数据（来源：智能问数常用问题与指标）----
+      const DASHBOARDS = [
+        { id: 'd1',  name: '近6个月销售额趋势',   thumb: 'line',  modifier: '张三', time: '2026-04-22 18:18:28' },
+        { id: 'd2',  name: '各大区订单量对比',     thumb: 'bars',  modifier: '李四', time: '2026-04-22 17:16:25' },
+        { id: 'd3',  name: '客户行业分布TOP10',   thumb: 'pie',   modifier: '王五', time: '2026-04-21 17:43:17' },
+        { id: 'd4',  name: '月度销售目标完成度',   thumb: 'line',  modifier: '张三', time: '2026-04-20 17:16:40' },
+        { id: 'd5',  name: 'TOP10客户贡献排行',   thumb: 'bars',  modifier: '李四', time: '2026-04-20 11:17:00' },
+        { id: 'd6',  name: '渠道转化率分析',       thumb: 'line',  modifier: '赵六', time: '2026-04-19 17:17:28' },
+        { id: 'd7',  name: '库存周转率走势',       thumb: 'bars',  modifier: '王五', time: '2026-04-18 09:32:45' },
+        { id: 'd8',  name: '产品线毛利率TOP榜',   thumb: 'table', modifier: '张三', time: '2026-04-17 14:08:12' },
+        { id: 'd9',  name: '新老客户复购对比',     thumb: 'pie',   modifier: '李四', time: '2026-04-16 16:55:33' },
+        { id: 'd10', name: '城市订单量明细',       thumb: 'table', modifier: '赵六', time: '2026-04-15 10:24:50' },
+        { id: 'd11', name: '产品线销售占比',       thumb: 'pie',   modifier: '王五', time: '2026-04-14 19:42:18' },
+        { id: 'd12', name: '关键经营指标KPI总览', thumb: 'table', modifier: '张三', time: '2026-04-13 18:18:28' },
+      ];
+
+      const ICON_PREVIEW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
+      const ICON_DELETE  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
+
+      const LINE_PATHS = [
+        'M2,40 L14,32 L26,36 L38,22 L50,28 L62,18 L74,24 L86,12 L98,16',
+        'M2,34 L14,28 L26,30 L38,18 L50,24 L62,12 L74,20 L86,8  L98,14',
+        'M2,42 L14,36 L26,28 L38,32 L50,20 L62,26 L74,14 L86,18 L98,10',
+      ];
+
+      function buildBars() {
+        const heights = ['52%','38%','64%','46%','72%','40%','58%','68%'];
+        const offset = Math.floor(Math.random() * heights.length);
+        const list = heights.slice(offset).concat(heights.slice(0, offset));
+        return '<div class="dash-thumb"><div class="asset-bars">'
+          + list.map((h) => '<span style="height:' + h + '"></span>').join('')
+          + '</div></div>';
+      }
+
+      function buildLine() {
+        const path = LINE_PATHS[Math.floor(Math.random() * LINE_PATHS.length)];
+        const gid = 'lf' + Math.random().toString(36).slice(2, 8);
+        return '<div class="dash-thumb line-thumb">'
+          + '<svg viewBox="0 0 100 50" preserveAspectRatio="none">'
+          + '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1">'
+          + '<stop offset="0%" stop-color="#1677ff" stop-opacity="0.32"/>'
+          + '<stop offset="100%" stop-color="#1677ff" stop-opacity="0"/></linearGradient></defs>'
+          + '<path d="' + path + ' L98,50 L2,50 Z" fill="url(#' + gid + ')"/>'
+          + '<path d="' + path + '" fill="none" stroke="#1677ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+          + '</svg></div>';
+      }
+
+      function buildPie() {
+        return '<div class="dash-thumb pie-thumb"><div class="pie-ring"></div></div>';
+      }
+
+      function buildTable() {
+        return '<div class="dash-thumb table-thumb"><div class="thumb-row head"></div>'
+          + '<div class="thumb-row"></div><div class="thumb-row"></div><div class="thumb-row"></div>'
+          + '<div class="thumb-row"></div><div class="thumb-row"></div><div class="thumb-row"></div></div>';
+      }
+
+      function thumbHTML(type) {
+        if (type === 'line')  return buildLine();
+        if (type === 'pie')   return buildPie();
+        if (type === 'table') return buildTable();
+        return buildBars();
+      }
+
+      // ---- 预览抽屉数据模板（参考智能问数普通问答结果） ----
+      const PREVIEW_TPL = {
+        line: {
+          subject: '销售分析',
+          conclusion: '近 6 个月销售额持续增长，6 月达到 3248 万元，较 1 月提升 49.0%。其中 4 月至 6 月增长明显，整体趋势稳定向上，业务动能增强。',
+          tags: ['持续增长', '6月达到峰值', '4-6月增长明显'],
+          chartTitle: '月度销售额趋势',
+          chartMeta: '单位：万元 · 数据更新：今日 08:00',
+          headers: ['月份', '销售额（万元）', '环比增长', '订单量', '客单价'],
+          rows: [
+            ['1月', '2,180', '-', '12,430', '1,754'],
+            ['2月', '2,360', '+8.3%', '13,180', '1,790'],
+            ['3月', '2,510', '+6.4%', '14,050', '1,786'],
+            ['4月', '2,890', '+15.1%', '15,920', '1,815'],
+            ['5月', '3,120', '+8.0%', '16,880', '1,848'],
+            ['6月', '3,248', '+4.1%', '17,260', '1,882'],
+          ],
+        },
+        bars: {
+          subject: '销售分析',
+          conclusion: '各分组销售额差异显著，TOP3 合计贡献 62.5% 销售额。整体分布呈头部集中态势，建议持续加大对头部分组的资源投入。',
+          tags: ['TOP3占62.5%', '头部集中', '尾部待提升'],
+          chartTitle: '分组销售额对比',
+          chartMeta: '单位：万元 · 数据更新：今日 08:00',
+          headers: ['分组', '销售额（万元）', '占比', '同比', '环比'],
+          rows: [
+            ['华东大区', '4,820', '28.6%', '+18.2%', '+5.6%'],
+            ['华南大区', '3,560', '21.1%', '+12.4%', '+3.8%'],
+            ['华北大区', '2,180', '13.0%', '+8.6%', '+2.1%'],
+            ['西南大区', '1,920', '11.4%', '+6.2%', '+1.7%'],
+            ['华中大区', '1,640', '9.8%', '+4.8%', '+0.9%'],
+            ['东北大区', '1,210', '7.2%', '+3.6%', '+0.4%'],
+          ],
+        },
+        pie: {
+          subject: '客户分析',
+          conclusion: '客户主要集中在电子产品（32%）和快消品（24%）行业，合计占比超过 55%。前 3 大行业贡献度达 74%，行业集中度较高。',
+          tags: ['电子产品占首位', 'TOP3占74%', '行业集中度高'],
+          chartTitle: '行业分布占比',
+          chartMeta: '统计周期：近 6 个月',
+          headers: ['行业', '客户数', '占比', '同比变化'],
+          rows: [
+            ['电子产品', '486', '32.0%', '+5.2%'],
+            ['快消品', '364', '24.0%', '+3.8%'],
+            ['服装服饰', '273', '18.0%', '+2.6%'],
+            ['家居家装', '212', '14.0%', '+1.5%'],
+            ['食品生鲜', '120', '7.9%', '+0.8%'],
+            ['其他', '62', '4.1%', '-0.4%'],
+          ],
+        },
+        table: {
+          subject: '销售运营',
+          conclusion: '当前共 6 条核心明细记录，TOP1 城市订单量为 18,520 单，环比增长 12.4%。整体数据健康，建议关注尾部城市的订单波动。',
+          tags: ['整体健康', 'TOP1环比+12.4%', '关注尾部'],
+          chartTitle: '明细汇总',
+          chartMeta: '近 30 天数据',
+          headers: ['城市', '订单量', '销售额（万元）', '环比', '同比'],
+          rows: [
+            ['上海', '18,520', '2,840', '+12.4%', '+18.2%'],
+            ['北京', '15,360', '2,460', '+9.8%', '+15.6%'],
+            ['深圳', '12,780', '2,120', '+8.6%', '+13.4%'],
+            ['广州', '10,940', '1,860', '+6.2%', '+10.8%'],
+            ['杭州', '9,260', '1,580', '+5.4%', '+9.2%'],
+            ['成都', '7,820', '1,320', '+3.6%', '+7.6%'],
+          ],
+        },
+      };
+
+      const PREVIEW_LINE_PATHS = {
+        full: 'M30,180 L100,150 L170,138 L240,90 L310,72 L380,55 L450,40',
+        dots: [[30,180],[100,150],[170,138],[240,90],[310,72],[380,55],[450,40]],
+        labels: ['1月','2月','3月','4月','5月','6月','7月']
+      };
+
+      function buildPreviewLine() {
+        const path = PREVIEW_LINE_PATHS.full;
+        const dots = PREVIEW_LINE_PATHS.dots;
+        const labels = PREVIEW_LINE_PATHS.labels;
+        const yLabels = ['3500','2800','2100','1400','700','0'];
+        let svg = '<svg viewBox="0 0 500 240" class="prev-svg">';
+        svg += '<defs><linearGradient id="prevLF" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1677ff" stop-opacity="0.32"/><stop offset="100%" stop-color="#1677ff" stop-opacity="0"/></linearGradient></defs>';
+        for (let i = 0; i < 5; i++) {
+          const y = 40 + i * 36;
+          svg += '<line x1="30" y1="' + y + '" x2="480" y2="' + y + '" stroke="#eef2f7" stroke-dasharray="3 4"/>';
+        }
+        yLabels.forEach((l, i) => {
+          svg += '<text x="22" y="' + (44 + i * 36) + '" fill="#94a3b8" font-size="10" text-anchor="end">' + l + '</text>';
+        });
+        labels.forEach((l, i) => {
+          svg += '<text x="' + (30 + i * 70) + '" y="216" fill="#64748b" font-size="11" text-anchor="middle">' + l + '</text>';
+        });
+        svg += '<path d="' + path + ' L450,200 L30,200 Z" fill="url(#prevLF)"/>';
+        svg += '<path d="' + path + '" fill="none" stroke="#1677ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
+        dots.forEach(([x,y]) => {
+          svg += '<circle cx="' + x + '" cy="' + y + '" r="3.5" fill="#fff" stroke="#1677ff" stroke-width="2"/>';
+        });
+        svg += '</svg>';
+        return svg;
+      }
+
+      function buildPreviewBars() {
+        const data = [4820, 3560, 2180, 1920, 1640, 1210];
+        const labels = ['华东','华南','华北','西南','华中','东北'];
+        const max = 5000;
+        let svg = '<svg viewBox="0 0 500 240" class="prev-svg">';
+        for (let i = 0; i < 5; i++) {
+          const y = 40 + i * 36;
+          svg += '<line x1="40" y1="' + y + '" x2="480" y2="' + y + '" stroke="#eef2f7" stroke-dasharray="3 4"/>';
+        }
+        ['5000','4000','3000','2000','1000','0'].forEach((l, i) => {
+          svg += '<text x="32" y="' + (44 + i * 36) + '" fill="#94a3b8" font-size="10" text-anchor="end">' + l + '</text>';
+        });
+        const barW = 38;
+        const gap = (480 - 40 - barW * 6) / 7;
+        data.forEach((v, i) => {
+          const h = (v / max) * 180;
+          const x = 40 + gap + i * (barW + gap);
+          const y = 220 - h;
+          svg += '<rect x="' + x + '" y="' + y + '" width="' + barW + '" height="' + h + '" rx="4" fill="url(#prevBG)"/>';
+          svg += '<text x="' + (x + barW/2) + '" y="' + (y - 6) + '" fill="#1677ff" font-size="10" font-weight="600" text-anchor="middle">' + v + '</text>';
+          svg += '<text x="' + (x + barW/2) + '" y="234" fill="#64748b" font-size="11" text-anchor="middle">' + labels[i] + '</text>';
+        });
+        svg += '<defs><linearGradient id="prevBG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4ea5ff"/><stop offset="100%" stop-color="#1677ff"/></linearGradient></defs>';
+        svg += '</svg>';
+        return svg;
+      }
+
+      function buildPreviewPie() {
+        const data = [
+          { name: '电子产品', val: 32, color: '#1677ff' },
+          { name: '快消品',   val: 24, color: '#4ea5ff' },
+          { name: '服装服饰', val: 18, color: '#8cc8ff' },
+          { name: '家居家装', val: 14, color: '#cfe2ff' },
+          { name: '食品生鲜', val: 8,  color: '#e2eeff' },
+          { name: '其他',     val: 4,  color: '#f1f5fb' },
+        ];
+        const cx = 130, cy = 110, r = 80;
+        let acc = 0;
+        let slices = '';
+        data.forEach((d) => {
+          const start = acc / 100 * Math.PI * 2 - Math.PI / 2;
+          acc += d.val;
+          const end = acc / 100 * Math.PI * 2 - Math.PI / 2;
+          const x1 = cx + Math.cos(start) * r;
+          const y1 = cy + Math.sin(start) * r;
+          const x2 = cx + Math.cos(end) * r;
+          const y2 = cy + Math.sin(end) * r;
+          const large = d.val > 50 ? 1 : 0;
+          slices += '<path d="M' + cx + ',' + cy + ' L' + x1.toFixed(2) + ',' + y1.toFixed(2) + ' A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2.toFixed(2) + ',' + y2.toFixed(2) + ' Z" fill="' + d.color + '" stroke="#fff" stroke-width="1.5"/>';
+        });
+        let legend = '<g transform="translate(290,30)">';
+        data.forEach((d, i) => {
+          const y = i * 28;
+          legend += '<rect x="0" y="' + y + '" width="14" height="14" rx="3" fill="' + d.color + '"/>';
+          legend += '<text x="22" y="' + (y + 11) + '" fill="#374151" font-size="12">' + d.name + '</text>';
+          legend += '<text x="180" y="' + (y + 11) + '" fill="#1677ff" font-size="12" font-weight="600" text-anchor="end">' + d.val + '%</text>';
+        });
+        legend += '</g>';
+        return '<svg viewBox="0 0 500 240" class="prev-svg">' + slices
+          + '<circle cx="' + cx + '" cy="' + cy + '" r="42" fill="#fff"/>'
+          + '<text x="' + cx + '" y="' + (cy - 4) + '" fill="#94a3b8" font-size="11" text-anchor="middle">合计客户</text>'
+          + '<text x="' + cx + '" y="' + (cy + 16) + '" fill="#17375e" font-size="20" font-weight="700" text-anchor="middle">1,517</text>'
+          + legend + '</svg>';
+      }
+
+      function renderPreviewChart(type) {
+        if (type === 'line') return buildPreviewLine();
+        if (type === 'bars') return buildPreviewBars();
+        if (type === 'pie')  return buildPreviewPie();
+        return '';
+      }
+
+      // ---- 预览抽屉控制 ----
+      const previewMask = document.getElementById('previewMask');
+      const previewDrawer = document.getElementById('previewDrawer');
+
+      function openPreview(item) {
+        const tpl = PREVIEW_TPL[item.thumb] || PREVIEW_TPL.line;
+        document.getElementById('previewTitle').textContent = item.name + ' · 分析结果';
+        document.getElementById('previewMeta').textContent =
+          '分析主题：' + tpl.subject + ' · 查询时间：' + item.time + ' · 数据更新时间：今日 08:00';
+        document.getElementById('previewConclusion').textContent = tpl.conclusion;
+        document.getElementById('previewTags').innerHTML = tpl.tags.map((t) => '<span>' + t + '</span>').join('');
+        document.getElementById('previewChartTitle').textContent = tpl.chartTitle;
+        document.getElementById('previewChartMeta').textContent = tpl.chartMeta;
+
+        const chartArea = document.getElementById('previewChartArea');
+        const chartCard = document.getElementById('previewChartCard');
+        if (item.thumb === 'table') {
+          chartCard.classList.add('hidden');
+        } else {
+          chartCard.classList.remove('hidden');
+          chartArea.innerHTML = renderPreviewChart(item.thumb);
+        }
+
+        const tableEl = document.getElementById('previewTable');
+        tableEl.innerHTML =
+          '<thead><tr>' + tpl.headers.map((h, i) => '<th' + (i > 0 ? ' class="num"' : '') + '>' + h + '</th>').join('') + '</tr></thead>' +
+          '<tbody>' + tpl.rows.map((row) => (
+            '<tr>' + row.map((c, i) => {
+              if (i === 0) return '<td>' + c + '</td>';
+              const cls = /^\+/.test(c) ? 'num up' : (/^-/.test(c) ? 'num down' : 'num');
+              return '<td class="' + cls + '">' + c + '</td>';
+            }).join('') + '</tr>'
+          )).join('') + '</tbody>';
+
+        previewMask.classList.remove('hidden');
+        previewDrawer.classList.remove('hidden');
+        previewDrawer.classList.add('open');
+      }
+
+      function closePreview() {
+        previewMask.classList.add('hidden');
+        previewDrawer.classList.add('hidden');
+        previewDrawer.classList.remove('open');
+      }
+
+      previewMask.addEventListener('click', closePreview);
+      previewDrawer.addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-act="close"]');
+        if (btn) closePreview();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !previewDrawer.classList.contains('hidden')) closePreview();
+      });
+
+      function renderTiles() {
+        const grid = document.getElementById('tileGrid');
+        grid.innerHTML = DASHBOARDS.map((d) => (
+          '<article class="dash-card" data-id="' + d.id + '" data-name="' + d.name + '">' +
+            thumbHTML(d.thumb) +
+            '<div class="dash-overlay">' +
+              '<button class="overlay-btn primary"><span class="overlay-ic">' + ICON_PREVIEW + '</span>预览</button>' +
+              '<button class="overlay-btn danger"><span class="overlay-ic">' + ICON_DELETE + '</span>删除</button>' +
+            '</div>' +
+            '<div class="dash-name">' + d.name + '</div>' +
+          '</article>'
+        )).join('');
+        document.getElementById('tileTotal').textContent = grid.children.length;
+      }
+
+      function renderTable() {
+        const body = document.getElementById('dashTableBody');
+        body.innerHTML = DASHBOARDS.map((d) => (
+          '<tr data-id="' + d.id + '">' +
+            '<td class="col-check"><label class="cb"><input type="checkbox" class="row-check" /><span class="cb-box"></span></label></td>' +
+            '<td class="cell-name">' + d.name + '</td>' +
+            '<td>' + d.modifier + '</td>' +
+            '<td>' + d.time + '</td>' +
+            '<td class="col-actions">' +
+              '<button class="row-icon" title="预览">' + ICON_PREVIEW + '</button>' +
+              '<button class="row-icon danger" title="删除">' + ICON_DELETE + '</button>' +
+            '</td>' +
+          '</tr>'
+        )).join('');
+        document.getElementById('rowTotal').textContent = body.children.length;
+      }
+
+      renderTiles();
+      renderTable();
+
+      // ---- info-tip 顶层 tooltip（避免被侧栏 overflow 截断） ----
+      (function setupTip() {
+        const tips = document.querySelectorAll('.info-tip');
+        let pop = null;
+        function show(el) {
+          const text = el.dataset.tip || '';
+          if (!text) return;
+          pop = document.createElement('div');
+          pop.className = 'info-tip-popover';
+          pop.textContent = text;
+          document.body.appendChild(pop);
+          const rect = el.getBoundingClientRect();
+          let left = rect.left - 8;
+          const top = rect.bottom + 10;
+          requestAnimationFrame(() => {
+            const pw = pop.offsetWidth;
+            if (left + pw + 8 > window.innerWidth) left = window.innerWidth - pw - 8;
+            if (left < 8) left = 8;
+            pop.style.left = left + 'px';
+            pop.style.top = top + 'px';
+            pop.classList.add('visible');
+          });
+        }
+        function hide() {
+          if (pop) { pop.remove(); pop = null; }
+        }
+        tips.forEach((el) => {
+          el.addEventListener('mouseenter', () => show(el));
+          el.addEventListener('mouseleave', hide);
+          el.addEventListener('focus', () => show(el));
+          el.addEventListener('blur', hide);
+        });
+        window.addEventListener('scroll', hide, true);
+      })();
+
+      // ---- 0. 通用：删除确认弹窗（同智能问数历史记录删除）+ 行内编辑 ----
+      const confirmMask = document.getElementById('confirmMask');
+      const confirmModal = document.getElementById('confirmModal');
+      function showConfirm(opts) {
+        const o = Object.assign({
+          title: '删除确认',
+          subtitle: '删除后将无法恢复。',
+          message: '确定要删除该条数据吗？',
+          okText: '确认删除',
+          cancelText: '取消',
+        }, opts || {});
+        document.getElementById('confirmTitle').textContent = o.title;
+        document.getElementById('confirmSubtitle').textContent = o.subtitle;
+        document.getElementById('confirmMessage').innerHTML = o.message;
+
+        const okBtn = confirmModal.querySelector('.modal-foot [data-act="ok"]');
+        const cancelBtn = confirmModal.querySelector('.modal-foot [data-act="cancel"]');
+        const closeBtn = confirmModal.querySelector('.modal-head [data-act="cancel"]');
+        okBtn.textContent = o.okText;
+        cancelBtn.textContent = o.cancelText;
+
+        confirmMask.classList.remove('hidden');
+        confirmModal.classList.remove('hidden');
+
+        const cleanup = () => {
+          confirmMask.classList.add('hidden');
+          confirmModal.classList.add('hidden');
+          okBtn.onclick = null;
+          cancelBtn.onclick = null;
+          closeBtn.onclick = null;
+          confirmMask.onclick = null;
+          document.removeEventListener('keydown', onKey);
+        };
+        const onKey = (e) => {
+          if (e.key === 'Escape') { e.preventDefault(); cleanup(); }
+          else if (e.key === 'Enter') { e.preventDefault(); cleanup(); o.onConfirm && o.onConfirm(); }
+        };
+        okBtn.onclick = () => { cleanup(); o.onConfirm && o.onConfirm(); };
+        cancelBtn.onclick = cleanup;
+        closeBtn.onclick = cleanup;
+        confirmMask.onclick = cleanup;
+        document.addEventListener('keydown', onKey);
+      }
+
+      function enterEdit(labelEl, initial, onCommit) {
+        const original = labelEl.textContent;
+        const input = document.createElement('input');
+        input.className = 'tree-edit-input';
+        input.value = initial;
+        input.maxLength = 30;
+        labelEl.textContent = '';
+        labelEl.appendChild(input);
+        setTimeout(() => { input.focus(); input.select(); }, 0);
+
+        let finished = false;
+        const finish = (commit) => {
+          if (finished) return;
+          finished = true;
+          const v = input.value.trim();
+          const next = (commit && v) ? v : original;
+          if (input.parentElement) input.parentElement.removeChild(input);
+          labelEl.textContent = next;
+          if (onCommit) onCommit(next, commit && !!v);
+        };
+        input.addEventListener('blur', () => finish(true));
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+          else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+        });
+        input.addEventListener('click', (e) => e.stopPropagation());
+      }
+
+      // ---- 1. 展开 / 收起 + 选中 ----
+      tree.addEventListener('click', function (e) {
+        if (e.target.closest('.tree-edit-input')) return;
+        const toggle = e.target.closest('.tree-toggle');
+        const row = e.target.closest('.tree-row');
+        if (!row) return;
+        const node = row.parentElement;
+
+        if (toggle && !toggle.classList.contains('empty')) {
+          e.stopPropagation();
+          if (node.classList.contains('expanded')) {
+            node.classList.remove('expanded');
+            node.classList.add('collapsed');
+            toggle.textContent = '▸';
+          } else {
+            node.classList.remove('collapsed');
+            node.classList.add('expanded');
+            toggle.textContent = '▾';
+          }
+          return;
+        }
+
+        tree.querySelectorAll('.tree-row.active').forEach((el) => el.classList.remove('active'));
+        row.classList.add('active');
+      });
+
+      // ---- 2. 右键菜单 ----
+      tree.addEventListener('contextmenu', function (e) {
+        const row = e.target.closest('.tree-row');
+        if (!row) return;
+        e.preventDefault();
+        currentNode = row.parentElement;
+
+        tree.querySelectorAll('.tree-row.context-active').forEach((el) => el.classList.remove('context-active'));
+        row.classList.add('context-active');
+
+        const level = parseInt(currentNode.dataset.level, 10);
+        const addChildBtn = ctxMenu.querySelector('[data-action="add-child"]');
+        addChildBtn.disabled = level >= 3;
+        addChildBtn.classList.toggle('disabled', level >= 3);
+
+        ctxMenu.classList.remove('hidden');
+        const menuW = ctxMenu.offsetWidth || 180;
+        const menuH = ctxMenu.offsetHeight || 200;
+        const x = Math.min(e.clientX, window.innerWidth - menuW - 8);
+        const y = Math.min(e.clientY, window.innerHeight - menuH - 8);
+        ctxMenu.style.left = x + 'px';
+        ctxMenu.style.top = y + 'px';
+      });
+
+      document.addEventListener('click', function () {
+        ctxMenu.classList.add('hidden');
+        tree.querySelectorAll('.tree-row.context-active').forEach((el) => el.classList.remove('context-active'));
+      });
+
+      ctxMenu.addEventListener('click', function (e) {
+        const btn = e.target.closest('button');
+        if (!btn || btn.disabled) return;
+        e.stopPropagation();
+        const action = btn.dataset.action;
+        ctxMenu.classList.add('hidden');
+        if (!currentNode) return;
+
+        if (action === 'add-child') addChildNode(currentNode);
+        else if (action === 'add-sibling') addSiblingNode(currentNode);
+        else if (action === 'rename') renameNode(currentNode);
+        else if (action === 'delete') deleteNode(currentNode);
+      });
+
+      function makeNode(label, level) {
+        const node = document.createElement('div');
+        node.className = 'tree-node leaf new-flash';
+        node.dataset.id = 'new-' + Date.now();
+        node.dataset.level = String(level);
+        node.draggable = true;
+        node.innerHTML =
+          '<div class="tree-row">' +
+          '<span class="tree-toggle empty"></span>' +
+          '<span class="tree-icon"></span>' +
+          '<span class="tree-label">' + label + '</span>' +
+          '<span class="tree-count">0</span>' +
+          '</div>';
+        return node;
+      }
+
+      function ensureChildrenContainer(parentNode) {
+        let children = parentNode.querySelector(':scope > .tree-children');
+        if (!children) {
+          children = document.createElement('div');
+          children.className = 'tree-children';
+          parentNode.appendChild(children);
+        }
+        parentNode.classList.remove('leaf', 'collapsed');
+        parentNode.classList.add('expanded');
+        const toggle = parentNode.querySelector(':scope > .tree-row > .tree-toggle');
+        if (toggle) {
+          toggle.classList.remove('empty');
+          toggle.textContent = '▾';
+        }
+        return children;
+      }
+
+      function addChildNode(parentNode) {
+        const level = parseInt(parentNode.dataset.level, 10);
+        if (level >= 3) {
+          showToast('已达三级目录上限');
+          return;
+        }
+        const children = ensureChildrenContainer(parentNode);
+        const newNode = makeNode('新建目录', level + 1);
+        children.appendChild(newNode);
+        const labelEl = newNode.querySelector(':scope > .tree-row > .tree-label');
+        enterEdit(labelEl, '新建目录', (v, ok) => {
+          if (ok) showToast('已新增子目录：' + v);
+        });
+      }
+
+      function addSiblingNode(node) {
+        const level = parseInt(node.dataset.level, 10);
+        const newNode = makeNode('新建目录', level);
+        node.parentElement.insertBefore(newNode, node.nextSibling);
+        const labelEl = newNode.querySelector(':scope > .tree-row > .tree-label');
+        enterEdit(labelEl, '新建目录', (v, ok) => {
+          if (ok) showToast('已新增同级目录：' + v);
+        });
+      }
+
+      function renameNode(node) {
+        const labelEl = node.querySelector(':scope > .tree-row > .tree-label');
+        enterEdit(labelEl, labelEl.textContent, (v, ok) => {
+          if (ok) showToast('已重命名为：' + v);
+        });
+      }
+
+      function deleteNode(node) {
+        const labelEl = node.querySelector(':scope > .tree-row > .tree-label');
+        const name = labelEl.textContent;
+        const hasChild = !!node.querySelector(':scope > .tree-children > .tree-node');
+        showConfirm({
+          title: '删除确认',
+          subtitle: hasChild ? '删除后，该目录及其下子目录将不再展示。' : '删除后，该目录将不再展示。',
+          message: '确定要删除「<span style="color:#17375e;font-weight:700;">' + name + '</span>」吗？',
+          onConfirm: function () {
+            node.remove();
+            showToast('已删除：' + name);
+          },
+        });
+      }
+
+      // ---- 3. 拖拽排序 / 调整层级 ----
+      tree.addEventListener('dragstart', function (e) {
+        const node = e.target.closest('.tree-node');
+        if (!node) return;
+        dragNode = node;
+        node.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        try { e.dataTransfer.setData('text/plain', node.dataset.id); } catch (err) {}
+      });
+
+      tree.addEventListener('dragend', function () {
+        if (dragNode) dragNode.classList.remove('dragging');
+        clearDropMarkers();
+        dragNode = null;
+      });
+
+      tree.addEventListener('dragover', function (e) {
+        if (!dragNode) return;
+        const targetNode = e.target.closest('.tree-node');
+        if (!targetNode || targetNode === dragNode) return;
+        if (targetNode.contains(dragNode)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+
+        const row = targetNode.querySelector(':scope > .tree-row');
+        const rect = row.getBoundingClientRect();
+        const offset = e.clientY - rect.top;
+        const ratio = offset / rect.height;
+
+        clearDropMarkers();
+        const targetLevel = parseInt(targetNode.dataset.level, 10);
+        const dragSubtreeDepth = getSubtreeDepth(dragNode);
+
+        if (ratio < 0.25) {
+          targetNode.classList.add('drop-before');
+        } else if (ratio > 0.75) {
+          targetNode.classList.add('drop-after');
+        } else if (targetLevel + dragSubtreeDepth <= 3) {
+          targetNode.classList.add('drop-inside');
+        } else {
+          targetNode.classList.add('drop-after');
+        }
+      });
+
+      tree.addEventListener('dragleave', function (e) {
+        const node = e.target.closest('.tree-node');
+        if (node && !node.contains(e.relatedTarget)) {
+          node.classList.remove('drop-before', 'drop-after', 'drop-inside');
+        }
+      });
+
+      tree.addEventListener('drop', function (e) {
+        if (!dragNode) return;
+        const targetNode = e.target.closest('.tree-node');
+        if (!targetNode || targetNode === dragNode) return;
+        if (targetNode.contains(dragNode)) return;
+        e.preventDefault();
+
+        const mode = targetNode.classList.contains('drop-inside')
+          ? 'inside'
+          : targetNode.classList.contains('drop-before')
+          ? 'before'
+          : 'after';
+        clearDropMarkers();
+
+        const targetLevel = parseInt(targetNode.dataset.level, 10);
+        const dragDepth = getSubtreeDepth(dragNode);
+
+        if (mode === 'inside') {
+          if (targetLevel + dragDepth > 3) {
+            showToast('超出三级目录限制');
+            return;
+          }
+          const children = ensureChildrenContainer(targetNode);
+          children.appendChild(dragNode);
+          updateLevels(dragNode, targetLevel + 1);
+        } else {
+          const parentChildren = targetNode.parentElement;
+          const parentLevel = targetLevel;
+          if (parentLevel + dragDepth - 1 > 3) {
+            showToast('超出三级目录限制');
+            return;
+          }
+          if (mode === 'before') {
+            parentChildren.insertBefore(dragNode, targetNode);
+          } else {
+            parentChildren.insertBefore(dragNode, targetNode.nextSibling);
+          }
+          updateLevels(dragNode, parentLevel);
+        }
+
+        cleanupEmptyParents();
+        showToast('已调整目录位置');
+      });
+
+      function clearDropMarkers() {
+        tree.querySelectorAll('.drop-before, .drop-after, .drop-inside').forEach((el) =>
+          el.classList.remove('drop-before', 'drop-after', 'drop-inside')
+        );
+      }
+
+      function getSubtreeDepth(node) {
+        const children = node.querySelectorAll(':scope > .tree-children > .tree-node');
+        if (!children.length) return 1;
+        let max = 0;
+        children.forEach((c) => {
+          const d = getSubtreeDepth(c);
+          if (d > max) max = d;
+        });
+        return max + 1;
+      }
+
+      function updateLevels(node, level) {
+        node.dataset.level = String(level);
+        const children = node.querySelectorAll(':scope > .tree-children > .tree-node');
+        children.forEach((c) => updateLevels(c, level + 1));
+      }
+
+      function cleanupEmptyParents() {
+        tree.querySelectorAll('.tree-node').forEach((node) => {
+          const children = node.querySelector(':scope > .tree-children');
+          if (children && children.children.length === 0) {
+            children.remove();
+            node.classList.remove('expanded', 'collapsed');
+            node.classList.add('leaf');
+            const toggle = node.querySelector(':scope > .tree-row > .tree-toggle');
+            if (toggle) {
+              toggle.classList.add('empty');
+              toggle.textContent = '';
+            }
+          }
+        });
+      }
+
+      // ---- 4. 视图切换（平铺 / 表格） ----
+      const viewSwitcher = document.getElementById('viewSwitcher');
+      const tileView = document.getElementById('tileView');
+      const tableView = document.getElementById('tableView');
+      const dashModule = document.getElementById('dashboardModule');
+      viewSwitcher.addEventListener('click', function (e) {
+        const btn = e.target.closest('.view-btn');
+        if (!btn) return;
+        viewSwitcher.querySelectorAll('.view-btn').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        const view = btn.dataset.view;
+        if (view === 'tile') {
+          tileView.classList.remove('hidden');
+          tableView.classList.add('hidden');
+          dashModule.classList.remove('view-table-mode');
+          document.getElementById('btnBatchDelete').classList.add('hidden');
+        } else {
+          tileView.classList.add('hidden');
+          tableView.classList.remove('hidden');
+          dashModule.classList.add('view-table-mode');
+        }
+      });
+
+      // ---- 5. 表格多选 + 批量删除 ----
+      const checkAll = document.getElementById('checkAll');
+      const dashTable = document.getElementById('dashTable');
+      const btnBatchDelete = document.getElementById('btnBatchDelete');
+      const batchCount = document.getElementById('batchCount');
+      const rowTotal = document.getElementById('rowTotal');
+
+      function refreshBatchState() {
+        const checks = dashTable.querySelectorAll('tbody .row-check');
+        const checked = dashTable.querySelectorAll('tbody .row-check:checked');
+        if (checked.length > 0) {
+          btnBatchDelete.classList.remove('hidden');
+          batchCount.textContent = checked.length;
+        } else {
+          btnBatchDelete.classList.add('hidden');
+        }
+        if (checks.length && checked.length === checks.length) {
+          checkAll.checked = true;
+          checkAll.indeterminate = false;
+        } else if (checked.length > 0) {
+          checkAll.checked = false;
+          checkAll.indeterminate = true;
+        } else {
+          checkAll.checked = false;
+          checkAll.indeterminate = false;
+        }
+        dashTable.querySelectorAll('tbody tr').forEach((tr) => {
+          const cb = tr.querySelector('.row-check');
+          tr.classList.toggle('row-checked', cb && cb.checked);
+        });
+      }
+
+      checkAll.addEventListener('change', function () {
+        dashTable.querySelectorAll('tbody .row-check').forEach((cb) => (cb.checked = checkAll.checked));
+        refreshBatchState();
+      });
+
+      dashTable.addEventListener('change', function (e) {
+        if (e.target.classList.contains('row-check')) refreshBatchState();
+      });
+
+      dashTable.addEventListener('click', function (e) {
+        const btn = e.target.closest('.row-icon');
+        if (!btn) return;
+        const tr = btn.closest('tr');
+        const name = tr.querySelector('.cell-name').textContent.trim();
+        if (btn.classList.contains('danger')) {
+          showConfirm({
+            title: '删除确认',
+            subtitle: '删除后，该仪表盘将不再展示。',
+            message: '确定要删除「<span style="color:#17375e;font-weight:700;">' + name + '</span>」吗？',
+            onConfirm: function () {
+              tr.remove();
+              rowTotal.textContent = String(dashTable.querySelectorAll('tbody tr').length);
+              refreshBatchState();
+              showToast('已删除：' + name);
+            },
+          });
+        } else {
+          const item = DASHBOARDS.find((d) => d.id === tr.dataset.id);
+          if (item) openPreview(item);
+        }
+      });
+
+      btnBatchDelete.addEventListener('click', function () {
+        const checked = dashTable.querySelectorAll('tbody .row-check:checked');
+        if (!checked.length) return;
+        showConfirm({
+          title: '批量删除',
+          subtitle: '删除后，选中的仪表盘将不再展示。',
+          message: '确定要批量删除选中的 <span style="color:#17375e;font-weight:700;">' + checked.length + '</span> 个仪表盘吗？',
+          okText: '批量删除',
+          onConfirm: function () {
+            checked.forEach((cb) => cb.closest('tr').remove());
+            rowTotal.textContent = String(dashTable.querySelectorAll('tbody tr').length);
+            refreshBatchState();
+            showToast('已批量删除');
+          },
+        });
+      });
+
+      // ---- 6. 平铺卡片预览 / 删除 ----
+      document.getElementById('tileView').addEventListener('click', function (e) {
+        const btn = e.target.closest('.overlay-btn');
+        if (!btn) return;
+        e.stopPropagation();
+        const card = btn.closest('.dash-card');
+        const name = card.dataset.name || card.querySelector('.dash-name').textContent.trim();
+        if (btn.classList.contains('danger')) {
+          showConfirm({
+            title: '删除确认',
+            subtitle: '删除后，该仪表盘将不再展示。',
+            message: '确定要删除「<span style="color:#17375e;font-weight:700;">' + name + '</span>」吗？',
+            onConfirm: function () {
+              card.remove();
+              showToast('已删除：' + name);
+            },
+          });
+        } else {
+          const item = DASHBOARDS.find((d) => d.id === card.dataset.id);
+          if (item) openPreview(item);
+        }
+      });
+
+      // ---- 7. 搜索过滤 ----
+      searchInput.addEventListener('input', function () {
+        const kw = this.value.trim().toLowerCase();
+        tree.querySelectorAll('.tree-node').forEach((n) => (n.style.display = ''));
+        if (!kw) return;
+        tree.querySelectorAll('.tree-node').forEach((node) => {
+          const label = node.querySelector(':scope > .tree-row > .tree-label').textContent.toLowerCase();
+          const matched = label.includes(kw);
+          if (matched) {
+            node.style.display = '';
+            let p = node.parentElement;
+            while (p && p !== tree) {
+              if (p.classList.contains('tree-node')) {
+                p.style.display = '';
+                p.classList.remove('collapsed');
+                p.classList.add('expanded');
+                const t = p.querySelector(':scope > .tree-row > .tree-toggle');
+                if (t && !t.classList.contains('empty')) t.textContent = '▾';
+              }
+              p = p.parentElement;
+            }
+          }
+        });
+        tree.querySelectorAll('.tree-node').forEach((node) => {
+          const visibleSelf = node.querySelector(':scope > .tree-row > .tree-label')
+            .textContent.toLowerCase()
+            .includes(kw);
+          const hasVisibleChild = !!node.querySelector(':scope > .tree-children > .tree-node[style=""]') ||
+            !![...node.querySelectorAll(':scope > .tree-children > .tree-node')].filter((n) => n.style.display !== 'none').length;
+          if (!visibleSelf && !hasVisibleChild) node.style.display = 'none';
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

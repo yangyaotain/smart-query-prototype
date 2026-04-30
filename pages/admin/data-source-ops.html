@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>连接与同步任务 - 智能问数管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/admin.css" />
+</head>
+<body>
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
+      <div class="admin-brand"><div class="logo">管</div><span>智能问数管理后台</span></div>
+      <nav class="admin-menu">
+        <a class="active" href="data-source.html">数据源管理</a><a href="data-model.html">数据模型管理</a><a href="knowledge.html">知识库管理</a><a href="operation.html">运营管理</a><a href="theme.html">分析主题管理</a><a href="users.html">用户管理</a><a href="roles.html">角色管理</a>
+      </nav>
+    </aside>
+    <main class="admin-main">
+      <header class="admin-topbar"><strong>连接与同步任务</strong><div class="toolbar"><button class="secondary-btn" onclick="goTo('data-source.html')">返回数据源</button></div></header>
+      <section class="admin-content">
+        <div class="admin-card">
+          <div class="admin-card-head"><h2>最近任务记录</h2><button class="primary-btn" onclick="goTo('data-source.html')">完成</button></div>
+          <div class="admin-card-body">
+            <table class="data-table">
+              <thead><tr><th>任务类型</th><th>数据源</th><th>开始时间</th><th>耗时</th><th>结果</th></tr></thead>
+              <tbody>
+                <tr><td>连接测试</td><td>销售业务库</td><td>2026-04-28 13:34</td><td>2.1s</td><td><span class="status-ok">成功</span></td></tr>
+                <tr><td>元数据同步</td><td>客户数据仓库</td><td>2026-04-28 13:29</td><td>18.4s</td><td><span class="status-ok">成功</span></td></tr>
+                <tr><td>元数据同步</td><td>库存分析库</td><td>2026-04-28 12:56</td><td>21.2s</td><td><span class="status-warn">部分失败</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../../assets/js/common.js"></script>
+</body>
+</html>

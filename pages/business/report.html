@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>我的报告 - 智能问数</title>
+  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/business.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="top-left"><div class="logo">数</div><div class="product-name">智能问数</div></div>
+    <nav class="top-menu"><button class="menu-item" onclick="goTo('smart-query.html')">智能问数</button><button class="menu-item" onclick="goTo('dashboard.html')">我的仪表盘</button><button class="menu-item" onclick="goTo('board.html')">我的看板</button><button class="menu-item active">我的报告</button></nav>
+    <div class="top-actions"><button class="admin-link icon-btn" onclick="goTo('../admin/data-source.html')"><span class="btn-icon">⚙</span>管理后台</button><button class="user-trigger" onclick="goTo('profile.html')"><div class="avatar">张</div><strong>张三</strong><span class="dropdown-arrow">⌄</span></button></div>
+  </header>
+  <main class="business-page">
+    <aside class="module-sidebar">
+      <div class="module-side-head"><h3>报告目录</h3><button class="primary-btn icon-btn" style="width:100%;margin-top:12px;" onclick="goTo('report-create.html')"><span class="btn-icon">＋</span>新建报告</button></div>
+      <div class="tree-list">
+        <div class="tree-item active"><span>二季度销售复盘报告</span></div>
+        <div class="tree-item"><span>4月经营分析报告</span></div>
+        <div class="tree-item"><span>华东区销售专题分析</span></div>
+        <div class="tree-item"><span>渠道转化专项报告</span></div>
+      </div>
+    </aside>
+    <section class="module-content">
+      <div class="module-content-head">
+        <div><h2>二季度销售复盘报告</h2><p style="margin:6px 0 0;color:#6b7280;font-size:13px;">来源：智能问数数据解读、归因分析、我的仪表盘</p></div>
+        <div class="toolbar"><button class="secondary-btn" onclick="goTo('report-template-upload.html')">上传模板</button><button class="secondary-btn" onclick="goTo('report-export.html')">导出 Word</button><button class="primary-btn" onclick="goTo('report-edit.html')">编辑报告</button></div>
+      </div>
+      <div class="module-scroll">
+        <div class="report-layout">
+          <aside class="context-card" style="height:max-content;">
+            <h4>报告章节</h4>
+            <div class="tree-item active">一、经营概览</div>
+            <div class="tree-item">二、区域销售表现</div>
+            <div class="tree-item">三、异常增长归因</div>
+            <div class="tree-item">四、经营建议</div>
+          </aside>
+          <article class="report-page">
+            <h1>二季度销售复盘报告</h1>
+            <p style="color:#6b7280;">生成时间：2026-04-28 · 报告类型：经营分析</p>
+            <h2>一、经营概览</h2>
+            <p>二季度整体销售保持增长态势，华东区销售额连续 6 个月提升，渠道促销和重点客户订单释放是主要增长因素。</p>
+            <h2>二、区域销售表现</h2>
+            <p>华东区 6 月销售额达到 3248 万元，较 1 月增长约 49.0%。4 月开始增长斜率明显提升，建议复盘促销策略与客户订单节奏。</p>
+            <div class="asset-preview" style="height:220px;border:1px solid #eef2f7;border-radius:16px;"><div class="asset-line"></div></div>
+            <h2>三、异常增长归因</h2>
+            <p>4 月销售额环比增长 15.1%，主要来自线上渠道促销、重点产品线增长和大客户集中下单。</p>
+            <h2>四、问题与风险</h2>
+            <p>北区目标完成率低于均值 7 个百分点，库存周转天数连续两月上升。若促销策略外溢到低毛利产品，可能对利润率产生压力。</p>
+            <h2>五、经营建议</h2>
+            <p>建议在华东区固化成功活动模板并建立复用机制；对北区建立周维度跟踪看板，联动销售与供应链做库存压降专项。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="../../assets/js/common.js"></script>
+</body>
+</html>

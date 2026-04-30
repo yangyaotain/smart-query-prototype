@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>数据源管理 - 智能问数管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/admin.css" />
+</head>
+<body>
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
+      <div class="admin-brand"><div class="logo">管</div><span>智能问数管理后台</span></div>
+      <nav class="admin-menu">
+        <a class="active" href="data-source.html">数据源管理</a><a href="data-model.html">数据模型管理</a><a href="knowledge.html">知识库管理</a><a href="operation.html">运营管理</a><a href="theme.html">分析主题管理</a><a href="users.html">用户管理</a><a href="roles.html">角色管理</a>
+      </nav>
+    </aside>
+    <main class="admin-main">
+      <header class="admin-topbar"><strong>数据源管理</strong><div class="toolbar"><button class="secondary-btn" onclick="goTo('../business/smart-query.html')">智能问数</button><button class="ghost-btn" onclick="goTo('admin-profile.html')">张三</button></div></header>
+      <section class="admin-content">
+        <div class="admin-page-head"><div><h1>数据源管理</h1><p>维护数据库连接、同步元数据、注册可用于问数的数据模型。</p></div><button class="primary-btn" onclick="goTo('data-source-edit.html')">新增数据源</button></div>
+        <div class="admin-grid admin-kpi-grid">
+          <div class="admin-card"><div class="admin-card-body"><p>数据源总数</p><h2>8</h2></div></div>
+          <div class="admin-card"><div class="admin-card-body"><p>已注册模型</p><h2>42</h2></div></div>
+          <div class="admin-card"><div class="admin-card-body"><p>今日同步任务</p><h2>6</h2></div></div>
+        </div>
+        <div class="admin-card">
+          <div class="admin-card-head"><h2>数据源列表</h2><div class="toolbar"><input placeholder="搜索数据源" /><button class="secondary-btn" onclick="goTo('data-source-ops.html')">测试连接</button><button class="secondary-btn" onclick="goTo('data-source-ops.html')">同步元数据</button></div></div>
+          <div class="admin-card-body">
+            <table class="data-table">
+              <thead><tr><th>数据源名称</th><th>类型</th><th>连接地址</th><th>状态</th><th>注册模型</th><th>最近同步</th><th>操作</th></tr></thead>
+              <tbody>
+                <tr><td>销售业务库</td><td>MySQL</td><td>sales-prod.internal</td><td><span class="status-ok">连接正常</span></td><td>12</td><td>今日 08:00</td><td><a href="data-source-edit.html">编辑</a> / <a href="data-source-tables.html">表结构</a> / <a href="data-source-preview.html">数据预览</a> / <a href="data-model.html">注册模型</a></td></tr>
+                <tr><td>客户数据仓库</td><td>PostgreSQL</td><td>customer-dw.internal</td><td><span class="status-ok">连接正常</span></td><td>9</td><td>昨日 23:00</td><td><a href="data-source-edit.html">编辑</a> / <a href="data-source-tables.html">表结构</a> / <a href="data-source-preview.html">数据预览</a> / <a href="data-model.html">注册模型</a></td></tr>
+                <tr><td>库存分析库</td><td>Oracle</td><td>inventory-db.internal</td><td><span class="status-warn">待同步</span></td><td>6</td><td>04-26</td><td><a href="data-source-edit.html">编辑</a> / <a href="data-source-tables.html">表结构</a> / <a href="data-source-preview.html">数据预览</a> / <a href="data-model.html">注册模型</a></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../../assets/js/common.js"></script>
+</body>
+</html>

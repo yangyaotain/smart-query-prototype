@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>禁用用户 - 智能问数管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/admin.css" />
+</head>
+<body>
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
+      <div class="admin-brand"><div class="logo">管</div><span>智能问数管理后台</span></div>
+      <nav class="admin-menu">
+        <a href="data-source.html">数据源管理</a><a href="data-model.html">数据模型管理</a><a href="knowledge.html">知识库管理</a><a href="operation.html">运营管理</a><a href="theme.html">分析主题管理</a><a class="active" href="users.html">用户管理</a><a href="roles.html">角色管理</a>
+      </nav>
+    </aside>
+    <main class="admin-main">
+      <header class="admin-topbar"><strong>禁用用户</strong><div class="toolbar"><button class="secondary-btn" onclick="goTo('users.html')">返回用户列表</button></div></header>
+      <section class="admin-content">
+        <div class="admin-card">
+          <div class="admin-card-head"><h2>禁用确认</h2><button class="primary-btn" onclick="goTo('users.html')">确认禁用</button></div>
+          <div class="admin-card-body">
+            <p>用户：<strong>zhangsan / 张三</strong></p>
+            <div class="field"><label>禁用原因</label><select><option>岗位调整</option><option>离职</option><option>权限收回</option></select></div>
+            <div class="field"><label>备注</label><textarea>账号停用后将无法访问智能问数业务端。</textarea></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../../assets/js/common.js"></script>
+</body>
+</html>

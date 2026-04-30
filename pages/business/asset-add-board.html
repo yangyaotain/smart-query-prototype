@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>添加图表到看板 - 智能问数</title>
+  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/business.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="top-left"><div class="logo">数</div><div class="product-name">智能问数</div></div>
+    <nav class="top-menu"><button class="menu-item" onclick="goTo('dashboard.html')">我的仪表盘</button><button class="menu-item" onclick="goTo('board.html')">我的看板</button></nav>
+    <div class="top-actions"><button class="secondary-btn" onclick="goTo('dashboard.html')">返回</button></div>
+  </header>
+  <main class="business-page" style="grid-template-columns:1fr;">
+    <section class="module-content">
+      <div class="module-content-head"><h2>添加到看板</h2></div>
+      <div class="module-scroll">
+        <div class="report-page" style="max-width:820px;">
+          <p>图表：<strong>华东区近6个月销售额趋势</strong></p>
+          <div class="field"><label>目标看板</label><select><option>销售经营看板</option><option>区域经营看板</option><option>管理层汇报看板</option></select></div>
+          <div class="field"><label>组件标题</label><input value="华东区销售额趋势" /></div>
+          <div class="field"><label>放置区域</label><select><option>第一屏</option><option>第二屏</option><option>底部区域</option></select></div>
+          <div class="toolbar"><button class="ghost-btn" onclick="goTo('dashboard.html')">取消</button><button class="primary-btn" onclick="goTo('board.html')">确认添加</button></div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="../../assets/js/common.js"></script>
+</body>
+</html>

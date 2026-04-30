@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>编辑报告 - 智能问数</title>
+  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/business.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="top-left"><div class="logo">数</div><div class="product-name">智能问数</div></div>
+    <nav class="top-menu"><button class="menu-item" onclick="goTo('smart-query.html')">智能问数</button><button class="menu-item" onclick="goTo('dashboard.html')">我的仪表盘</button><button class="menu-item" onclick="goTo('board.html')">我的看板</button><button class="menu-item active">我的报告</button></nav>
+    <div class="top-actions"><button class="secondary-btn" onclick="goTo('report.html')">预览</button><button class="primary-btn" onclick="goTo('report.html')">保存报告</button></div>
+  </header>
+  <main class="editor-page">
+    <aside class="module-sidebar">
+      <div class="module-side-head"><h3>报告目录</h3></div>
+      <div class="tree-list">
+        <div class="tree-item active">一、经营概览</div>
+        <div class="tree-item">二、区域销售表现</div>
+        <div class="tree-item">三、异常增长归因</div>
+        <div class="tree-item">四、经营建议</div>
+      </div>
+    </aside>
+    <section class="editor-canvas">
+      <article class="report-page">
+        <h1 contenteditable="true">二季度销售复盘报告</h1>
+        <p contenteditable="true">本报告由智能问数数据解读、归因分析和仪表盘图表自动生成，可继续手动编辑。</p>
+        <h2 contenteditable="true">一、经营概览</h2>
+        <p contenteditable="true">二季度整体销售保持增长态势，华东区销售额连续提升，渠道促销和重点客户订单释放是主要增长因素。</p>
+        <h2 contenteditable="true">二、区域销售表现</h2>
+        <p contenteditable="true">华东区 6 月销售额达到 3248 万元，较 1 月增长约 49.0%。4 月开始增长斜率明显提升。</p>
+        <div class="asset-preview" style="height:220px;border:1px solid #eef2f7;border-radius:16px;"><div class="asset-line"></div></div>
+        <h2 contenteditable="true">三、经营建议</h2>
+        <p contenteditable="true">建议继续跟踪华东区高贡献渠道和重点客户订单变化，评估 4 月促销策略是否具备复制价值。</p>
+      </article>
+    </section>
+    <aside class="property-panel ai-chat-panel">
+      <div class="module-side-head"><h3>AI 编辑助手</h3></div>
+      <div class="ai-chat-body">
+        <div class="ai-chat-msg">我可以帮你改写报告、补充经营建议、插入图表说明或生成章节摘要。</div>
+        <div class="ai-chat-msg">示例：把“区域销售表现”改成领导汇报风格，并补充风险提示。</div>
+      </div>
+      <div class="ai-chat-input">
+        <textarea placeholder="输入你想如何修改报告内容..."></textarea>
+        <button class="primary-btn" style="width:100%;margin-top:10px;" onclick="goTo('report-ai-polish.html')">发送给 AI</button>
+      </div>
+    </aside>
+  </main>
+  <script src="../../assets/js/common.js"></script>
+</body>
+</html>

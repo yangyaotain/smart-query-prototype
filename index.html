@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>智能问数产品原型</title>
+  <link rel="stylesheet" href="./assets/css/theme.css" />
+  <style>
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(22, 119, 255, 0.14), transparent 28%),
+        linear-gradient(135deg, #f3f8ff, #ffffff 58%, #f8fbff);
+    }
+
+    .portal {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 72px 32px;
+    }
+
+    .portal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 42px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      color: #102a48;
+      font-size: 30px;
+    }
+
+    .brand p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .stage {
+      padding: 7px 12px;
+      color: var(--primary);
+      background: var(--primary-soft);
+      border: 1px solid #d6e8ff;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .module-card {
+      min-height: 220px;
+      padding: 24px;
+      background: rgba(255, 255, 255, 0.86);
+      border: 1px solid #dcecff;
+      border-radius: 22px;
+      box-shadow: var(--soft-shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .module-card h2 {
+      margin: 0 0 10px;
+      color: #17375e;
+      font-size: 20px;
+    }
+
+    .module-card p {
+      min-height: 48px;
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .link-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .entry-link {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 14px;
+      color: #17375e;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .entry-link.active {
+      color: var(--primary);
+      border-color: #bfdbfe;
+      background: #f5faff;
+    }
+  </style>
+</head>
+<body>
+  <main class="portal">
+    <header class="portal-head">
+      <div class="brand">
+        <div class="logo">数</div>
+        <div>
+          <h1>智能问数产品原型</h1>
+          <p>按端、菜单、页面拆分维护，后续页面逐步扩展。</p>
+        </div>
+      </div>
+      <span class="stage">高保真静态原型</span>
+    </header>
+
+    <section class="module-grid">
+      <article class="module-card">
+        <h2>PC 业务端</h2>
+        <p>面向业务用户，展示登录、智能问数、仪表盘、看板和报告等核心使用链路。</p>
+        <div class="link-list">
+          <a class="entry-link active" href="./pages/business/login.html">登录页 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/business/smart-query.html">智能问数 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/business/dashboard.html">我的仪表盘 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/business/board.html">我的看板 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/business/board-edit.html">看板编辑 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/business/report.html">我的报告 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/business/report-edit.html">报告编辑 <span>已完成</span></a>
+        </div>
+      </article>
+
+      <article class="module-card">
+        <h2>PC 管理后台</h2>
+        <p>面向管理员和运营人员，展示数据源、模型、知识库、运营、主题和权限配置。</p>
+        <div class="link-list">
+          <a class="entry-link active" href="./pages/admin/data-source.html">数据源管理 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/admin/data-source-edit.html">数据源编辑 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/admin/data-source-tables.html">表结构查看 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/admin/data-source-preview.html">数据预览 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/admin/data-model.html">数据模型管理 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/admin/data-model-topology.html">拓扑配置 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/admin/knowledge.html">知识库管理 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/admin/knowledge-indicator.html">指标管理 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/admin/knowledge-sql.html">SQL知识库 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/admin/knowledge-faq.html">高频提问 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/admin/operation.html">运营管理 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/admin/operation-feedback.html">反馈处理详情 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/admin/theme.html">分析主题管理 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/admin/theme-edit.html">主题编辑 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/admin/users.html">用户管理 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/admin/user-edit.html">用户编辑 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/admin/roles.html">角色管理 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/admin/role-edit.html">角色权限编辑 <span>已完成</span></a>
+        </div>
+      </article>
+
+      <article class="module-card">
+        <h2>移动端 APP</h2>
+        <p>面向移动用户，展示智能问答、我的看板、我的报告和我的页面。</p>
+        <div class="link-list">
+          <a class="entry-link active" href="./pages/mobile/login.html">移动端登录 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/mobile/app.html">移动端总览 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/mobile/app.html">智能问答 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/mobile/app.html">我的看板 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/mobile/app.html">我的报告 <span>已完成</span></a>
+          <a class="entry-link active" href="./pages/mobile/app.html">我的 <span>已完成</span></a>
+        </div>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

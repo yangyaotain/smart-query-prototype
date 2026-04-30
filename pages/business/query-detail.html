@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>问数明细数据 - 智能问数</title>
+  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/business.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="top-left"><div class="logo">数</div><div class="product-name">智能问数</div></div>
+    <nav class="top-menu"><button class="menu-item" onclick="goTo('smart-query.html')">智能问数</button></nav>
+    <div class="top-actions"><button class="secondary-btn" onclick="goTo('smart-query.html')">返回问数</button></div>
+  </header>
+  <main class="business-page" style="grid-template-columns:1fr;">
+    <section class="module-content">
+      <div class="module-content-head">
+        <div><h2>明细数据</h2><p style="margin:6px 0 0;color:#6b7280;font-size:13px;">问题：近6个月华东区销售额趋势如何？</p></div>
+        <div class="toolbar"><button class="secondary-btn" onclick="goTo('query-export.html')">导出明细</button></div>
+      </div>
+      <div class="module-scroll">
+        <table class="data-table">
+          <thead><tr><th>月份</th><th>区域</th><th>销售额(万元)</th><th>环比</th><th>订单量</th><th>客单价</th></tr></thead>
+          <tbody>
+            <tr><td>2026-01</td><td>华东区</td><td>2180</td><td>-</td><td>9800</td><td>2224</td></tr>
+            <tr><td>2026-02</td><td>华东区</td><td>2350</td><td>+7.8%</td><td>10210</td><td>2301</td></tr>
+            <tr><td>2026-03</td><td>华东区</td><td>2480</td><td>+5.5%</td><td>10620</td><td>2335</td></tr>
+            <tr><td>2026-04</td><td>华东区</td><td>2855</td><td>+15.1%</td><td>11860</td><td>2407</td></tr>
+            <tr><td>2026-05</td><td>华东区</td><td>3012</td><td>+5.5%</td><td>12510</td><td>2408</td></tr>
+            <tr><td>2026-06</td><td>华东区</td><td>3248</td><td>+7.8%</td><td>13240</td><td>2453</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <script src="../../assets/js/common.js"></script>
+</body>
+</html>

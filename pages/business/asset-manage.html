@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>图表资产管理 - 智能问数</title>
+  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/business.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="top-left"><div class="logo">数</div><div class="product-name">智能问数</div></div>
+    <nav class="top-menu"><button class="menu-item" onclick="goTo('dashboard.html')">我的仪表盘</button></nav>
+    <div class="top-actions"><button class="secondary-btn" onclick="goTo('dashboard.html')">返回</button></div>
+  </header>
+  <main class="business-page" style="grid-template-columns:1fr;">
+    <section class="module-content">
+      <div class="module-content-head"><h2>图表资产管理</h2></div>
+      <div class="module-scroll">
+        <div class="report-page" style="max-width:820px;">
+          <div class="field"><label>图表标题</label><input value="华东区近6个月销售额趋势" /></div>
+          <div class="field"><label>目录</label><select><option>销售分析</option><option>区域销售</option></select></div>
+          <div class="field"><label>标签</label><input value="趋势分析, 华东区, 月度复盘" /></div>
+          <div class="toolbar">
+            <button class="ghost-btn" onclick="goTo('dashboard.html')">取消</button>
+            <button class="secondary-btn" onclick="goTo('dashboard.html')">删除资产</button>
+            <button class="primary-btn" onclick="goTo('dashboard.html')">保存修改</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="../../assets/js/common.js"></script>
+</body>
+</html>
