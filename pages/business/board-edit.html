@@ -6,41 +6,1770 @@
   <title>编辑看板 - 智能问数</title>
   <link rel="stylesheet" href="../../assets/css/theme.css" />
   <link rel="stylesheet" href="../../assets/css/business.css" />
+  <style>
+    /* ============================================================
+     * 编辑看板页面（高保真重构版）
+     * ============================================================ */
+    .board-edit-page .editor-page {
+      grid-template-columns: 296px 1fr;
+      gap: 14px;
+      padding: 14px;
+    }
+
+    /* —— 顶部：看板名 + 保存状态 —— */
+    .board-edit-page .topbar .top-actions {
+      gap: 8px;
+    }
+
+    .board-edit-page .editor-tool-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 34px;
+      padding: 0 12px;
+      color: #374151;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .board-edit-page .editor-tool-btn:hover {
+      color: var(--primary);
+      border-color: rgba(22, 119, 255, 0.45);
+      background: #f5faff;
+    }
+
+    .board-edit-page .editor-tool-btn:disabled {
+      color: #c2c8d3;
+      cursor: not-allowed;
+      background: #f8fafc;
+    }
+
+    .board-edit-page .editor-tool-btn svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* —— 左侧：我的仪表盘（目录树 + 图表节点） —— */
+    .board-edit-page .module-sidebar {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .board-edit-page .module-sidebar .tree-list {
+      flex: 1;
+      min-height: 0;
+      padding: 10px 8px 14px;
+    }
+
+    /* —— 目录节点：保留 business.css 默认 1/2/3 级缩进，仅补充 4/5 级 —— */
+    .board-edit-page .dir-tree .tree-node[data-level="4"] > .tree-row { padding-left: 62px; }
+    .board-edit-page .dir-tree .tree-node[data-level="5"] > .tree-row { padding-left: 80px; }
+
+    /* —— 图表叶子节点：与父级 label 起点对齐，明显比父级目录更深一级 —— */
+    .board-edit-page .dir-tree .tree-node[data-type="chart"][data-level="2"] > .tree-row { padding-left: 56px; }
+    .board-edit-page .dir-tree .tree-node[data-type="chart"][data-level="3"] > .tree-row { padding-left: 74px; }
+    .board-edit-page .dir-tree .tree-node[data-type="chart"][data-level="4"] > .tree-row { padding-left: 92px; }
+    .board-edit-page .dir-tree .tree-node[data-type="chart"][data-level="5"] > .tree-row { padding-left: 110px; }
+
+    /* 第 3、4 级 children 也需要竖线装饰 */
+    .board-edit-page .dir-tree .tree-node[data-level="3"] > .tree-children::before,
+    .board-edit-page .dir-tree .tree-node[data-level="4"] > .tree-children::before {
+      content: "";
+      position: absolute;
+      top: 4px;
+      bottom: 4px;
+      width: 1px;
+      background: #e2e8f0;
+    }
+    .board-edit-page .dir-tree .tree-node[data-level="3"] > .tree-children::before { left: 52px; }
+    .board-edit-page .dir-tree .tree-node[data-level="4"] > .tree-children::before { left: 70px; }
+
+    /* 图表叶子节点：紧凑卡片风格（在 level 缩进基础上做微调） */
+    .dir-tree .tree-node[data-type="chart"] > .tree-row {
+      position: relative;
+      gap: 8px;
+      cursor: grab;
+      padding-top: 6px;
+      padding-bottom: 6px;
+      padding-right: 8px;
+    }
+
+    .dir-tree .tree-node[data-type="chart"] > .tree-row:active {
+      cursor: grabbing;
+    }
+
+    .dir-tree .tree-node[data-type="chart"] > .tree-row > .tree-toggle,
+    .dir-tree .tree-node[data-type="chart"] > .tree-row > .tree-icon {
+      display: none;
+    }
+
+    /* 图表节点 hover 时高亮缩略图边框 */
+    .dir-tree .tree-node[data-type="chart"] > .tree-row:hover .chart-thumb {
+      border-color: rgba(22, 119, 255, 0.55);
+      box-shadow: 0 3px 8px rgba(22, 119, 255, 0.18);
+    }
+
+
+    /* 图表迷你缩略图（紧凑版，避免与目录文件夹图标视觉冲突） */
+    .dir-tree .chart-thumb {
+      flex: none;
+      width: 20px;
+      height: 16px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 1px;
+      padding: 2px 3px;
+      border-radius: 5px;
+      background: linear-gradient(135deg, #eaf3ff, #f7faff);
+      border: 1px solid rgba(22, 119, 255, 0.22);
+      overflow: hidden;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .dir-tree .chart-thumb svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .dir-tree .chart-thumb.bars span {
+      display: inline-block;
+      width: 2px;
+      border-radius: 1px;
+      background: linear-gradient(180deg, #4ea5ff, #1677ff);
+    }
+
+    .dir-tree .chart-thumb.pie {
+      align-items: center;
+      padding: 1px;
+    }
+
+    .dir-tree .chart-thumb.pie .pie-mini {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: conic-gradient(#1677ff 0 32%, #4ea5ff 32% 56%, #8cc8ff 56% 78%, #cfe2ff 78% 92%, #e2eeff 92% 100%);
+      box-shadow: 0 0 0 1px rgba(22, 119, 255, 0.15) inset;
+    }
+
+    .dir-tree .chart-thumb.table {
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: center;
+      gap: 1.5px;
+      padding: 2px 3px;
+    }
+
+    .dir-tree .chart-thumb.table i {
+      display: block;
+      height: 1.5px;
+      border-radius: 1px;
+      background: #cfdcef;
+    }
+
+    .dir-tree .chart-thumb.table i.head {
+      height: 2px;
+      background: linear-gradient(90deg, #1677ff, #4ea5ff);
+    }
+
+    .dir-tree .tree-node[data-type="chart"] .tree-label {
+      flex: 1;
+      min-width: 0;
+      font-size: 12.5px;
+      color: #374151;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .dir-tree .tree-node[data-type="chart"] .chart-add {
+      flex: none;
+      width: 22px;
+      height: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      background: var(--primary-soft);
+      border: 0;
+      border-radius: 6px;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+    }
+
+    .dir-tree .tree-node[data-type="chart"] > .tree-row:hover .chart-add {
+      opacity: 1;
+    }
+
+    .dir-tree .tree-node[data-type="chart"] .chart-add:hover {
+      color: #fff;
+      background: var(--primary);
+    }
+
+    .dir-tree .tree-node[data-type="chart"] .chart-add svg {
+      width: 12px;
+      height: 12px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .dir-tree .tree-node[data-type="chart"] > .tree-row.in-canvas {
+      background: rgba(22, 197, 94, 0.06);
+      color: #16a34a;
+    }
+
+    .dir-tree .tree-node[data-type="chart"] > .tree-row.in-canvas .tree-label {
+      color: #15803d;
+    }
+
+    .dir-tree .tree-node[data-type="chart"] > .tree-row.in-canvas .chart-add {
+      opacity: 1;
+      color: #16a34a;
+      background: rgba(34, 197, 94, 0.12);
+      cursor: default;
+    }
+
+    /* —— 中间：编辑区 —— */
+    .board-edit-page .editor-canvas-wrap {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--soft-shadow);
+      overflow: hidden;
+    }
+
+    .board-edit-page .editor-canvas-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #fbfdff, #fff);
+    }
+
+    .board-edit-page .board-name-block {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .board-edit-page .board-name-input {
+      flex: 0 1 auto;
+      max-width: 360px;
+      height: 34px;
+      padding: 0 12px;
+      color: #17375e;
+      font-size: 16px;
+      font-weight: 700;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .board-edit-page .board-name-input:hover {
+      border-color: var(--line);
+      background: #f8fbff;
+    }
+
+    .board-edit-page .board-name-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+    }
+
+    .board-edit-page .save-state {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: #16a34a;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .board-edit-page .save-state::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.16);
+    }
+
+    /* —— 编辑画布外层（滚动容器） —— */
+    .board-edit-page .editor-canvas {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 16px;
+      background: #fff;
+    }
+
+    /* —— 复用查看页 .board-canvas / .canvas-widget 视觉，仅叠加编辑能力 —— */
+    .board-edit-page .editor-canvas .board-canvas {
+      min-height: calc(100% - 0px);
+    }
+
+    /* 每个 widget 在编辑模式下额外具备：可拖动、可选中、可 resize */
+    .board-edit-page .canvas-widget {
+      position: relative;
+      cursor: grab;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+    }
+
+    .board-edit-page .canvas-widget:active {
+      cursor: grabbing;
+    }
+
+    .board-edit-page .canvas-widget:hover {
+      border-color: rgba(22, 119, 255, 0.55);
+      box-shadow: 0 14px 30px rgba(22, 119, 255, 0.12);
+    }
+
+    .board-edit-page .canvas-widget.selected {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.18), 0 14px 30px rgba(22, 119, 255, 0.18);
+    }
+
+    .board-edit-page .canvas-widget.dragging {
+      opacity: 0.55;
+      transform: scale(0.985);
+    }
+
+    .board-edit-page .canvas-widget.drop-target::before {
+      content: "";
+      position: absolute;
+      left: -3px;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      border-radius: 2px;
+      background: var(--primary);
+      z-index: 2;
+    }
+
+    /* widget 标题：可点击进入编辑 */
+    .board-edit-page .canvas-widget > h3 {
+      cursor: text;
+    }
+
+    .board-edit-page .canvas-widget > h3 .widget-title {
+      flex: 1;
+      min-width: 0;
+      padding: 2px 6px;
+      margin: -2px -6px;
+      border-radius: 6px;
+      transition: background 0.15s ease;
+    }
+
+    .board-edit-page .canvas-widget > h3 .widget-title:hover {
+      background: rgba(22, 119, 255, 0.06);
+    }
+
+    .board-edit-page .canvas-widget > h3 .widget-title.editing {
+      display: none;
+    }
+
+    .board-edit-page .canvas-widget .widget-title-input {
+      flex: 1;
+      min-width: 0;
+      height: 28px;
+      padding: 0 10px;
+      color: #17375e;
+      font-size: 14px;
+      font-weight: 700;
+      background: #fff;
+      border: 1px solid var(--primary);
+      border-radius: 8px;
+      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+      outline: none;
+      font-family: inherit;
+    }
+
+    /* 右上角浮动操作（删除按钮） */
+    .board-edit-page .canvas-widget .widget-actions {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      z-index: 4;
+      transition: opacity 0.15s ease;
+    }
+
+    .board-edit-page .canvas-widget:hover .widget-actions,
+    .board-edit-page .canvas-widget.selected .widget-actions {
+      opacity: 1;
+    }
+
+    .board-edit-page .canvas-widget .widget-actions button {
+      width: 26px;
+      height: 26px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #6b7280;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .board-edit-page .canvas-widget .widget-actions button:hover {
+      color: var(--primary);
+      background: #fff;
+      border-color: rgba(22, 119, 255, 0.5);
+    }
+
+    .board-edit-page .canvas-widget .widget-actions button.danger:hover {
+      color: #dc2626;
+      border-color: rgba(220, 38, 38, 0.5);
+      background: #fff5f5;
+    }
+
+    .board-edit-page .canvas-widget .widget-actions button svg {
+      width: 13px;
+      height: 13px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* —— Resize handles 叠在 .canvas-widget 边缘 —— */
+    .board-edit-page .canvas-widget .resize-handle {
+      position: absolute;
+      z-index: 3;
+      opacity: 0;
+      transition: opacity 0.15s ease, background 0.15s ease;
+    }
+
+    .board-edit-page .canvas-widget:hover .resize-handle,
+    .board-edit-page .canvas-widget.selected .resize-handle {
+      opacity: 1;
+    }
+
+    .board-edit-page .canvas-widget .resize-handle.resize-e {
+      top: 14px;
+      bottom: 14px;
+      right: -3px;
+      width: 6px;
+      cursor: ew-resize;
+      border-radius: 4px;
+    }
+
+    .board-edit-page .canvas-widget .resize-handle.resize-s {
+      left: 14px;
+      right: 14px;
+      bottom: -3px;
+      height: 6px;
+      cursor: ns-resize;
+      border-radius: 4px;
+    }
+
+    .board-edit-page .canvas-widget .resize-handle.resize-e:hover,
+    .board-edit-page .canvas-widget .resize-handle.resize-s:hover,
+    .board-edit-page .canvas-widget.resizing .resize-handle {
+      background: rgba(22, 119, 255, 0.32);
+    }
+
+    .board-edit-page .canvas-widget .resize-handle.resize-se {
+      right: 0;
+      bottom: 0;
+      width: 14px;
+      height: 14px;
+      cursor: nwse-resize;
+      background:
+        linear-gradient(135deg, transparent 50%, rgba(22, 119, 255, 0.55) 50%, rgba(22, 119, 255, 0.55) 60%, transparent 60%, transparent 70%, rgba(22, 119, 255, 0.55) 70%, rgba(22, 119, 255, 0.55) 80%, transparent 80%, transparent 90%, rgba(22, 119, 255, 0.55) 90%);
+      border-bottom-right-radius: 14px;
+    }
+
+    .board-edit-page .canvas-widget .resize-handle.resize-se:hover {
+      background:
+        linear-gradient(135deg, transparent 50%, var(--primary) 50%, var(--primary) 60%, transparent 60%, transparent 70%, var(--primary) 70%, var(--primary) 80%, transparent 80%, transparent 90%, var(--primary) 90%);
+    }
+
+    .board-edit-page .canvas-widget.resizing {
+      transition: none;
+      box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.32), 0 18px 38px rgba(22, 119, 255, 0.18) !important;
+      cursor: ew-resize;
+    }
+
+    .board-edit-page .canvas-widget.resizing .widget-chart,
+    .board-edit-page .canvas-widget.resizing .kpi-grid {
+      pointer-events: none;
+    }
+
+    /* resize 时的尺寸提示气泡 */
+    .board-edit-page .resize-tip {
+      position: fixed;
+      pointer-events: none;
+      padding: 4px 9px;
+      color: #fff;
+      background: rgba(15, 23, 42, 0.92);
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      z-index: 9999;
+      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18);
+    }
+
+    /* 空态 */
+    .board-edit-page .canvas-empty {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 320px;
+      padding: 32px;
+      color: #94a3b8;
+      background: #fff;
+      border: 1.5px dashed #cbd5e1;
+      border-radius: 16px;
+    }
+
+    .board-edit-page .canvas-empty .empty-icon {
+      width: 56px;
+      height: 56px;
+      display: grid;
+      place-items: center;
+      color: var(--primary);
+      background: var(--primary-soft);
+      border-radius: 50%;
+    }
+
+    .board-edit-page .canvas-empty .empty-icon svg {
+      width: 26px;
+      height: 26px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .board-edit-page .canvas-empty h4 {
+      margin: 0;
+      color: #17375e;
+      font-size: 15px;
+    }
+
+    .board-edit-page .canvas-empty p {
+      margin: 0;
+      font-size: 13px;
+    }
+
+    /* 拖入图表时高亮整块画布外框 */
+    .board-edit-page .editor-canvas.drag-over .board-canvas {
+      outline: 2px dashed rgba(22, 119, 255, 0.55);
+      outline-offset: 4px;
+      background: #eef6ff;
+    }
+
+    /* —— 树节点 hover 高亮目录的图表数 —— */
+    .dir-tree .tree-node[data-type="folder"] > .tree-row .tree-count {
+      padding: 0 7px;
+      height: 16px;
+      line-height: 16px;
+      color: var(--primary);
+      background: var(--primary-soft);
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    /* 拖入提示 */
+    .board-edit-page .drag-ghost {
+      position: fixed;
+      top: -200px;
+      left: -200px;
+      pointer-events: none;
+      padding: 6px 10px;
+      color: #fff;
+      background: var(--primary);
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      box-shadow: 0 12px 24px rgba(22, 119, 255, 0.32);
+      z-index: 9999;
+    }
+  </style>
 </head>
-<body>
+<body class="board-edit-page board-page">
   <header class="topbar">
     <div class="top-left"><div class="logo">数</div><div class="product-name">智能问数</div></div>
-    <nav class="top-menu"><button class="menu-item" onclick="goTo('smart-query.html')">智能问数</button><button class="menu-item" onclick="goTo('dashboard.html')">我的仪表盘</button><button class="menu-item active">我的看板</button><button class="menu-item" onclick="goTo('report.html')">我的报告</button></nav>
-    <div class="top-actions"><button class="secondary-btn" onclick="goTo('board.html')">预览</button><button class="primary-btn" onclick="goTo('board.html')">保存</button></div>
+    <nav class="top-menu">
+      <button class="menu-item" onclick="goTo('smart-query.html')">智能问数</button>
+      <button class="menu-item" onclick="goTo('dashboard.html')">我的仪表盘</button>
+      <button class="menu-item active">我的看板</button>
+      <button class="menu-item" onclick="goTo('report.html')">我的报告</button>
+    </nav>
+    <div class="top-actions">
+      <button class="primary-btn" id="btnSave">保存看板</button>
+      <button class="ghost-btn" onclick="goTo('board.html')">退出</button>
+    </div>
   </header>
+
   <main class="editor-page">
+    <!-- ==================== 左侧：我的仪表盘（目录树） ==================== -->
     <aside class="module-sidebar">
-      <div class="module-side-head"><h3>我的仪表盘</h3><input class="search-box" style="margin-top:12px;" placeholder="搜索图表并拖入画布" /></div>
-      <div class="tree-list">
-        <div class="asset-card" style="margin-bottom:12px;"><div class="asset-preview" style="height:96px;"><div class="asset-line"></div></div><div class="asset-body"><h3>销售额趋势</h3><p>折线图 · 来源智能问数</p></div></div>
-        <div class="asset-card" style="margin-bottom:12px;"><div class="asset-preview" style="height:96px;"><div class="asset-bars"><span style="height:60%"></span><span style="height:80%"></span><span style="height:45%"></span></div></div><div class="asset-body"><h3>渠道转化率</h3><p>柱状图 · 来源仪表盘</p></div></div>
-        <div class="asset-card"><div class="asset-preview" style="height:96px;"><div class="asset-line"></div></div><div class="asset-body"><h3>目标完成率</h3><p>面积图 · 来源智能问数</p></div></div>
+      <div class="module-side-head">
+        <div class="side-head-row">
+          <h3>我的仪表盘</h3>
+          <span class="info-tip" data-tip="目录来自我的仪表盘 · 图表目录；最末级为具体图表，可拖拽或点击 + 加入画布">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"></circle>
+              <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 3.5"></path>
+              <circle cx="12" cy="16.5" r="0.6" fill="currentColor"></circle>
+            </svg>
+          </span>
+        </div>
+        <input class="search-box" id="treeSearch" style="margin-top:12px;" placeholder="搜索目录 / 图表" />
       </div>
+      <div class="tree-list dir-tree" id="dirTree"></div>
     </aside>
-    <section class="editor-canvas">
-      <div class="board-canvas">
-        <div class="canvas-widget wide"><h3>销售经营看板</h3><p style="color:#6b7280;">可拖拽图表、调整组件大小和排版布局。</p></div>
-        <div class="canvas-widget"><h3>华东区销售额趋势</h3><div class="asset-preview" style="height:170px;"><div class="asset-line"></div></div></div>
-        <div class="canvas-widget"><h3>渠道转化率对比</h3><div class="asset-preview" style="height:170px;"><div class="asset-bars"><span style="height:54%"></span><span style="height:82%"></span><span style="height:42%"></span></div></div></div>
-        <div class="canvas-widget wide"><h3>说明文本</h3><p style="line-height:1.8;">AI 已为该看板生成区域销售表现说明，可在右侧属性面板中调整标题、尺寸、样式和刷新频率。</p></div>
+
+    <!-- ==================== 中间：编辑画布 ==================== -->
+    <section class="editor-canvas-wrap">
+      <div class="editor-canvas-head">
+        <div class="board-name-block">
+          <input id="boardNameInput" class="board-name-input" type="text" value="销售经营总览" maxlength="40" />
+          <span class="save-state" id="saveState">已自动保存 · 09:32</span>
+        </div>
+      </div>
+      <div class="editor-canvas" id="editorCanvas">
+        <div class="board-canvas" id="canvas"></div>
       </div>
     </section>
-    <aside class="property-panel">
-      <div class="module-side-head"><h3>组件属性</h3></div>
-      <div class="tree-list">
-        <div class="field"><label>组件标题</label><input value="华东区销售额趋势" /></div>
-        <div class="field"><label>组件尺寸</label><select><option>中等</option><option>大</option><option>小</option></select></div>
-        <div class="field"><label>刷新频率</label><select><option>每日刷新</option><option>每小时刷新</option><option>手动刷新</option></select></div>
-        <div class="field"><label>说明文字</label><textarea>近6个月华东区销售额持续增长。</textarea></div>
-        <button class="primary-btn" style="width:100%;" onclick="goTo('board.html')">应用设置</button>
-      </div>
-    </aside>
+
   </main>
+
+  <!-- 删除确认弹窗 -->
+  <div class="modal-mask hidden" id="confirmMask"></div>
+  <section class="modal small hidden" id="confirmModal">
+    <div class="modal-head">
+      <div>
+        <h3 id="confirmTitle">删除组件</h3>
+        <p id="confirmSubtitle">删除后可通过左侧再次添加。</p>
+      </div>
+      <button class="close" data-act="cancel">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="ai-tip" id="confirmMessage">确定要删除该组件吗？</div>
+    </div>
+    <div class="modal-foot">
+      <button class="ghost-btn" data-act="cancel">取消</button>
+      <button class="primary-btn" data-act="ok">确认删除</button>
+    </div>
+  </section>
+
+  <script src="../../assets/js/echarts.min.js"></script>
   <script src="../../assets/js/common.js"></script>
+  <script>
+    /* eslint-disable */
+    (function () {
+      // ====================================================================
+      // 1. 数据：图表清单（来自我的仪表盘 dashboard.html）
+      // ====================================================================
+      const DASHBOARDS = {
+        d1:  { id: 'd1',  name: '近6个月销售额趋势',     thumb: 'line',  source: '智能问数', summary: '近 6 个月销售额持续增长，6 月达 3,248 万元。' },
+        d2:  { id: 'd2',  name: '各大区订单量对比',       thumb: 'bars',  source: '智能问数', summary: '华东、华南合计贡献 49.7%，区域差距比 4.0x。' },
+        d3:  { id: 'd3',  name: '客户行业分布TOP10',     thumb: 'pie',   source: '智能问数', summary: '电子产品占 32%，TOP3 行业贡献 74%。' },
+        d4:  { id: 'd4',  name: '月度销售目标完成度',     thumb: 'line',  source: '智能问数', summary: '当前季度目标完成率 86%，距阈值 14%。' },
+        d5:  { id: 'd5',  name: 'TOP10客户贡献排行',     thumb: 'bars',  source: '智能问数', summary: 'TOP10 客户合计贡献约 67%，集中度较高。' },
+        d6:  { id: 'd6',  name: '渠道转化率分析',         thumb: 'line',  source: '仪表盘',   summary: '线上电商渠道占比 38%，转化率 +3.2 pct。' },
+        d7:  { id: 'd7',  name: '库存周转率走势',         thumb: 'bars',  source: '仪表盘',   summary: '近半年库存周转率持续提升，6 月达 5.2 次。' },
+        d8:  { id: 'd8',  name: '产品线毛利率TOP榜',     thumb: 'table', source: '智能问数', summary: '高端系列毛利率 32.6%，是核心增长引擎。' },
+        d9:  { id: 'd9',  name: '新老客户复购对比',       thumb: 'pie',   source: '智能问数', summary: '老客复购率 38.5%，半年回购贡献 62% 销售额。' },
+        d10: { id: 'd10', name: '城市订单量明细',         thumb: 'table', source: '仪表盘',   summary: 'TOP1 城市订单 18,520 单，环比 +12.4%。' },
+        d11: { id: 'd11', name: '产品线销售占比',         thumb: 'pie',   source: '智能问数', summary: '高端系列与新品合计占比 70%。' },
+        d12: { id: 'd12', name: '关键经营指标KPI总览',   thumb: 'table', source: '智能问数', summary: '12 项核心 KPI 中 9 项达标，3 项预警。' }
+      };
+
+      // ====================================================================
+      // 2. 数据：目录树（来自我的仪表盘 dashboard.html 图表目录），叶子=图表
+      // ====================================================================
+      const DIR_TREE = [
+        {
+          id: 'n1', name: '销售分析',
+          children: [
+            {
+              id: 'n1-1', name: '区域销售',
+              children: [
+                { id: 'n1-1-1', name: '华东大区', charts: ['d1', 'd2', 'd4'] },
+                { id: 'n1-1-2', name: '华北大区', charts: ['d5'] },
+                { id: 'n1-1-3', name: '华南大区', charts: [] }
+              ]
+            },
+            {
+              id: 'n1-2', name: '渠道转化',
+              children: [
+                { id: 'n1-2-1', name: '线上渠道', charts: ['d6', 'd11'] },
+                { id: 'n1-2-2', name: '线下渠道', charts: ['d7'] }
+              ]
+            },
+            { id: 'n1-3', name: '目标达成', charts: ['d12'] }
+          ]
+        },
+        {
+          id: 'n2', name: '客户分析',
+          children: [
+            {
+              id: 'n2-1', name: '客户画像',
+              children: [
+                { id: 'n2-1-1', name: '行业分布', charts: ['d3'] },
+                { id: 'n2-1-2', name: '等级分布', charts: ['d9'] }
+              ]
+            },
+            { id: 'n2-2', name: '客户复购', charts: ['d10'] }
+          ]
+        },
+        {
+          id: 'n3', name: '库存分析',
+          children: [
+            {
+              id: 'n3-1', name: '仓库分布',
+              children: [
+                { id: 'n3-1-1', name: '华东仓', charts: [] },
+                { id: 'n3-1-2', name: '华北仓', charts: [] }
+              ]
+            }
+          ]
+        },
+        { id: 'n4', name: '财务分析', charts: ['d8'] }
+      ];
+
+      // ====================================================================
+      // 3. 渲染：目录树 + 图表叶子节点
+      // ====================================================================
+      const tree = document.getElementById('dirTree');
+      const searchInput = document.getElementById('treeSearch');
+
+      const LINE_PATHS = [
+        'M2,40 L14,32 L26,36 L38,22 L50,28 L62,18 L74,24 L86,12 L98,16',
+        'M2,34 L14,28 L26,30 L38,18 L50,24 L62,12 L74,20 L86,8  L98,14',
+        'M2,42 L14,36 L26,28 L38,32 L50,20 L62,26 L74,14 L86,18 L98,10'
+      ];
+
+      function buildLineMini() {
+        const path = LINE_PATHS[0];
+        return '<svg viewBox="0 0 100 50" preserveAspectRatio="none"><path d="' + path + '" fill="none" stroke="#1677ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      }
+      function buildBarsMini() {
+        const heights = [55, 38, 64, 45, 72, 40];
+        return heights.map((h) => '<span style="height:' + h + '%"></span>').join('');
+      }
+      function buildPieMini() { return '<div class="pie-mini"></div>'; }
+      function buildTableMini() {
+        return '<i class="head"></i><i></i><i></i><i></i>';
+      }
+      function thumbInner(type) {
+        if (type === 'line')  return buildLineMini();
+        if (type === 'bars')  return buildBarsMini();
+        if (type === 'pie')   return buildPieMini();
+        if (type === 'table') return buildTableMini();
+        return '';
+      }
+
+      // 计算节点下图表总数
+      function countCharts(node) {
+        let n = 0;
+        if (node.charts && node.charts.length) n += node.charts.length;
+        if (node.children && node.children.length) {
+          node.children.forEach((c) => n += countCharts(c));
+        }
+        return n;
+      }
+
+      function renderTree() {
+        tree.innerHTML = DIR_TREE.map((root) => buildFolderHTML(root, 1, true)).join('');
+      }
+
+      function buildFolderHTML(node, level, expanded) {
+        const total = countCharts(node);
+        const hasChildren = (node.children && node.children.length) || (node.charts && node.charts.length);
+        const stateCls = hasChildren ? (expanded ? 'expanded' : 'collapsed') : 'leaf';
+        const toggleIcon = hasChildren ? (expanded ? '▾' : '▸') : '';
+        const toggleCls = hasChildren ? '' : ' empty';
+
+        let inner = '';
+        if (node.children && node.children.length) {
+          inner += node.children.map((c) => buildFolderHTML(c, level + 1, level < 2)).join('');
+        }
+        if (node.charts && node.charts.length) {
+          inner += node.charts.map((id) => buildChartHTML(DASHBOARDS[id], level + 1)).join('');
+        }
+
+        return (
+          '<div class="tree-node ' + stateCls + '" data-id="' + node.id + '" data-level="' + level + '" data-type="folder">' +
+            '<div class="tree-row">' +
+              '<span class="tree-toggle' + toggleCls + '">' + toggleIcon + '</span>' +
+              '<span class="tree-icon"></span>' +
+              '<span class="tree-label">' + node.name + '</span>' +
+              '<span class="tree-count">' + total + '</span>' +
+            '</div>' +
+            (inner ? '<div class="tree-children">' + inner + '</div>' : '') +
+          '</div>'
+        );
+      }
+
+      function buildChartHTML(chart, level) {
+        if (!chart) return '';
+        return (
+          '<div class="tree-node leaf" data-id="' + chart.id + '" data-level="' + level + '" data-type="chart" draggable="true">' +
+            '<div class="tree-row" title="拖拽或点击右侧加号加入画布">' +
+              '<span class="tree-toggle empty"></span>' +
+              '<span class="chart-thumb ' + chart.thumb + '">' + thumbInner(chart.thumb) + '</span>' +
+              '<span class="tree-label">' + chart.name + '</span>' +
+              '<button class="chart-add" type="button" title="加入看板" aria-label="加入看板">' +
+                '<svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg>' +
+              '</button>' +
+            '</div>' +
+          '</div>'
+        );
+      }
+
+      renderTree();
+
+      // ====================================================================
+      // 4. 树交互：展开 / 收起 / 选中 / 双击展开图表
+      // ====================================================================
+      tree.addEventListener('click', function (e) {
+        const addBtn = e.target.closest('.chart-add');
+        if (addBtn) {
+          e.stopPropagation();
+          const node = addBtn.closest('.tree-node');
+          if (node) {
+            addChartToCanvas(node.dataset.id);
+          }
+          return;
+        }
+
+        const toggle = e.target.closest('.tree-toggle');
+        const row = e.target.closest('.tree-row');
+        if (!row) return;
+        const node = row.parentElement;
+
+        if (toggle && !toggle.classList.contains('empty')) {
+          e.stopPropagation();
+          toggleFolder(node);
+          return;
+        }
+
+        if (node.dataset.type === 'folder') {
+          toggleFolder(node);
+        } else if (node.dataset.type === 'chart') {
+          tree.querySelectorAll('.tree-row.active').forEach((el) => el.classList.remove('active'));
+          row.classList.add('active');
+        }
+      });
+
+      tree.addEventListener('dblclick', function (e) {
+        const row = e.target.closest('.tree-row');
+        if (!row) return;
+        const node = row.parentElement;
+        if (node.dataset.type === 'chart') {
+          addChartToCanvas(node.dataset.id);
+        }
+      });
+
+      function toggleFolder(node) {
+        const toggle = node.querySelector(':scope > .tree-row > .tree-toggle');
+        if (node.classList.contains('expanded')) {
+          node.classList.remove('expanded');
+          node.classList.add('collapsed');
+          if (toggle && !toggle.classList.contains('empty')) toggle.textContent = '▸';
+        } else {
+          node.classList.remove('collapsed');
+          node.classList.add('expanded');
+          if (toggle && !toggle.classList.contains('empty')) toggle.textContent = '▾';
+        }
+      }
+
+      // info-tip 顶层 popover（与其他页一致）
+      (function setupTip() {
+        const tips = document.querySelectorAll('.info-tip');
+        let pop = null;
+        function show(el) {
+          const text = el.dataset.tip || '';
+          if (!text) return;
+          pop = document.createElement('div');
+          pop.className = 'info-tip-popover';
+          pop.textContent = text;
+          document.body.appendChild(pop);
+          const rect = el.getBoundingClientRect();
+          let left = rect.left - 8;
+          const top = rect.bottom + 10;
+          requestAnimationFrame(() => {
+            const pw = pop.offsetWidth;
+            if (left + pw + 8 > window.innerWidth) left = window.innerWidth - pw - 8;
+            if (left < 8) left = 8;
+            pop.style.left = left + 'px';
+            pop.style.top = top + 'px';
+            pop.classList.add('visible');
+          });
+        }
+        function hide() { if (pop) { pop.remove(); pop = null; } }
+        tips.forEach((el) => {
+          el.addEventListener('mouseenter', () => show(el));
+          el.addEventListener('mouseleave', hide);
+        });
+        window.addEventListener('scroll', hide, true);
+      })();
+
+      // ====================================================================
+      // 5. 搜索过滤
+      // ====================================================================
+      searchInput.addEventListener('input', function () {
+        const kw = this.value.trim().toLowerCase();
+        tree.querySelectorAll('.tree-node').forEach((n) => (n.style.display = ''));
+        if (!kw) return;
+        const matchSet = new Set();
+        tree.querySelectorAll('.tree-node').forEach((node) => {
+          const label = node.querySelector(':scope > .tree-row > .tree-label').textContent.toLowerCase();
+          if (label.includes(kw)) {
+            matchSet.add(node);
+            let p = node.parentElement;
+            while (p && p !== tree) {
+              if (p.classList.contains('tree-node')) {
+                matchSet.add(p);
+                p.classList.remove('collapsed');
+                p.classList.add('expanded');
+                const t = p.querySelector(':scope > .tree-row > .tree-toggle');
+                if (t && !t.classList.contains('empty')) t.textContent = '▾';
+              }
+              p = p.parentElement;
+            }
+          }
+        });
+        tree.querySelectorAll('.tree-node').forEach((node) => {
+          if (!matchSet.has(node)) node.style.display = 'none';
+        });
+      });
+
+      // ====================================================================
+      // 6. 画布：widget 数据模型（与 board.html 查看页 b1 销售经营总览 1:1 对齐）
+      // ====================================================================
+      const canvas = document.getElementById('canvas');
+      const editorCanvas = document.getElementById('editorCanvas');
+
+      // 默认看板数据（取自 board.html 中 BOARD_DATA.b1）
+      const BOARD_B1 = {
+        title: '销售经营总览',
+        kpis: [
+          { label: '销售额（万元）', value: '3,248',  delta: '+4.1%',                  deltaCls: 'up',   primary: true },
+          { label: '订单量（单）',   value: '17,260', delta: '+2.3%',                  deltaCls: 'up' },
+          { label: '客单价（元）',   value: '1,882',  delta: '+1.8%',                  deltaCls: 'up' },
+          { label: '目标完成率',     value: '86%',    delta: '需关注 · 距离目标 14%', deltaCls: 'warn' }
+        ],
+        trend: { months: ['1月','2月','3月','4月','5月','6月'], values: [2180, 2360, 2510, 2890, 3120, 3248], forecast: [3380, 3520, 3680] },
+        region: { names: ['华东','华南','华北','西南','华中','东北'], values: [4820, 3560, 2180, 1920, 1640, 1210] },
+        channel: [
+          { name: '线上电商', value: 38 },
+          { name: '门店零售', value: 26 },
+          { name: '大客户直销', value: 18 },
+          { name: '经销商分销', value: 12 },
+          { name: '其他', value: 6 }
+        ],
+        gauge: 86,
+        customers: { names: ['上海伟业','北京华信','深圳鼎盛','广州益丰','杭州凯越','成都领航','南京晨光','苏州博远','武汉博通','西安兴达'], values: [320, 285, 264, 232, 218, 196, 184, 172, 158, 144] },
+        productMix: {
+          months: ['1月','2月','3月','4月','5月','6月'],
+          series: [
+            { name: '高端系列', values: [820, 880, 940, 1080, 1180, 1240] },
+            { name: '主推新品', values: [560, 620, 680, 760, 820, 868] },
+            { name: '老品维稳', values: [800, 860, 890, 1050, 1120, 1140] }
+          ]
+        },
+        insight: '本月销售额达 3,248 万元，环比提升 4.1%，整体走势持续上扬。华东、华南区合计贡献 49.7%，是本月增量主力；线上电商渠道占比 38%，仍是核心阵地。TOP10 客户合计贡献约 67%，集中度较高。当前季度目标完成率 86%，距离阈值 14%，建议聚焦未达成客户与产品线冲刺。',
+        tags: ['趋势上行','线上渠道领跑','TOP10集中度67%','目标差距14%']
+      };
+
+      // 默认画布组件清单：与 board.html 中 8 个组件一一对应
+      let canvasItems = [
+        { uid: 'w-kpi',     kind: 'kpi',     span: 'wide',   title: '经营总览',         kpis: BOARD_B1.kpis },
+        { uid: 'w-trend',   kind: 'chart',   span: 'wide',   title: '销售额月度趋势',   chartType: 'trend',      tall: true, data: BOARD_B1.trend },
+        { uid: 'w-region',  kind: 'chart',   span: 'normal', title: '各大区销售额对比', chartType: 'region',     data: BOARD_B1.region },
+        { uid: 'w-channel', kind: 'chart',   span: 'normal', title: '渠道销售占比',     chartType: 'channel',    data: BOARD_B1.channel },
+        { uid: 'w-gauge',   kind: 'chart',   span: 'normal', title: '销售目标完成率',   chartType: 'gauge',      data: BOARD_B1.gauge },
+        { uid: 'w-top',     kind: 'chart',   span: 'normal', title: 'TOP10 客户贡献',   chartType: 'topcus',     data: BOARD_B1.customers },
+        { uid: 'w-product', kind: 'chart',   span: 'wide',   title: '产品线销售构成',   chartType: 'productMix', data: BOARD_B1.productMix },
+        { uid: 'w-insight', kind: 'insight', span: 'wide',   title: 'AI 看板解读',      desc: BOARD_B1.insight,  tags: BOARD_B1.tags }
+      ];
+      let selectedUid = null;
+
+      function renderCanvas() {
+        if (!canvasItems.length) {
+          canvas.innerHTML =
+            '<div class="canvas-empty">' +
+              '<div class="empty-icon">' +
+                '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+                  '<rect x="3" y="3" width="7" height="7" rx="1.5"></rect>' +
+                  '<rect x="14" y="3" width="7" height="7" rx="1.5"></rect>' +
+                  '<rect x="3" y="14" width="7" height="7" rx="1.5"></rect>' +
+                  '<rect x="14" y="14" width="7" height="7" rx="1.5"></rect>' +
+                '</svg>' +
+              '</div>' +
+              '<h4>画布为空</h4>' +
+              '<p>从左侧"我的仪表盘"中拖拽或点击 + 将图表加入看板。</p>' +
+            '</div>';
+        } else {
+          canvas.innerHTML = canvasItems.map(buildWidgetHTML).join('');
+        }
+        // 同步树上"已加入"状态
+        tree.querySelectorAll('.tree-node[data-type="chart"] > .tree-row').forEach((row) => {
+          const id = row.parentElement.dataset.id;
+          const inCanvas = canvasItems.some((it) => it.kind === 'chart' && it.chartId === id);
+          row.classList.toggle('in-canvas', inCanvas);
+        });
+        // 选中态
+        if (selectedUid) {
+          const el = canvas.querySelector('[data-uid="' + selectedUid + '"]');
+          if (el) el.classList.add('selected');
+        }
+        // ECharts 渲染（异步以便 DOM 已具备宽高）
+        requestAnimationFrame(renderAllCharts);
+      }
+
+      // 标题 + 操作按钮 + resize handle 公共结构
+      function buildWidgetHTML(item) {
+        const wide = item.span === 'wide' ? ' wide' : '';
+        const insightCls = item.kind === 'insight' ? ' insight-widget' : '';
+        const heightStyle = item.height ? ' style="height:' + item.height + 'px;"' : '';
+        const head = '<h3>' +
+          '<span class="widget-title">' + escapeHTML(item.title || '未命名组件') + '</span>' +
+        '</h3>';
+
+        let body = '';
+        if (item.kind === 'kpi') {
+          body = '<div class="kpi-grid">' +
+            (item.kpis || []).map((k) => (
+              '<div class="kpi-card' + (k.primary ? ' primary' : '') + '">' +
+                '<p>' + escapeHTML(k.label) + '</p>' +
+                '<h2>' + escapeHTML(k.value) + '</h2>' +
+                '<span class="' + (k.deltaCls || '') + '">' + escapeHTML(k.delta || '') + '</span>' +
+              '</div>'
+            )).join('') +
+          '</div>';
+        } else if (item.kind === 'chart') {
+          const tallCls = item.tall ? ' tall' : '';
+          body = '<div class="widget-chart' + tallCls + '" id="chart-' + item.uid + '"></div>';
+        } else if (item.kind === 'insight') {
+          const tagsHtml = (item.tags || []).map((t) => '<span>' + escapeHTML(t) + '</span>').join('');
+          body =
+            '<p>' + escapeHTML(item.desc || '') + '</p>' +
+            (tagsHtml ? '<div class="insight-tags">' + tagsHtml + '</div>' : '');
+        } else if (item.kind === 'text') {
+          body = '<p>' + escapeHTML(item.desc || '说明文本，点击标题可重命名。') + '</p>';
+        }
+
+        return (
+          '<div class="canvas-widget' + wide + insightCls + '" data-uid="' + item.uid + '"' + heightStyle + ' draggable="true">' +
+            head +
+            body +
+            '<div class="widget-actions">' +
+              '<button type="button" data-act="delete" class="danger" title="删除">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>' +
+              '</button>' +
+            '</div>' +
+            '<div class="resize-handle resize-e" data-resize="e" title="拖动调整宽度"></div>' +
+            '<div class="resize-handle resize-s" data-resize="s" title="拖动调整高度"></div>' +
+            '<div class="resize-handle resize-se" data-resize="se" title="拖动调整大小"></div>' +
+          '</div>'
+        );
+      }
+
+      // ====================================================================
+      // 6.5 ECharts 图表配置（与 board.html 1:1 一致）
+      // ====================================================================
+      function ensureChart(domId) {
+        const dom = document.getElementById(domId);
+        if (!dom || typeof echarts === 'undefined') return null;
+        let inst = echarts.getInstanceByDom(dom);
+        if (!inst) inst = echarts.init(dom, null, { renderer: 'canvas' });
+        return inst;
+      }
+
+      function buildTrendOption(data) {
+        const months = data.months.concat(['7月','8月','9月']);
+        const realPart = data.values.concat([null, null, null]);
+        const forecastPart = new Array(data.values.length - 1).fill(null);
+        forecastPart.push(data.values[data.values.length - 1]);
+        const fc = data.forecast || [];
+        for (let i = 0; i < fc.length; i++) forecastPart.push(fc[i]);
+        return {
+          color: ['#1677ff', '#f59e0b'],
+          legend: { right: 12, top: 4, icon: 'circle', itemWidth: 8, itemHeight: 8, textStyle: { color: '#3b4a64', fontSize: 11 } },
+          grid: { top: 36, left: 56, right: 24, bottom: 32 },
+          tooltip: { trigger: 'axis', backgroundColor: 'rgba(17,24,39,0.92)', borderWidth: 0, textStyle: { color: '#fff', fontSize: 12 }, axisPointer: { type: 'line', lineStyle: { color: '#cfe4ff', width: 1, type: 'dashed' } } },
+          xAxis: { type: 'category', data: months, boundaryGap: false, axisTick: { show: false }, axisLine: { lineStyle: { color: '#dbe5f7' } }, axisLabel: { color: '#7e8aa3', fontSize: 11 } },
+          yAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } }, axisLabel: { color: '#7e8aa3', fontSize: 11 } },
+          series: [
+            {
+              name: '实际', type: 'line', smooth: true, symbol: 'circle', symbolSize: 8, showSymbol: true,
+              lineStyle: { width: 3, color: '#1677ff' },
+              itemStyle: { color: '#1677ff', borderColor: '#fff', borderWidth: 2 },
+              areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(22,119,255,0.32)' }, { offset: 1, color: 'rgba(22,119,255,0)' }] } },
+              data: realPart
+            },
+            {
+              name: '预测', type: 'line', smooth: true, symbol: 'circle', symbolSize: 8,
+              lineStyle: { width: 3, color: '#f59e0b', type: 'dashed' },
+              itemStyle: { color: '#f59e0b', borderColor: '#fff', borderWidth: 2 },
+              data: forecastPart
+            }
+          ]
+        };
+      }
+
+      function buildRegionOption(data) {
+        return {
+          grid: { top: 24, left: 56, right: 24, bottom: 28 },
+          tooltip: { trigger: 'axis', backgroundColor: 'rgba(17,24,39,0.92)', borderWidth: 0, textStyle: { color: '#fff', fontSize: 12 } },
+          xAxis: { type: 'category', data: data.names, axisTick: { show: false }, axisLine: { lineStyle: { color: '#dbe5f7' } }, axisLabel: { color: '#7e8aa3', fontSize: 11 } },
+          yAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } }, axisLabel: { color: '#7e8aa3', fontSize: 11 } },
+          series: [{
+            type: 'bar', barWidth: 20,
+            itemStyle: {
+              borderRadius: [10, 10, 4, 4],
+              color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#4ea5ff' }, { offset: 1, color: '#cfe4ff' }] }
+            },
+            emphasis: { itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#1677ff' }, { offset: 1, color: '#8cc8ff' }] } } },
+            data: data.values
+          }]
+        };
+      }
+
+      function buildChannelOption(data) {
+        const palette = ['#1677ff', '#4ea5ff', '#8cc8ff', '#cfe2ff', '#fbbf24', '#f59e0b'];
+        return {
+          color: palette,
+          tooltip: { trigger: 'item', backgroundColor: 'rgba(17,24,39,0.92)', borderWidth: 0, textStyle: { color: '#fff', fontSize: 12 }, formatter: '{b}<br/>占比：{d}%' },
+          legend: { orient: 'vertical', right: 8, top: 'middle', icon: 'circle', itemGap: 10, itemWidth: 8, itemHeight: 8, textStyle: { color: '#3b4a64', fontSize: 11 } },
+          series: [{
+            type: 'pie', radius: ['44%', '70%'], center: ['36%', '52%'], avoidLabelOverlap: true,
+            itemStyle: { borderColor: '#fff', borderWidth: 2, borderRadius: 4 },
+            label: { show: false },
+            labelLine: { show: false },
+            emphasis: { scale: true, scaleSize: 6, itemStyle: { shadowBlur: 14, shadowOffsetY: 4, shadowColor: 'rgba(22,119,255,0.32)' } },
+            data: data
+          }]
+        };
+      }
+
+      function buildGaugeOption(value) {
+        return {
+          series: [{
+            type: 'gauge', startAngle: 210, endAngle: -30, min: 0, max: 100,
+            radius: '92%', center: ['50%', '60%'],
+            progress: { show: true, width: 14, itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: '#4ea5ff' }, { offset: 1, color: '#1677ff' }] } } },
+            axisLine: { lineStyle: { width: 14, color: [[1, '#eef2f7']] } },
+            pointer: { show: false },
+            axisTick: { show: false },
+            splitLine: { show: false },
+            axisLabel: { distance: -22, color: '#94a3b8', fontSize: 10 },
+            anchor: { show: false },
+            title: { show: true, offsetCenter: [0, '32%'], color: '#94a3b8', fontSize: 11 },
+            detail: { valueAnimation: true, offsetCenter: [0, '0%'], formatter: '{value}%', color: '#17375e', fontSize: 26, fontWeight: 700 },
+            data: [{ value: value, name: '完成率' }]
+          }]
+        };
+      }
+
+      function buildTopCustomerOption(data) {
+        const len = data.names.length;
+        const names = data.names.slice().reverse();
+        const values = data.values.slice().reverse();
+        return {
+          grid: { top: 12, left: 8, right: 56, bottom: 8, containLabel: true },
+          tooltip: { trigger: 'axis', backgroundColor: 'rgba(17,24,39,0.92)', borderWidth: 0, textStyle: { color: '#fff', fontSize: 12 }, axisPointer: { type: 'shadow' } },
+          xAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } }, axisLabel: { color: '#94a3b8', fontSize: 10 } },
+          yAxis: { type: 'category', data: names, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: '#374151', fontSize: 11 } },
+          series: [{
+            type: 'bar', barWidth: 12,
+            itemStyle: {
+              borderRadius: [4, 8, 8, 4],
+              color: function (p) {
+                const ratio = (p.dataIndex + 1) / len;
+                return { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: '#cfe4ff' }, { offset: 1, color: ratio > 0.6 ? '#1677ff' : '#4ea5ff' }] };
+              }
+            },
+            label: { show: true, position: 'right', color: '#1f3f7a', fontSize: 11, fontWeight: 600 },
+            data: values
+          }]
+        };
+      }
+
+      function buildProductMixOption(data) {
+        const palette = ['#1677ff', '#4ea5ff', '#cfe2ff'];
+        const series = data.series.map((s, i) => ({
+          name: s.name, type: 'bar', stack: 'total', barWidth: 26,
+          itemStyle: { color: palette[i % palette.length], borderRadius: i === data.series.length - 1 ? [8, 8, 0, 0] : 0 },
+          emphasis: { focus: 'series' },
+          data: s.values
+        }));
+        return {
+          grid: { top: 36, left: 56, right: 24, bottom: 32 },
+          tooltip: { trigger: 'axis', backgroundColor: 'rgba(17,24,39,0.92)', borderWidth: 0, textStyle: { color: '#fff', fontSize: 12 }, axisPointer: { type: 'shadow' } },
+          legend: { right: 12, top: 4, icon: 'circle', itemWidth: 8, itemHeight: 8, textStyle: { color: '#3b4a64', fontSize: 11 } },
+          xAxis: { type: 'category', data: data.months, axisTick: { show: false }, axisLine: { lineStyle: { color: '#dbe5f7' } }, axisLabel: { color: '#7e8aa3', fontSize: 11 } },
+          yAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } }, axisLabel: { color: '#7e8aa3', fontSize: 11 } },
+          series: series
+        };
+      }
+
+      // 渠道占比的简易（用于左侧拖入 thumb=pie 的图表）
+      function buildSimplePieOption(legendNames) {
+        const palette = ['#1677ff', '#4ea5ff', '#8cc8ff', '#cfe2ff', '#fbbf24'];
+        const data = (legendNames || ['类别A','类别B','类别C','类别D']).map((n, i) => ({ name: n, value: 30 - i * 5 + 10 }));
+        return {
+          color: palette,
+          tooltip: { trigger: 'item', backgroundColor: 'rgba(17,24,39,0.92)', borderWidth: 0, textStyle: { color: '#fff', fontSize: 12 } },
+          legend: { orient: 'vertical', right: 8, top: 'middle', icon: 'circle', itemGap: 10, itemWidth: 8, itemHeight: 8, textStyle: { color: '#3b4a64', fontSize: 11 } },
+          series: [{ type: 'pie', radius: ['44%', '70%'], center: ['36%', '52%'], itemStyle: { borderColor: '#fff', borderWidth: 2, borderRadius: 4 }, label: { show: false }, data: data }]
+        };
+      }
+
+      function buildSimpleLineOption() {
+        return {
+          grid: { top: 28, left: 48, right: 24, bottom: 28 },
+          tooltip: { trigger: 'axis', backgroundColor: 'rgba(17,24,39,0.92)', borderWidth: 0, textStyle: { color: '#fff', fontSize: 12 } },
+          xAxis: { type: 'category', data: ['1月','2月','3月','4月','5月','6月'], axisTick: { show: false }, axisLine: { lineStyle: { color: '#dbe5f7' } }, axisLabel: { color: '#7e8aa3', fontSize: 11 } },
+          yAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } }, axisLabel: { color: '#7e8aa3', fontSize: 11 } },
+          series: [{
+            type: 'line', smooth: true, symbol: 'circle', symbolSize: 8, showSymbol: true,
+            lineStyle: { width: 3, color: '#1677ff' },
+            itemStyle: { color: '#1677ff', borderColor: '#fff', borderWidth: 2 },
+            areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(22,119,255,0.32)' }, { offset: 1, color: 'rgba(22,119,255,0)' }] } },
+            data: [82, 96, 108, 124, 142, 158]
+          }]
+        };
+      }
+
+      function buildSimpleBarOption() {
+        return {
+          grid: { top: 24, left: 48, right: 24, bottom: 28 },
+          tooltip: { trigger: 'axis', backgroundColor: 'rgba(17,24,39,0.92)', borderWidth: 0, textStyle: { color: '#fff', fontSize: 12 } },
+          xAxis: { type: 'category', data: ['类别A','类别B','类别C','类别D','类别E'], axisTick: { show: false }, axisLine: { lineStyle: { color: '#dbe5f7' } }, axisLabel: { color: '#7e8aa3', fontSize: 11 } },
+          yAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } }, axisLabel: { color: '#7e8aa3', fontSize: 11 } },
+          series: [{
+            type: 'bar', barWidth: 22,
+            itemStyle: { borderRadius: [10, 10, 4, 4], color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#4ea5ff' }, { offset: 1, color: '#cfe4ff' }] } },
+            data: [62, 88, 75, 54, 96]
+          }]
+        };
+      }
+
+      // 根据 item 决定 ECharts option
+      function buildOptionForItem(item) {
+        switch (item.chartType) {
+          case 'trend':      return buildTrendOption(item.data);
+          case 'region':     return buildRegionOption(item.data);
+          case 'channel':    return buildChannelOption(item.data);
+          case 'gauge':      return buildGaugeOption(item.data);
+          case 'topcus':     return buildTopCustomerOption(item.data);
+          case 'productMix': return buildProductMixOption(item.data);
+          case 'line':       return buildSimpleLineOption();
+          case 'bars':       return buildSimpleBarOption();
+          case 'pie':        return buildSimplePieOption();
+          default:           return null;
+        }
+      }
+
+      function renderAllCharts() {
+        canvasItems.forEach((item) => {
+          if (item.kind !== 'chart') return;
+          const inst = ensureChart('chart-' + item.uid);
+          if (!inst) return;
+          const option = buildOptionForItem(item);
+          if (!option) {
+            // 不支持的图表类型 → 显示简易占位
+            const dom = document.getElementById('chart-' + item.uid);
+            if (dom) dom.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;font-size:12px;">[' + escapeHTML(item.title || '图表') + ']</div>';
+            return;
+          }
+          inst.setOption(option, true);
+          requestAnimationFrame(() => { try { inst.resize(); } catch (e) {} });
+        });
+      }
+
+      // 单个 widget 的 ECharts resize（resize handle 拖动后调用）
+      function resizeChartFor(uid) {
+        const item = canvasItems.find((x) => x.uid === uid);
+        if (!item || item.kind !== 'chart') return;
+        const dom = document.getElementById('chart-' + uid);
+        if (!dom || typeof echarts === 'undefined') return;
+        const inst = echarts.getInstanceByDom(dom);
+        if (inst) try { inst.resize(); } catch (e) {}
+      }
+
+      // 监听窗口尺寸变化，自动 resize 所有图表
+      window.addEventListener('resize', function () {
+        if (typeof echarts === 'undefined') return;
+        canvasItems.forEach((item) => {
+          if (item.kind !== 'chart') return;
+          const dom = document.getElementById('chart-' + item.uid);
+          if (!dom) return;
+          const inst = echarts.getInstanceByDom(dom);
+          if (inst) try { inst.resize(); } catch (e) {}
+        });
+      });
+
+      // ====================================================================
+      // 7. 画布交互：选中 / 删除 / 标题就地编辑 / 拖拽换位
+      // ====================================================================
+      canvas.addEventListener('click', function (e) {
+        // 删除按钮
+        const actionBtn = e.target.closest('.widget-actions button');
+        const widget = e.target.closest('.canvas-widget');
+        if (!widget) {
+          selectWidget(null);
+          return;
+        }
+        if (actionBtn) {
+          e.stopPropagation();
+          const act = actionBtn.dataset.act;
+          if (act === 'delete') confirmDeleteWidget(widget.dataset.uid);
+          return;
+        }
+        // 点标题进入就地编辑
+        const titleEl = e.target.closest('.widget-title');
+        if (titleEl && !titleEl.classList.contains('editing')) {
+          e.stopPropagation();
+          startTitleEdit(widget.dataset.uid);
+          return;
+        }
+        selectWidget(widget.dataset.uid);
+      });
+
+      function selectWidget(uid) {
+        selectedUid = uid;
+        canvas.querySelectorAll('.canvas-widget.selected').forEach((el) => el.classList.remove('selected'));
+        if (uid) {
+          const el = canvas.querySelector('[data-uid="' + uid + '"]');
+          if (el) el.classList.add('selected');
+        }
+      }
+
+      // —— 标题就地编辑：点击 .widget-title → 输入框；失焦或回车保存 ——
+      function startTitleEdit(uid) {
+        const item = canvasItems.find((x) => x.uid === uid);
+        if (!item) return;
+        const widgetEl = canvas.querySelector('[data-uid="' + uid + '"]');
+        if (!widgetEl) return;
+        const head = widgetEl.querySelector(':scope > h3');
+        if (!head) return;
+        const titleEl = head.querySelector('.widget-title');
+        if (!titleEl || head.querySelector('.widget-title-input')) return;
+
+        const oldDraggable = widgetEl.getAttribute('draggable');
+        widgetEl.setAttribute('draggable', 'false');
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'widget-title-input';
+        input.value = item.title || '';
+        input.maxLength = 40;
+        titleEl.classList.add('editing');
+        titleEl.parentNode.insertBefore(input, titleEl);
+        setTimeout(() => { input.focus(); input.select(); }, 0);
+
+        let finished = false;
+        const finish = (commit) => {
+          if (finished) return;
+          finished = true;
+          if (commit) {
+            const v = input.value.trim();
+            if (v && v !== item.title) {
+              snapshot();
+              item.title = v;
+              showToast('已更新组件标题');
+            }
+          }
+          if (input.parentNode) input.parentNode.removeChild(input);
+          titleEl.classList.remove('editing');
+          titleEl.textContent = item.title || '未命名组件';
+          if (oldDraggable !== null) widgetEl.setAttribute('draggable', oldDraggable);
+          else widgetEl.removeAttribute('draggable');
+        };
+        input.addEventListener('blur', () => finish(true));
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+          else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+        });
+        input.addEventListener('click', (e) => e.stopPropagation());
+        input.addEventListener('mousedown', (e) => e.stopPropagation());
+      }
+
+      function confirmDeleteWidget(uid) {
+        const it = canvasItems.find((x) => x.uid === uid);
+        if (!it) return;
+        showConfirm({
+          title: '删除组件',
+          subtitle: '删除后可通过左侧重新加入。',
+          message: '确定要从画布移除「<span style="color:#17375e;font-weight:700;">' + (it.title || '组件') + '</span>」吗？',
+          onConfirm: function () {
+            snapshot();
+            // 销毁对应 ECharts 实例
+            if (typeof echarts !== 'undefined') {
+              const dom = document.getElementById('chart-' + uid);
+              if (dom) {
+                const inst = echarts.getInstanceByDom(dom);
+                if (inst) inst.dispose();
+              }
+            }
+            canvasItems = canvasItems.filter((x) => x.uid !== uid);
+            if (selectedUid === uid) selectedUid = null;
+            renderCanvas();
+            showToast('已移除组件');
+          }
+        });
+      }
+
+      // 画布内部 widget 拖拽换位
+      let internalDrag = null;
+      canvas.addEventListener('dragstart', function (e) {
+        const w = e.target.closest('.canvas-widget');
+        if (!w) return;
+        internalDrag = w.dataset.uid;
+        w.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        try { e.dataTransfer.setData('application/x-widget', w.dataset.uid); } catch (err) {}
+      });
+      canvas.addEventListener('dragend', function () {
+        canvas.querySelectorAll('.canvas-widget.dragging').forEach((el) => el.classList.remove('dragging'));
+        canvas.querySelectorAll('.canvas-widget.drop-target').forEach((el) => el.classList.remove('drop-target'));
+        internalDrag = null;
+      });
+      canvas.addEventListener('dragover', function (e) {
+        if (!internalDrag) return;
+        const target = e.target.closest('.canvas-widget');
+        if (!target || target.dataset.uid === internalDrag) return;
+        e.preventDefault();
+        canvas.querySelectorAll('.canvas-widget.drop-target').forEach((el) => el.classList.remove('drop-target'));
+        target.classList.add('drop-target');
+      });
+      canvas.addEventListener('drop', function (e) {
+        if (!internalDrag) return;
+        const target = e.target.closest('.canvas-widget');
+        if (!target || target.dataset.uid === internalDrag) return;
+        e.preventDefault();
+        const fromIdx = canvasItems.findIndex((x) => x.uid === internalDrag);
+        const toIdx = canvasItems.findIndex((x) => x.uid === target.dataset.uid);
+        if (fromIdx < 0 || toIdx < 0) return;
+        snapshot();
+        const [item] = canvasItems.splice(fromIdx, 1);
+        canvasItems.splice(toIdx, 0, item);
+        renderCanvas();
+        showToast('已调整组件顺序');
+      });
+
+      // ====================================================================
+      // 7.5 拖拽边缘调整 widget 大小（右 / 下 / 右下）
+      // ====================================================================
+      let resizeCtx = null;
+
+      canvas.addEventListener('mousedown', function (e) {
+        const handle = e.target.closest('.resize-handle');
+        if (!handle) return;
+        const widgetEl = handle.closest('.canvas-widget');
+        if (!widgetEl) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        const dir = handle.dataset.resize;
+        const item = canvasItems.find((x) => x.uid === widgetEl.dataset.uid);
+        if (!item) return;
+
+        const rect = widgetEl.getBoundingClientRect();
+        const canvasRect = canvas.getBoundingClientRect();
+        // .board-canvas 默认 2 列（与查看页保持一致）
+        const gridCols = 2;
+        const gap = 14;
+        const colWidth = (canvasRect.width - gap * (gridCols - 1) - 32) / gridCols;
+
+        widgetEl.setAttribute('draggable', 'false');
+
+        resizeCtx = {
+          widgetEl, item, dir,
+          startX: e.clientX, startY: e.clientY,
+          startWidth: rect.width, startHeight: rect.height,
+          colWidth, gap, gridCols
+        };
+
+        widgetEl.classList.add('resizing');
+        document.body.style.cursor =
+          dir === 's' ? 'ns-resize' : (dir === 'e' ? 'ew-resize' : 'nwse-resize');
+        document.body.style.userSelect = 'none';
+
+        const tip = document.createElement('div');
+        tip.className = 'resize-tip';
+        document.body.appendChild(tip);
+        resizeCtx.tip = tip;
+        updateResizeTip();
+
+        resizeCtx.origSpan = item.span;
+        resizeCtx.origHeight = item.height;
+      });
+
+      function updateResizeTip() {
+        if (!resizeCtx || !resizeCtx.tip) return;
+        const r = resizeCtx.widgetEl.getBoundingClientRect();
+        const spanLabel = resizeCtx.widgetEl.classList.contains('wide') ? '占满' : '1 列';
+        resizeCtx.tip.textContent = spanLabel + ' · ' + Math.round(r.height) + 'px';
+        const left = Math.min(window.innerWidth - 100, r.right + 8);
+        const top = Math.min(window.innerHeight - 30, r.bottom - 24);
+        resizeCtx.tip.style.left = left + 'px';
+        resizeCtx.tip.style.top = top + 'px';
+      }
+
+      document.addEventListener('mousemove', function (e) {
+        if (!resizeCtx) return;
+        const { widgetEl, dir, startX, startY, startWidth, startHeight, colWidth, gap } = resizeCtx;
+
+        if (dir === 'e' || dir === 'se') {
+          const newWidth = startWidth + (e.clientX - startX);
+          // 2 列布局：吸附 1 列 / 占满
+          if (newWidth < (colWidth + gap) * 1.5) {
+            widgetEl.classList.remove('wide');
+          } else {
+            widgetEl.classList.add('wide');
+          }
+        }
+
+        if (dir === 's' || dir === 'se') {
+          let newHeight = startHeight + (e.clientY - startY);
+          newHeight = Math.max(160, Math.min(800, newHeight));
+          widgetEl.style.height = newHeight + 'px';
+        }
+
+        updateResizeTip();
+      });
+
+      document.addEventListener('mouseup', function () {
+        if (!resizeCtx) return;
+        const { widgetEl, item, dir } = resizeCtx;
+
+        if (dir === 'e' || dir === 'se') {
+          item.span = widgetEl.classList.contains('wide') ? 'wide' : 'normal';
+        }
+        if (dir === 's' || dir === 'se') {
+          item.height = parseInt(widgetEl.style.height, 10) || widgetEl.offsetHeight;
+        }
+
+        const changed = (item.span !== resizeCtx.origSpan) || (item.height !== resizeCtx.origHeight);
+        if (changed) snapshot();
+
+        widgetEl.classList.remove('resizing');
+        widgetEl.setAttribute('draggable', 'true');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+
+        if (resizeCtx.tip && resizeCtx.tip.parentNode) {
+          resizeCtx.tip.parentNode.removeChild(resizeCtx.tip);
+        }
+        const finishedItem = item;
+        resizeCtx = null;
+        if (changed) {
+          showToast('已调整组件大小');
+          // ECharts 容器尺寸变化后必须 resize
+          resizeChartFor(finishedItem.uid);
+        }
+      });
+
+      // ESC 取消 resize
+      document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape' || !resizeCtx) return;
+        const { widgetEl } = resizeCtx;
+        widgetEl.classList.remove('wide');
+        if (resizeCtx.origSpan === 'wide') widgetEl.classList.add('wide');
+        if (resizeCtx.origHeight) widgetEl.style.height = resizeCtx.origHeight + 'px';
+        else widgetEl.style.height = '';
+        widgetEl.classList.remove('resizing');
+        widgetEl.setAttribute('draggable', 'true');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        if (resizeCtx.tip && resizeCtx.tip.parentNode) {
+          resizeCtx.tip.parentNode.removeChild(resizeCtx.tip);
+        }
+        resizeCtx = null;
+        showToast('已取消尺寸调整');
+      });
+
+      // ====================================================================
+      // 8. 从树拖拽图表 → 画布
+      // ====================================================================
+      tree.addEventListener('dragstart', function (e) {
+        const node = e.target.closest('.tree-node[data-type="chart"]');
+        if (!node) return;
+        try {
+          e.dataTransfer.setData('application/x-chart', node.dataset.id);
+          e.dataTransfer.effectAllowed = 'copy';
+        } catch (err) {}
+      });
+
+      editorCanvas.addEventListener('dragover', function (e) {
+        const types = e.dataTransfer && e.dataTransfer.types;
+        if (types && Array.prototype.indexOf.call(types, 'application/x-chart') !== -1) {
+          e.preventDefault();
+          editorCanvas.classList.add('drag-over');
+        }
+      });
+      editorCanvas.addEventListener('dragleave', function (e) {
+        if (e.target === editorCanvas) editorCanvas.classList.remove('drag-over');
+      });
+      editorCanvas.addEventListener('drop', function (e) {
+        let id = '';
+        try { id = e.dataTransfer.getData('application/x-chart'); } catch (err) {}
+        editorCanvas.classList.remove('drag-over');
+        if (!id) return;
+        e.preventDefault();
+        addChartToCanvas(id);
+      });
+
+      function addChartToCanvas(chartId) {
+        const chart = DASHBOARDS[chartId];
+        if (!chart) return;
+        if (canvasItems.some((it) => it.kind === 'chart' && it.chartId === chartId)) {
+          showToast('该图表已在画布中');
+          return;
+        }
+        snapshot();
+        // 按 thumb 类型映射到内置 chartType（line/bars/pie 用简易 ECharts；table 暂不渲染）
+        const typeMap = { line: 'line', bars: 'bars', pie: 'pie', table: 'table' };
+        const item = {
+          uid: 'w-' + Date.now(),
+          kind: 'chart',
+          chartId: chartId,
+          chartType: typeMap[chart.thumb] || 'line',
+          span: 'normal',
+          title: chart.name,
+          desc: chart.summary || ''
+        };
+        canvasItems.push(item);
+        selectedUid = item.uid;
+        renderCanvas();
+        showToast('已加入：' + chart.name);
+      }
+
+      // ====================================================================
+      // 9. 顶部工具：保存按钮 + 看板名状态反馈
+      //    （内部仍保留 snapshot 栈，供其他变更调用，不暴露 UI）
+      // ====================================================================
+      const undoStack = [];
+      function snapshot() {
+        undoStack.push(JSON.stringify({ items: canvasItems, sel: selectedUid }));
+        if (undoStack.length > 50) undoStack.shift();
+      }
+
+      const saveBtn = document.getElementById('btnSave');
+      const saveState = document.getElementById('saveState');
+      saveBtn.addEventListener('click', function () {
+        const name = document.getElementById('boardNameInput').value.trim() || '未命名看板';
+        showToast('已保存看板:' + name);
+        const t = new Date();
+        const hh = String(t.getHours()).padStart(2, '0');
+        const mm = String(t.getMinutes()).padStart(2, '0');
+        saveState.textContent = '已保存 · ' + hh + ':' + mm;
+        saveState.style.color = '';
+        setTimeout(() => goTo('board.html'), 600);
+      });
+
+      // 看板名实时反馈"编辑中"
+      document.getElementById('boardNameInput').addEventListener('input', function () {
+        saveState.textContent = '编辑中 · 待保存';
+        saveState.style.color = '#f59e0b';
+      });
+
+      function escapeHTML(s) {
+        return String(s || '').replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+      }
+
+      // ====================================================================
+      // 11. 删除确认弹窗（与其他页一致）
+      // ====================================================================
+      const confirmMask = document.getElementById('confirmMask');
+      const confirmModal = document.getElementById('confirmModal');
+      function showConfirm(opts) {
+        const o = Object.assign({
+          title: '删除确认', subtitle: '删除后将无法恢复。',
+          message: '确定要删除该条数据吗？',
+          okText: '确认删除', cancelText: '取消'
+        }, opts || {});
+        document.getElementById('confirmTitle').textContent = o.title;
+        document.getElementById('confirmSubtitle').textContent = o.subtitle;
+        document.getElementById('confirmMessage').innerHTML = o.message;
+
+        const okBtn = confirmModal.querySelector('.modal-foot [data-act="ok"]');
+        const cancelBtn = confirmModal.querySelector('.modal-foot [data-act="cancel"]');
+        const closeBtn = confirmModal.querySelector('.modal-head [data-act="cancel"]');
+        okBtn.textContent = o.okText;
+        cancelBtn.textContent = o.cancelText;
+
+        confirmMask.classList.remove('hidden');
+        confirmModal.classList.remove('hidden');
+
+        const cleanup = () => {
+          confirmMask.classList.add('hidden');
+          confirmModal.classList.add('hidden');
+          okBtn.onclick = null;
+          cancelBtn.onclick = null;
+          closeBtn.onclick = null;
+          confirmMask.onclick = null;
+          document.removeEventListener('keydown', onKey);
+        };
+        const onKey = (e) => {
+          if (e.key === 'Escape') { e.preventDefault(); cleanup(); }
+          else if (e.key === 'Enter') { e.preventDefault(); cleanup(); o.onConfirm && o.onConfirm(); }
+        };
+        okBtn.onclick = () => { cleanup(); o.onConfirm && o.onConfirm(); };
+        cancelBtn.onclick = cleanup;
+        closeBtn.onclick = cleanup;
+        confirmMask.onclick = cleanup;
+        document.addEventListener('keydown', onKey);
+      }
+
+      // editorCanvas dragleave 修复：拖出整个外框时才取消高亮
+      editorCanvas.addEventListener('dragleave', function (e) {
+        if (!editorCanvas.contains(e.relatedTarget)) {
+          editorCanvas.classList.remove('drag-over');
+        }
+      });
+
+      // ====================================================================
+      // 12. 初始化
+      // ====================================================================
+      renderCanvas();
+    })();
+  </script>
 </body>
 </html>

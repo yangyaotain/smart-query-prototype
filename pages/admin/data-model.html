@@ -1,11 +1,291 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>数据模型管理</title><link rel="stylesheet" href="../../assets/css/theme.css" /><link rel="stylesheet" href="../../assets/css/admin.css" /></head>
-<body><div class="admin-shell"><aside class="admin-sidebar"><div class="admin-brand"><div class="logo">管</div><span>智能问数管理后台</span></div><nav class="admin-menu"><a href="data-source.html">数据源管理</a><a class="active" href="data-model.html">数据模型管理</a><a href="knowledge.html">知识库管理</a><a href="operation.html">运营管理</a><a href="theme.html">分析主题管理</a><a href="users.html">用户管理</a><a href="roles.html">角色管理</a></nav></aside><main class="admin-main"><header class="admin-topbar"><strong>数据模型管理</strong><div class="toolbar"><button class="secondary-btn" onclick="goTo('../business/smart-query.html')">智能问数</button><button class="ghost-btn" onclick="goTo('admin-profile.html')">张三</button></div></header><section class="admin-content">
-  <div class="admin-page-head"><div><h1>数据模型管理</h1><p>查看模型元数据、数据预览，并配置模型关联关系拓扑。</p></div><div class="toolbar"><select><option>销售业务库</option><option>客户数据仓库</option></select><button class="primary-btn" onclick="goTo('data-model-topology.html')">新增关系</button></div></div>
-  <div class="admin-two-col">
-    <div class="admin-card"><div class="admin-card-head"><h2>模型列表</h2><input placeholder="搜索模型" /></div><div class="admin-card-body"><table class="data-table"><thead><tr><th>模型名称</th><th>字段数</th><th>主题</th><th>状态</th></tr></thead><tbody><tr><td>销售订单表</td><td>18</td><td>销售分析</td><td><span class="status-blue">主模型</span></td></tr><tr><td>客户信息表</td><td>9</td><td>客户分析</td><td><span class="status-ok">已注册</span></td></tr><tr><td>产品信息表</td><td>11</td><td>销售分析</td><td><span class="status-ok">已注册</span></td></tr><tr><td>渠道信息表</td><td>7</td><td>销售分析</td><td><span class="status-ok">已注册</span></td></tr></tbody></table></div></div>
-    <div class="admin-card"><div class="admin-card-head"><h2>模型字段 · 销售订单表</h2><button class="secondary-btn" onclick="goTo('data-source-preview.html')">数据预览</button></div><div class="admin-card-body"><table class="data-table"><thead><tr><th>字段中文名</th><th>字段名</th><th>类型</th><th>说明</th></tr></thead><tbody><tr><td>订单日期</td><td>order_date</td><td>Date</td><td>订单生成日期</td></tr><tr><td>销售金额</td><td>sales_amount</td><td>Decimal</td><td>订单实付金额</td></tr><tr><td>销售区域</td><td>region</td><td>String</td><td>华东/华南等区域</td></tr></tbody></table></div></div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>数据模型管理 - 智能问数管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/admin.css" />
+  <link rel="stylesheet" href="../../assets/css/data-model.css" />
+</head>
+<body>
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
+      <div class="admin-brand"><div class="logo">管</div><span>智能问数管理后台</span></div>
+      <nav class="admin-menu"></nav>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <strong>数据模型管理</strong>
+        <div class="toolbar">
+          <button class="secondary-btn icon-btn" onclick="goTo('../business/smart-query.html')">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/>
+              <path d="M5.6 5.6l2.1 2.1"/><path d="M16.3 16.3l2.1 2.1"/>
+              <path d="M5.6 18.4l2.1-2.1"/><path d="M16.3 7.7l2.1-2.1"/>
+              <circle cx="12" cy="12" r="3.4"/>
+            </svg>
+            智能问数
+          </button>
+          <button class="user-trigger" type="button">
+            <div class="avatar">张</div><strong>张三</strong><span class="dropdown-arrow"></span>
+          </button>
+        </div>
+      </header>
+
+      <section class="admin-content dm-page">
+        <div class="dm-layout">
+          <!-- ============ 左侧数据源目录树 ============ -->
+          <aside class="dm-sidebar">
+            <div class="dm-side-head">
+              <h3>数据源目录</h3>
+              <input class="search-box" id="dmTreeSearch" placeholder="搜索分组 / 数据源" />
+            </div>
+            <div class="dm-tree" id="dmTree"></div>
+          </aside>
+
+          <!-- ============ 右侧主区 ============ -->
+          <div class="dm-main">
+            <!-- 顶部信息条 -->
+            <div class="dm-detail-card">
+              <div class="dm-detail-meta">
+                <h2 id="dmTitle">销售业务库</h2>
+                <p>
+                  <span class="ds-tag" id="dmTagType">MySQL</span>
+                  <span class="ds-tag ok" id="dmTagStatus">连接正常</span>
+                  <span id="dmAddr">sales-prod.internal · 0 张表 · 最近同步 -</span>
+                </p>
+              </div>
+              <div class="dm-detail-actions">
+                <input id="dmTableSearch" class="dm-table-search" placeholder="搜索表名 / 别名" />
+                <button class="primary-btn" type="button" id="dmBtnAuto">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" class="btn-ico">
+                    <path d="M12 2v4"/><path d="M12 18v4"/>
+                    <path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/>
+                    <path d="M2 12h4"/><path d="M18 12h4"/>
+                    <path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/>
+                  </svg>
+                  自动关联分析
+                </button>
+                <button class="ghost-btn" type="button" id="dmBtnReset" title="重置布局">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" class="btn-ico">
+                    <path d="M21 12a9 9 0 1 1-3.1-6.8"/><path d="M21 4v5h-5"/>
+                  </svg>
+                  重置布局
+                </button>
+                <button class="ghost-btn" type="button" id="dmBtnAddRel">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" class="btn-ico">
+                    <path d="M12 5v14"/><path d="M5 12h14"/>
+                  </svg>
+                  新增关系
+                </button>
+                <button class="ghost-btn" type="button" id="dmBtnImport" title="从 Excel 导入关联关系">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" class="btn-ico">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <path d="M7 10l5 5 5-5"/>
+                    <path d="M12 15V3"/>
+                  </svg>
+                  导入
+                </button>
+                <button class="ghost-btn" type="button" id="dmBtnExport" title="导出当前关联关系为 Excel">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" class="btn-ico">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <path d="M17 8l-5-5-5 5"/>
+                    <path d="M12 3v12"/>
+                  </svg>
+                  导出
+                </button>
+              </div>
+            </div>
+
+            <!-- ER 拓扑画布 -->
+            <div class="dm-canvas-card">
+              <div class="dm-canvas-toolbar">
+                <div class="dm-legend">
+                  <span><i class="dot join-inner"></i>INNER JOIN</span>
+                  <span><i class="dot join-left"></i>LEFT JOIN</span>
+                  <span><i class="dot join-right"></i>RIGHT JOIN</span>
+                  <span><i class="dot join-full"></i>FULL JOIN</span>
+                </div>
+                <div class="dm-canvas-tip" id="dmCanvasTip">提示：拖动表节点可调整位置；点击表 / 连线可在右侧编辑属性</div>
+              </div>
+              <div class="dm-canvas-wrap" id="dmCanvasWrap">
+                <button type="button" id="dmFocusBack" class="dm-focus-back hidden">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M15 18l-6-6 6-6"/>
+                  </svg>
+                  <span>返回整体视图</span>
+                </button>
+                <!-- 右下角：缩放工具栏 + 缩略图（缩放条在左，缩略图在最右） -->
+                <div class="dm-bottom-right">
+                  <div class="dm-zoom-toolbar">
+                    <button type="button" id="dmBtnZoomOut" title="缩小（Ctrl + 滚轮）">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>
+                    </button>
+                    <span class="dm-zoom-pct" id="dmZoomPct">100%</span>
+                    <button type="button" id="dmBtnZoomIn" title="放大（Ctrl + 滚轮）">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    </button>
+                    <button type="button" id="dmBtnZoomFit" title="适应画布">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9V3h6"/><path d="M21 9V3h-6"/><path d="M3 15v6h6"/><path d="M21 15v6h-6"/></svg>
+                    </button>
+                  </div>
+                  <div class="dm-minimap" id="dmMinimap" title="拖动蓝框可平移视图">
+                    <svg id="dmMinimapSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+                    <div class="dm-minimap-viewport" id="dmMinimapViewport"></div>
+                  </div>
+                </div>
+                <svg id="dmCanvas" class="dm-canvas" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <marker id="dm-arrow-inner" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+                      <path d="M0,0 L10,5 L0,10 z" fill="#1677ff"/>
+                    </marker>
+                    <marker id="dm-arrow-left" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+                      <path d="M0,0 L10,5 L0,10 z" fill="#10b981"/>
+                    </marker>
+                    <marker id="dm-arrow-right" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+                      <path d="M0,0 L10,5 L0,10 z" fill="#f59e0b"/>
+                    </marker>
+                    <marker id="dm-arrow-full" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+                      <path d="M0,0 L10,5 L0,10 z" fill="#a855f7"/>
+                    </marker>
+                  </defs>
+                  <g id="dmEdgeLayer"></g>
+                  <g id="dmNodeLayer"></g>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ 右侧属性抽屉 ============ -->
+        <div class="dm-drawer-mask hidden" id="dmDrawerMask"></div>
+        <aside class="dm-drawer hidden" id="dmDrawer" aria-hidden="true">
+          <div class="dm-drawer-resizer" id="dmDrawerResizer" title="拖动调整宽度"></div>
+          <div class="dm-drawer-head">
+            <div>
+              <h3 id="dmDrawerTitle">属性</h3>
+              <p id="dmDrawerSubtitle">选择表或连线后查看 / 编辑详情</p>
+            </div>
+            <button type="button" class="close" id="dmDrawerClose" aria-label="关闭">×</button>
+          </div>
+          <div class="dm-drawer-body" id="dmDrawerBody"></div>
+        </aside>
+      </section>
+    </main>
   </div>
-  <div class="admin-card stack-card"><div class="admin-card-head"><h2>模型关联关系拓扑图</h2><button class="secondary-btn" onclick="goTo('data-model-topology.html')">配置连线</button></div><div class="admin-card-body"><div class="topology"><div class="model-node node-a">销售订单表</div><div class="model-node node-b">客户信息表</div><div class="model-node node-c">产品信息表</div><div class="model-node node-d">渠道信息表</div><svg width="100%" height="100%" style="position:absolute;inset:0;"><line x1="202" y1="144" x2="300" y2="80" stroke="#1677ff" stroke-width="2"/><line x1="202" y1="170" x2="306" y2="236" stroke="#1677ff" stroke-width="2"/><line x1="438" y1="145" x2="680" y2="150" stroke="#1677ff" stroke-width="2"/></svg></div></div></div>
-</section></main></div><script src="../../assets/js/common.js"></script></body></html>
+
+  <!-- 删除确认弹窗 -->
+  <div class="modal-mask hidden" id="dmConfirmMask"></div>
+  <div class="modal small hidden" id="dmConfirmModal" role="dialog" aria-modal="true" aria-labelledby="dmConfirmTitle">
+    <div class="modal-head">
+      <div>
+        <h3 id="dmConfirmTitle">删除确认</h3>
+        <p id="dmConfirmSubtitle">删除后将无法恢复（仅原型示例数据）。</p>
+      </div>
+      <button type="button" class="close" data-act="cancel" aria-label="关闭">×</button>
+    </div>
+    <div class="modal-body">
+      <p id="dmConfirmMessage" style="margin:0;font-size:14px;color:#374151;line-height:1.7;">确定要删除该项吗？</p>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="ghost-btn" data-act="cancel">取消</button>
+      <button type="button" class="primary-btn" data-act="ok" style="background:#ef4444;box-shadow:0 8px 20px rgba(239,68,68,.22);">确认删除</button>
+    </div>
+  </div>
+
+  <!-- 导入关联关系弹窗 -->
+  <div class="modal-mask hidden" id="dmImportMask"></div>
+  <div class="modal hidden" id="dmImportModal" role="dialog" aria-modal="true" aria-labelledby="dmImportTitle">
+    <div class="modal-head">
+      <div>
+        <h3 id="dmImportTitle">导入关联关系</h3>
+        <p>将 Excel 中的关联关系批量导入到当前数据源。</p>
+      </div>
+      <button type="button" class="close" data-act="cancel" aria-label="关闭">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- 模板下载 -->
+      <div class="dmi-section">
+        <div class="dmi-section-title">第 1 步：下载模板</div>
+        <div class="dmi-template">
+          <div class="dmi-template-info">
+            <div class="dmi-template-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <path d="M14 2v6h6"/>
+                <path d="M9 13l2 2 4-4"/>
+              </svg>
+            </div>
+            <div>
+              <div class="dmi-template-name">关联关系模板.xlsx</div>
+              <div class="dmi-template-desc">包含字段：源表 / 源字段 / 目标表 / 目标字段 / 关联类型</div>
+            </div>
+          </div>
+          <button type="button" class="ghost-btn dmi-tpl-btn" id="dmiTplBtn">
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="btn-ico">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <path d="M7 10l5 5 5-5"/>
+              <path d="M12 15V3"/>
+            </svg>
+            下载模板
+          </button>
+        </div>
+      </div>
+
+      <!-- 文件选择 -->
+      <div class="dmi-section">
+        <div class="dmi-section-title">第 2 步：选择文件</div>
+        <label class="dmi-dropzone" id="dmiDropzone" for="dmiFileInput">
+          <input type="file" id="dmiFileInput" class="dmi-file-input" accept=".xls,.xlsx" />
+          <div class="dmi-dropzone-empty" id="dmiDropzoneEmpty">
+            <div class="dmi-dropzone-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <path d="M17 8l-5-5-5 5"/>
+                <path d="M12 3v12"/>
+              </svg>
+            </div>
+            <div class="dmi-dropzone-text">
+              <strong>点击选择</strong> 或 <strong>拖拽文件</strong> 到此处
+            </div>
+            <div class="dmi-dropzone-hint">仅支持 Excel 格式（.xls / .xlsx），单个文件不超过 50M</div>
+          </div>
+          <div class="dmi-dropzone-file hidden" id="dmiDropzoneFile">
+            <div class="dmi-file-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <path d="M14 2v6h6"/>
+              </svg>
+            </div>
+            <div class="dmi-file-meta">
+              <div class="dmi-file-name" id="dmiFileName">--</div>
+              <div class="dmi-file-size" id="dmiFileSize">--</div>
+            </div>
+            <button type="button" class="dmi-file-clear" id="dmiFileClear" aria-label="移除">×</button>
+          </div>
+        </label>
+      </div>
+
+      <!-- 进度条（默认隐藏） -->
+      <div class="dmi-progress hidden" id="dmiProgress">
+        <div class="dmi-progress-head">
+          <span id="dmiProgressLabel">正在导入…</span>
+          <span class="dmi-progress-pct" id="dmiProgressPct">0%</span>
+        </div>
+        <div class="dmi-progress-track">
+          <div class="dmi-progress-fill" id="dmiProgressFill"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="ghost-btn" data-act="cancel" id="dmiCancelBtn">取消</button>
+      <button type="button" class="primary-btn" data-act="ok" id="dmiOkBtn" disabled>确定</button>
+    </div>
+  </div>
+
+  <script src="../../assets/js/common.js"></script>
+  <script src="../../assets/js/data-model.js"></script>
+</body>
+</html>

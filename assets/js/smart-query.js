@@ -31,6 +31,10 @@ const attributionResult = document.getElementById("attributionResult");
 const attributionReportTitle = document.getElementById("attributionReportTitle");
 const trendResult = document.getElementById("trendResult");
 const trendReportTitle = document.getElementById("trendReportTitle");
+const comparisonResult = document.getElementById("comparisonResult");
+const comparisonReportTitle = document.getElementById("comparisonReportTitle");
+const templateResult = document.getElementById("templateResult");
+const templateReportTitle = document.getElementById("templateReportTitle");
 const deleteModal = document.getElementById("deleteModal");
 const uploadModal = document.getElementById("uploadModal");
 const exportMenu = document.getElementById("exportMenu");
@@ -40,7 +44,6 @@ const askMenu = document.getElementById("askMenu");
 const chartContextMenu = document.getElementById("chartContextMenu");
 const historyContextMenu = document.getElementById("historyContextMenu");
 const favoriteContextMenu = document.getElementById("favoriteContextMenu");
-const userMenu = document.getElementById("userMenu");
 const imageUploadInput = document.getElementById("imageUploadInput");
 const fileUploadInput = document.getElementById("fileUploadInput");
 const attachmentPreviewList = document.getElementById("attachmentPreviewList");
@@ -48,6 +51,7 @@ const themeName = document.getElementById("themeName");
 const themeDesc = document.getElementById("themeDesc");
 const followupContextChip = document.getElementById("followupContextChip");
 const followupChipTitle = document.getElementById("followupChipTitle");
+const followupPrefix = document.getElementById("followupPrefix");
 const sendBtn = document.getElementById("sendBtn");
 const associateList = document.getElementById("associateList");
 let activeSideItem = null;
@@ -68,7 +72,9 @@ let resultChart = null;
 let reportChart = null;
 let attributionChart = null;
 let trendChart = null;
+let comparisonChart = null;
 let currentResultView = "line";
+let lastWordExportScope = null;
 
 const resultChartData = [
   { name: "1月", value: 2180 },
@@ -149,15 +155,43 @@ const trendThinkingSteps = [
   ["生成趋势报告", "输出概述、预测明细、模型依据、风险机会与节奏建议。"]
 ];
 
-function toggleUserMenu(event) {
-  event.stopPropagation();
-  userMenu.classList.toggle("hidden");
-  hideExport();
-  hideAddMenu();
-  hideAskMenu();
-  hideSideMenus();
-  hideChartContextMenu();
-}
+const comparisonThinkingSteps = [
+  ["读取上传文件", "解析 2025 年 1-6 月华东区销售明细（约 7.5 万行），提取销售额、订单量、客单价等字段。"],
+  ["校验数据口径", "对齐时间字段、区域、币种与销售口径，确保两期数据可比。"],
+  ["对齐同比维度", "与当前 2026 年同期数据按月份、区域、渠道、产品维度逐一对齐。"],
+  ["计算同比差异", "对销售额、订单量、客单价、复购率、退货率、毛利率等核心指标计算同比变化。"],
+  ["生成对比报告", "输出概述、关键指标对比表、月度对比图、差异原因拆解与行动建议。"]
+];
+
+const templateThinkingSteps = [
+  ["识别报告需求", "识别用户需要生成 5 月份销售分析月报。"],
+  ["匹配数据口径", "对齐销售额、订单量、客单价等核心指标统计口径与数据源。"],
+  ["按月份提取数据", "按 5 月份从数据模型抽取业绩、区域、渠道、产品数据。"],
+  ["生成报告章节", "生成业绩概述、指标完成、区域贡献、风险与下月计划等章节。"],
+  ["格式化与校对", "校对术语、数据单位与同环比口径，输出最终月报。"]
+];
+
+const analysisReportTasks = [
+  { id: "reportCoreConclusion", text: "华东区近6个月销售额保持持续增长，6月达到3248万元，较1月提升49.0%。4月后增长速度明显加快，整体趋势稳定向上。", block: 0 },
+  { id: "reportMetric1", text: "销售额：1月 2180 万提升至 6月 3248 万，规模增长清晰。", block: 1 },
+  { id: "reportMetric2", text: "环比：4月环比 +15.1% 为阶段最高，5月、6月仍维持正增长。", block: 1 },
+  { id: "reportMetric3", text: "量价：订单量与客单价同步上升，说明增长具备结构性支撑。", block: 1 },
+  { id: "reportExternal1", text: "营销活动：4月促销活动提升转化效率，对新增销售贡献明显。", block: 2 },
+  { id: "reportExternal2", text: "渠道变化：线上渠道贡献提升，加速整体销售规模放大。", block: 2 },
+  { id: "reportExternal3", text: "季节因素：二季度需求回暖，与销售增速抬升阶段一致。", block: 2 },
+  { id: "reportAdvice1", text: "区域拆解：建议继续下钻至城市层级，识别高增长贡献来源。", block: 3 },
+  { id: "reportAdvice2", text: "活动归因：按活动类型和渠道评估ROI，沉淀可复制增长策略。", block: 3 },
+  { id: "reportAdvice3", text: "客户分层：结合新客/复购结构，验证增长可持续性与质量。", block: 3 }
+];
+
+// 用户下拉菜单的开关由 common.js 接管，这里只在它打开时关闭其他下拉。
+document.addEventListener("user-menu-open", function () {
+  if (typeof hideExport === "function") hideExport();
+  if (typeof hideAddMenu === "function") hideAddMenu();
+  if (typeof hideAskMenu === "function") hideAskMenu();
+  if (typeof hideSideMenus === "function") hideSideMenus();
+  if (typeof hideChartContextMenu === "function") hideChartContextMenu();
+});
 
 function switchSideTab(type) {
   document.getElementById("historyTab").classList.toggle("active", type === "history");
@@ -459,10 +493,154 @@ function renderThinkingTimeline(mode = "qa") {
   if (mode === "analysis") steps = analysisThinkingSteps;
   else if (mode === "attribution") steps = attributionThinkingSteps;
   else if (mode === "trend") steps = trendThinkingSteps;
+  else if (mode === "comparison") steps = comparisonThinkingSteps;
+  else if (mode === "template") steps = templateThinkingSteps;
   else steps = qaThinkingSteps;
   timeline.innerHTML = steps.map(([title, desc]) => (
     `<div class="step"><div class="step-dot loading">·</div><div><strong>${title}</strong><span>${desc}</span></div></div>`
   )).join("");
+}
+
+const SMART_MODE_RULES = [
+  {
+    mode: "template",
+    patterns: [
+      "模板分析", "模板套用", "套用模板", "按模板", "模板月报", "模板生成",
+      "月度报告", "月度月报", "月度分析报告", "月报模板", "月报生成", "销售月报", "月度总结"
+    ]
+  },
+  {
+    mode: "comparison",
+    patterns: [
+      "对比分析", "横向对比", "纵向对比", "同期对比", "同比对比", "环比对比",
+      "同比变化", "差异分析", "差异对比", "对比一下", "对比下", "做对比", "做个对比",
+      "比较一下", "比较下", "做个比较", "比较分析", "同比环比"
+    ]
+  },
+  {
+    mode: "attribution",
+    patterns: [
+      "归因分析", "归因", "异常归因", "原因分析", "根因分析", "根本原因",
+      "异常诊断", "异常分析", "为什么会", "为什么", "是什么原因", "原因是什么",
+      "什么原因导致", "影响因素", "造成的原因", "什么影响"
+    ]
+  },
+  {
+    mode: "trend",
+    patterns: [
+      "趋势分析", "走势分析", "趋势预测", "走势预测", "销售预测", "业绩预测",
+      "预测未来", "预测一下", "预测下", "未来3个月", "未来三个月",
+      "未来走势", "未来趋势", "后续走势", "后续趋势"
+    ]
+  },
+  {
+    mode: "analysis",
+    patterns: [
+      "数据解读", "深度解读", "详细解读", "解读一下", "解读下", "做个解读",
+      "进行解读", "深度分析", "详细分析", "深入分析", "做个分析", "分析一下", "分析下",
+      "数据洞察", "深入洞察"
+    ]
+  }
+];
+
+function detectModeFromText(text) {
+  if (!text) return "qa";
+  const lower = String(text).toLowerCase();
+  for (const rule of SMART_MODE_RULES) {
+    if (rule.patterns.some((p) => lower.includes(p.toLowerCase()))) return rule.mode;
+  }
+  return "qa";
+}
+
+// ==================== 智能标题生成 ====================
+function extractTimeKeyword(text) {
+  if (!text) return "";
+  const patterns = [
+    [/未来三个月|未来3个月/, "未来3个月"],
+    [/未来一年|未来1年/, "未来1年"],
+    [/未来半年/, "未来半年"],
+    [/未来\s*(\d+)\s*个月/, (m) => `未来${m[1]}个月`],
+    [/近\s*(\d+)\s*个月/, (m) => `近${m[1]}个月`],
+    [/上半年/, "上半年"],
+    [/下半年/, "下半年"],
+    [/第一季度|一季度|Q1/i, "Q1"],
+    [/第二季度|二季度|Q2/i, "Q2"],
+    [/第三季度|三季度|Q3/i, "Q3"],
+    [/第四季度|四季度|Q4/i, "Q4"],
+    [/(20\d{2})\s*年/, (m) => `${m[1]}年`],
+    [/(\d{1,2})\s*月/, (m) => `${m[1]}月`],
+    [/本月|当月|这个月/, "本月"],
+    [/上个月|上月/, "上月"],
+    [/今年/, "今年"],
+    [/去年/, "去年"]
+  ];
+  for (const [re, val] of patterns) {
+    const m = text.match(re);
+    if (m) return typeof val === "function" ? val(m) : val;
+  }
+  return "";
+}
+
+function extractRegionKeyword(text) {
+  if (!text) return "";
+  if (/华南|广东|广州|深圳|福建/.test(text)) return "华南区";
+  if (/华北|北京|天津|河北/.test(text)) return "华北区";
+  if (/华东|上海|江苏|浙江|苏州|杭州/.test(text)) return "华东区";
+  if (/西南|四川|重庆|成都/.test(text)) return "西南区";
+  if (/西北|陕西|甘肃|西安/.test(text)) return "西北区";
+  if (/东北|辽宁|吉林|黑龙江/.test(text)) return "东北区";
+  return "";
+}
+
+function extractSubjectKeyword(text) {
+  if (!text) return "";
+  if (/客户|复购|留存|新客|老客/.test(text)) return "客户";
+  if (/订单|转化|成单/.test(text)) return "订单";
+  if (/库存|周转|SKU|备货/i.test(text)) return "库存";
+  if (/财务|利润|毛利|净利|成本/.test(text)) return "财务";
+  if (/产品|品类|品牌/.test(text)) return "产品";
+  if (/渠道|线上|线下|经销商/.test(text)) return "渠道";
+  return "";
+}
+
+function getCurrentThemeSubject() {
+  const text = themeName?.textContent?.trim() || "销售分析";
+  if (text.includes("客户")) return "客户";
+  if (text.includes("库存")) return "库存";
+  if (text.includes("财务")) return "财务";
+  if (text.includes("经营")) return "经营";
+  return "销售";
+}
+
+function generateAnswerTitle(userInput, mode) {
+  if (mode === "qa") return "华东区近6个月销售额趋势分析";
+
+  const region = extractRegionKeyword(userInput) || "华东区";
+  const subject = extractSubjectKeyword(userInput) || getCurrentThemeSubject();
+  const time = extractTimeKeyword(userInput);
+
+  switch (mode) {
+    case "analysis":
+      return `${region}${subject}数据深度解读`;
+    case "attribution":
+      return time
+        ? `${region}${time}${subject}异常归因分析`
+        : `${region}${subject}异常归因分析`;
+    case "trend":
+      return time
+        ? `${region}${subject}${time}趋势预测分析`
+        : `${region}${subject}趋势预测分析`;
+    case "comparison":
+      return time
+        ? `${region}${time}${subject}对比分析`
+        : `${region}${subject}对比分析`;
+    case "template":
+      return time
+        ? `${time}${subject}分析月报`
+        : `${subject}分析月报`;
+    default:
+      return `${region}${subject}分析`;
+  }
 }
 
 function runQuestion() {
@@ -476,15 +654,18 @@ function runQuestion() {
 
   if (ctx) {
     const actionText = inputText || "继续追问";
-    submittedQuestion = `基于"${ctx.title}"${actionText}`;
-    answerTitle = `${ctx.title}-${actionText}`;
+    submittedQuestion = actionText;
     if (ctx.action === "analysis") mode = "analysis";
     else if (ctx.action === "attribution") mode = "attribution";
     else if (ctx.action === "trend") mode = "trend";
+    else if (ctx.action === "comparison") mode = "comparison";
+    else if (ctx.action === "template") mode = "template";
     else mode = "qa";
+    answerTitle = generateAnswerTitle(actionText, mode);
   } else {
     submittedQuestion = inputText || "近6个月华东区销售额趋势如何？";
-    answerTitle = "华东区近6个月销售额趋势分析";
+    mode = detectModeFromText(submittedQuestion);
+    answerTitle = generateAnswerTitle(submittedQuestion, mode);
   }
 
   currentQuestionText = submittedQuestion;
@@ -624,6 +805,14 @@ function startAnswerSimulation(options = {}) {
       startTrendReportSimulation();
       return;
     }
+    if (currentAnswerMode === "comparison") {
+      startComparisonReportSimulation();
+      return;
+    }
+    if (currentAnswerMode === "template") {
+      startTemplateReportSimulation();
+      return;
+    }
     startTypewriterConclusion();
   }, thinkingDurationMs);
 }
@@ -646,6 +835,8 @@ function resetAnswerSimulation() {
   analysisResult?.classList.add("hidden");
   attributionResult?.classList.add("hidden");
   trendResult?.classList.add("hidden");
+  comparisonResult?.classList.add("hidden");
+  templateResult?.classList.add("hidden");
   answerActionBar?.classList.add("hidden");
   hideInlineAnalysisExportMenu();
   resetAnalysisReportTyping();
@@ -724,6 +915,35 @@ function resetAnswerSimulation() {
   if (trendEmbeddedChart) trendEmbeddedChart.classList.remove("revealed");
   const trendFooter = document.getElementById("trendFooter");
   if (trendFooter) trendFooter.classList.remove("revealed");
+  [
+    "comparisonOverview",
+    "comparisonDriverM1",
+    "comparisonDriverM2",
+    "comparisonDriverC1",
+    "comparisonDriverC2",
+    "comparisonDriverS1",
+    "comparisonDriverS2",
+    "comparisonAction1",
+    "comparisonAction2",
+    "comparisonAction3",
+    "templateSummary",
+    "templateOverview",
+    "templateRisk1",
+    "templateRisk2",
+    "templateRisk3",
+    "templatePlan1",
+    "templatePlan2",
+    "templatePlan3"
+  ].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = "";
+  });
+  const comparisonEmbeddedChart = document.getElementById("comparisonEmbeddedChart");
+  if (comparisonEmbeddedChart) comparisonEmbeddedChart.classList.remove("revealed");
+  const comparisonFooter = document.getElementById("comparisonFooter");
+  if (comparisonFooter) comparisonFooter.classList.remove("revealed");
+  const templateFooter = document.getElementById("templateFooter");
+  if (templateFooter) templateFooter.classList.remove("revealed");
 }
 
 function updateThinkingElapsed() {
@@ -947,18 +1167,7 @@ function revealReportFooter() {
 }
 
 function startAnalysisReportTypewriter() {
-  const tasks = [
-    { id: "reportCoreConclusion", text: "华东区近6个月销售额保持持续增长，6月达到3248万元，较1月提升49.0%。4月后增长速度明显加快，整体趋势稳定向上。", block: 0 },
-    { id: "reportMetric1", text: "销售额：1月 2180 万提升至 6月 3248 万，规模增长清晰。", block: 1 },
-    { id: "reportMetric2", text: "环比：4月环比 +15.1% 为阶段最高，5月、6月仍维持正增长。", block: 1 },
-    { id: "reportMetric3", text: "量价：订单量与客单价同步上升，说明增长具备结构性支撑。", block: 1 },
-    { id: "reportExternal1", text: "营销活动：4月促销活动提升转化效率，对新增销售贡献明显。", block: 2 },
-    { id: "reportExternal2", text: "渠道变化：线上渠道贡献提升，加速整体销售规模放大。", block: 2 },
-    { id: "reportExternal3", text: "季节因素：二季度需求回暖，与销售增速抬升阶段一致。", block: 2 },
-    { id: "reportAdvice1", text: "区域拆解：建议继续下钻至城市层级，识别高增长贡献来源。", block: 3 },
-    { id: "reportAdvice2", text: "活动归因：按活动类型和渠道评估ROI，沉淀可复制增长策略。", block: 3 },
-    { id: "reportAdvice3", text: "客户分层：结合新客/复购结构，验证增长可持续性与质量。", block: 3 }
-  ];
+  const tasks = analysisReportTasks;
 
   const revealedBlocks = new Set();
   let taskIndex = 0;
@@ -1043,6 +1252,8 @@ function startAnalysisReportSimulation() {
   answerActionBar?.classList.add("hidden");
   attributionResult?.classList.add("hidden");
   trendResult?.classList.add("hidden");
+  comparisonResult?.classList.add("hidden");
+  templateResult?.classList.add("hidden");
   if (analysisReportTitle) {
     analysisReportTitle.textContent = `${currentAnswerTitle} · 数据分析报告`;
   }
@@ -1313,6 +1524,8 @@ function startAttributionReportSimulation() {
   answerActionBar?.classList.add("hidden");
   analysisResult?.classList.add("hidden");
   trendResult?.classList.add("hidden");
+  comparisonResult?.classList.add("hidden");
+  templateResult?.classList.add("hidden");
   if (attributionReportTitle) {
     attributionReportTitle.textContent = `${currentAnswerTitle} · 归因分析报告`;
   }
@@ -1631,6 +1844,8 @@ function startTrendReportSimulation() {
   answerActionBar?.classList.add("hidden");
   analysisResult?.classList.add("hidden");
   attributionResult?.classList.add("hidden");
+  comparisonResult?.classList.add("hidden");
+  templateResult?.classList.add("hidden");
   if (trendReportTitle) {
     trendReportTitle.textContent = `${currentAnswerTitle} · 趋势分析报告`;
   }
@@ -1639,10 +1854,468 @@ function startTrendReportSimulation() {
   setTimeout(startTrendReportTypewriter, 240);
 }
 
+// ==================== 对比分析 (Comparison) ====================
+function revealComparisonBlock(index) {
+  const block = document.querySelector(
+    `.current-chat-message .comparison-report-section .analysis-report-block[data-comparison-block="${index}"]`
+  );
+  if (!block) return;
+  block.classList.remove("report-block-pending");
+  block.classList.add("report-block-revealed");
+  scrollToAnswerBottom();
+}
+
+function revealComparisonEmbeddedChart() {
+  const chart = document.getElementById("comparisonEmbeddedChart");
+  if (!chart) return;
+  chart.classList.add("revealed");
+  ensureComparisonChart();
+  scrollToAnswerBottom();
+}
+
+function revealComparisonFooter() {
+  const footer = document.getElementById("comparisonFooter");
+  if (!footer) return;
+  footer.classList.add("revealed");
+  scrollToAnswerBottom();
+}
+
+function ensureComparisonChart() {
+  renderComparisonChart(document.getElementById("comparisonChartCanvas"));
+}
+
+function renderComparisonChart(dom) {
+  if (!dom || typeof echarts === "undefined") return;
+  let inst = echarts.getInstanceByDom(dom);
+  if (!inst) {
+    if (!dom.clientWidth || !dom.clientHeight) {
+      requestAnimationFrame(() => renderComparisonChart(dom));
+      return;
+    }
+    inst = echarts.init(dom, null, { renderer: "canvas" });
+    bindChartResizeHandlerOnce();
+  }
+  inst.setOption(buildComparisonChartOption(), true);
+  inst.resize();
+  if (dom.id === "comparisonChartCanvas") comparisonChart = inst;
+}
+
+function buildComparisonChartOption() {
+  const values2026 = resultChartData.map((d) => d.value);
+  const values2025 = [1690, 1820, 1950, 2230, 2410, 2540];
+  const categories = ["1月", "2月", "3月", "4月", "5月", "6月"];
+  const yoyValues = values2026.map((v, i) => {
+    const base = values2025[i] || 1;
+    return Number((((v - base) / base) * 100).toFixed(1));
+  });
+
+  return {
+    grid: { top: 56, left: 56, right: 56, bottom: 36 },
+    legend: {
+      top: 6,
+      itemWidth: 14,
+      itemHeight: 8,
+      data: ["2025 年 1-6 月", "2026 年 1-6 月", "同比增长率"],
+      textStyle: { color: "#475569", fontSize: 12 }
+    },
+    tooltip: {
+      trigger: "axis",
+      backgroundColor: "rgba(15, 23, 42, 0.92)",
+      borderWidth: 0,
+      padding: [8, 10],
+      textStyle: { color: "#fff", fontSize: 12 },
+      axisPointer: {
+        type: "shadow",
+        shadowStyle: { color: "rgba(20, 184, 166, 0.08)" }
+      },
+      formatter: (params) => {
+        let html = `<strong>${params[0].name}</strong>`;
+        const v25 = params.find((p) => p.seriesName.indexOf("2025") >= 0)?.value || 0;
+        const v26 = params.find((p) => p.seriesName.indexOf("2026") >= 0)?.value || 0;
+        const yoy = params.find((p) => p.seriesName === "同比增长率")?.value || 0;
+        params.forEach((p) => {
+          if (p.seriesName === "同比增长率") {
+            html += `<br/>${p.marker}${p.seriesName}：${p.value >= 0 ? "+" : ""}${p.value}%`;
+          } else {
+            html += `<br/>${p.marker}${p.seriesName}：${p.value} 万`;
+          }
+        });
+        if (v25 && v26) {
+          const diff = v26 - v25;
+          const sign = diff >= 0 ? "+" : "";
+          html += `<br/><span style="color:#5eead4">差值：${sign}${diff} 万 · ${sign}${yoy}%</span>`;
+        }
+        return html;
+      }
+    },
+    xAxis: {
+      type: "category",
+      data: categories,
+      boundaryGap: true,
+      axisLine: { lineStyle: { color: "#cbd5e1" } },
+      axisTick: { show: false },
+      axisLabel: { color: "#475569", fontSize: 12 }
+    },
+    yAxis: [
+      {
+        type: "value",
+        name: "销售额（万元）",
+        nameTextStyle: { color: "#94a3b8", fontSize: 11, padding: [0, 0, 0, 30] },
+        splitLine: { lineStyle: { color: "#e2e8f0", type: "dashed" } },
+        axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: { color: "#94a3b8", fontSize: 11 }
+      },
+      {
+        type: "value",
+        name: "同比 (%)",
+        nameTextStyle: { color: "#94a3b8", fontSize: 11, padding: [0, 30, 0, 0] },
+        splitLine: { show: false },
+        axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: { color: "#94a3b8", fontSize: 11, formatter: "{value}%" },
+        min: 0,
+        max: 50
+      }
+    ],
+    series: [
+      {
+        name: "同比增长率",
+        type: "bar",
+        yAxisIndex: 1,
+        data: yoyValues,
+        barWidth: 16,
+        z: 1,
+        itemStyle: {
+          color: {
+            type: "linear", x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [{ offset: 0, color: "rgba(45, 212, 191, 0.45)" }, { offset: 1, color: "rgba(45, 212, 191, 0.12)" }]
+          },
+          borderRadius: [4, 4, 0, 0]
+        },
+        label: {
+          show: true,
+          position: "top",
+          color: "#0f766e",
+          fontSize: 10,
+          fontWeight: 600,
+          formatter: (p) => `+${p.value}%`
+        }
+      },
+      {
+        name: "2025 年 1-6 月",
+        type: "line",
+        yAxisIndex: 0,
+        data: values2025,
+        z: 2,
+        smooth: true,
+        symbol: "circle",
+        symbolSize: 7,
+        lineStyle: { color: "#94a3b8", width: 2, type: "dashed" },
+        itemStyle: { color: "#94a3b8", borderColor: "#fff", borderWidth: 2 },
+        label: { show: true, position: "bottom", color: "#64748b", fontSize: 11, fontWeight: 500 }
+      },
+      {
+        name: "2026 年 1-6 月",
+        type: "line",
+        yAxisIndex: 0,
+        data: values2026,
+        z: 3,
+        smooth: true,
+        symbol: "circle",
+        symbolSize: 8,
+        lineStyle: { color: "#0d9488", width: 2.6 },
+        itemStyle: { color: "#0d9488", borderColor: "#fff", borderWidth: 2 },
+        areaStyle: {
+          color: {
+            type: "linear", x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [{ offset: 0, color: "rgba(13, 148, 136, 0.18)" }, { offset: 1, color: "rgba(13, 148, 136, 0.02)" }]
+          }
+        },
+        label: { show: true, position: "top", color: "#0f766e", fontSize: 11, fontWeight: 700 }
+      }
+    ]
+  };
+}
+
+function startComparisonReportTypewriter() {
+  const tasks = [
+    { id: "comparisonOverview", text: "基于上传的 2025 年 1-6 月华东区销售明细（约 7.5 万行）与当前查询的 2026 年同期数据进行同比对比：销售额 16,308 万 vs 12,640 万，同比 +29.0%；订单量 +14.9%、客单价 +12.3%；复购率 +4.2pp、退货率 -0.9pp、毛利率 +2.3pp。规模拉动 + 量价齐升 + 客户粘性改善 + 盈利质量提升，四重驱动支撑同期业绩高质量增长。", block: 0, embedChart: true },
+    { id: "comparisonDriverM1", text: "2026 年新增 4·25 大促与 6·18 升级 2 场年中活动，新增订单贡献占总增量的 21%。", block: 3 },
+    { id: "comparisonDriverM2", text: "直播带货 GMV 占比由 2025 年的 5% 提升至 2026 年的 12%，是新增量的主要来源。", block: 3 },
+    { id: "comparisonDriverC1", text: "线上自营渠道占比由 2025 年的 35% 提升至 2026 年的 41%，规模效应放大。", block: 3 },
+    { id: "comparisonDriverC2", text: "私域复购贡献同比提升 4 个百分点，留存型增量稳健。", block: 3 },
+    { id: "comparisonDriverS1", text: "高端系列与主推新品上量，带动客单价同比 +12.3%，结构升级显著。", block: 3 },
+    { id: "comparisonDriverS2", text: "户外 / 出行品类同比 +28%，与销售结构改善方向吻合。", block: 3 },
+    { id: "comparisonAction1", text: "沿用 2026 营销节奏与渠道组合，巩固已验证的 +29% 同比增速与高 ROI 模式。", block: 4 },
+    { id: "comparisonAction2", text: "识别 2026 高增长贡献区域，反向复制到 2025 同期表现偏弱的城市与渠道。", block: 4 },
+    { id: "comparisonAction3", text: "周度跟踪销售额、客单价、退货率三项核心指标，同比波动 ±5% 触发预警与干预。", block: 4 }
+  ];
+
+  const revealedBlocks = new Set();
+  let taskIndex = 0;
+
+  const typeText = (task, el, onComplete) => {
+    let idx = 0;
+    reportTypingTimer = setInterval(() => {
+      if (!isAnswering) {
+        clearInterval(reportTypingTimer);
+        reportTypingTimer = null;
+        return;
+      }
+      el.textContent += task.text[idx] || "";
+      idx += 1;
+      if (idx >= task.text.length) {
+        clearInterval(reportTypingTimer);
+        reportTypingTimer = null;
+        onComplete();
+      }
+    }, 18);
+  };
+
+  const typeNext = () => {
+    if (!isAnswering) return;
+    if (taskIndex >= tasks.length) {
+      setTimeout(() => {
+        if (!isAnswering) return;
+        revealComparisonFooter();
+        finishAnswerSimulation();
+      }, 240);
+      return;
+    }
+
+    const task = tasks[taskIndex];
+    const el = document.getElementById(task.id);
+    if (!el) {
+      taskIndex += 1;
+      typeNext();
+      return;
+    }
+
+    const startTyping = () => {
+      if (!isAnswering) return;
+      typeText(task, el, () => {
+        const finishedTask = tasks[taskIndex];
+        taskIndex += 1;
+
+        if (finishedTask.embedChart) {
+          setTimeout(() => {
+            if (!isAnswering) return;
+            // 先显示对比表格区块（block 1），让用户看到数据
+            if (!revealedBlocks.has(1)) {
+              revealedBlocks.add(1);
+              revealComparisonBlock(1);
+            }
+            setTimeout(() => {
+              if (!isAnswering) return;
+              // 再展示对比图表区块（block 2）
+              if (!revealedBlocks.has(2)) {
+                revealedBlocks.add(2);
+                revealComparisonBlock(2);
+              }
+              revealComparisonEmbeddedChart();
+              setTimeout(typeNext, 480);
+            }, 360);
+          }, 200);
+          return;
+        }
+
+        setTimeout(typeNext, 80);
+      });
+    };
+
+    if (!revealedBlocks.has(task.block)) {
+      revealedBlocks.add(task.block);
+      revealComparisonBlock(task.block);
+      setTimeout(startTyping, 280);
+      return;
+    }
+
+    startTyping();
+  };
+
+  typeNext();
+}
+
+function startComparisonReportSimulation() {
+  aiConclusion.textContent = "";
+  aiConclusion.classList.remove("typing-cursor");
+  insightBox?.classList.add("hidden");
+  conclusionTags.classList.add("hidden");
+  tableResult.classList.add("hidden");
+  chartResult.classList.add("hidden");
+  resultViewToolbar.classList.add("hidden");
+  answerActionBar?.classList.add("hidden");
+  analysisResult?.classList.add("hidden");
+  attributionResult?.classList.add("hidden");
+  trendResult?.classList.add("hidden");
+  templateResult?.classList.add("hidden");
+  if (comparisonReportTitle) {
+    comparisonReportTitle.textContent = `${currentAnswerTitle} · 对比分析报告`;
+  }
+  comparisonResult?.classList.remove("hidden");
+  scrollToAnswerBottom();
+  setTimeout(startComparisonReportTypewriter, 240);
+}
+
+// ==================== 模板分析 (Template) ====================
+function revealTemplateBlock(index) {
+  const block = document.querySelector(
+    `.current-chat-message .template-report-section .analysis-report-block[data-template-block="${index}"]`
+  );
+  if (!block) return;
+  block.classList.remove("report-block-pending");
+  block.classList.add("report-block-revealed");
+  scrollToAnswerBottom();
+}
+
+function revealTemplateFooter() {
+  const footer = document.getElementById("templateFooter");
+  if (!footer) return;
+  footer.classList.add("revealed");
+  scrollToAnswerBottom();
+}
+
+function startTemplateReportTypewriter() {
+  const tasks = [
+    { id: "templateSummary", text: "5 月华东区销售业绩亮眼：销售额 3,108 万元（达成率 105.0%、同比 +33.6%），订单量 4.18 万单，客单价 743 元，毛利率 32.5%。月度核心指标全部达标，整体延续高质量增长态势。", block: 0 },
+    { id: "templateOverview", text: "5 月华东区销售额 3,108 万元，同比 +33.6%、环比 +4.1%；订单量 4.18 万单，同比 +28.2%；客单价 743 元，同比 +4.2%；毛利率 32.5%，较目标高 1.5 个百分点；复购率 26.8%，较 4 月提升 2.1pp。整体延续 4 月增长态势，月度销售额目标达成 105.0%，超额完成 4.96 个百分点。", block: 1 },
+    { id: "templateRisk1", text: "客单价微降的二三线城市，需关注价格敏感型客户流失，启动定向留存运营。", block: 4 },
+    { id: "templateRisk2", text: "经销商库存周转放慢至 38 天，存在压货风险，建议主动调整发货节奏。", block: 4 },
+    { id: "templateRisk3", text: "智能配件品类退货率上升 0.4pp，需复盘上市批次质量与售后口径。", block: 4 },
+    { id: "templatePlan1", text: "6 月延续大促节奏（6·18 + 私域返场），重点提升二线城市覆盖与新客获取。", block: 4 },
+    { id: "templatePlan2", text: "新增 2 场区域专项活动，目标 ROI ≥ 5，覆盖南通、宁波、温州三地。", block: 4 },
+    { id: "templatePlan3", text: "升级私域用户运营，5 月复购率 +2.1pp 基础上，目标 6 月复购率再 +1pp。", block: 4 }
+  ];
+
+  const revealedBlocks = new Set();
+  let taskIndex = 0;
+
+  const typeText = (task, el, onComplete) => {
+    let idx = 0;
+    reportTypingTimer = setInterval(() => {
+      if (!isAnswering) {
+        clearInterval(reportTypingTimer);
+        reportTypingTimer = null;
+        return;
+      }
+      el.textContent += task.text[idx] || "";
+      idx += 1;
+      if (idx >= task.text.length) {
+        clearInterval(reportTypingTimer);
+        reportTypingTimer = null;
+        onComplete();
+      }
+    }, 18);
+  };
+
+  const typeNext = () => {
+    if (!isAnswering) return;
+    if (taskIndex >= tasks.length) {
+      setTimeout(() => {
+        if (!isAnswering) return;
+        // 摘要后还要展示完成情况、区域贡献两个静态块
+        if (!revealedBlocks.has(2)) {
+          revealedBlocks.add(2);
+          revealTemplateBlock(2);
+        }
+        if (!revealedBlocks.has(3)) {
+          revealedBlocks.add(3);
+          revealTemplateBlock(3);
+        }
+        setTimeout(() => {
+          if (!isAnswering) return;
+          revealTemplateFooter();
+          finishAnswerSimulation();
+        }, 320);
+      }, 240);
+      return;
+    }
+
+    const task = tasks[taskIndex];
+    const el = document.getElementById(task.id);
+    if (!el) {
+      taskIndex += 1;
+      typeNext();
+      return;
+    }
+
+    const startTyping = () => {
+      if (!isAnswering) return;
+      typeText(task, el, () => {
+        taskIndex += 1;
+
+        // 摘要打完后顺势展示业绩概述（block 1）；进入到风险预警块前先展示完成度/区域贡献
+        if (taskIndex < tasks.length && tasks[taskIndex].block === 4) {
+          if (!revealedBlocks.has(2)) {
+            revealedBlocks.add(2);
+            revealTemplateBlock(2);
+          }
+          setTimeout(() => {
+            if (!isAnswering) return;
+            if (!revealedBlocks.has(3)) {
+              revealedBlocks.add(3);
+              revealTemplateBlock(3);
+            }
+            setTimeout(typeNext, 360);
+          }, 360);
+          return;
+        }
+
+        setTimeout(typeNext, 80);
+      });
+    };
+
+    if (!revealedBlocks.has(task.block)) {
+      revealedBlocks.add(task.block);
+      revealTemplateBlock(task.block);
+      setTimeout(startTyping, 280);
+      return;
+    }
+
+    startTyping();
+  };
+
+  typeNext();
+}
+
+function startTemplateReportSimulation() {
+  aiConclusion.textContent = "";
+  aiConclusion.classList.remove("typing-cursor");
+  insightBox?.classList.add("hidden");
+  conclusionTags.classList.add("hidden");
+  tableResult.classList.add("hidden");
+  chartResult.classList.add("hidden");
+  resultViewToolbar.classList.add("hidden");
+  answerActionBar?.classList.add("hidden");
+  analysisResult?.classList.add("hidden");
+  attributionResult?.classList.add("hidden");
+  trendResult?.classList.add("hidden");
+  comparisonResult?.classList.add("hidden");
+  if (templateReportTitle) {
+    templateReportTitle.textContent = `${currentAnswerTitle} · 5 月份销售分析月报`;
+  }
+  templateResult?.classList.remove("hidden");
+  scrollToAnswerBottom();
+  setTimeout(startTemplateReportTypewriter, 240);
+}
+
 function copyAnswerContent() {
   let text = aiConclusion?.textContent?.trim() || "";
   if (!text && currentAnswerMode === "analysis") {
     const reportSection = document.getElementById("analysisResult");
+    if (reportSection && !reportSection.classList.contains("hidden")) {
+      text = reportSection.innerText?.trim() || "";
+    }
+  }
+  if (!text && currentAnswerMode === "comparison") {
+    const reportSection = document.getElementById("comparisonResult");
+    if (reportSection && !reportSection.classList.contains("hidden")) {
+      text = reportSection.innerText?.trim() || "";
+    }
+  }
+  if (!text && currentAnswerMode === "template") {
+    const reportSection = document.getElementById("templateResult");
     if (reportSection && !reportSection.classList.contains("hidden")) {
       text = reportSection.innerText?.trim() || "";
     }
@@ -1777,6 +2450,13 @@ function archiveCurrentMessageIfNeeded() {
   if (archivedTrendCanvas && trendChart && trendShown) {
     requestAnimationFrame(() => renderArchivedTrendChart(archivedTrendCanvas));
   }
+
+  const archivedComparisonReport = archived.querySelector(".comparison-report-section");
+  const comparisonShown = archivedComparisonReport && !archivedComparisonReport.classList.contains("hidden");
+  const archivedComparisonCanvas = archivedComparisonReport?.querySelector(".report-chart-canvas");
+  if (archivedComparisonCanvas && comparisonChart && comparisonShown) {
+    requestAnimationFrame(() => renderArchivedComparisonChart(archivedComparisonCanvas));
+  }
 }
 
 function scrollToAnswerBottom() {
@@ -1903,6 +2583,21 @@ function renderArchivedTrendChart(dom) {
     bindChartResizeHandlerOnce();
   }
   inst.setOption(buildTrendChartOption(), true);
+  inst.resize();
+}
+
+function renderArchivedComparisonChart(dom) {
+  if (!dom || typeof echarts === "undefined") return;
+  if (!dom.clientWidth || !dom.clientHeight) {
+    requestAnimationFrame(() => renderArchivedComparisonChart(dom));
+    return;
+  }
+  let inst = echarts.getInstanceByDom(dom);
+  if (!inst) {
+    inst = echarts.init(dom, null, { renderer: "canvas" });
+    bindChartResizeHandlerOnce();
+  }
+  inst.setOption(buildComparisonChartOption(), true);
   inst.resize();
 }
 
@@ -2391,13 +3086,16 @@ function saveSuccess() {
 }
 
 function exportAction(type) {
+  hideExport();
+  if (type === "word") {
+    exportWordReport(lastWordExportScope);
+    return;
+  }
   const exportLabelMap = {
     image: "导出图片",
     pdf: "导出 PDF",
-    word: "导出 Word",
     excel: "导出 Excel"
   };
-  hideExport();
   showToast(`${exportLabelMap[type] || "导出"}已开始`);
 }
 
@@ -2462,6 +3160,12 @@ function toggleExport(event) {
   hideChartContextMenu();
   hideAddMenu();
   hideAskMenu();
+
+  const triggerBtn = event.currentTarget;
+  const archivedRoot = triggerBtn?.closest?.(".archived-message");
+  const currentRoot = triggerBtn?.closest?.(".current-chat-message");
+  lastWordExportScope = archivedRoot || currentRoot || document.querySelector(".current-chat-message");
+
   const isOpen = !exportMenu.classList.contains("hidden");
   if (isOpen) {
     hideExport();
@@ -2505,15 +3209,44 @@ function positionDropdownMenu(menu, trigger) {
   const triggerRect = trigger.getBoundingClientRect();
   menu.classList.remove("hidden");
   menu.style.visibility = "hidden";
-  const menuWidth = menu.getBoundingClientRect().width || menu.scrollWidth || 0;
+  menu.style.maxHeight = "";
+  const menuRect = menu.getBoundingClientRect();
+  const menuWidth = menuRect.width || menu.scrollWidth || 0;
+  const menuHeight = menuRect.height || menu.scrollHeight || 0;
   menu.style.visibility = "";
   menu.classList.add("hidden");
+
+  const margin = 8;
+  const gap = 8;
   const left = Math.min(
-    Math.max(8, triggerRect.right - menuWidth),
-    window.innerWidth - menuWidth - 8
+    Math.max(margin, triggerRect.right - menuWidth),
+    window.innerWidth - menuWidth - margin
   );
   menu.style.left = `${left}px`;
-  menu.style.top = `${triggerRect.bottom + 8}px`;
+
+  const spaceBelow = window.innerHeight - triggerRect.bottom - margin;
+  const spaceAbove = triggerRect.top - margin;
+  let top;
+  let cappedHeight = "";
+  if (menuHeight + gap <= spaceBelow) {
+    top = triggerRect.bottom + gap;
+  } else if (menuHeight + gap <= spaceAbove) {
+    top = triggerRect.top - gap - menuHeight;
+  } else if (spaceAbove >= spaceBelow) {
+    cappedHeight = `${Math.max(spaceAbove - gap, 120)}px`;
+    top = margin;
+  } else {
+    cappedHeight = `${Math.max(spaceBelow - gap, 120)}px`;
+    top = triggerRect.bottom + gap;
+  }
+  menu.style.top = `${top}px`;
+  if (cappedHeight) {
+    menu.style.maxHeight = cappedHeight;
+    menu.style.overflowY = "auto";
+  } else {
+    menu.style.maxHeight = "";
+    menu.style.overflowY = "";
+  }
 }
 
 function toggleAddMenu(event) {
@@ -2557,10 +3290,28 @@ function addToTarget(type) {
 
 const followupActionPresets = {
   free: { prefill: "", action: "qa" },
-  interpret: { prefill: "进行数据解读", action: "analysis" },
+  interpret: { prefill: "对这6个月的销售趋势进行整体解读分析", action: "analysis" },
   attribution: { prefill: "对4月异常增长进行归因分析", action: "attribution" },
-  trend: { prefill: "预测未来3个月的销售趋势", action: "trend" }
+  trend: { prefill: "预测未来3个月的销售趋势", action: "trend" },
+  comparison: { prefill: "请根据我上传的数据，进行对比分析", action: "comparison" },
+  template: { prefill: "请生成 5 月份销售分析月报", action: "template" }
 };
+
+const FOLLOWUP_PREFIXES = {
+  analysis: "数据解读：",
+  attribution: "归因分析：",
+  trend: "趋势分析：",
+  comparison: "对比分析：",
+  template: "模板分析："
+};
+const FOLLOWUP_PLACEHOLDERS = {
+  analysis: "请输入您要数据解读的要求，例如解读范围、解读关键点等",
+  attribution: "请输入您要归因分析的要求，例如归因维度、关注的异常点等",
+  trend: "请输入您要趋势分析的要求，例如预测周期、关注指标等",
+  comparison: "请输入您要对比分析的要求，例如对比维度、关注的差异点等",
+  template: "请输入您要模板分析的要求，例如套用模板的范围、目标月份等"
+};
+let defaultQuestionPlaceholder = null;
 
 function askFollowup(type) {
   hideAskMenu();
@@ -2571,10 +3322,30 @@ function askFollowup(type) {
 }
 
 function setFollowupContext(ctx) {
-  pendingFollowupContext = { title: ctx.title, action: ctx.action || "qa" };
+  const action = ctx.action || "qa";
+  pendingFollowupContext = { title: ctx.title, action };
   if (followupChipTitle) followupChipTitle.textContent = ctx.title;
   followupContextChip?.classList.remove("hidden");
+  const prefixText = FOLLOWUP_PREFIXES[action];
+  if (followupPrefix) {
+    if (prefixText) {
+      followupPrefix.textContent = prefixText;
+      followupPrefix.classList.remove("hidden");
+    } else {
+      followupPrefix.textContent = "";
+      followupPrefix.classList.add("hidden");
+    }
+  }
   if (questionInput) {
+    if (defaultQuestionPlaceholder === null) {
+      defaultQuestionPlaceholder = questionInput.getAttribute("placeholder") || "";
+    }
+    const customPlaceholder = FOLLOWUP_PLACEHOLDERS[action];
+    questionInput.setAttribute(
+      "placeholder",
+      customPlaceholder || defaultQuestionPlaceholder
+    );
+    questionInput.classList.toggle("has-followup-prefix", Boolean(prefixText));
     questionInput.value = ctx.prefill || "";
     questionInput.focus();
     if (ctx.prefill) {
@@ -2591,6 +3362,16 @@ function clearFollowupContext() {
   pendingFollowupContext = null;
   followupContextChip?.classList.add("hidden");
   if (followupChipTitle) followupChipTitle.textContent = "";
+  if (followupPrefix) {
+    followupPrefix.textContent = "";
+    followupPrefix.classList.add("hidden");
+  }
+  if (questionInput) {
+    questionInput.classList.remove("has-followup-prefix");
+    if (defaultQuestionPlaceholder !== null) {
+      questionInput.setAttribute("placeholder", defaultQuestionPlaceholder);
+    }
+  }
 }
 
 function startTrendAnalysis() {
@@ -2662,9 +3443,6 @@ document.addEventListener("click", (event) => {
   if (!event.target.closest("#chartContextMenu")) {
     hideChartContextMenu();
   }
-  if (!event.target.closest(".user-trigger") && !event.target.closest("#userMenu")) {
-    userMenu.classList.add("hidden");
-  }
 });
 
 if (modalMask) {
@@ -2695,3 +3473,587 @@ document.querySelectorAll(".chip").forEach((chip) => {
     handleQuestionInput();
   });
 });
+
+// ==================== Word 导出 ====================
+function exportWordReport(scope) {
+  try {
+    const root = (scope && scope.nodeType === 1)
+      ? scope
+      : document.querySelector(".current-chat-message");
+    if (!root) {
+      showToast("未找到可导出的对话内容");
+      return;
+    }
+    showToast("Word 报告生成中…");
+    setTimeout(() => {
+      try {
+        const mode = wordDetectMode(root);
+        const title = wordExtractTitle(root);
+        const html = wordBuildReportHTML(root, mode, title);
+        const filename = wordSafeFilename(`${title}_${wordModeLabel(mode)}_${wordTimestampForFile()}.doc`);
+        wordTriggerDownload(html, filename);
+        showToast("Word 报告已导出");
+      } catch (err) {
+        console.error("[Word 导出] 失败：", err);
+        showToast("Word 导出失败，请稍后重试");
+      }
+    }, 80);
+  } catch (err) {
+    console.error("[Word 导出] 失败：", err);
+    showToast("Word 导出失败，请稍后重试");
+  }
+}
+
+function wordDetectMode(root) {
+  const candidates = [
+    ["template", ".template-report-section"],
+    ["comparison", ".comparison-report-section"],
+    ["trend", ".trend-report-section"],
+    ["attribution", ".attribution-report-section"],
+    ["analysis", ".analysis-report-section"]
+  ];
+  for (const [mode, sel] of candidates) {
+    const el = root.querySelector(sel);
+    if (el && !el.classList.contains("hidden")) return mode;
+  }
+  return "qa";
+}
+
+function wordModeLabel(mode) {
+  const labels = {
+    qa: "数据问答",
+    analysis: "数据分析报告",
+    attribution: "归因分析报告",
+    trend: "趋势分析报告",
+    comparison: "对比分析报告",
+    template: "月度分析报告"
+  };
+  return labels[mode] || "数据问答";
+}
+
+function wordExtractTitle(root) {
+  const titleEl = root.querySelector(".result-title h2") || root.querySelector("h2");
+  const t = titleEl?.textContent?.trim();
+  if (t) return t;
+  const bubble = root.querySelector(".bubble.user");
+  return bubble?.textContent?.trim() || currentAnswerTitle || "智能问数报告";
+}
+
+function wordExtractMetaText(root) {
+  const meta = root.querySelector(".result-title p");
+  return meta?.textContent?.trim() || "";
+}
+
+function wordEsc(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function wordSafeFilename(name) {
+  return String(name).replace(/[\\/:*?"<>|]/g, "_").slice(0, 180);
+}
+
+function wordTimestampForFile() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
+}
+
+function wordExportTimeText() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function wordTriggerDownload(html, filename) {
+  const preamble = "<!DOCTYPE html>\uFEFF";
+  const blob = new Blob([preamble + html], { type: "application/msword;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function wordCanvasToImage(canvasDom) {
+  if (!canvasDom || typeof echarts === "undefined") return "";
+  try {
+    const inst = echarts.getInstanceByDom(canvasDom);
+    if (!inst) return "";
+    return inst.getDataURL({ type: "png", pixelRatio: 1.5, backgroundColor: "#ffffff" });
+  } catch (e) {
+    console.warn("[Word 导出] 图表转图失败：", e);
+    return "";
+  }
+}
+
+function wordChartImageHTML(canvasDom, widthCm = 14) {
+  const dataUrl = wordCanvasToImage(canvasDom);
+  if (!dataUrl) return "";
+  const widthPx = Math.round(widthCm * 37.8);
+  return `<p style="text-align:center;margin:8pt 0;"><img src="${dataUrl}" width="${widthPx}" style="width:${widthCm}cm;border:0.75pt solid #e5e7eb;"/></p>`;
+}
+
+function wordCleanTable(tableEl) {
+  if (!tableEl) return "";
+  const clone = tableEl.cloneNode(true);
+  clone.removeAttribute("class");
+  clone.removeAttribute("style");
+  clone.querySelectorAll("svg").forEach((s) => s.remove());
+  clone.querySelectorAll("*").forEach((el) => {
+    el.removeAttribute("class");
+    if (el.hasAttribute("style")) {
+      const keep = el.getAttribute("style").split(";")
+        .filter((s) => /text-align|color|background|font-weight/i.test(s))
+        .join(";");
+      if (keep) el.setAttribute("style", keep);
+      else el.removeAttribute("style");
+    }
+  });
+  // 给所有 td/th 加边框样式
+  clone.querySelectorAll("th").forEach((th) => {
+    th.setAttribute("style", "background:#f1f5f9;color:#1f2937;padding:6pt 8pt;border:0.75pt solid #cbd5e1;text-align:left;font-weight:600;");
+  });
+  clone.querySelectorAll("td").forEach((td) => {
+    const isNum = td.textContent.trim().match(/^[+-]?[0-9,.\u00a0\s]+(%|pp|万|元|个|单)?\s*[▲▼]?$/);
+    const align = isNum ? "right" : "left";
+    let extra = "";
+    const text = td.textContent || "";
+    if (text.includes("▲") || /\+\d/.test(text)) extra = "color:#15803d;font-weight:600;";
+    else if (text.includes("▼") || /^-\d/.test(text.trim())) extra = "color:#b91c1c;font-weight:600;";
+    td.setAttribute("style", `padding:6pt 8pt;border:0.75pt solid #e2e8f0;text-align:${align};${extra}`);
+  });
+  clone.setAttribute("style", "border-collapse:collapse;width:100%;font-size:10.5pt;margin:8pt 0;");
+  return clone.outerHTML;
+}
+
+function wordSectionTitle(text) {
+  return `<h2 style="font-size:13pt;color:#0f172a;margin:18pt 0 8pt;font-weight:700;">${wordEsc(text)}</h2>`;
+}
+
+function wordSubTitle(text) {
+  return `<h3 style="font-size:11.5pt;color:#1f2937;margin:12pt 0 6pt;font-weight:600;">${wordEsc(text)}</h3>`;
+}
+
+function createSectionCounter() {
+  const cnNumbers = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二", "十三", "十四"];
+  let index = 0;
+  return {
+    next: (title) => {
+      index += 1;
+      const cn = cnNumbers[index] || String(index);
+      return wordSectionTitle(`${cn}、${title}`);
+    },
+    fixed: (title) => wordSubTitle(title)
+  };
+}
+
+function wordParagraph(text) {
+  if (!text) return "";
+  return `<p style="font-size:10.5pt;line-height:1.7;color:#374151;margin:6pt 0;">${wordEsc(text)}</p>`;
+}
+
+function wordTagsRow(tags) {
+  if (!tags || !tags.length) return "";
+  const items = tags.map((t) =>
+    `<span style="display:inline-block;padding:2pt 8pt;margin:0 4pt 4pt 0;background:#e6f4ff;color:#1677ff;font-size:9.5pt;border-radius:10pt;">${wordEsc(t)}</span>`
+  ).join("");
+  return `<p style="margin:6pt 0;">${items}</p>`;
+}
+
+function wordList(items, opts = {}) {
+  const arr = items.filter(Boolean);
+  if (!arr.length) return "";
+  const tag = opts.ordered ? "ol" : "ul";
+  const lis = arr.map((it) => `<li style="font-size:10.5pt;line-height:1.7;color:#374151;margin-bottom:3pt;">${wordEsc(it)}</li>`).join("");
+  return `<${tag} style="margin:6pt 0 6pt 18pt;padding:0;">${lis}</${tag}>`;
+}
+
+// ============== 各通用区块提取 ==============
+function wordRenderInsight(root, counter) {
+  const insightBox = root.querySelector(".insight-box");
+  if (!insightBox || insightBox.classList.contains("hidden")) return "";
+  const conclusion = root.querySelector(".insight-box > p, #aiConclusion")?.textContent?.trim();
+  if (!conclusion) return "";
+  let html = "";
+  html += counter ? counter.next("核心结论") : wordSectionTitle("一、核心结论");
+  html += wordParagraph(conclusion);
+  const tagsBox = root.querySelector(".insight-box .tag-row");
+  if (tagsBox && !tagsBox.classList.contains("hidden")) {
+    const tags = Array.from(tagsBox.querySelectorAll("span")).map((s) => s.textContent.trim()).filter(Boolean);
+    html += wordTagsRow(tags);
+  }
+  return html;
+}
+
+function wordRenderTable(root, counter) {
+  const tableWrap = root.querySelector(".inline-table");
+  if (!tableWrap || tableWrap.classList.contains("hidden")) return "";
+  const table = tableWrap.querySelector("table");
+  if (!table) return "";
+  let html = "";
+  html += counter ? counter.next("数据明细") : wordSectionTitle("二、数据明细");
+  html += wordCleanTable(table);
+  return html;
+}
+
+function wordRenderMainChart(root, counter) {
+  const chartCard = root.querySelector(".chart-card");
+  if (!chartCard || chartCard.classList.contains("hidden")) return "";
+  const canvas = chartCard.querySelector(".chart-canvas");
+  const img = wordChartImageHTML(canvas);
+  if (!img) return "";
+  let html = "";
+  html += counter ? counter.next("可视化图表") : wordSectionTitle("三、可视化图表");
+  const chartTitle = chartCard.querySelector(".chart-top h3")?.textContent?.trim();
+  if (chartTitle) html += wordParagraph(chartTitle);
+  html += img;
+  return html;
+}
+
+// ============== 数据分析报告 ==============
+function wordRenderAnalysisReport(root, counter) {
+  const sec = root.querySelector(".analysis-report-section");
+  if (!sec || sec.classList.contains("hidden")) return "";
+  let html = "";
+
+  const block0 = sec.querySelector('[data-report-block="0"]');
+  if (block0) {
+    html += counter.next("分析报告核心结论");
+    html += wordParagraph(block0.querySelector("p")?.textContent?.trim());
+    const canvas = block0.querySelector(".report-chart-canvas");
+    html += wordChartImageHTML(canvas);
+  }
+  const block1 = sec.querySelector('[data-report-block="1"]');
+  if (block1) {
+    html += counter.next("关键指标解读");
+    const items = Array.from(block1.querySelectorAll("ul li")).map((li) => li.textContent?.trim()).filter(Boolean);
+    html += wordList(items);
+  }
+  const block2 = sec.querySelector('[data-report-block="2"]');
+  if (block2) {
+    html += counter.next("外部因素关联");
+    const items = Array.from(block2.querySelectorAll("ul li")).map((li) => li.textContent?.trim()).filter(Boolean);
+    html += wordList(items);
+  }
+  const block3 = sec.querySelector('[data-report-block="3"]');
+  if (block3) {
+    html += counter.next("深度分析方向建议");
+    const items = Array.from(block3.querySelectorAll("ul li")).map((li) => li.textContent?.trim()).filter(Boolean);
+    html += wordList(items);
+  }
+  return html;
+}
+
+// ============== 归因分析报告 ==============
+function wordRenderAttributionReport(root, counter) {
+  const sec = root.querySelector(".attribution-report-section");
+  if (!sec || sec.classList.contains("hidden")) return "";
+  let html = "";
+
+  const block0 = sec.querySelector('[data-attribution-block="0"]');
+  if (block0) {
+    html += counter.next("异常诊断结论");
+    html += wordParagraph(block0.querySelector("p")?.textContent?.trim());
+    const canvas = block0.querySelector(".report-chart-canvas");
+    html += wordChartImageHTML(canvas);
+  }
+  const block1 = sec.querySelector('[data-attribution-block="1"]');
+  if (block1) {
+    html += counter.next("维度拆解贡献");
+    const intro = block1.querySelector(".attribution-block-intro")?.textContent?.trim();
+    if (intro) html += wordParagraph(intro);
+    block1.querySelectorAll(".attribution-dim-card").forEach((card) => {
+      const name = card.querySelector(".attribution-dim-head strong")?.textContent?.trim();
+      const total = card.querySelector(".attribution-dim-head span")?.textContent?.trim();
+      html += `<p style="font-size:10.5pt;color:#0f172a;margin:8pt 0 2pt;font-weight:600;">▌ ${wordEsc(name)} <span style="color:#64748b;font-weight:normal;">${wordEsc(total)}</span></p>`;
+      const items = Array.from(card.querySelectorAll(".attribution-bar-list li")).map((li) => {
+        const n = li.querySelector(".attribution-bar-name")?.textContent?.trim();
+        const v = li.querySelector(".attribution-bar-value")?.textContent?.trim();
+        return n && v ? `${n}：${v}` : (n || v || "");
+      }).filter(Boolean);
+      html += wordList(items);
+    });
+  }
+  const subTitles = ["关键驱动因子", "可持续性判断", "后续行动建议"];
+  ["2", "3", "4"].forEach((idx, i) => {
+    const block = sec.querySelector(`[data-attribution-block="${idx}"]`);
+    if (!block) return;
+    html += counter.next(subTitles[i]);
+    const items = Array.from(block.querySelectorAll("ul li")).map((li) => li.textContent?.trim()).filter(Boolean);
+    html += wordList(items);
+  });
+  return html;
+}
+
+// ============== 趋势分析报告 ==============
+function wordRenderTrendReport(root, counter) {
+  const sec = root.querySelector(".trend-report-section");
+  if (!sec || sec.classList.contains("hidden")) return "";
+  let html = "";
+
+  const block0 = sec.querySelector('[data-trend-block="0"]');
+  if (block0) {
+    html += counter.next("趋势分析概述");
+    html += wordParagraph(block0.querySelector("#trendOverview, p")?.textContent?.trim());
+    const canvas = block0.querySelector(".report-chart-canvas");
+    html += wordChartImageHTML(canvas);
+  }
+  const block1 = sec.querySelector('[data-trend-block="1"]');
+  if (block1) {
+    html += counter.next("预测明细与置信区间");
+    const intro = block1.querySelector(".trend-block-intro")?.textContent?.trim();
+    if (intro) html += wordParagraph(intro);
+    const table = block1.querySelector("table");
+    if (table) html += wordCleanTable(table);
+  }
+  const block2 = sec.querySelector('[data-trend-block="2"]');
+  if (block2) {
+    html += counter.next("模型与依据");
+    const meta = block2.querySelector(".trend-model-meta strong")?.textContent?.trim();
+    if (meta) html += wordParagraph(meta);
+    const conf = block2.querySelector(".trend-confidence-value")?.textContent?.trim();
+    if (conf) html += wordParagraph(`综合置信度：${conf}`);
+    const intro = block2.querySelector(".trend-model-intro")?.textContent?.trim();
+    if (intro) html += wordParagraph(intro);
+    const items = Array.from(block2.querySelectorAll(".trend-factor-list li")).map((li) => {
+      const n = li.querySelector(".trend-factor-name")?.textContent?.trim();
+      const v = li.querySelector(".trend-factor-value")?.textContent?.trim();
+      return n && v ? `${n}：${v}` : (n || v || "");
+    }).filter(Boolean);
+    html += wordList(items);
+  }
+  const block3 = sec.querySelector('[data-trend-block="3"]');
+  if (block3) {
+    html += counter.next("关键风险与机会");
+    const upItems = Array.from(block3.querySelectorAll(".trend-risk-card.up ul li")).map((li) => li.textContent?.trim()).filter(Boolean);
+    const downItems = Array.from(block3.querySelectorAll(".trend-risk-card.down ul li")).map((li) => li.textContent?.trim()).filter(Boolean);
+    if (upItems.length) {
+      html += `<p style="font-size:10.5pt;color:#15803d;font-weight:600;margin:6pt 0 2pt;">↗ 上行机会</p>`;
+      html += wordList(upItems);
+    }
+    if (downItems.length) {
+      html += `<p style="font-size:10.5pt;color:#b91c1c;font-weight:600;margin:6pt 0 2pt;">↘ 下行风险</p>`;
+      html += wordList(downItems);
+    }
+  }
+  const block4 = sec.querySelector('[data-trend-block="4"]');
+  if (block4) {
+    html += counter.next("节奏与策略建议");
+    const items = Array.from(block4.querySelectorAll(".trend-action-list li")).map((li) => {
+      const tag = li.querySelector(".trend-action-tag")?.textContent?.trim();
+      const txt = li.querySelector("span:not(.trend-action-tag)")?.textContent?.trim() || "";
+      return tag ? `【${tag}】${txt}` : txt;
+    }).filter(Boolean);
+    html += wordList(items);
+  }
+  return html;
+}
+
+// ============== 对比分析报告 ==============
+function wordRenderComparisonReport(root, counter) {
+  const sec = root.querySelector(".comparison-report-section");
+  if (!sec || sec.classList.contains("hidden")) return "";
+  let html = "";
+
+  const block0 = sec.querySelector('[data-comparison-block="0"]');
+  if (block0) {
+    html += counter.next("对比分析概述");
+    const chip = block0.querySelector(".comparison-upload-chip");
+    if (chip) {
+      const name = chip.querySelector(".comparison-upload-name")?.textContent?.trim() || "";
+      const meta = chip.querySelector(".comparison-upload-meta")?.textContent?.trim() || "";
+      const status = chip.querySelector(".comparison-upload-status")?.textContent?.trim() || "";
+      html += `<table style="border-collapse:collapse;margin:6pt 0;font-size:10pt;">
+        <tr>
+          <td style="background:#ccfbf1;color:#0f766e;padding:4pt 10pt;font-weight:600;border:0.75pt solid #99f6e4;">📎 ${wordEsc(name)}</td>
+          <td style="padding:4pt 10pt;color:#64748b;border:0.75pt solid #99f6e4;">${wordEsc(meta)}</td>
+          <td style="background:#dcfce7;color:#15803d;padding:4pt 10pt;font-weight:600;border:0.75pt solid #99f6e4;">${wordEsc(status)}</td>
+        </tr>
+      </table>`;
+    }
+    html += wordParagraph(block0.querySelector("#comparisonOverview, p:last-child")?.textContent?.trim());
+  }
+  const block1 = sec.querySelector('[data-comparison-block="1"]');
+  if (block1) {
+    html += counter.next("关键指标对比表");
+    const intro = block1.querySelector(".comparison-block-intro")?.textContent?.trim();
+    if (intro) html += wordParagraph(intro);
+    const table = block1.querySelector("table");
+    if (table) html += wordCleanTable(table);
+  }
+  const block2 = sec.querySelector('[data-comparison-block="2"]');
+  if (block2) {
+    html += counter.next("差异趋势对比图");
+    const intro = block2.querySelector(".comparison-block-intro")?.textContent?.trim();
+    if (intro) html += wordParagraph(intro);
+    const canvas = block2.querySelector(".report-chart-canvas");
+    html += wordChartImageHTML(canvas);
+  }
+  const block3 = sec.querySelector('[data-comparison-block="3"]');
+  if (block3) {
+    html += counter.next("差异原因分析");
+    const intro = block3.querySelector(".comparison-block-intro")?.textContent?.trim();
+    if (intro) html += wordParagraph(intro);
+    block3.querySelectorAll(".comparison-driver-card").forEach((card) => {
+      const name = card.querySelector(".comparison-driver-head strong")?.textContent?.trim();
+      const pct = card.querySelector(".comparison-driver-percent")?.textContent?.trim();
+      html += `<p style="font-size:10.5pt;color:#0f766e;margin:8pt 0 2pt;font-weight:600;">▌ ${wordEsc(name)} <span style="color:#0f766e;">${wordEsc(pct)}</span></p>`;
+      const items = Array.from(card.querySelectorAll("ul li")).map((li) => li.textContent?.trim()).filter(Boolean);
+      html += wordList(items);
+    });
+  }
+  const block4 = sec.querySelector('[data-comparison-block="4"]');
+  if (block4) {
+    html += counter.next("行动建议");
+    const items = Array.from(block4.querySelectorAll(".comparison-action-list li")).map((li) => {
+      const tag = li.querySelector(".comparison-action-tag")?.textContent?.trim();
+      const txt = li.querySelector("span:not(.comparison-action-tag)")?.textContent?.trim() || "";
+      return tag ? `【${tag}】${txt}` : txt;
+    }).filter(Boolean);
+    html += wordList(items);
+  }
+  return html;
+}
+
+// ============== 模板月报 ==============
+function wordRenderTemplateReport(root, counter) {
+  const sec = root.querySelector(".template-report-section");
+  if (!sec || sec.classList.contains("hidden")) return "";
+  let html = "";
+
+  const block0 = sec.querySelector('[data-template-block="0"]');
+  if (block0) {
+    html += counter.next("报告摘要");
+    html += wordParagraph(block0.querySelector("p")?.textContent?.trim());
+    const kpiCards = block0.querySelectorAll(".template-kpi-card");
+    if (kpiCards.length) {
+      const cells = Array.from(kpiCards).map((card) => {
+        const label = card.querySelector(".template-kpi-label")?.textContent?.trim() || "";
+        const valueEl = card.querySelector(".template-kpi-value");
+        const valueText = valueEl?.firstChild?.textContent?.trim() || "";
+        const unit = valueEl?.querySelector("span")?.textContent?.trim() || "";
+        const target = card.querySelector(".template-kpi-target")?.textContent?.trim() || "";
+        const up = card.querySelector(".template-kpi-up")?.textContent?.trim() || "";
+        return `<td style="padding:8pt;border:0.75pt solid #e2e8f0;vertical-align:top;width:25%;">
+          <div style="font-size:10pt;color:#64748b;margin-bottom:4pt;">${wordEsc(label)}</div>
+          <div style="font-size:14pt;color:#0f172a;font-weight:700;margin-bottom:4pt;">${wordEsc(valueText)}<span style="font-size:10pt;color:#64748b;font-weight:normal;"> ${wordEsc(unit)}</span></div>
+          <div style="font-size:9pt;color:#475569;">${wordEsc(target)}</div>
+          <div style="font-size:9pt;color:#15803d;font-weight:600;">${wordEsc(up)}</div>
+        </td>`;
+      }).join("");
+      html += `<table style="border-collapse:collapse;width:100%;margin:6pt 0;"><tr>${cells}</tr></table>`;
+    }
+  }
+  const block1 = sec.querySelector('[data-template-block="1"]');
+  if (block1) {
+    html += counter.next("月度业绩概述");
+    html += wordParagraph(block1.querySelector("p")?.textContent?.trim());
+  }
+  const block2 = sec.querySelector('[data-template-block="2"]');
+  if (block2) {
+    html += counter.next("核心指标完成情况");
+    const intro = block2.querySelector(".template-block-intro")?.textContent?.trim();
+    if (intro) html += wordParagraph(intro);
+    const items = Array.from(block2.querySelectorAll(".template-progress-list li")).map((li) => {
+      const n = li.querySelector(".template-progress-name")?.textContent?.trim();
+      const v = li.querySelector(".template-progress-value")?.textContent?.trim();
+      return n && v ? `${n}：${v}` : (n || v || "");
+    }).filter(Boolean);
+    html += wordList(items);
+  }
+  const block3 = sec.querySelector('[data-template-block="3"]');
+  if (block3) {
+    html += counter.next("区域与渠道贡献");
+    const intro = block3.querySelector(".template-block-intro")?.textContent?.trim();
+    if (intro) html += wordParagraph(intro);
+    block3.querySelectorAll(".template-contribution-card").forEach((card) => {
+      const head = card.querySelector(".template-contribution-head")?.textContent?.trim();
+      html += `<p style="font-size:10.5pt;color:#0f172a;margin:8pt 0 2pt;font-weight:600;">▌ ${wordEsc(head)}</p>`;
+      const items = Array.from(card.querySelectorAll("ul li")).map((li) => {
+        const n = li.querySelector(".template-contribution-name")?.textContent?.trim();
+        const v = li.querySelector(".template-contribution-value")?.textContent?.trim();
+        return n && v ? `${n}：${v}` : (n || v || "");
+      }).filter(Boolean);
+      html += wordList(items);
+    });
+  }
+  const block4 = sec.querySelector('[data-template-block="4"]');
+  if (block4) {
+    html += counter.next("风险预警与下月计划");
+    const riskItems = Array.from(block4.querySelectorAll(".template-plan-card.warning ul li")).map((li) => li.textContent?.trim()).filter(Boolean);
+    const planItems = Array.from(block4.querySelectorAll(".template-plan-card.next ul li")).map((li) => li.textContent?.trim()).filter(Boolean);
+    if (riskItems.length) {
+      html += `<p style="font-size:10.5pt;color:#b45309;font-weight:600;margin:6pt 0 2pt;">! 风险预警</p>`;
+      html += wordList(riskItems);
+    }
+    if (planItems.length) {
+      html += `<p style="font-size:10.5pt;color:#1677ff;font-weight:600;margin:6pt 0 2pt;">→ 下月计划</p>`;
+      html += wordList(planItems);
+    }
+  }
+  return html;
+}
+
+// ============== HTML 包装 ==============
+function wordBuildReportHTML(root, mode, title) {
+  const meta = wordExtractMetaText(root);
+  const exportTime = wordExportTimeText();
+  const reportLabel = wordModeLabel(mode);
+
+  let body = "";
+  body += `<h1 style="text-align:center;font-size:18pt;color:#0f172a;margin:0 0 6pt;">${wordEsc(title)}</h1>`;
+  body += `<p style="text-align:center;font-size:11pt;color:#1677ff;margin:0 0 4pt;font-weight:600;">${wordEsc(reportLabel)}</p>`;
+  if (meta) body += `<p style="text-align:center;font-size:9pt;color:#64748b;margin:0 0 4pt;">${wordEsc(meta)}</p>`;
+  body += `<p style="text-align:center;font-size:9pt;color:#94a3b8;margin:0 0 14pt;">导出时间：${wordEsc(exportTime)}</p>`;
+  body += `<hr style="border:none;border-top:0.75pt solid #e2e8f0;margin:0 0 12pt;"/>`;
+
+  const counter = createSectionCounter();
+  body += wordRenderInsight(root, counter);
+  body += wordRenderTable(root, counter);
+  body += wordRenderMainChart(root, counter);
+  if (mode === "analysis") body += wordRenderAnalysisReport(root, counter);
+  else if (mode === "attribution") body += wordRenderAttributionReport(root, counter);
+  else if (mode === "trend") body += wordRenderTrendReport(root, counter);
+  else if (mode === "comparison") body += wordRenderComparisonReport(root, counter);
+  else if (mode === "template") body += wordRenderTemplateReport(root, counter);
+
+  body += `<hr style="border:none;border-top:0.75pt solid #e2e8f0;margin:24pt 0 6pt;"/>`;
+  body += `<p style="text-align:center;font-size:9pt;color:#94a3b8;margin:0;">报告由「智能问数」自动生成 · ${wordEsc(exportTime)}</p>`;
+
+  return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8"/>
+<title>${wordEsc(title)}</title>
+<!--[if gte mso 9]>
+<xml>
+<w:WordDocument>
+<w:View>Print</w:View>
+<w:Zoom>100</w:Zoom>
+<w:DoNotOptimizeForBrowser/>
+</w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+@page WordSection1 { size: A4; margin: 1.8cm 2cm 1.8cm 2cm; mso-header-margin: 1cm; mso-footer-margin: 1cm; mso-paper-source: 0; }
+div.WordSection1 { page: WordSection1; }
+body { font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif; font-size: 10.5pt; color: #1f2937; line-height: 1.7; }
+h1, h2, h3, h4, p, ul, ol, li, table { font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif; }
+table { border-collapse: collapse; }
+img { max-width: 100%; }
+</style>
+</head>
+<body>
+<div class="WordSection1">
+${body}
+</div>
+</body>
+</html>`;
+}

@@ -6,48 +6,3421 @@
   <title>编辑报告 - 智能问数</title>
   <link rel="stylesheet" href="../../assets/css/theme.css" />
   <link rel="stylesheet" href="../../assets/css/business.css" />
+  <style>
+    /* ============================================================
+     * 编辑报告页面 —— 富文本编辑器 + 浮动 AI 编辑助手
+     * ============================================================ */
+    .report-edit-page .editor-page {
+      grid-template-columns: 260px 1fr;
+      gap: 14px;
+      padding: 14px;
+    }
+
+    /* 顶部 toolbar */
+    .report-edit-page .topbar .top-actions {
+      gap: 8px;
+    }
+
+    /* 章节目录侧栏 */
+    .report-edit-page .module-sidebar {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .report-edit-page .module-sidebar .tree-list {
+      flex: 1;
+      min-height: 0;
+      padding: 8px 6px 14px;
+      overflow: auto;
+    }
+
+    .report-edit-page .module-sidebar .section-link {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 12px;
+      margin-bottom: 4px;
+      color: #475569;
+      font-size: 13px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .report-edit-page .module-sidebar .section-link:hover {
+      color: var(--primary);
+      background: var(--primary-soft);
+    }
+
+    .report-edit-page .module-sidebar .section-link.active {
+      color: var(--primary);
+      background: var(--primary-soft);
+      font-weight: 600;
+    }
+
+    /* 中间编辑区域 */
+    .report-edit-page .editor-canvas-wrap {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--soft-shadow);
+      overflow: hidden;
+    }
+
+    .report-edit-page .editor-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #fbfdff, #fff);
+    }
+
+    .report-edit-page .editor-toolbar .tb-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 0 4px;
+    }
+
+    .report-edit-page .editor-toolbar .tb-divider {
+      width: 1px;
+      height: 18px;
+      background: var(--line);
+      margin: 0 4px;
+    }
+
+    .report-edit-page .editor-toolbar button {
+      width: 30px;
+      height: 30px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #475569;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .report-edit-page .editor-toolbar button:hover {
+      color: var(--primary);
+      background: #f0f6ff;
+      border-color: rgba(22, 119, 255, 0.32);
+    }
+
+    .report-edit-page .editor-toolbar button.active {
+      color: var(--primary);
+      background: var(--primary-soft);
+      border-color: rgba(22, 119, 255, 0.45);
+    }
+
+    .report-edit-page .editor-toolbar button svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .report-edit-page .editor-toolbar .tb-select {
+      height: 30px;
+      padding: 0 22px 0 10px;
+      color: #1f3a5f;
+      background: #fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6,9 12,15 18,9'/></svg>") no-repeat right 6px center;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      font-size: 12.5px;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    .report-edit-page .editor-toolbar .tb-select:hover {
+      border-color: rgba(22, 119, 255, 0.42);
+      background-color: #f8fbff;
+    }
+
+    .report-edit-page .editor-toolbar .tb-select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+    }
+
+    .report-edit-page .editor-toolbar .tb-spacer {
+      flex: 1;
+      min-width: 8px;
+    }
+
+    /* 颜色按钮（前景色 / 背景色） */
+    .report-edit-page .editor-toolbar .tb-color-btn,
+    .report-edit-page .editor-toolbar .with-caret {
+      width: auto;
+      padding: 0 4px 0 7px;
+      gap: 2px;
+    }
+
+    .report-edit-page .editor-toolbar .tb-color-btn .tb-color-bar {
+      width: 14px;
+      height: 4px;
+      margin-left: 1px;
+      border-radius: 2px;
+      background: var(--primary);
+      display: inline-block;
+    }
+
+    .report-edit-page .editor-toolbar .with-caret svg.caret,
+    .report-edit-page .editor-toolbar .tb-color-btn svg.caret {
+      width: 10px;
+      height: 10px;
+      stroke-width: 2;
+      color: #94a3b8;
+    }
+
+    /* ============ Popover 浮层（颜色 / 行距 / 表格选择） ============ */
+    .editor-popover {
+      position: fixed;
+      z-index: 9100;
+      min-width: 200px;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+    }
+
+    .editor-popover.hidden {
+      display: none;
+    }
+
+    .editor-popover .pop-title {
+      margin-bottom: 8px;
+      color: #6b7280;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    /* 颜色面板 */
+    .editor-popover .color-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 22px);
+      gap: 6px;
+    }
+
+    .editor-popover .color-grid .swatch {
+      width: 22px;
+      height: 22px;
+      padding: 0;
+      border-radius: 5px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      cursor: pointer;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .editor-popover .color-grid .swatch:hover {
+      transform: scale(1.12);
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.16);
+    }
+
+    .editor-popover .color-grid .swatch.no-color {
+      background: #fff;
+      position: relative;
+    }
+
+    .editor-popover .color-grid .swatch.no-color::after {
+      content: '';
+      position: absolute;
+      inset: 1px;
+      background: linear-gradient(45deg, transparent 45%, #ef4444 47%, #ef4444 53%, transparent 55%);
+      border-radius: 4px;
+    }
+
+    .editor-popover .color-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--line);
+    }
+
+    .editor-popover .color-actions input[type="color"] {
+      width: 30px;
+      height: 22px;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .editor-popover .color-actions button {
+      height: 26px;
+      padding: 0 10px;
+      color: #475569;
+      background: #f8fbff;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .editor-popover .color-actions button:hover {
+      color: var(--primary);
+      border-color: rgba(22, 119, 255, 0.45);
+    }
+
+    /* 行距列表 */
+    .editor-popover .lh-list {
+      display: flex;
+      flex-direction: column;
+      min-width: 160px;
+    }
+
+    .editor-popover .lh-list button {
+      height: 28px;
+      padding: 0 10px;
+      color: #1f3a5f;
+      background: transparent;
+      border: 0;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    .editor-popover .lh-list button:hover {
+      color: var(--primary);
+      background: #f0f6ff;
+    }
+
+    .editor-popover .lh-list button.active {
+      color: var(--primary);
+      background: var(--primary-soft);
+      font-weight: 600;
+    }
+
+    /* 表格选择网格 */
+    .editor-popover .tb-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 18px);
+      gap: 3px;
+      margin-bottom: 6px;
+    }
+
+    .editor-popover .tb-grid .cell {
+      width: 18px;
+      height: 18px;
+      background: #fff;
+      border: 1px solid #d6deea;
+      border-radius: 2px;
+      cursor: pointer;
+    }
+
+    .editor-popover .tb-grid .cell.on {
+      background: rgba(22, 119, 255, 0.18);
+      border-color: var(--primary);
+    }
+
+    .editor-popover .tb-grid-tip {
+      color: #6b7280;
+      font-size: 11.5px;
+      text-align: center;
+    }
+
+    /* ============ 编辑器内容增量样式 ============ */
+
+    /* 待办列表 */
+    .report-edit-page .editor-canvas article.report-page ul.todo-list {
+      list-style: none;
+      margin-left: 4px;
+      padding-left: 0;
+    }
+
+    .report-edit-page .editor-canvas article.report-page ul.todo-list > li {
+      position: relative;
+      padding-left: 26px;
+      margin: 4px 0;
+    }
+
+    .report-edit-page .editor-canvas article.report-page ul.todo-list > li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 5px;
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid #c7d2e0;
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .report-edit-page .editor-canvas article.report-page ul.todo-list > li.done {
+      color: #94a3b8;
+      text-decoration: line-through;
+    }
+
+    .report-edit-page .editor-canvas article.report-page ul.todo-list > li.done::before {
+      background: var(--primary) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='5,12 10,17 19,7'/></svg>") no-repeat center / 12px 12px;
+      border-color: var(--primary);
+    }
+
+    /* 代码块 */
+    .report-edit-page .editor-canvas article.report-page pre {
+      margin: 12px 0;
+      padding: 12px 14px;
+      color: #1e293b;
+      background: #f4f7fb;
+      border: 1px solid #e6eefb;
+      border-radius: 8px;
+      font-family: 'SFMono-Regular', Consolas, 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      overflow: auto;
+      white-space: pre;
+    }
+
+    /* 分割线 */
+    .report-edit-page .editor-canvas article.report-page hr {
+      margin: 18px 0;
+      border: 0;
+      border-top: 2px dashed #dbe6f5;
+    }
+
+    /* 链接 */
+    .report-edit-page .editor-canvas article.report-page a {
+      color: var(--primary);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    /* 编辑器内表格（与 .data-table 区分，普通表格也要好看） */
+    .report-edit-page .editor-canvas article.report-page table:not(.data-table) {
+      width: 100%;
+      margin: 12px 0;
+      border-collapse: collapse;
+      font-size: 13.5px;
+    }
+
+    .report-edit-page .editor-canvas article.report-page table:not(.data-table) th,
+    .report-edit-page .editor-canvas article.report-page table:not(.data-table) td {
+      padding: 8px 10px;
+      border: 1px solid #d6deea;
+      min-width: 60px;
+    }
+
+    .report-edit-page .editor-canvas article.report-page table:not(.data-table) th {
+      color: #475569;
+      background: #f4f8ff;
+      font-weight: 600;
+    }
+
+    /* 编辑器内图片 */
+    .report-edit-page .editor-canvas article.report-page img {
+      max-width: 100%;
+      margin: 8px 0;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    }
+
+    /* 查找条 */
+    .editor-find-bar {
+      position: fixed;
+      top: 76px;
+      right: 24px;
+      z-index: 9000;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+    }
+
+    .editor-find-bar.hidden {
+      display: none;
+    }
+
+    .editor-find-bar input {
+      width: 200px;
+      height: 28px;
+      padding: 0 10px;
+      color: #1f3a5f;
+      background: #f8fbff;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .editor-find-bar input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+    }
+
+    .editor-find-bar button {
+      height: 26px;
+      padding: 0 8px;
+      color: #475569;
+      background: #f8fbff;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .editor-find-bar button:hover {
+      color: var(--primary);
+      border-color: rgba(22, 119, 255, 0.42);
+    }
+
+    .editor-find-bar .count {
+      color: #6b7280;
+      font-size: 12px;
+      padding: 0 4px;
+    }
+
+    .report-edit-page .editor-canvas article.report-page .find-hit {
+      background: #fff3a3;
+      border-radius: 2px;
+    }
+
+    .report-edit-page .editor-canvas article.report-page .find-hit.current {
+      background: #ffb84d;
+    }
+
+    /* ============ 插入仪表盘 弹窗 ============ */
+    #dashboardModal.modal.large {
+      width: min(900px, calc(100vw - 48px));
+      height: min(720px, calc(100vh - 60px));
+      display: none;
+      flex-direction: column;
+    }
+    #dashboardModal.modal.large:not(.hidden) {
+      display: flex;
+    }
+
+    #dashboardModal .modal-body {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .db-pick-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .db-pick-search {
+      flex: 1;
+      min-width: 220px;
+    }
+
+    .db-pick-filter {
+      display: inline-flex;
+      gap: 4px;
+      padding: 3px;
+      background: #f4f8ff;
+      border: 1px solid #e6eefb;
+      border-radius: 8px;
+    }
+
+    .db-pick-filter .filter-btn {
+      height: 26px;
+      padding: 0 10px;
+      color: #475569;
+      background: transparent;
+      border: 0;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .db-pick-filter .filter-btn:hover {
+      color: var(--primary);
+    }
+
+    .db-pick-filter .filter-btn.active {
+      color: var(--primary);
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+      font-weight: 600;
+    }
+
+    .dashboard-pick-grid {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 12px;
+      padding: 4px;
+      overflow: hidden;
+      align-content: stretch;
+    }
+
+    .dashboard-pick-grid .pick-card {
+      min-height: 0;
+    }
+
+    .dashboard-pick-grid .pick-card .pc-thumb {
+      flex: 1;
+      height: auto;
+      min-height: 0;
+    }
+
+    .dashboard-pick-grid .pick-card {
+      display: flex;
+      flex-direction: column;
+    }
+
+    @media (max-width: 720px) {
+      .dashboard-pick-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* 分页器 */
+    .db-pick-pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 4px 0 2px;
+    }
+
+    .db-pick-pagination .page-btn {
+      min-width: 28px;
+      height: 28px;
+      padding: 0 8px;
+      color: #475569;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-size: 12.5px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .db-pick-pagination .page-btn:hover:not(:disabled) {
+      color: var(--primary);
+      border-color: rgba(22, 119, 255, 0.42);
+      background: #f0f6ff;
+    }
+
+    .db-pick-pagination .page-btn.active {
+      color: #fff;
+      background: var(--primary);
+      border-color: var(--primary);
+      font-weight: 600;
+    }
+
+    .db-pick-pagination .page-btn:disabled {
+      color: #c7d2e0;
+      background: #f8fbff;
+      cursor: not-allowed;
+    }
+
+    .db-pick-pagination .page-ellipsis {
+      padding: 0 4px;
+      color: #94a3b8;
+      font-size: 12px;
+    }
+
+    .db-pick-pagination .page-info {
+      margin-left: 12px;
+      color: #6b7280;
+      font-size: 12px;
+    }
+
+    .pick-card {
+      position: relative;
+      padding: 12px;
+      background: #fff;
+      border: 1.5px solid var(--line);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .pick-card:hover {
+      border-color: rgba(22, 119, 255, 0.55);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+    }
+
+    .pick-card.selected {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+    }
+
+    .pick-card .check {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 20px;
+      height: 20px;
+      border: 1.5px solid #c7d2e0;
+      border-radius: 50%;
+      background: #fff;
+      transition: all 0.18s ease;
+    }
+
+    .pick-card.selected .check {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .pick-card.selected .check::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 10px;
+      height: 6px;
+      border-left: 2px solid #fff;
+      border-bottom: 2px solid #fff;
+      transform: translate(-50%, -65%) rotate(-45deg);
+    }
+
+    .pick-card .pc-thumb {
+      height: 84px;
+      margin-bottom: 10px;
+      padding: 6px;
+      background: linear-gradient(180deg, #fbfdff, #f4f8ff);
+      border: 1px solid #e6eefb;
+      border-radius: 8px;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .pick-card .pc-thumb svg { width: 100%; height: 100%; display: block; }
+
+    .pick-card .pc-thumb .pc-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      width: 100%;
+      height: 100%;
+      padding: 4px;
+    }
+    .pick-card .pc-thumb .pc-bars span {
+      flex: 1;
+      background: linear-gradient(180deg, #5fa8ff, #1677ff);
+      border-radius: 3px 3px 0 0;
+    }
+
+    .pick-card .pc-thumb .pc-pie {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: conic-gradient(#1677ff 0 32%, #36cfc9 32% 56%, #ffa940 56%, #9254de 80%, #ff7875 92%);
+      box-shadow: inset 0 0 0 8px #fff;
+    }
+
+    .pick-card .pc-thumb .pc-table {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      width: 100%;
+      padding: 6px 4px;
+    }
+    .pick-card .pc-thumb .pc-table .row {
+      height: 6px;
+      background: #c7d6f0;
+      border-radius: 2px;
+    }
+    .pick-card .pc-thumb .pc-table .row.head { background: #1677ff; height: 8px; }
+
+    .pick-card .pc-name {
+      color: #17375e;
+      font-size: 13.5px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      padding-right: 24px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pick-card .pc-meta {
+      color: #6b7280;
+      font-size: 11.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pick-card .pc-tag {
+      padding: 1px 6px;
+      color: var(--primary);
+      background: #fff;
+      border: 1px solid rgba(22, 119, 255, 0.25);
+      border-radius: 4px;
+      font-size: 10.5px;
+      font-weight: 600;
+    }
+
+    .db-pick-empty {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      font-size: 13px;
+    }
+
+    .db-pick-count {
+      margin-right: auto;
+      color: #475569;
+      font-size: 13px;
+    }
+
+    .db-pick-count strong {
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    #dashboardModal .modal-foot {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* 富文本编辑画布 */
+    .report-edit-page .editor-canvas {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 24px 20px 60px;
+      background: #f4f8fd;
+      border: 0;
+      border-radius: 0;
+    }
+
+    .report-edit-page .editor-canvas article.report-page {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 32px 40px 56px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+      outline: none;
+    }
+
+    .report-edit-page .editor-canvas article.report-page:focus,
+    .report-edit-page .editor-canvas article.report-page:focus-within {
+      border-color: rgba(22, 119, 255, 0.55);
+      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+    }
+
+    .report-edit-page .editor-canvas article.report-page h1 {
+      margin: 0 0 6px;
+      color: #17375e;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .report-edit-page .editor-canvas article.report-page h2 {
+      margin: 28px 0 10px;
+      color: #17375e;
+      font-size: 18px;
+      font-weight: 700;
+      padding-left: 10px;
+      border-left: 4px solid var(--primary);
+    }
+
+    .report-edit-page .editor-canvas article.report-page h3 {
+      margin: 18px 0 8px;
+      color: #1e3a5f;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .report-edit-page .editor-canvas article.report-page p {
+      margin: 8px 0;
+      color: #374151;
+      font-size: 14px;
+      line-height: 1.85;
+    }
+
+    .report-edit-page .editor-canvas article.report-page ul,
+    .report-edit-page .editor-canvas article.report-page ol {
+      margin: 8px 0 8px 20px;
+      color: #374151;
+      font-size: 14px;
+      line-height: 1.85;
+    }
+
+    .report-edit-page .editor-canvas article.report-page blockquote {
+      margin: 12px 0;
+      padding: 10px 16px;
+      color: #475569;
+      background: #f8fbff;
+      border-left: 3px solid var(--primary);
+      border-radius: 4px;
+      font-size: 14px;
+      line-height: 1.85;
+    }
+
+    .report-edit-page .editor-canvas article.report-page blockquote strong {
+      color: var(--primary);
+    }
+
+    .report-edit-page .editor-canvas article.report-page .report-meta {
+      color: #6b7280;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    /* KPI 卡片 */
+    .report-edit-page .editor-canvas article.report-page .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin: 14px 0;
+    }
+
+    .report-edit-page .editor-canvas article.report-page .kpi-row.cols-3 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .report-edit-page .editor-canvas article.report-page .kpi-card {
+      padding: 12px 14px;
+      background: linear-gradient(180deg, #f8fbff, #fff);
+      border: 1px solid #e6eefb;
+      border-radius: 12px;
+    }
+
+    .report-edit-page .editor-canvas article.report-page .kpi-card .lbl {
+      color: #6b7280;
+      font-size: 12px;
+    }
+
+    .report-edit-page .editor-canvas article.report-page .kpi-card .val {
+      margin-top: 4px;
+      color: #17375e;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .report-edit-page .editor-canvas article.report-page .kpi-card .delta {
+      margin-top: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .report-edit-page .editor-canvas article.report-page .kpi-card .delta.up { color: #16a34a; }
+    .report-edit-page .editor-canvas article.report-page .kpi-card .delta.down { color: #dc2626; }
+    .report-edit-page .editor-canvas article.report-page .kpi-card .delta.warn { color: #d97706; }
+
+    /* 数据表格 */
+    .report-edit-page .editor-canvas article.report-page table.data-table {
+      width: 100%;
+      margin: 12px 0;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .report-edit-page .editor-canvas article.report-page table.data-table th,
+    .report-edit-page .editor-canvas article.report-page table.data-table td {
+      padding: 9px 12px;
+      text-align: left;
+      border-bottom: 1px solid #eef2f7;
+    }
+
+    .report-edit-page .editor-canvas article.report-page table.data-table th {
+      color: #475569;
+      background: #f8fbff;
+      font-weight: 600;
+    }
+
+    .report-edit-page .editor-canvas article.report-page table.data-table td.num {
+      text-align: right;
+      color: #17375e;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .report-edit-page .editor-canvas article.report-page table.data-table tr:hover td {
+      background: #f9fbfd;
+    }
+
+    /* 标签行 */
+    .report-edit-page .editor-canvas article.report-page .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 10px 0 4px;
+    }
+
+    .report-edit-page .editor-canvas article.report-page .tag-row .tag {
+      padding: 4px 10px;
+      color: var(--primary);
+      background: var(--primary-soft);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* 图表占位（带 ECharts 容器） */
+    .report-edit-page .editor-canvas article.report-page .asset-preview {
+      margin: 14px 0;
+      height: 320px;
+      padding: 14px 16px 18px;
+      background: linear-gradient(180deg, #fbfdff, #fff);
+      border: 1px solid #e6eefb;
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      color: #475569;
+      font-size: 12.5px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+    }
+
+    .report-edit-page .editor-canvas article.report-page .asset-preview .ap-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--primary);
+      font-size: 12.5px;
+      font-weight: 600;
+    }
+
+    .report-edit-page .editor-canvas article.report-page .asset-preview .ap-head .ap-tag {
+      padding: 2px 8px;
+      color: #fff;
+      background: var(--primary);
+      border-radius: 999px;
+      font-size: 11px;
+    }
+
+    .report-edit-page .editor-canvas article.report-page .asset-preview .ap-body,
+    .report-edit-page .editor-canvas article.report-page .asset-preview .chart-canvas {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+    }
+
+    /* 右键菜单 - AI 写作操作 */
+    .report-edit-page .ai-write-menu {
+      position: fixed;
+      z-index: 9000;
+      width: 240px;
+      padding: 6px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+      transition: opacity 0.12s ease, transform 0.12s ease;
+    }
+
+    .report-edit-page .ai-write-menu.hidden {
+      opacity: 0;
+      transform: translateY(-4px);
+      pointer-events: none;
+    }
+
+    .report-edit-page .ai-write-menu .menu-head {
+      padding: 8px 10px 10px;
+      color: #6b7280;
+      font-size: 11px;
+      font-weight: 600;
+      border-bottom: 1px dashed var(--line);
+      margin-bottom: 4px;
+    }
+
+    .report-edit-page .ai-write-menu .menu-head strong {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--primary);
+      font-size: 12px;
+    }
+
+    .report-edit-page .ai-write-menu button {
+      width: 100%;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 10px;
+      color: #1f3a5f;
+      background: transparent;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.12s ease;
+    }
+
+    .report-edit-page .ai-write-menu button:hover {
+      background: #f0f6ff;
+    }
+
+    .report-edit-page .ai-write-menu .ico {
+      flex: none;
+      width: 26px;
+      height: 26px;
+      display: grid;
+      place-items: center;
+      color: var(--primary);
+      background: var(--primary-soft);
+      border-radius: 7px;
+      font-size: 14px;
+    }
+
+    .report-edit-page .ai-write-menu .text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .report-edit-page .ai-write-menu .text strong {
+      display: block;
+      color: #17375e;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .report-edit-page .ai-write-menu .text em {
+      display: block;
+      margin-top: 2px;
+      color: #6b7280;
+      font-style: normal;
+      font-size: 11.5px;
+      line-height: 1.5;
+    }
+
+    /* AI 编辑助手 - 上传按钮 / 附件预览 浮窗内紧凑样式 */
+    .ai-chat-input-wrap .input-card .input-tools {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .ai-chat-input-wrap .input-card .input-tools button {
+      height: 24px;
+      padding: 0 8px;
+      gap: 3px;
+      font-size: 12px;
+      color: #6b7280;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .ai-chat-input-wrap .input-card .input-tools button:hover {
+      color: var(--primary);
+      background: #eaf3ff;
+      border-color: rgba(22, 119, 255, 0.32);
+    }
+
+    .ai-chat-input-wrap .input-card .input-tools svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .ai-chat-input-wrap .input-card .attachment-preview-list {
+      margin: 0 0 8px;
+      gap: 6px;
+    }
+
+    .ai-chat-input-wrap .input-card .attachment-chip {
+      max-width: 200px;
+      min-height: 38px;
+      padding: 5px 24px 5px 6px;
+      gap: 7px;
+      border-radius: 10px;
+      font-size: 12px;
+    }
+
+    .ai-chat-input-wrap .input-card .attachment-chip img {
+      width: 32px;
+      height: 32px;
+      border-radius: 7px;
+    }
+
+    .ai-chat-input-wrap .input-card .attachment-chip .attachment-file-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      font-size: 12px;
+    }
+
+    .ai-chat-input-wrap .input-card .attachment-chip .attachment-info strong {
+      font-size: 12px;
+      max-width: 110px;
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .ai-chat-input-wrap .input-card .attachment-chip .attachment-info span {
+      font-size: 11px;
+    }
+
+    .ai-chat-input-wrap .input-card .attachment-chip .attachment-remove {
+      position: absolute;
+      top: 3px;
+      right: 4px;
+      width: 18px;
+      height: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      background: transparent;
+      border: 0;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .ai-chat-input-wrap .input-card .attachment-chip .attachment-remove:hover {
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    /* 用户消息中嵌入的附件展示 */
+    .ai-msg.user .ai-msg-attachments {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+      max-width: 100%;
+    }
+
+    .ai-msg.user .ai-msg-attachments .att-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px 4px 5px;
+      max-width: 220px;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(22, 119, 255, 0.18);
+      border-radius: 8px;
+      font-size: 11.5px;
+      color: #1f3f7a;
+    }
+
+    .ai-msg.user .ai-msg-attachments .att-item img {
+      width: 26px;
+      height: 26px;
+      object-fit: cover;
+      border-radius: 5px;
+    }
+
+    .ai-msg.user .ai-msg-attachments .att-item .ico {
+      width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: var(--primary);
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .ai-msg.user .ai-msg-attachments .att-item .nm {
+      max-width: 130px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* AI 助手浮窗内的"目标文本"卡片 */
+    .ai-chat-pane .target-card {
+      margin: 0 12px 10px;
+      padding: 10px 12px;
+      background: #f4f8ff;
+      border: 1px solid #dcecff;
+      border-radius: 10px;
+      font-size: 12.5px;
+      line-height: 1.65;
+    }
+
+    .ai-chat-pane .target-card .tc-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      color: var(--primary);
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+
+    .ai-chat-pane .target-card .tc-head .badge {
+      padding: 2px 8px;
+      color: var(--primary);
+      background: #fff;
+      border: 1px solid rgba(22, 119, 255, 0.25);
+      border-radius: 999px;
+      font-size: 11px;
+    }
+
+    .ai-chat-pane .target-card .tc-head .clear {
+      margin-left: auto;
+      width: 22px;
+      height: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      background: transparent;
+      border: 0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .ai-chat-pane .target-card .tc-head .clear:hover {
+      color: var(--primary);
+      background: rgba(22, 119, 255, 0.08);
+    }
+
+    .ai-chat-pane .target-card .tc-body {
+      max-height: 90px;
+      overflow: auto;
+      color: #334155;
+    }
+
+    /* 编辑区"AI 写作"占位浮卡（顶部一行小提示） */
+    .report-edit-page .editor-tip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px 0;
+      color: #6b7280;
+      font-size: 12px;
+    }
+
+    .report-edit-page .editor-tip svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: var(--primary);
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .report-edit-page .editor-tip strong {
+      color: #17375e;
+    }
+  </style>
 </head>
-<body>
+<body class="report-edit-page">
   <header class="topbar">
     <div class="top-left"><div class="logo">数</div><div class="product-name">智能问数</div></div>
-    <nav class="top-menu"><button class="menu-item" onclick="goTo('smart-query.html')">智能问数</button><button class="menu-item" onclick="goTo('dashboard.html')">我的仪表盘</button><button class="menu-item" onclick="goTo('board.html')">我的看板</button><button class="menu-item active">我的报告</button></nav>
-    <div class="top-actions"><button class="secondary-btn" onclick="goTo('report.html')">预览</button><button class="primary-btn" onclick="goTo('report.html')">保存报告</button></div>
+    <nav class="top-menu">
+      <button class="menu-item" onclick="goTo('smart-query.html')">智能问数</button>
+      <button class="menu-item" onclick="goTo('dashboard.html')">我的仪表盘</button>
+      <button class="menu-item" onclick="goTo('board.html')">我的看板</button>
+      <button class="menu-item active">我的报告</button>
+    </nav>
+    <div class="top-actions">
+      <button class="primary-btn" id="btnSaveReport">保存报告</button>
+      <button class="ghost-btn" onclick="goTo('report.html')">退出</button>
+    </div>
   </header>
+
   <main class="editor-page">
+    <!-- ===== 左侧：报告章节目录 ===== -->
     <aside class="module-sidebar">
-      <div class="module-side-head"><h3>报告目录</h3></div>
-      <div class="tree-list">
-        <div class="tree-item active">一、经营概览</div>
-        <div class="tree-item">二、区域销售表现</div>
-        <div class="tree-item">三、异常增长归因</div>
-        <div class="tree-item">四、经营建议</div>
+      <div class="module-side-head">
+        <h3>报告章节</h3>
       </div>
+      <div class="tree-list" id="sectionList"></div>
     </aside>
-    <section class="editor-canvas">
-      <article class="report-page">
-        <h1 contenteditable="true">二季度销售复盘报告</h1>
-        <p contenteditable="true">本报告由智能问数数据解读、归因分析和仪表盘图表自动生成，可继续手动编辑。</p>
-        <h2 contenteditable="true">一、经营概览</h2>
-        <p contenteditable="true">二季度整体销售保持增长态势，华东区销售额连续提升，渠道促销和重点客户订单释放是主要增长因素。</p>
-        <h2 contenteditable="true">二、区域销售表现</h2>
-        <p contenteditable="true">华东区 6 月销售额达到 3248 万元，较 1 月增长约 49.0%。4 月开始增长斜率明显提升。</p>
-        <div class="asset-preview" style="height:220px;border:1px solid #eef2f7;border-radius:16px;"><div class="asset-line"></div></div>
-        <h2 contenteditable="true">三、经营建议</h2>
-        <p contenteditable="true">建议继续跟踪华东区高贡献渠道和重点客户订单变化，评估 4 月促销策略是否具备复制价值。</p>
-      </article>
+
+    <!-- ===== 中间：富文本编辑器 ===== -->
+    <section class="editor-canvas-wrap">
+      <!-- 工具条 -->
+      <div class="editor-toolbar" id="editorToolbar">
+        <!-- 段落 / 字体 / 字号 -->
+        <div class="tb-group">
+          <select id="tbBlock" class="tb-select" title="段落 / 标题">
+            <option value="P">正文</option>
+            <option value="H1">标题 1</option>
+            <option value="H2">标题 2</option>
+            <option value="H3">标题 3</option>
+            <option value="H4">标题 4</option>
+          </select>
+          <select id="tbFont" class="tb-select" style="width:104px;" title="字体">
+            <option value="">默认字体</option>
+            <option value="'Microsoft YaHei', 微软雅黑, sans-serif">微软雅黑</option>
+            <option value="'PingFang SC', 苹方, sans-serif">苹方</option>
+            <option value="'SimSun', 宋体, serif">宋体</option>
+            <option value="'SimHei', 黑体, sans-serif">黑体</option>
+            <option value="'KaiTi', 楷体, serif">楷体</option>
+            <option value="Arial, sans-serif">Arial</option>
+            <option value="'Times New Roman', serif">Times New Roman</option>
+            <option value="'Courier New', monospace">Courier New</option>
+          </select>
+          <select id="tbFontSize" class="tb-select" style="width:62px;" title="字号">
+            <option value="">默认</option>
+            <option value="12px">12</option>
+            <option value="13px">13</option>
+            <option value="14px">14</option>
+            <option value="15px">15</option>
+            <option value="16px">16</option>
+            <option value="18px">18</option>
+            <option value="20px">20</option>
+            <option value="24px">24</option>
+            <option value="28px">28</option>
+            <option value="32px">32</option>
+            <option value="36px">36</option>
+            <option value="42px">42</option>
+            <option value="48px">48</option>
+          </select>
+        </div>
+        <span class="tb-divider"></span>
+
+        <!-- 加粗 / 斜体 / 下划线 / 删除线 -->
+        <div class="tb-group">
+          <button type="button" data-cmd="bold" title="加粗 (Ctrl+B)"><strong>B</strong></button>
+          <button type="button" data-cmd="italic" title="斜体 (Ctrl+I)"><em>I</em></button>
+          <button type="button" data-cmd="underline" title="下划线 (Ctrl+U)"><span style="text-decoration:underline;">U</span></button>
+          <button type="button" data-cmd="strikeThrough" title="删除线"><span style="text-decoration:line-through;">S</span></button>
+        </div>
+        <span class="tb-divider"></span>
+
+        <!-- 字体颜色 / 背景高亮 -->
+        <div class="tb-group">
+          <button type="button" class="tb-color-btn" data-popover="fore" title="字体颜色">
+            <svg viewBox="0 0 24 24"><path d="M5 19h14"/><path d="M7 16l5-12 5 12"/><path d="M9 12h6"/></svg>
+            <i class="tb-color-bar" id="foreColorBar" style="background:#ef4444;"></i>
+            <svg class="caret" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg>
+          </button>
+          <button type="button" class="tb-color-btn" data-popover="back" title="背景色 / 高亮">
+            <svg viewBox="0 0 24 24"><path d="M9 11L4 16v4h4l5-5"/><path d="M9 11l4-4 5 5-4 4z"/><path d="M14 6l3-3 4 4-3 3"/></svg>
+            <i class="tb-color-bar" id="backColorBar" style="background:#fef3c7;"></i>
+            <svg class="caret" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg>
+          </button>
+        </div>
+        <span class="tb-divider"></span>
+
+        <!-- 列表：有序 / 无序 / 待办 -->
+        <div class="tb-group">
+          <button type="button" data-cmd="insertUnorderedList" title="无序列表">
+            <svg viewBox="0 0 24 24"><circle cx="5" cy="6" r="1.4" fill="currentColor"/><circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="5" cy="18" r="1.4" fill="currentColor"/><path d="M9 6h11"/><path d="M9 12h11"/><path d="M9 18h11"/></svg>
+          </button>
+          <button type="button" data-cmd="insertOrderedList" title="有序列表">
+            <svg viewBox="0 0 24 24"><path d="M9 6h11"/><path d="M9 12h11"/><path d="M9 18h11"/><path d="M3.5 5h2v3"/><path d="M3.5 11.5h2L3.5 14h2"/><path d="M3.5 17.5h2v1.2H4v.6h1.5V21h-2"/></svg>
+          </button>
+          <button type="button" data-action="todoList" title="待办列表">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="6" height="6" rx="1.2"/><path d="M5 7l1.5 1.5L8 6.8"/><rect x="3" y="14" width="6" height="6" rx="1.2"/><path d="M12 7h9"/><path d="M12 17h9"/></svg>
+          </button>
+        </div>
+        <span class="tb-divider"></span>
+
+        <!-- 对齐：左 / 中 / 右 / 两端 -->
+        <div class="tb-group">
+          <button type="button" data-cmd="justifyLeft" title="左对齐">
+            <svg viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h14"/></svg>
+          </button>
+          <button type="button" data-cmd="justifyCenter" title="居中对齐">
+            <svg viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M7 12h10"/><path d="M5 18h14"/></svg>
+          </button>
+          <button type="button" data-cmd="justifyRight" title="右对齐">
+            <svg viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M10 12h10"/><path d="M6 18h14"/></svg>
+          </button>
+          <button type="button" data-cmd="justifyFull" title="两端对齐">
+            <svg viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>
+          </button>
+        </div>
+        <span class="tb-divider"></span>
+
+        <!-- 缩进 / 行间距 -->
+        <div class="tb-group">
+          <button type="button" data-cmd="outdent" title="减少缩进">
+            <svg viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M11 12H20"/><path d="M4 18h16"/><path d="M8 9l-3 3 3 3"/></svg>
+          </button>
+          <button type="button" data-cmd="indent" title="增加缩进">
+            <svg viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M4 12h9"/><path d="M4 18h16"/><path d="M16 9l3 3-3 3"/></svg>
+          </button>
+          <button type="button" class="with-caret" data-popover="lineHeight" title="行间距">
+            <svg viewBox="0 0 24 24"><path d="M3 5l3-3 3 3"/><path d="M6 2v20"/><path d="M3 19l3 3 3-3"/><path d="M12 6h9"/><path d="M12 12h9"/><path d="M12 18h9"/></svg>
+            <svg class="caret" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg>
+          </button>
+        </div>
+        <span class="tb-divider"></span>
+
+        <!-- 引用 / 代码块 / 分割线 -->
+        <div class="tb-group">
+          <button type="button" data-cmd="formatBlock" data-arg="BLOCKQUOTE" title="引用">
+            <svg viewBox="0 0 24 24"><path d="M7 7h4v4H7v3a3 3 0 0 0 3 3"/><path d="M14 7h4v4h-4v3a3 3 0 0 0 3 3"/></svg>
+          </button>
+          <button type="button" data-action="codeBlock" title="代码块">
+            <svg viewBox="0 0 24 24"><path d="M9 8l-4 4 4 4"/><path d="M15 8l4 4-4 4"/></svg>
+          </button>
+          <button type="button" data-action="hr" title="分割线">
+            <svg viewBox="0 0 24 24"><path d="M3 12h18"/><path d="M5 8h14"/><path d="M5 16h14"/></svg>
+          </button>
+        </div>
+        <span class="tb-divider"></span>
+
+        <!-- 插入：链接 / 图片 / 表格 -->
+        <div class="tb-group">
+          <button type="button" data-action="link" title="超链接">
+            <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
+          </button>
+          <button type="button" data-action="image" title="插入图片">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6" fill="currentColor"/><path d="M21 17l-5-5-7 7"/></svg>
+          </button>
+          <button type="button" class="with-caret" data-popover="table" title="插入表格">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M3 16h18"/><path d="M9 4v16"/><path d="M15 4v16"/></svg>
+            <svg class="caret" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg>
+          </button>
+        </div>
+        <span class="tb-divider"></span>
+
+        <!-- 清除格式 / 撤销 / 重做 -->
+        <div class="tb-group">
+          <button type="button" data-action="clearFormat" title="清除格式">
+            <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 5h6"/><path d="M11 5l-2 14"/><path d="M14 12l6 6"/><path d="M20 12l-6 6"/></svg>
+          </button>
+          <button type="button" data-cmd="undo" title="撤销 (Ctrl+Z)">
+            <svg viewBox="0 0 24 24"><path d="M3 7h11a6 6 0 0 1 0 12h-3"/><path d="M7 3 3 7l4 4"/></svg>
+          </button>
+          <button type="button" data-cmd="redo" title="重做 (Ctrl+Y)">
+            <svg viewBox="0 0 24 24"><path d="M21 7H10a6 6 0 0 0 0 12h3"/><path d="M17 3l4 4-4 4"/></svg>
+          </button>
+          <button type="button" data-action="find" title="查找 (Ctrl+F)">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg>
+          </button>
+        </div>
+
+        <span class="tb-spacer"></span>
+
+        <!-- 插入仪表盘 -->
+        <div class="tb-group">
+          <button type="button" id="btnInsertDashboard" title="从我的仪表盘选择图表插入到报告" style="width:auto;padding:0 12px;color:var(--primary);background:var(--primary-soft);border-color:rgba(22,119,255,0.45);font-weight:600;">
+            <svg viewBox="0 0 24 24" style="margin-right:4px;"><rect x="3" y="3" width="8" height="9" rx="1.6"/><rect x="13" y="3" width="8" height="5" rx="1.6"/><rect x="3" y="14" width="8" height="7" rx="1.6"/><rect x="13" y="10" width="8" height="11" rx="1.6"/></svg>
+            插入仪表盘
+          </button>
+        </div>
+      </div>
+
+      <!-- 顶部一行小提示 -->
+      <div class="editor-tip">
+        <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+        <span><strong>提示：</strong>选中正文后右键，可对内容进行<strong> 改写 / 扩写 / 仿写 / 润色 / 缩写 / 续写 / 深度写作 </strong>等 AI 操作。</span>
+      </div>
+
+      <!-- 富文本编辑画布 -->
+      <div class="editor-canvas">
+        <article class="report-page" id="reportArticle" contenteditable="true" spellcheck="false">
+          <h1>二季度销售复盘报告</h1>
+          <p class="report-meta">生成时间：2026-06-30 · 报告类型：经营分析 · 季度复盘 · 数据周期：2026-04-01 ~ 2026-06-30</p>
+          <p>本报告基于智能问数二季度全量数据自动生成，覆盖经营全景、区域、渠道、产品、客户五大维度，重点回答"二季度做得如何、靠什么增长、有什么风险、下一步怎么做"四个核心问题，可作为经营会议汇报与下季度策略输入。</p>
+          <div class="tag-row" contenteditable="false">
+            <span class="tag">趋势上行</span>
+            <span class="tag">华东主力</span>
+            <span class="tag">线上渠道领跑</span>
+            <span class="tag">TOP10 集中度 67%</span>
+            <span class="tag">目标差距 14%</span>
+          </div>
+
+          <h2 id="s1">一、经营概览</h2>
+          <p>二季度整体销售保持增长态势，华东区连续 6 个月环比正增长，线上电商与重点客户订单释放是主要增长引擎；目标完成率 86%，距离季度目标仍有 14%，6 月需重点冲刺。</p>
+          <div class="kpi-row" contenteditable="false">
+            <div class="kpi-card"><div class="lbl">销售额（万元）</div><div class="val">9,258</div><div class="delta up">同比 +12.4% · 环比 +4.1%</div></div>
+            <div class="kpi-card"><div class="lbl">订单量（单）</div><div class="val">52,140</div><div class="delta up">同比 +8.6% · 环比 +2.3%</div></div>
+            <div class="kpi-card"><div class="lbl">客单价（元）</div><div class="val">1,776</div><div class="delta up">同比 +3.5% · 环比 +1.8%</div></div>
+            <div class="kpi-card"><div class="lbl">目标完成率</div><div class="val">86%</div><div class="delta warn">距目标 14%，需关注</div></div>
+          </div>
+          <h3>1.1 同比 / 环比对比</h3>
+          <ul>
+            <li>同比增长：销售额 <strong>+12.4%</strong>，订单量 <strong>+8.6%</strong>，客单价 <strong>+3.5%</strong>，整体跑赢去年同期。</li>
+            <li>环比 1 季度：销售额 <strong>+4.1%</strong>，进入二季度后增长斜率明显抬升，4-6 月持续正向。</li>
+            <li>累计达成率：上半年合计 <strong>62%</strong>，下半年需在 7-9 月完成 <strong>≥48%</strong> 的全年目标节奏。</li>
+          </ul>
+          <div class="asset-preview" contenteditable="false" data-chart="line" data-chart-title="二季度销售额走势 · 4-6 月环比变化">
+            <div class="ap-head"><span class="ap-tag">趋势</span><span>二季度销售额走势 · 4-6 月环比变化</span></div>
+            <div class="ap-body chart-canvas"></div>
+          </div>
+          <blockquote><strong>结论：</strong>整体处于稳步上行通道，但目标节奏仍偏慢，6 月已进入冲刺窗口期，建议聚焦未达成的细分品类与客户。</blockquote>
+
+          <h2 id="s2">二、区域销售表现</h2>
+          <p>二季度六大区销售额合计 <strong>9,258 万元</strong>，TOP3 大区合计贡献 <strong>69.7%</strong>，呈现"东高西低、华东独大"格局。</p>
+          <table class="data-table">
+            <thead><tr><th>大区</th><th class="num">销售额（万）</th><th class="num">环比</th><th class="num">同比</th><th>主要动因</th></tr></thead>
+            <tbody>
+              <tr><td>华东</td><td class="num">3,248</td><td class="num">+5.4%</td><td class="num">+18.2%</td><td>线上促销 + 大客户订单</td></tr>
+              <tr><td>华南</td><td class="num">2,156</td><td class="num">+3.8%</td><td class="num">+11.6%</td><td>新品上市 + 直播专场</td></tr>
+              <tr><td>华北</td><td class="num">1,053</td><td class="num">+2.1%</td><td class="num">+6.7%</td><td>稳态运营，渠道下沉</td></tr>
+              <tr><td>西南</td><td class="num">982</td><td class="num">+1.4%</td><td class="num">+8.0%</td><td>区域代理增量</td></tr>
+              <tr><td>华中</td><td class="num">896</td><td class="num">+0.9%</td><td class="num">+4.5%</td><td>持平，缺亮点</td></tr>
+              <tr><td>东北</td><td class="num">923</td><td class="num">+0.4%</td><td class="num">+1.2%</td><td>增速放缓，需关注</td></tr>
+            </tbody>
+          </table>
+          <div class="asset-preview" contenteditable="false" data-chart="bar" data-chart-title="六大区销售额分布与环比">
+            <div class="ap-head"><span class="ap-tag">柱状图</span><span>六大区销售额分布与环比</span></div>
+            <div class="ap-body chart-canvas"></div>
+          </div>
+          <h3>2.1 华东区重点城市</h3>
+          <p>华东 6 月销售额 <strong>3,248 万元</strong>，较 1 月增长约 <strong>49.0%</strong>。上海、杭州、苏州、南京合计贡献华东区 <strong>78.4%</strong> 销售额。</p>
+          <ul>
+            <li>上海：1,124 万元（占比 34.6%），线上电商占比 46%；</li>
+            <li>杭州：812 万元（占比 25.0%），私域社群复购率 38%；</li>
+            <li>苏州：456 万元（占比 14.0%），大客户订单提升 21%；</li>
+            <li>南京：154 万元（占比 4.7%），新品贡献 32%。</li>
+          </ul>
+
+          <h2 id="s3">三、异常增长归因</h2>
+          <p>二季度共出现 3 次异常增长信号，由智能问数自动识别并完成归因：</p>
+          <h3>3.1 4 月销售额环比 +15.1%</h3>
+          <ul>
+            <li>促销活动贡献：<strong>+6.2%</strong>，主要来自"清明 3 折券"与"五一预热"叠加；</li>
+            <li>新品贡献：<strong>+4.5%</strong>，"智能 Pro 系列"开局亮眼；</li>
+            <li>渠道扩张：<strong>+2.4%</strong>，新增 2 家区域代理；</li>
+            <li>自然增长：<strong>+2.0%</strong>，与季节性需求一致。</li>
+          </ul>
+          <div class="asset-preview" contenteditable="false" data-chart="stacked-bar" data-chart-title="4 月销售额增量结构拆解">
+            <div class="ap-head"><span class="ap-tag">堆叠柱</span><span>4 月销售额增量结构拆解</span></div>
+            <div class="ap-body chart-canvas"></div>
+          </div>
+          <h3>3.2 5 月华南区直播专场单日突破 320 万</h3>
+          <p>5 月 18 日华南区直播专场单日 GMV <strong>328 万元</strong>，是过去 12 个月单日最高值，主要源于头部主播首播 + 新品组合。建议沉淀该模型作为标准化打法。</p>
+          <h3>3.3 6 月线上电商渠道占比突破 40%</h3>
+          <p>线上电商渠道占比由 1 月 33% 提升至 6 月 <strong>40.6%</strong>，已超过门店零售成为第一大渠道。需要同步评估履约、客服、售后链路的承载能力。</p>
+          <blockquote><strong>归因结论：</strong>本季度增长 70% 来自"促销 + 新品 + 渠道结构升级"，自然增长占比下降，提示需要持续投入"主动经营动作"才能维持当前增速。</blockquote>
+
+          <h2 id="s4">四、问题与风险</h2>
+          <p>本季度数据中识别 4 项需要管理层关注的风险：</p>
+          <ol>
+            <li><strong>北区（华北/东北）目标完成率偏低</strong>：分别为 79% / 76%，连续两月低于公司均值 7-10 个百分点。</li>
+            <li><strong>库存周转天数上升</strong>：从 38 天上升到 42 天，部分长尾 SKU 周转超过 90 天。</li>
+            <li><strong>TOP10 客户集中度偏高</strong>：合计贡献 67%，其中 3 家头部客户近 90 天订单频次下降 ≥30%，存在流失风险。</li>
+            <li><strong>毛利率小幅承压</strong>：综合毛利率 26.8%，环比下降 <strong>0.6 pct</strong>，受促销外溢影响。</li>
+          </ol>
+          <div class="asset-preview" contenteditable="false" data-chart="heatmap" data-chart-title="六大区 × KPI 风险矩阵">
+            <div class="ap-head"><span class="ap-tag">热力图</span><span>六大区 × KPI 风险矩阵</span></div>
+            <div class="ap-body chart-canvas"></div>
+          </div>
+          <blockquote><strong>风险提示：</strong>若库存与流失同时恶化，预计三季度毛利率额外承压 0.5-1.0 pct。建议优先处理库存与流失客户两件事。</blockquote>
+
+          <h2 id="s5">五、经营建议</h2>
+          <p>结合数据洞察与策略可执行性，建议下季度从短期、中期、长期三个层次推进：</p>
+          <h3>5.1 短期（1-30 天）</h3>
+          <ul>
+            <li>北区启动"促销补强"专项：模板复用华东 4 月活动，目标月销售额 +8%；</li>
+            <li>头部客户 3 家进行 1V1 走访，结合"专属服务包"挽回订单；</li>
+            <li>对周转 ≥90 天的长尾 SKU 启动清仓促销，目标 30 天降至 50 天以内。</li>
+          </ul>
+          <h3>5.2 中期（30-90 天）</h3>
+          <ul>
+            <li>把华东"线上促销 + 大客户运营 + 仓配优化"三合一打法标准化，输出复制 SOP；</li>
+            <li>建立 RFM 客户分层运营机制，按月跟踪流失预警与召回率；</li>
+            <li>在线上电商渠道上线"加购→下单"减损方案，目标提升整体转化 1-2 pct。</li>
+          </ul>
+          <h3>5.3 长期（季度以上）</h3>
+          <ul>
+            <li>形成"经营会议看板 + 周报报告 + 月度策略复盘"三位一体的数据驱动经营节奏；</li>
+            <li>新品发布节奏稳定在每月 1-2 款，保持 12% 新品贡献；</li>
+            <li>构建毛利率护城河：高端 + 新品销售占比目标提升至 75%。</li>
+          </ul>
+          <blockquote><strong>下季度目标：</strong>销售额 ≥10,200 万元，目标完成率 ≥95%，综合毛利率回升至 27.5%，TOP10 客户集中度下降到 60% 以内。</blockquote>
+        </article>
+      </div>
     </section>
-    <aside class="property-panel ai-chat-panel">
-      <div class="module-side-head"><h3>AI 编辑助手</h3></div>
-      <div class="ai-chat-body">
-        <div class="ai-chat-msg">我可以帮你改写报告、补充经营建议、插入图表说明或生成章节摘要。</div>
-        <div class="ai-chat-msg">示例：把“区域销售表现”改成领导汇报风格，并补充风险提示。</div>
-      </div>
-      <div class="ai-chat-input">
-        <textarea placeholder="输入你想如何修改报告内容..."></textarea>
-        <button class="primary-btn" style="width:100%;margin-top:10px;" onclick="goTo('report-ai-polish.html')">发送给 AI</button>
-      </div>
-    </aside>
   </main>
+
+  <!-- =================== 富文本编辑器浮层（颜色 / 行距 / 表格） =================== -->
+  <div class="editor-popover hidden" id="editorPopover"></div>
+
+  <!-- =================== 查找条 =================== -->
+  <div class="editor-find-bar hidden" id="editorFindBar">
+    <input type="text" id="findInput" placeholder="查找内容…" />
+    <span class="count" id="findCount">0/0</span>
+    <button type="button" id="findPrev" title="上一个">↑</button>
+    <button type="button" id="findNext" title="下一个">↓</button>
+    <button type="button" id="findClose" title="关闭">×</button>
+  </div>
+
+  <!-- =================== 插入仪表盘 弹窗 =================== -->
+  <div class="modal-mask hidden" id="dashboardMask"></div>
+  <section class="modal large hidden" id="dashboardModal">
+    <div class="modal-head">
+      <div>
+        <h3>插入仪表盘</h3>
+        <p>从我的仪表盘选择一个或多个图表插入到当前报告位置</p>
+      </div>
+      <button class="close" data-act="cancel">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="db-pick-toolbar">
+        <input class="search-box db-pick-search" id="dashboardSearch" placeholder="搜索仪表盘 / 图表名称…" />
+        <div class="db-pick-filter">
+          <button type="button" class="filter-btn active" data-filter="all">全部</button>
+          <button type="button" class="filter-btn" data-filter="line">趋势</button>
+          <button type="button" class="filter-btn" data-filter="bars">柱状</button>
+          <button type="button" class="filter-btn" data-filter="pie">饼图</button>
+          <button type="button" class="filter-btn" data-filter="table">表格</button>
+        </div>
+      </div>
+      <div class="dashboard-pick-grid" id="dashboardPickGrid"></div>
+      <div class="db-pick-empty hidden" id="dashboardPickEmpty">没有匹配的仪表盘</div>
+      <div class="db-pick-pagination" id="dashboardPagination"></div>
+    </div>
+    <div class="modal-foot">
+      <span class="db-pick-count">已选 <strong id="pickedCount">0</strong> 个</span>
+      <button class="ghost-btn" data-act="cancel">取消</button>
+      <button class="primary-btn" data-act="ok" id="pickConfirmBtn" disabled>确定插入</button>
+    </div>
+  </section>
+
+  <!-- =================== AI 写作右键菜单 =================== -->
+  <div class="ai-write-menu hidden" id="aiWriteMenu">
+    <div class="menu-head">
+      <strong>AI 写作</strong>
+      <span id="aiWriteMenuTip">已选择 0 字 · 选择文本后可使用</span>
+    </div>
+    <button type="button" data-act="rewrite">
+      <span class="ico">✎</span>
+      <span class="text"><strong>改写</strong><em>保留原意，换种表达</em></span>
+    </button>
+    <button type="button" data-act="expand">
+      <span class="ico">↔</span>
+      <span class="text"><strong>扩写</strong><em>根据原文，拓展内容</em></span>
+    </button>
+    <button type="button" data-act="imitate">
+      <span class="ico">≈</span>
+      <span class="text"><strong>仿写</strong><em>参考借鉴，融入创意</em></span>
+    </button>
+    <button type="button" data-act="polish">
+      <span class="ico">✨</span>
+      <span class="text"><strong>润色</strong><em>优化表达，提升质感</em></span>
+    </button>
+    <button type="button" data-act="shrink">
+      <span class="ico">⇲</span>
+      <span class="text"><strong>缩写</strong><em>精简内容，提炼精髓</em></span>
+    </button>
+    <button type="button" data-act="continue">
+      <span class="ico">»</span>
+      <span class="text"><strong>续写</strong><em>增加文本，延续创作</em></span>
+    </button>
+    <button type="button" data-act="deep">
+      <span class="ico">⚡</span>
+      <span class="text"><strong>深度写作</strong><em>结合素材，整体梳理撰写</em></span>
+    </button>
+  </div>
+
+  <!-- =================== AI 机器人浮动入口（同看板） =================== -->
+  <button class="ai-bot-launcher" id="aiBotLauncher" type="button" aria-label="打开 AI 编辑助手">
+    <span class="bot-spark">✦</span>
+    <svg class="bot-svg" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="4" y="7.5" width="16" height="11" rx="3"></rect>
+      <path d="M12 4.5v3"></path>
+      <circle cx="12" cy="3.6" r="0.9" fill="currentColor"></circle>
+      <circle cx="9" cy="13" r="1.1" fill="currentColor"></circle>
+      <circle cx="15" cy="13" r="1.1" fill="currentColor"></circle>
+      <path d="M9.5 16.5h5"></path>
+      <path d="M2.5 12.5h1.5"></path>
+      <path d="M20 12.5h1.5"></path>
+    </svg>
+  </button>
+
+  <!-- =================== AI 对话浮窗（同看板） =================== -->
+  <aside class="ai-chat-pane hidden" id="aiChatPane" aria-hidden="true">
+    <header class="ai-chat-head" id="aiChatHead">
+      <div class="ai-chat-avatar">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="4" y="7.5" width="16" height="11" rx="3"></rect>
+          <path d="M12 4.5v3"></path>
+          <circle cx="9" cy="13" r="1.1" fill="currentColor"></circle>
+          <circle cx="15" cy="13" r="1.1" fill="currentColor"></circle>
+          <path d="M9.5 16.5h5"></path>
+        </svg>
+      </div>
+      <div class="ai-chat-title">
+        <strong>AI 编辑助手</strong>
+        <em id="aiChatSubtitle">为「二季度销售复盘报告」提供 AI 写作能力</em>
+      </div>
+      <div class="ai-chat-actions">
+        <button type="button" id="aiChatMin" title="最小化" aria-label="最小化">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 18h14"></path></svg>
+        </button>
+        <button type="button" id="aiChatMax" title="最大化" aria-label="最大化">
+          <svg id="aiChatMaxIcon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect></svg>
+        </button>
+        <button type="button" id="aiChatClose" class="danger" title="关闭" aria-label="关闭">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M6 18L18 6"></path></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="ai-chat-body" id="aiChatBody">
+      <!-- 欢迎页 -->
+      <section class="ai-welcome" id="aiWelcome">
+        <div class="ai-welcome-bot">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="4" y="7.5" width="16" height="11" rx="3"></rect>
+            <path d="M12 4.5v3"></path>
+            <circle cx="12" cy="3.6" r="0.9" fill="currentColor"></circle>
+            <circle cx="9" cy="13" r="1.1" fill="currentColor"></circle>
+            <circle cx="15" cy="13" r="1.1" fill="currentColor"></circle>
+            <path d="M9.5 16.5h5"></path>
+            <path d="M2.5 12.5h1.5"></path>
+            <path d="M20 12.5h1.5"></path>
+          </svg>
+        </div>
+        <h4>嗨，我是报告编辑助手</h4>
+        <p id="aiWelcomeIntro">可以对报告内容进行 <strong>改写、扩写、仿写、润色、缩写、续写、深度写作</strong> 等操作。在编辑区选中文字，右键即可发起对应的 AI 写作。</p>
+        <div class="ai-welcome-suggestions" id="aiSuggestions">
+          <button type="button" data-act="rewrite">
+            <svg class="sg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.06 4.94l5 5"/><path d="M3 21l1.5-5.5L18 2.5a2.83 2.83 0 0 1 4 4L8.5 19.5 3 21Z"/></svg>
+            改写：保留原意，换种表达
+          </button>
+          <button type="button" data-act="expand">
+            <svg class="sg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18"/><path d="M8 7l-5 5 5 5"/><path d="M16 7l5 5-5 5"/></svg>
+            扩写：拓展原文，补充内容
+          </button>
+          <button type="button" data-act="polish">
+            <svg class="sg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.7 4.3L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7z"/></svg>
+            润色：优化表达，提升质感
+          </button>
+          <button type="button" data-act="shrink">
+            <svg class="sg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            缩写：精简内容，提炼精髓
+          </button>
+          <button type="button" data-act="continue">
+            <svg class="sg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5l7 7-7 7"/><path d="M13 5l7 7-7 7"/></svg>
+            续写：基于结尾继续展开
+          </button>
+          <button type="button" data-act="deep">
+            <svg class="sg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h8l-2 8 10-12h-8z"/></svg>
+            深度写作：结合素材整体撰写
+          </button>
+        </div>
+      </section>
+
+      <!-- 消息列表 -->
+      <div class="ai-msg-list" id="aiMsgList"></div>
+    </div>
+
+    <!-- 选中文本卡片（按需显示） -->
+    <div class="target-card hidden" id="targetCard">
+      <div class="tc-head">
+        <span class="badge" id="tcBadge">改写</span>
+        <span>已选中文本：</span>
+        <button type="button" class="clear" id="tcClear" aria-label="清除">×</button>
+      </div>
+      <div class="tc-body" id="tcBody"></div>
+    </div>
+
+    <div class="ai-chat-input-wrap">
+      <div class="input-card">
+        <div class="input-main">
+          <div id="aiAttachmentPreview" class="attachment-preview-list hidden"></div>
+          <textarea id="aiChatInput" placeholder="向 AI 编辑助手提问，或先在报告中选中文字、右键发起 AI 写作"></textarea>
+          <div class="input-tools">
+            <button type="button" id="aiUploadImageBtn" title="上传图片">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5C4 5.1 5.1 4 6.5 4h11C18.9 4 20 5.1 20 6.5v11c0 1.4-1.1 2.5-2.5 2.5h-11C5.1 20 4 18.9 4 17.5v-11Z"/><path d="M7 16l3.2-3.3 2.2 2.2 2.5-3.1L18 16H7Z"/><path d="M8.5 8.8h.01"/></svg>
+              图片
+            </button>
+            <button type="button" id="aiUploadFileBtn" title="上传附件">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 12.8l5.7-5.7a3 3 0 0 1 4.2 4.2l-7.1 7.1a5 5 0 0 1-7.1-7.1l7.4-7.4"/></svg>
+              附件
+            </button>
+          </div>
+        </div>
+        <button id="aiChatSendBtn" class="send-btn" type="button" aria-label="发送">
+          <svg class="send-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4.5 19.2L20.2 4.8M20.2 4.8L14.8 20.4L11.4 13.1L4.5 9.8L20.2 4.8Z" />
+          </svg>
+        </button>
+      </div>
+      <input id="aiImageUploadInput" type="file" accept="image/*" hidden multiple />
+      <input id="aiFileUploadInput" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.md,.json" hidden multiple />
+      <div class="ai-chip-row">
+        <button type="button" data-act="rewrite">改写</button>
+        <button type="button" data-act="expand">扩写</button>
+        <button type="button" data-act="polish">润色</button>
+        <button type="button" data-act="shrink">缩写</button>
+        <button type="button" data-act="continue">续写</button>
+        <button type="button" data-act="deep">深度写作</button>
+      </div>
+    </div>
+  </aside>
+
+  <script src="../../assets/js/echarts.min.js"></script>
   <script src="../../assets/js/common.js"></script>
+  <script>
+    /* eslint-disable */
+    (function () {
+      // ====================================================================
+      // 0. 报告内图表渲染（与 report.html 同款）
+      // ====================================================================
+      function renderCharts(scope) {
+        if (typeof echarts === 'undefined') return;
+        scope.querySelectorAll('.asset-preview[data-chart]').forEach((wrap) => {
+          const type = wrap.getAttribute('data-chart');
+          const title = wrap.getAttribute('data-chart-title') || '';
+          const dom = wrap.querySelector('.chart-canvas');
+          if (!dom) return;
+          let inst = echarts.getInstanceByDom(dom);
+          if (inst) inst.dispose();
+          inst = echarts.init(dom);
+          inst.setOption(buildChartOption(type, title));
+        });
+      }
+
+      window.addEventListener('resize', function () {
+        if (typeof echarts === 'undefined') return;
+        document.querySelectorAll('.chart-canvas').forEach((dom) => {
+          const inst = echarts.getInstanceByDom(dom);
+          if (inst) inst.resize();
+        });
+      });
+
+      function buildChartOption(type, title) {
+        const COLOR = ['#1677ff', '#36cfc9', '#ffa940', '#ff7875', '#9254de', '#52c41a', '#13c2c2', '#fadb14'];
+        const baseTextStyle = { color: '#475569', fontSize: 11 };
+        const baseGrid = { left: 50, right: 24, top: 30, bottom: 28 };
+        const t = title || '';
+
+        if (type === 'line') {
+          let xAxis = ['1月', '2月', '3月', '4月', '5月', '6月'];
+          let series = [{ name: '销售额', type: 'line', smooth: true, data: [2180, 2360, 2510, 2890, 3120, 3248], areaStyle: { opacity: 0.18 }, lineStyle: { width: 2.5 }, symbolSize: 7 }];
+          return {
+            color: COLOR, grid: baseGrid, tooltip: { trigger: 'axis' },
+            legend: { top: 0, right: 0, icon: 'roundRect', textStyle: baseTextStyle, itemWidth: 10, itemHeight: 6 },
+            xAxis: { type: 'category', data: xAxis, axisLine: { lineStyle: { color: '#dbe2ec' } }, axisLabel: baseTextStyle },
+            yAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } }, axisLabel: baseTextStyle },
+            series: series
+          };
+        }
+        if (type === 'bar') {
+          const xAxis = ['华东', '华南', '华北', '西南', '华中', '东北'];
+          const data = [3248, 2156, 1053, 982, 896, 923];
+          return {
+            color: COLOR, grid: baseGrid, tooltip: { trigger: 'axis' },
+            xAxis: { type: 'category', data: xAxis, axisLine: { lineStyle: { color: '#dbe2ec' } }, axisLabel: baseTextStyle },
+            yAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } }, axisLabel: baseTextStyle },
+            series: [{ name: title || '数值', type: 'bar', barWidth: 18, itemStyle: { borderRadius: [6, 6, 0, 0] }, data: data }]
+          };
+        }
+        if (type === 'stacked-bar') {
+          return {
+            color: COLOR, grid: baseGrid,
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            legend: { top: 0, right: 0, icon: 'roundRect', textStyle: baseTextStyle, itemWidth: 10, itemHeight: 6 },
+            xAxis: { type: 'category', data: ['基础', '促销贡献', '新品贡献', '渠道扩张', '自然增长', '4 月合计'], axisLine: { lineStyle: { color: '#dbe2ec' } }, axisLabel: baseTextStyle },
+            yAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } }, axisLabel: baseTextStyle },
+            series: [{ name: '增量（万）', type: 'bar', barWidth: 22, itemStyle: { borderRadius: [6, 6, 0, 0] }, data: [2510, 156, 113, 60, 51, 2890] }]
+          };
+        }
+        if (type === 'pie') {
+          const data = [
+            { name: '线上电商', value: 38 }, { name: '门店零售', value: 26 },
+            { name: '大客户直销', value: 18 }, { name: '经销商分销', value: 12 },
+            { name: '其他', value: 6 }
+          ];
+          return {
+            color: COLOR, tooltip: { trigger: 'item', formatter: '{b}<br/>{c}% ({d}%)' },
+            legend: { orient: 'vertical', left: 'right', top: 'center', icon: 'roundRect', textStyle: baseTextStyle, itemWidth: 10, itemHeight: 6 },
+            series: [{ name: title || '占比', type: 'pie', radius: ['38%', '70%'], center: ['38%', '52%'], avoidLabelOverlap: true, itemStyle: { borderColor: '#fff', borderWidth: 2 }, label: { show: true, formatter: '{b}\n{d}%', fontSize: 11, color: '#475569' }, labelLine: { length: 8, length2: 6 }, data: data }]
+          };
+        }
+        if (type === 'funnel') {
+          return {
+            color: COLOR, tooltip: { trigger: 'item', formatter: '{b}: {c}' },
+            series: [{ name: title || '转化', type: 'funnel', left: '12%', right: '12%', top: 30, bottom: 8, minSize: '20%', maxSize: '100%', sort: 'descending', gap: 4, label: { show: true, position: 'inside', color: '#fff', fontSize: 12, fontWeight: 600 }, itemStyle: { borderColor: '#fff', borderWidth: 2 }, data: [{ value: 1260000, name: '访问 1,260,000' }, { value: 231840, name: '加购 231,840 (18.4%)' }, { value: 97605, name: '下单 97,605 (42.1%)' }, { value: 85404, name: '支付 85,404 (87.5%)' }] }]
+          };
+        }
+        if (type === 'heatmap') {
+          const xAxis = ['销售额', '订单量', '客单价', '完成率', '毛利率', '库存周转'];
+          const yAxis = ['华东', '华南', '华北', '西南', '华中', '东北'];
+          const data = [];
+          for (let y = 0; y < yAxis.length; y++) {
+            for (let x = 0; x < xAxis.length; x++) {
+              const v = Math.round(20 + Math.abs(Math.sin((x + 1) * (y + 1.3)) * 80));
+              data.push([x, y, v]);
+            }
+          }
+          return {
+            tooltip: { position: 'top' },
+            grid: { left: 70, right: 30, top: 30, bottom: 56 },
+            xAxis: { type: 'category', data: xAxis, splitArea: { show: true }, axisLabel: baseTextStyle, axisLine: { lineStyle: { color: '#dbe2ec' } } },
+            yAxis: { type: 'category', data: yAxis, splitArea: { show: true }, axisLabel: baseTextStyle, axisLine: { lineStyle: { color: '#dbe2ec' } } },
+            visualMap: { min: 0, max: 100, calculable: true, orient: 'horizontal', left: 'center', bottom: 0, inRange: { color: ['#e6f4ff', '#1677ff', '#0958d9'] }, textStyle: baseTextStyle },
+            series: [{ name: title || '热力', type: 'heatmap', data: data, label: { show: true, fontSize: 10, color: '#fff' }, emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.2)' } } }]
+          };
+        }
+        return { title: { text: title, left: 'center', top: 'middle', textStyle: { color: '#94a3b8', fontSize: 13, fontWeight: 'normal' } } };
+      }
+
+      // 默认数据加载完后即渲染（图表均为 contenteditable=false）
+      requestAnimationFrame(() => renderCharts(document));
+
+      // ====================================================================
+      // 1. 常量：AI 写作能力（中文标签 + placeholder + 介绍文案）
+      // ====================================================================
+      const AI_OPS = {
+        rewrite:  { label: '改写',     desc: '保留原意，换种表达',     placeholder: '这里输入要改写的重点或要求，如风格调整、信息更新、字数要求' },
+        expand:   { label: '扩写',     desc: '根据原文，拓展内容',     placeholder: '这里输入要扩写的方向或重点，如补充论据、案例、数据或结构' },
+        imitate:  { label: '仿写',     desc: '参考借鉴，融入创意',     placeholder: '这里输入要仿写参考的风格或要求，如借鉴句式、参考语气、保留主题' },
+        polish:   { label: '润色',     desc: '优化表达，提升质感',     placeholder: '这里输入要润色的目标，如表达更专业、逻辑更顺、用词更精炼' },
+        shrink:   { label: '缩写',     desc: '精简内容，提炼精髓',     placeholder: '这里输入要保留的关键信息或字数要求，如保留结论、控制在 100 字内' },
+        continue: { label: '续写',     desc: '增加文本，延续创作',     placeholder: '这里输入要延续的方向或主题，如基于结尾继续展开下一段、加入具体案例' },
+        deep:     { label: '深度写作', desc: '结合素材，整体梳理撰写', placeholder: '这里输入主题或要求，如结合素材整体梳理重写、加入数据与案例、按汇报口吻撰写' }
+      };
+
+      // ====================================================================
+      // 2. 章节目录 ↔ 编辑画布锚点
+      // ====================================================================
+      const article = document.getElementById('reportArticle');
+      const sectionList = document.getElementById('sectionList');
+
+      function rebuildSectionList() {
+        const items = article.querySelectorAll(':scope > h2');
+        sectionList.innerHTML = '';
+        items.forEach((h2, i) => {
+          if (!h2.id) h2.id = 'sec-' + (i + 1);
+          const link = document.createElement('div');
+          link.className = 'section-link' + (i === 0 ? ' active' : '');
+          link.dataset.target = h2.id;
+          link.textContent = h2.textContent;
+          sectionList.appendChild(link);
+        });
+      }
+      rebuildSectionList();
+
+      sectionList.addEventListener('click', function (e) {
+        const link = e.target.closest('.section-link');
+        if (!link) return;
+        sectionList.querySelectorAll('.section-link.active').forEach((el) => el.classList.remove('active'));
+        link.classList.add('active');
+        const target = document.getElementById(link.dataset.target);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+
+      // 编辑过程中如果章节标题变化，重建侧栏（轻量节流）
+      let secRebuildTimer = null;
+      article.addEventListener('input', function () {
+        if (secRebuildTimer) clearTimeout(secRebuildTimer);
+        secRebuildTimer = setTimeout(rebuildSectionList, 600);
+      });
+
+      // ====================================================================
+      // 3. 富文本工具条（增强版：字体/字号/颜色/对齐/缩进/行距/待办/代码块/分割线/链接/图片/表格/查找）
+      // ====================================================================
+      const toolbar = document.getElementById('editorToolbar');
+      const blockSelect = document.getElementById('tbBlock');
+      const fontSelect = document.getElementById('tbFont');
+      const sizeSelect = document.getElementById('tbFontSize');
+      const popoverEl = document.getElementById('editorPopover');
+
+      // styleWithCSS 让 fontName/foreColor/etc 输出 inline style
+      try { document.execCommand('styleWithCSS', false, true); } catch (e) {}
+
+      // 保存 / 还原选区（用于 popover 弹出后丢焦后还能继续操作）
+      let savedRange = null;
+      function saveSelection() {
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0 && article.contains(sel.anchorNode)) {
+          savedRange = sel.getRangeAt(0).cloneRange();
+        }
+      }
+      function restoreSelection() {
+        if (!savedRange) return;
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(savedRange);
+      }
+
+      // mousedown 阻止 button 抢焦点
+      toolbar.addEventListener('mousedown', (e) => {
+        if (e.target.closest('button') || e.target.closest('select')) {
+          saveSelection();
+          if (e.target.closest('button')) e.preventDefault();
+        }
+      });
+
+      // 主点击分发
+      toolbar.addEventListener('click', (e) => {
+        const popoverBtn = e.target.closest('button[data-popover]');
+        const cmdBtn = e.target.closest('button[data-cmd]');
+        const actBtn = e.target.closest('button[data-action]');
+        if (popoverBtn) {
+          e.stopPropagation();
+          openPopover(popoverBtn.dataset.popover, popoverBtn);
+          return;
+        }
+        if (cmdBtn) {
+          const cmd = cmdBtn.dataset.cmd;
+          const arg = cmdBtn.dataset.arg || null;
+          article.focus();
+          try { document.execCommand(cmd, false, arg); } catch (err) {}
+          updateToolbarState();
+          return;
+        }
+        if (actBtn) {
+          handleAction(actBtn.dataset.action);
+          updateToolbarState();
+          return;
+        }
+      });
+
+      // 段落 / 字体 / 字号 select
+      blockSelect.addEventListener('change', () => {
+        article.focus();
+        restoreSelection();
+        try { document.execCommand('formatBlock', false, blockSelect.value); } catch (err) {}
+        updateToolbarState();
+      });
+      fontSelect.addEventListener('change', () => {
+        article.focus();
+        restoreSelection();
+        if (fontSelect.value) {
+          try { document.execCommand('fontName', false, fontSelect.value); } catch (err) {}
+        }
+        updateToolbarState();
+      });
+      sizeSelect.addEventListener('change', () => {
+        article.focus();
+        restoreSelection();
+        if (sizeSelect.value) applyInlineCSS('fontSize', sizeSelect.value);
+        updateToolbarState();
+      });
+
+      // —— 自定义 action 处理 ——
+      function handleAction(act) {
+        article.focus();
+        restoreSelection();
+        if (act === 'todoList') return insertTodoList();
+        if (act === 'codeBlock') {
+          try { document.execCommand('formatBlock', false, 'PRE'); } catch (e) {}
+          return;
+        }
+        if (act === 'hr') {
+          try { document.execCommand('insertHorizontalRule', false, null); } catch (e) {}
+          return;
+        }
+        if (act === 'link') return insertLink();
+        if (act === 'image') return insertImage();
+        if (act === 'clearFormat') return clearFormat();
+        if (act === 'find') return openFindBar();
+      }
+
+      // —— 工具条状态联动 ——
+      function updateToolbarState() {
+        const cmds = ['bold', 'italic', 'underline', 'strikeThrough',
+                      'insertUnorderedList', 'insertOrderedList',
+                      'justifyLeft', 'justifyCenter', 'justifyRight', 'justifyFull'];
+        cmds.forEach((cmd) => {
+          const btn = toolbar.querySelector('button[data-cmd="' + cmd + '"]');
+          if (!btn) return;
+          let active = false;
+          try { active = document.queryCommandState(cmd); } catch (e) {}
+          btn.classList.toggle('active', active);
+        });
+        try {
+          const block = (document.queryCommandValue('formatBlock') || '').toUpperCase().replace(/[<>]/g, '');
+          if (['P', 'H1', 'H2', 'H3', 'H4'].indexOf(block) >= 0) blockSelect.value = block;
+          else blockSelect.value = 'P';
+        } catch (e) {}
+      }
+      article.addEventListener('keyup', updateToolbarState);
+      article.addEventListener('mouseup', updateToolbarState);
+      article.addEventListener('focus', updateToolbarState);
+
+      // —— 字号 px：用 fontSize=7 占位再替换为 span style ——
+      function applyInlineCSS(prop, value) {
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return;
+        const range = sel.getRangeAt(0);
+        if (range.collapsed) return;
+        if (prop === 'fontSize') {
+          try { document.execCommand('fontSize', false, '7'); } catch (e) {}
+          article.querySelectorAll('font[size="7"]').forEach((font) => {
+            const span = document.createElement('span');
+            span.style.fontSize = value;
+            while (font.firstChild) span.appendChild(font.firstChild);
+            font.replaceWith(span);
+          });
+        }
+      }
+
+      // —— 待办列表 ——
+      function insertTodoList() {
+        const sel = window.getSelection();
+        if (!sel) return;
+        const range = sel.rangeCount ? sel.getRangeAt(0) : null;
+        const ul = document.createElement('ul');
+        ul.className = 'todo-list';
+        const text = range ? range.toString() : '';
+        const lines = text ? text.split(/\n+/) : ['待办事项'];
+        lines.forEach((line) => {
+          const li = document.createElement('li');
+          li.textContent = (line || '').trim() || '待办事项';
+          ul.appendChild(li);
+        });
+        if (range) {
+          range.deleteContents();
+          range.insertNode(ul);
+        } else {
+          article.appendChild(ul);
+        }
+        // 光标移到最后一个 li
+        const r2 = document.createRange();
+        r2.selectNodeContents(ul.lastChild);
+        r2.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(r2);
+      }
+      // 点击待办前的复选框区域 → toggle done
+      article.addEventListener('click', function (e) {
+        const li = e.target.closest('ul.todo-list > li');
+        if (!li) return;
+        // 计算点击 X 偏移：复选框在 li 左侧 0-22px
+        const rect = li.getBoundingClientRect();
+        if (e.clientX - rect.left <= 22) {
+          li.classList.toggle('done');
+          e.preventDefault();
+        }
+      });
+
+      // —— 链接 / 图片 ——
+      function insertLink() {
+        const sel = window.getSelection();
+        const url = prompt('请输入链接 URL', 'https://');
+        if (!url) return;
+        article.focus();
+        restoreSelection();
+        if (!sel || sel.isCollapsed) {
+          document.execCommand('insertHTML', false,
+            '<a href="' + escapeAttrJS(url) + '" target="_blank">' + escapeHTMLJS(url) + '</a>');
+        } else {
+          try { document.execCommand('createLink', false, url); } catch (e) {}
+          article.querySelectorAll('a:not([data-touched])').forEach((a) => {
+            a.setAttribute('target', '_blank');
+            a.dataset.touched = '1';
+          });
+        }
+      }
+      function insertImage() {
+        const url = prompt('请输入图片 URL（或留空插入占位图）', '');
+        article.focus();
+        restoreSelection();
+        if (url) {
+          try { document.execCommand('insertImage', false, url); } catch (e) {}
+        } else {
+          // 插入一个 SVG 占位图
+          const svg =
+            '<div contenteditable="false" style="margin:8px 0;height:160px;display:flex;align-items:center;justify-content:center;color:#94a3b8;background:linear-gradient(180deg,#fbfdff,#fff);border:1px dashed #c7d2e0;border-radius:10px;">' +
+              '🖼 图片占位（双击替换为真实图片）' +
+            '</div>';
+          document.execCommand('insertHTML', false, svg);
+        }
+      }
+
+      // —— 清除格式 ——
+      function clearFormat() {
+        try { document.execCommand('removeFormat', false, null); } catch (e) {}
+        try { document.execCommand('formatBlock', false, 'P'); } catch (e) {}
+        // 移除选区内 inline style
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+          const range = sel.getRangeAt(0);
+          const frag = range.cloneContents();
+          frag.querySelectorAll('[style]').forEach((el) => el.removeAttribute('style'));
+          // 用 plain text 替换
+          range.deleteContents();
+          range.insertNode(document.createTextNode(frag.textContent || ''));
+        }
+        updateToolbarState();
+      }
+
+      // —— Popover：颜色 / 行距 / 表格 ——
+      function openPopover(type, anchor) {
+        saveSelection();
+        popoverEl.innerHTML = buildPopoverHTML(type);
+        popoverEl.classList.remove('hidden');
+        positionPopover(anchor);
+        attachPopoverHandlers(type);
+      }
+      function closePopover() {
+        popoverEl.classList.add('hidden');
+        popoverEl.innerHTML = '';
+      }
+      function positionPopover(anchor) {
+        const r = anchor.getBoundingClientRect();
+        // 先放出来再测量
+        const w = popoverEl.offsetWidth || 220;
+        const h = popoverEl.offsetHeight || 160;
+        let left = r.left;
+        let top = r.bottom + 6;
+        if (left + w + 8 > window.innerWidth) left = window.innerWidth - w - 8;
+        if (top + h + 8 > window.innerHeight) top = r.top - h - 6;
+        popoverEl.style.left = left + 'px';
+        popoverEl.style.top = top + 'px';
+      }
+      document.addEventListener('click', (e) => {
+        if (!popoverEl.classList.contains('hidden')
+          && !e.target.closest('#editorPopover')
+          && !e.target.closest('button[data-popover]')) {
+          closePopover();
+        }
+      });
+      window.addEventListener('scroll', closePopover, true);
+      window.addEventListener('resize', closePopover);
+
+      const PALETTE = [
+        '#000000', '#374151', '#6b7280', '#9ca3af', '#d1d5db', '#ffffff', '#fafafa', '#f3f4f6',
+        '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981', '#14b8a6',
+        '#06b6d4', '#0ea5e9', '#1677ff', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899'
+      ];
+      const HIGHLIGHTS = [
+        '#fef3c7', '#fde68a', '#fed7aa', '#fecaca', '#fbcfe8', '#e9d5ff', '#ddd6fe', '#c7d2fe',
+        '#bfdbfe', '#bae6fd', '#a5f3fc', '#a7f3d0', '#d9f99d', '#fef08a', '#fcd34d', '#fdba74'
+      ];
+
+      function buildPopoverHTML(type) {
+        if (type === 'fore' || type === 'back') {
+          const list = type === 'fore' ? PALETTE : HIGHLIGHTS;
+          const cells = list.map((c) => '<button type="button" class="swatch" data-color="' + c + '" style="background:' + c + ';" title="' + c + '"></button>').join('');
+          return (
+            '<div class="pop-title">' + (type === 'fore' ? '字体颜色' : '高亮 / 背景') + '</div>' +
+            '<div class="color-grid">' +
+              '<button type="button" class="swatch no-color" data-color="" title="清除颜色"></button>' +
+              cells +
+            '</div>' +
+            '<div class="color-actions">' +
+              '<input type="color" id="popColorPicker" value="#1677ff" />' +
+              '<button type="button" data-act="apply-pick">应用自定义</button>' +
+            '</div>'
+          );
+        }
+        if (type === 'lineHeight') {
+          const opts = ['1', '1.15', '1.25', '1.5', '1.75', '2', '2.5', '3'];
+          const items = opts.map((v) => '<button type="button" data-lh="' + v + '">' + v + ' 倍行距</button>').join('');
+          return '<div class="pop-title">行间距</div><div class="lh-list">' + items + '</div>';
+        }
+        if (type === 'table') {
+          let cells = '';
+          for (let r = 1; r <= 8; r++) for (let c = 1; c <= 8; c++) {
+            cells += '<div class="cell" data-r="' + r + '" data-c="' + c + '"></div>';
+          }
+          return (
+            '<div class="pop-title">插入表格</div>' +
+            '<div class="tb-grid" id="tbGridGrid">' + cells + '</div>' +
+            '<div class="tb-grid-tip" id="tbGridTip">悬停选择尺寸</div>'
+          );
+        }
+        return '';
+      }
+
+      function attachPopoverHandlers(type) {
+        if (type === 'fore' || type === 'back') {
+          popoverEl.querySelectorAll('.swatch').forEach((sw) => {
+            sw.addEventListener('click', () => {
+              const color = sw.dataset.color || '';
+              applyColor(type, color);
+              closePopover();
+            });
+          });
+          const pickBtn = popoverEl.querySelector('[data-act="apply-pick"]');
+          const picker = popoverEl.querySelector('#popColorPicker');
+          if (pickBtn && picker) {
+            pickBtn.addEventListener('click', () => {
+              applyColor(type, picker.value);
+              closePopover();
+            });
+          }
+        } else if (type === 'lineHeight') {
+          popoverEl.querySelectorAll('button[data-lh]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+              applyLineHeight(btn.dataset.lh);
+              closePopover();
+            });
+          });
+        } else if (type === 'table') {
+          const grid = popoverEl.querySelector('#tbGridGrid');
+          const tip = popoverEl.querySelector('#tbGridTip');
+          let curR = 0, curC = 0;
+          grid.addEventListener('mousemove', (e) => {
+            const cell = e.target.closest('.cell');
+            if (!cell) return;
+            curR = +cell.dataset.r;
+            curC = +cell.dataset.c;
+            grid.querySelectorAll('.cell').forEach((c) => {
+              const r = +c.dataset.r, cc = +c.dataset.c;
+              c.classList.toggle('on', r <= curR && cc <= curC);
+            });
+            tip.textContent = curR + ' × ' + curC + ' 表格';
+          });
+          grid.addEventListener('click', (e) => {
+            const cell = e.target.closest('.cell');
+            if (!cell) return;
+            insertTable(+cell.dataset.r, +cell.dataset.c);
+            closePopover();
+          });
+        }
+      }
+
+      function applyColor(type, color) {
+        article.focus();
+        restoreSelection();
+        const cmd = type === 'fore' ? 'foreColor' : 'hiliteColor';
+        try { document.execCommand('styleWithCSS', false, true); } catch (e) {}
+        if (color) {
+          try { document.execCommand(cmd, false, color); } catch (e) {}
+          if (type === 'fore') document.getElementById('foreColorBar').style.background = color;
+          else document.getElementById('backColorBar').style.background = color;
+        } else {
+          // 清除
+          try { document.execCommand(cmd, false, type === 'fore' ? '#000000' : 'transparent'); } catch (e) {}
+        }
+      }
+
+      function applyLineHeight(lh) {
+        article.focus();
+        restoreSelection();
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return;
+        const range = sel.getRangeAt(0);
+        // 收集 selection 跨越的 block 元素，对每个 block 设置 line-height
+        const blockTags = ['P','H1','H2','H3','H4','H5','H6','LI','DIV','BLOCKQUOTE','PRE'];
+        const blocks = new Set();
+        function findBlock(node) {
+          let n = node && node.nodeType === 3 ? node.parentNode : node;
+          while (n && n !== article && blockTags.indexOf(n.tagName) < 0) n = n.parentNode;
+          if (n && n !== article) blocks.add(n);
+        }
+        findBlock(range.startContainer);
+        findBlock(range.endContainer);
+        // 处理跨 block 选择
+        const walker = document.createTreeWalker(article, NodeFilter.SHOW_ELEMENT, {
+          acceptNode: (n) => blockTags.indexOf(n.tagName) >= 0
+            && range.intersectsNode(n) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP
+        });
+        let n;
+        while ((n = walker.nextNode())) blocks.add(n);
+        blocks.forEach((b) => { b.style.lineHeight = lh; });
+      }
+
+      function insertTable(rows, cols) {
+        article.focus();
+        restoreSelection();
+        let html = '<table><thead><tr>';
+        for (let c = 0; c < cols; c++) html += '<th>列 ' + (c + 1) + '</th>';
+        html += '</tr></thead><tbody>';
+        for (let r = 0; r < rows - 1; r++) {
+          html += '<tr>';
+          for (let c = 0; c < cols; c++) html += '<td><br/></td>';
+          html += '</tr>';
+        }
+        html += '</tbody></table><p><br/></p>';
+        try { document.execCommand('insertHTML', false, html); } catch (e) {}
+      }
+
+      // 工具：HTML / Attr 转义
+      function escapeHTMLJS(s) {
+        return String(s || '').replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+      }
+      function escapeAttrJS(s) {
+        return String(s || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      }
+
+      // —— 查找条 ——
+      const findBar = document.getElementById('editorFindBar');
+      const findInput = document.getElementById('findInput');
+      const findCount = document.getElementById('findCount');
+      const findPrev = document.getElementById('findPrev');
+      const findNext = document.getElementById('findNext');
+      const findClose = document.getElementById('findClose');
+      let findHits = [];
+      let findIdx = -1;
+
+      function openFindBar() {
+        findBar.classList.remove('hidden');
+        setTimeout(() => { findInput.focus(); findInput.select(); }, 30);
+      }
+      function closeFindBar() {
+        findBar.classList.add('hidden');
+        clearFindHighlights();
+      }
+      function clearFindHighlights() {
+        article.querySelectorAll('.find-hit').forEach((el) => {
+          const text = document.createTextNode(el.textContent);
+          el.parentNode.replaceChild(text, el);
+        });
+        article.normalize();
+        findHits = [];
+        findIdx = -1;
+        findCount.textContent = '0/0';
+      }
+      function applyFind() {
+        clearFindHighlights();
+        const kw = (findInput.value || '').trim();
+        if (!kw) return;
+        // 遍历所有 text node，包裹关键字
+        const walker = document.createTreeWalker(article, NodeFilter.SHOW_TEXT, null);
+        const targets = [];
+        let n;
+        while ((n = walker.nextNode())) {
+          if (n.nodeValue && n.nodeValue.toLowerCase().includes(kw.toLowerCase())) targets.push(n);
+        }
+        targets.forEach((node) => {
+          const text = node.nodeValue;
+          const re = new RegExp(kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+          const frag = document.createDocumentFragment();
+          let last = 0;
+          let m;
+          while ((m = re.exec(text)) !== null) {
+            if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+            const span = document.createElement('span');
+            span.className = 'find-hit';
+            span.textContent = m[0];
+            frag.appendChild(span);
+            last = m.index + m[0].length;
+          }
+          if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+          node.parentNode.replaceChild(frag, node);
+        });
+        findHits = Array.from(article.querySelectorAll('.find-hit'));
+        if (findHits.length > 0) {
+          findIdx = 0;
+          markCurrent();
+        }
+        findCount.textContent = (findHits.length ? (findIdx + 1) : 0) + '/' + findHits.length;
+      }
+      function markCurrent() {
+        article.querySelectorAll('.find-hit.current').forEach((el) => el.classList.remove('current'));
+        if (findIdx >= 0 && findHits[findIdx]) {
+          findHits[findIdx].classList.add('current');
+          findHits[findIdx].scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+        findCount.textContent = (findHits.length ? (findIdx + 1) : 0) + '/' + findHits.length;
+      }
+      findInput.addEventListener('input', applyFind);
+      findInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (findHits.length === 0) return;
+          findIdx = (findIdx + (e.shiftKey ? -1 : 1) + findHits.length) % findHits.length;
+          markCurrent();
+        } else if (e.key === 'Escape') {
+          closeFindBar();
+        }
+      });
+      findPrev.addEventListener('click', () => {
+        if (!findHits.length) return;
+        findIdx = (findIdx - 1 + findHits.length) % findHits.length;
+        markCurrent();
+      });
+      findNext.addEventListener('click', () => {
+        if (!findHits.length) return;
+        findIdx = (findIdx + 1) % findHits.length;
+        markCurrent();
+      });
+      findClose.addEventListener('click', closeFindBar);
+
+      // 全局 Ctrl/Cmd+F 打开查找条
+      document.addEventListener('keydown', function (e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+          if (article.contains(document.activeElement) || article === document.activeElement || findBar.contains(document.activeElement)) {
+            e.preventDefault();
+            openFindBar();
+          }
+        }
+      });
+
+      // ====================================================================
+      // 4. 右键 AI 写作菜单
+      // ====================================================================
+      const writeMenu = document.getElementById('aiWriteMenu');
+      const writeMenuTip = document.getElementById('aiWriteMenuTip');
+
+      article.addEventListener('contextmenu', function (e) {
+        const sel = window.getSelection();
+        const text = (sel && sel.toString()) || '';
+        e.preventDefault();
+        // 暂存当前选区，防止后续点击丢失
+        rememberSelection();
+        showWriteMenuAt(e.clientX, e.clientY, text);
+      });
+
+      function showWriteMenuAt(x, y, selectedText) {
+        const len = (selectedText || '').trim().length;
+        writeMenuTip.textContent = len > 0
+          ? '已选择 ' + len + ' 字 · 选择 AI 写作能力'
+          : '未选择文本 · 将基于光标位置/全文执行';
+        writeMenu.classList.remove('hidden');
+        const w = writeMenu.offsetWidth || 240;
+        const h = writeMenu.offsetHeight || 380;
+        let left = x;
+        let top = y;
+        if (left + w + 8 > window.innerWidth) left = window.innerWidth - w - 8;
+        if (top + h + 8 > window.innerHeight) top = window.innerHeight - h - 8;
+        writeMenu.style.left = left + 'px';
+        writeMenu.style.top = top + 'px';
+      }
+
+      function hideWriteMenu() {
+        writeMenu.classList.add('hidden');
+      }
+
+      document.addEventListener('click', (e) => {
+        if (!writeMenu.classList.contains('hidden') && !e.target.closest('#aiWriteMenu')) {
+          hideWriteMenu();
+        }
+      });
+      window.addEventListener('scroll', hideWriteMenu, true);
+      window.addEventListener('resize', hideWriteMenu);
+
+      writeMenu.addEventListener('click', function (e) {
+        const btn = e.target.closest('button[data-act]');
+        if (!btn) return;
+        const act = btn.dataset.act;
+        hideWriteMenu();
+        invokeAI(act);
+      });
+
+      // 暂存上次选区文本（右键弹出菜单时保存）
+      let lastSelectionText = '';
+      function rememberSelection() {
+        const sel = window.getSelection();
+        const text = (sel && sel.toString()) || '';
+        lastSelectionText = text.trim();
+      }
+
+      // ====================================================================
+      // 5. AI 浮窗（与看板同款交互）
+      // ====================================================================
+      const launcher = document.getElementById('aiBotLauncher');
+      const pane = document.getElementById('aiChatPane');
+      const head = document.getElementById('aiChatHead');
+      const body = document.getElementById('aiChatBody');
+      const welcome = document.getElementById('aiWelcome');
+      const msgList = document.getElementById('aiMsgList');
+      const chatInput = document.getElementById('aiChatInput');
+      const sendBtn = document.getElementById('aiChatSendBtn');
+      const minBtn = document.getElementById('aiChatMin');
+      const maxBtn = document.getElementById('aiChatMax');
+      const closeBtn = document.getElementById('aiChatClose');
+      const maxIcon = document.getElementById('aiChatMaxIcon');
+
+      const targetCard = document.getElementById('targetCard');
+      const tcBadge = document.getElementById('tcBadge');
+      const tcBody = document.getElementById('tcBody');
+      const tcClear = document.getElementById('tcClear');
+
+      let isThinking = false;
+      let currentAct = null;
+      let aiAttachments = [];
+
+      function openChat() {
+        pane.classList.remove('hidden', 'minimized');
+        pane.setAttribute('aria-hidden', 'false');
+        launcher.classList.add('hidden');
+      }
+      function closeChat() {
+        pane.classList.add('hidden');
+        pane.classList.remove('minimized', 'maximized');
+        pane.setAttribute('aria-hidden', 'true');
+        pane.style.left = pane.style.top = pane.style.right = pane.style.bottom = '';
+        pane.style.height = pane.style.width = '';
+        maxIcon.innerHTML = '<rect x="4" y="4" width="16" height="16" rx="2"></rect>';
+        launcher.classList.remove('hidden');
+        clearTargetCard();
+      }
+      function toggleMinimize() {
+        if (pane.classList.contains('maximized')) pane.classList.remove('maximized');
+        pane.classList.toggle('minimized');
+      }
+      function toggleMaximize() {
+        if (pane.classList.contains('minimized')) pane.classList.remove('minimized');
+        pane.classList.toggle('maximized');
+        if (pane.classList.contains('maximized')) {
+          maxIcon.innerHTML = '<rect x="6" y="6" width="9" height="9" rx="1.5"></rect><path d="M9 6V4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-2"></path>';
+        } else {
+          maxIcon.innerHTML = '<rect x="4" y="4" width="16" height="16" rx="2"></rect>';
+        }
+      }
+
+      launcher.addEventListener('click', () => openChat());
+      closeBtn.addEventListener('click', closeChat);
+      minBtn.addEventListener('click', toggleMinimize);
+      maxBtn.addEventListener('click', toggleMaximize);
+
+      // —— 拖动 ——
+      let dragging = false;
+      let dragStart = null;
+      head.addEventListener('mousedown', function (e) {
+        if (e.target.closest('button')) return;
+        if (pane.classList.contains('maximized')) return;
+        if (pane.classList.contains('minimized')) return;
+        const rect = pane.getBoundingClientRect();
+        pane.style.right = 'auto';
+        pane.style.bottom = 'auto';
+        pane.style.left = rect.left + 'px';
+        pane.style.top = rect.top + 'px';
+        pane.style.height = rect.height + 'px';
+        dragging = true;
+        dragStart = { x: e.clientX, y: e.clientY, l: rect.left, t: rect.top };
+        document.body.style.userSelect = 'none';
+      });
+      document.addEventListener('mousemove', function (e) {
+        if (!dragging) return;
+        let nx = dragStart.l + (e.clientX - dragStart.x);
+        let ny = dragStart.t + (e.clientY - dragStart.y);
+        const w = pane.offsetWidth, h = pane.offsetHeight;
+        nx = Math.max(0, Math.min(window.innerWidth - w, nx));
+        ny = Math.max(0, Math.min(window.innerHeight - h, ny));
+        pane.style.left = nx + 'px';
+        pane.style.top = ny + 'px';
+      });
+      document.addEventListener('mouseup', function () {
+        if (dragging) { dragging = false; document.body.style.userSelect = ''; }
+      });
+
+      // ====================================================================
+      // 6. 调起 AI（来自右键菜单 / 顶部 AI 按钮 / 欢迎建议 / 底部芯片）
+      // ====================================================================
+      function invokeAI(act, fromQuick) {
+        const op = AI_OPS[act];
+        if (!op) return;
+        currentAct = act;
+        openChat();
+        // 输入框 placeholder + 焦点
+        chatInput.placeholder = op.placeholder;
+        // 目标文本卡片
+        const text = lastSelectionText || '';
+        if (text && !fromQuick) {
+          tcBadge.textContent = op.label;
+          tcBody.textContent = text;
+          targetCard.classList.remove('hidden');
+        } else {
+          // 没有选中文本时不强制显示目标卡片
+          tcBadge.textContent = op.label;
+          tcBody.textContent = '';
+          targetCard.classList.add('hidden');
+        }
+        // 副标题更新
+        document.getElementById('aiChatSubtitle').textContent =
+          '当前操作：' + op.label + ' · ' + op.desc;
+        setTimeout(() => chatInput.focus(), 80);
+      }
+
+      tcClear.addEventListener('click', clearTargetCard);
+      function clearTargetCard() {
+        targetCard.classList.add('hidden');
+        tcBody.textContent = '';
+        currentAct = null;
+        chatInput.placeholder = '向 AI 编辑助手提问，或先在报告中选中文字、右键发起 AI 写作';
+        document.getElementById('aiChatSubtitle').textContent = '为「二季度销售复盘报告」提供 AI 写作能力';
+      }
+
+      // 欢迎建议 + 底部芯片：点击 = 调起对应能力（无目标文本）
+      document.getElementById('aiSuggestions').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-act]');
+        if (!btn) return;
+        // 优先用最近选中的文本；没有则不带目标
+        invokeAI(btn.dataset.act, !lastSelectionText);
+      });
+      document.querySelector('.ai-chip-row').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-act]');
+        if (!btn) return;
+        invokeAI(btn.dataset.act, !lastSelectionText);
+      });
+
+      // ====================================================================
+      // 7. 发送消息（含思考过程 + 打字机）
+      // ====================================================================
+      function ensureWelcomeHidden() {
+        welcome.classList.add('hidden');
+      }
+      function appendUserMsg(text, attachments) {
+        ensureWelcomeHidden();
+        const div = document.createElement('div');
+        div.className = 'ai-msg user';
+        div.innerHTML =
+          '<div class="ai-msg-avatar">我</div>' +
+          '<div class="ai-msg-content"><div class="ai-msg-bubble"></div></div>';
+        const bubble = div.querySelector('.ai-msg-bubble');
+        const hasText = text && text.trim();
+        if (hasText) {
+          bubble.textContent = text;
+        } else {
+          bubble.textContent = '已上传以下附件，请基于其内容协助处理：';
+        }
+        if (attachments && attachments.length) {
+          const wrap = document.createElement('div');
+          wrap.className = 'ai-msg-attachments';
+          attachments.forEach((a) => {
+            const item = document.createElement('div');
+            item.className = 'att-item';
+            const ext = (a.file.name.split('.').pop() || '').toUpperCase().slice(0, 3) || '文件';
+            item.innerHTML = a.type === 'image'
+              ? '<img src="' + a.previewUrl + '" alt="附件图片"/><span class="nm">' + escapeHTMLJS(a.file.name) + '</span>'
+              : '<span class="ico">' + escapeHTMLJS(ext) + '</span><span class="nm">' + escapeHTMLJS(a.file.name) + '</span>';
+            wrap.appendChild(item);
+          });
+          div.querySelector('.ai-msg-content').appendChild(wrap);
+        }
+        msgList.appendChild(div);
+        scrollChatToBottom();
+      }
+
+      const THINKING_STEPS = [
+        { title: '解析写作意图', desc: '识别当前 AI 写作能力与目标文本。' },
+        { title: '理解上下文', desc: '结合报告章节与原文风格进行分析。' },
+        { title: '组织语言生成', desc: '按要求重新组织表达，保证流畅与准确。' },
+        { title: '校验与润色', desc: '复核数据与术语，输出可直接使用的内容。' }
+      ];
+
+      function appendThinkingBox() {
+        const div = document.createElement('div');
+        div.className = 'ai-msg bot';
+        const stepsHtml = THINKING_STEPS.map((s) => (
+          '<div class="step">' +
+            '<div class="step-dot loading">·</div>' +
+            '<div><strong>' + s.title + '</strong><span>' + s.desc + '</span></div>' +
+          '</div>'
+        )).join('');
+        div.innerHTML =
+          '<div class="ai-msg-avatar">AI</div>' +
+          '<div class="ai-msg-content">' +
+            '<div class="thinking-box">' +
+              '<div class="box-head">' +
+                '<div class="thinking-pill">' +
+                  '<span class="thinking-pill-icon">◌</span>' +
+                  '<strong class="thinking-pill-title">思考过程</strong>' +
+                  '<span class="thinking-pill-time">(用时0s)</span>' +
+                  '<svg class="thinking-pill-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>' +
+                '</div>' +
+              '</div>' +
+              '<div class="timeline">' + stepsHtml + '</div>' +
+            '</div>' +
+          '</div>';
+        msgList.appendChild(div);
+        const box = div.querySelector('.thinking-box');
+        const headEl = div.querySelector('.box-head');
+        headEl.addEventListener('click', () => box.classList.toggle('collapsed'));
+        scrollChatToBottom();
+        return div;
+      }
+
+      function appendBotMsg(html, onDone) {
+        const div = document.createElement('div');
+        div.className = 'ai-msg bot';
+        const feedback =
+          '<div class="ai-msg-actions answer-feedback hidden">' +
+            '<span class="answer-action-title">这个回答有用吗？</span>' +
+            '<button class="answer-action-btn" type="button" data-tip="喜欢" data-vote="like" aria-label="喜欢">' +
+              '<svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88z"/></svg>' +
+            '</button>' +
+            '<button class="answer-action-btn" type="button" data-tip="不喜欢" data-vote="dislike" aria-label="不喜欢">' +
+              '<svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88z"/></svg>' +
+            '</button>' +
+            '<button class="answer-action-btn" type="button" data-act="apply" aria-label="替换到正文" title="替换到正文">' +
+              '<svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4L19 6"/></svg>' +
+            '</button>' +
+          '</div>';
+        div.innerHTML =
+          '<div class="ai-msg-avatar">AI</div>' +
+          '<div class="ai-msg-content"><div class="ai-msg-bubble"></div>' + feedback + '</div>';
+        msgList.appendChild(div);
+
+        const bubble = div.querySelector('.ai-msg-bubble');
+        const feedbackEl = div.querySelector('.answer-feedback');
+
+        // 解析 HTML 结构，先把所有文本节点清空，保留标签骨架
+        const tempContainer = document.createElement('div');
+        tempContainer.innerHTML = html;
+        const textNodes = [];
+        (function collect(node) {
+          for (let i = 0; i < node.childNodes.length; i++) {
+            const child = node.childNodes[i];
+            if (child.nodeType === 3) {
+              if (child.textContent && child.textContent.length > 0) {
+                textNodes.push({ node: child, text: child.textContent });
+                child.textContent = '';
+              }
+            } else if (child.nodeType === 1) {
+              collect(child);
+            }
+          }
+        })(tempContainer);
+        while (tempContainer.firstChild) bubble.appendChild(tempContainer.firstChild);
+        scrollChatToBottom();
+
+        let nodeIdx = 0;
+        let charIdx = 0;
+        const speed = 20;
+        if (textNodes.length === 0) {
+          if (feedbackEl) feedbackEl.classList.remove('hidden');
+          if (onDone) onDone();
+          return div;
+        }
+        const timer = setInterval(() => {
+          const item = textNodes[nodeIdx];
+          if (!item) {
+            clearInterval(timer);
+            if (feedbackEl) feedbackEl.classList.remove('hidden');
+            scrollChatToBottom();
+            if (onDone) onDone();
+            return;
+          }
+          const remaining = item.text.length - charIdx;
+          const take = Math.min(1, remaining);
+          item.node.textContent += item.text.substr(charIdx, take);
+          charIdx += take;
+          if (charIdx >= item.text.length) { nodeIdx++; charIdx = 0; }
+          scrollChatToBottom();
+        }, speed);
+        return div;
+      }
+
+      function scrollChatToBottom() { body.scrollTop = body.scrollHeight; }
+
+      // 模拟 AI 生成结果（按 act 类型 + 原文 + 用户要求）
+      function buildReply(act, requirement, sourceText) {
+        const op = AI_OPS[act] || { label: '改写' };
+        const has = sourceText && sourceText.trim().length > 0;
+        const reqLine = requirement && requirement.trim()
+          ? '<p><strong>用户要求：</strong>' + requirement + '</p>'
+          : '<p><em>未提供具体要求，已采用通用 ' + op.label + ' 策略。</em></p>';
+        const targetLine = has
+          ? '<p><strong>原文：</strong>' + sourceText + '</p>'
+          : '<p><em>未选中文本，将基于全文上下文生成。</em></p>';
+        const samples = generateSample(act, requirement, sourceText);
+        return (
+          '<strong>' + op.label + '结果（示例）</strong>' +
+          reqLine +
+          targetLine +
+          '<p><strong>生成内容：</strong></p>' +
+          '<blockquote>' + samples + '</blockquote>' +
+          '<p style="color:#6b7280;font-size:12px;">点击右下方 ✓ 可将生成内容替换/插入到正文。</p>'
+        );
+      }
+
+      function generateSample(act, requirement, sourceText) {
+        const head = sourceText ? sourceText.slice(0, 24) + (sourceText.length > 24 ? '…' : '') : '本段';
+        switch (act) {
+          case 'rewrite':  return '（改写示例）将"' + head + '"以更简练、商务化的表达进行重写：在保留核心论点的前提下，调整句式与连接词，使段落更聚焦关键信息。';
+          case 'expand':   return '（扩写示例）在"' + head + '"基础上，补充具体数据来源、对比口径、典型案例与可执行动作建议，使段落论述更立体。';
+          case 'imitate':  return '（仿写示例）参考用户指定的语气与句式，沿用同一主题"' + head + '"撰写一段新内容，保持节奏感与画面感。';
+          case 'polish':   return '（润色示例）保持原意，对"' + head + '"进行用词替换、语序调整与衔接优化，使表达更专业、流畅。';
+          case 'shrink':   return '（缩写示例）将"' + head + '"提炼为 1-2 句要点：明确核心结论与建议，剔除非必要修饰。';
+          case 'continue': return '（续写示例）承接"' + head + '"的语义脉络，自然延续到下一段：补充新的角度、引出后续行动建议，避免与原文重复。';
+          case 'deep':     return '（深度写作示例）结合报告中可用素材与上下文章节，对"' + head + '"主题进行整体梳理：明确论点—证据—建议三段式结构，并加入数据支撑与时间节奏。';
+          default:         return '（生成结果）已根据指令完成内容生成。';
+        }
+      }
+
+      function sendChat(text) {
+        if (isThinking) return;
+        const hasText = text && text.trim();
+        const hasAttach = aiAttachments && aiAttachments.length > 0;
+        if (!hasText && !hasAttach) return;
+        const attachSnapshot = aiAttachments.slice();
+        appendUserMsg(text, attachSnapshot);
+        chatInput.value = '';
+        clearAIAttachments();
+        isThinking = true;
+        const thinkingMsg = appendThinkingBox();
+        const box = thinkingMsg.querySelector('.thinking-box');
+        const dots = thinkingMsg.querySelectorAll('.step-dot');
+        const timeEl = thinkingMsg.querySelector('.thinking-pill-time');
+        let elapsed = 0;
+        const timer = setInterval(() => { elapsed += 1; timeEl.textContent = '(用时' + elapsed + 's)'; }, 1000);
+
+        const stepDelay = 360;
+        dots.forEach((dot, i) => {
+          setTimeout(() => {
+            for (let k = 0; k < i; k++) { dots[k].classList.remove('loading'); dots[k].textContent = '✓'; }
+            scrollChatToBottom();
+          }, i * stepDelay);
+        });
+
+        const totalThinking = dots.length * stepDelay + 200;
+        setTimeout(() => {
+          dots.forEach((dot) => { dot.classList.remove('loading'); dot.textContent = '✓'; });
+          clearInterval(timer);
+          if (elapsed < 1) timeEl.textContent = '(用时1s)';
+          box.classList.add('collapsed');
+          const html = buildReply(currentAct || 'rewrite', text, tcBody.textContent || '');
+          const replyMsg = appendBotMsg(html, () => { isThinking = false; });
+          // 把 currentAct 暂存到这条消息上，方便"应用到正文"使用
+          replyMsg.dataset.act = currentAct || 'rewrite';
+          replyMsg.dataset.source = tcBody.textContent || '';
+        }, totalThinking);
+      }
+
+      sendBtn.addEventListener('click', () => sendChat(chatInput.value));
+      chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendChat(chatInput.value);
+        }
+      });
+
+      // ====================================================================
+      // 7.1 AI 编辑助手 - 附件上传（参考智能问数模块）
+      // ====================================================================
+      const aiImageInput = document.getElementById('aiImageUploadInput');
+      const aiFileInput = document.getElementById('aiFileUploadInput');
+      const aiUploadImageBtn = document.getElementById('aiUploadImageBtn');
+      const aiUploadFileBtn = document.getElementById('aiUploadFileBtn');
+      const aiAttachmentPreview = document.getElementById('aiAttachmentPreview');
+
+      const MAX_AI_ATTACHMENTS = 6;
+
+      function formatAIFileSize(size) {
+        if (!size) return '0KB';
+        if (size < 1024 * 1024) return Math.max(1, Math.round(size / 1024)) + 'KB';
+        return (size / 1024 / 1024).toFixed(1) + 'MB';
+      }
+
+      function triggerAIUpload(type) {
+        if (aiAttachments.length >= MAX_AI_ATTACHMENTS) {
+          showToast('最多上传 ' + MAX_AI_ATTACHMENTS + ' 个文件');
+          return;
+        }
+        if (type === 'image') {
+          aiImageInput.click();
+        } else {
+          aiFileInput.click();
+        }
+      }
+
+      function addAIAttachment(type, file) {
+        if (!file) return;
+        if (aiAttachments.length >= MAX_AI_ATTACHMENTS) {
+          showToast('最多上传 ' + MAX_AI_ATTACHMENTS + ' 个文件');
+          return;
+        }
+        const previewUrl = type === 'image' ? URL.createObjectURL(file) : '';
+        const att = { id: 'att_' + Date.now() + '_' + Math.random().toString(16).slice(2, 6), type, file, previewUrl };
+        aiAttachments.push(att);
+        renderAIAttachments();
+        openChat();
+      }
+
+      function removeAIAttachment(id) {
+        const idx = aiAttachments.findIndex((a) => a.id === id);
+        if (idx === -1) return;
+        const att = aiAttachments[idx];
+        if (att.previewUrl) { try { URL.revokeObjectURL(att.previewUrl); } catch (e) {} }
+        aiAttachments.splice(idx, 1);
+        renderAIAttachments();
+      }
+
+      function clearAIAttachments() {
+        aiAttachments.forEach((a) => { if (a.previewUrl) { try { URL.revokeObjectURL(a.previewUrl); } catch (e) {} } });
+        aiAttachments = [];
+        renderAIAttachments();
+      }
+
+      function renderAIAttachments() {
+        if (!aiAttachmentPreview) return;
+        aiAttachmentPreview.innerHTML = '';
+        if (!aiAttachments.length) {
+          aiAttachmentPreview.classList.add('hidden');
+          return;
+        }
+        aiAttachmentPreview.classList.remove('hidden');
+        aiAttachments.forEach((a) => {
+          const chip = document.createElement('div');
+          chip.className = 'attachment-chip';
+          const sizeText = formatAIFileSize(a.file.size);
+          if (a.type === 'image') {
+            chip.innerHTML =
+              '<img src="' + a.previewUrl + '" alt="图片附件" />' +
+              '<div class="attachment-info"><strong title="' + escapeAttrJS(a.file.name) + '">' + escapeHTMLJS(a.file.name) + '</strong><span>' + sizeText + '</span></div>' +
+              '<button class="attachment-remove" type="button" aria-label="移除">×</button>';
+          } else {
+            const ext = (a.file.name.split('.').pop() || '').toUpperCase().slice(0, 3) || '文';
+            chip.innerHTML =
+              '<div class="attachment-file-icon">' + escapeHTMLJS(ext) + '</div>' +
+              '<div class="attachment-info"><strong title="' + escapeAttrJS(a.file.name) + '">' + escapeHTMLJS(a.file.name) + '</strong><span>' + sizeText + '</span></div>' +
+              '<button class="attachment-remove" type="button" aria-label="移除">×</button>';
+          }
+          chip.querySelector('.attachment-remove').addEventListener('click', () => removeAIAttachment(a.id));
+          aiAttachmentPreview.appendChild(chip);
+        });
+      }
+
+      if (aiUploadImageBtn) aiUploadImageBtn.addEventListener('click', () => triggerAIUpload('image'));
+      if (aiUploadFileBtn) aiUploadFileBtn.addEventListener('click', () => triggerAIUpload('file'));
+
+      if (aiImageInput) {
+        aiImageInput.addEventListener('change', (event) => {
+          const files = Array.from(event.target.files || []);
+          files.forEach((f) => addAIAttachment('image', f));
+          event.target.value = '';
+        });
+      }
+      if (aiFileInput) {
+        aiFileInput.addEventListener('change', (event) => {
+          const files = Array.from(event.target.files || []);
+          files.forEach((f) => addAIAttachment('file', f));
+          event.target.value = '';
+        });
+      }
+
+      // 消息中的反馈：喜欢 / 不喜欢 / 应用到正文（互斥同看板）
+      msgList.addEventListener('click', (e) => {
+        const btn = e.target.closest('.answer-action-btn');
+        if (!btn) return;
+        const wrap = btn.closest('.answer-feedback');
+        if (!wrap) return;
+        const vote = btn.dataset.vote;
+        const act = btn.dataset.act;
+        if (vote) {
+          const wasActive = btn.classList.contains('active');
+          wrap.querySelectorAll('[data-vote]').forEach((b) => b.classList.remove('active'));
+          if (!wasActive) {
+            btn.classList.add('active');
+            showToast(vote === 'like' ? '已记录"喜欢"' : '已记录"不喜欢"');
+          } else {
+            showToast('已取消评价');
+          }
+        } else if (act === 'apply') {
+          const msg = btn.closest('.ai-msg.bot');
+          if (!msg) return;
+          const bubble = msg.querySelector('.ai-msg-bubble blockquote');
+          const generated = bubble ? bubble.textContent.trim() : '';
+          const actType = msg.dataset.act || 'rewrite';
+          const source = msg.dataset.source || '';
+          if (!generated) { showToast('没有可应用的生成内容'); return; }
+          applyToArticle(actType, source, generated);
+          showToast('已写入正文');
+        }
+      });
+
+      function applyToArticle(act, source, generated) {
+        // 简化策略：
+        // - 如有 source（即用户曾选中文本），尝试在正文中查找并替换为 generated
+        // - 否则在文末追加一段 <p>generated</p>
+        if (source) {
+          const html = article.innerHTML;
+          if (html.indexOf(source) >= 0) {
+            article.innerHTML = html.replace(source, generated);
+            rebuildSectionList();
+            return;
+          }
+        }
+        const p = document.createElement('p');
+        p.textContent = generated;
+        article.appendChild(p);
+        rebuildSectionList();
+      }
+
+      // ====================================================================
+      // 8. 顶部"保存报告"
+      // ====================================================================
+      document.getElementById('btnSaveReport').addEventListener('click', function () {
+        showToast('已保存报告');
+        setTimeout(() => goTo('report.html'), 600);
+      });
+
+      // ====================================================================
+      // 9. 关闭浮窗 / 菜单：避免重叠
+      // ====================================================================
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+          if (!writeMenu.classList.contains('hidden')) hideWriteMenu();
+        }
+      });
+
+      // 初次更新工具条状态
+      setTimeout(updateToolbarState, 0);
+
+      // ====================================================================
+      // 12. 插入仪表盘 弹窗
+      // ====================================================================
+      const DASHBOARDS = [
+        { id: 'd1',  name: '近6个月销售额趋势',     thumb: 'line',  modifier: '张三', time: '2026-04-22 18:18' },
+        { id: 'd2',  name: '各大区订单量对比',       thumb: 'bars',  modifier: '李四', time: '2026-04-22 17:16' },
+        { id: 'd3',  name: '客户行业分布TOP10',     thumb: 'pie',   modifier: '王五', time: '2026-04-21 17:43' },
+        { id: 'd4',  name: '月度销售目标完成度',     thumb: 'line',  modifier: '张三', time: '2026-04-20 17:16' },
+        { id: 'd5',  name: 'TOP10客户贡献排行',     thumb: 'bars',  modifier: '李四', time: '2026-04-20 11:17' },
+        { id: 'd6',  name: '渠道转化率分析',         thumb: 'line',  modifier: '赵六', time: '2026-04-19 17:17' },
+        { id: 'd7',  name: '库存周转率走势',         thumb: 'bars',  modifier: '王五', time: '2026-04-18 09:32' },
+        { id: 'd8',  name: '产品线毛利率TOP榜',     thumb: 'table', modifier: '张三', time: '2026-04-17 14:08' },
+        { id: 'd9',  name: '新老客户复购对比',       thumb: 'pie',   modifier: '李四', time: '2026-04-16 16:55' },
+        { id: 'd10', name: '城市订单量明细',         thumb: 'table', modifier: '赵六', time: '2026-04-15 10:24' },
+        { id: 'd11', name: '产品线销售占比',         thumb: 'pie',   modifier: '王五', time: '2026-04-14 19:42' },
+        { id: 'd12', name: '关键经营指标KPI总览',   thumb: 'table', modifier: '张三', time: '2026-04-13 18:18' },
+        { id: 'd13', name: '区域销售热力图',         thumb: 'bars',  modifier: '李四', time: '2026-04-12 16:30' },
+        { id: 'd14', name: '订单时段分布',           thumb: 'line',  modifier: '王五', time: '2026-04-11 14:22' },
+        { id: 'd15', name: '客户来源渠道分布',       thumb: 'pie',   modifier: '赵六', time: '2026-04-10 17:48' },
+        { id: 'd16', name: '退货退款率走势',         thumb: 'line',  modifier: '张三', time: '2026-04-09 10:15' },
+        { id: 'd17', name: '促销活动 ROI 对比',     thumb: 'bars',  modifier: '李四', time: '2026-04-08 19:03' },
+        { id: 'd18', name: '员工销售业绩 TOP20',   thumb: 'table', modifier: '王五', time: '2026-04-07 13:25' },
+        { id: 'd19', name: '广告投放效果分析',       thumb: 'line',  modifier: '赵六', time: '2026-04-06 09:40' },
+        { id: 'd20', name: '会员等级分布',           thumb: 'pie',   modifier: '张三', time: '2026-04-05 15:18' },
+        { id: 'd21', name: '商品价格带分布',         thumb: 'bars',  modifier: '李四', time: '2026-04-04 18:55' },
+        { id: 'd22', name: 'SKU 销售排行明细',     thumb: 'table', modifier: '王五', time: '2026-04-03 11:32' },
+        { id: 'd23', name: '门店日销售对比',         thumb: 'bars',  modifier: '赵六', time: '2026-04-02 14:08' },
+        { id: 'd24', name: '客户满意度趋势',         thumb: 'line',  modifier: '张三', time: '2026-04-01 16:42' },
+        { id: 'd25', name: '物流时效分布',           thumb: 'pie',   modifier: '李四', time: '2026-03-30 10:50' },
+        { id: 'd26', name: '商品评价词云',           thumb: 'table', modifier: '王五', time: '2026-03-28 15:30' },
+        { id: 'd27', name: '会员复购周期分布',       thumb: 'bars',  modifier: '赵六', time: '2026-03-26 09:18' }
+      ];
+      const THUMB_TAG = { line: '趋势', bars: '柱状', pie: '饼图', table: '表格' };
+      const THUMB_TO_CHART = { line: 'line', bars: 'bar', pie: 'pie', table: 'bar-h' };
+
+      const dbBtn = document.getElementById('btnInsertDashboard');
+      const dbMask = document.getElementById('dashboardMask');
+      const dbModal = document.getElementById('dashboardModal');
+      const dbGrid = document.getElementById('dashboardPickGrid');
+      const dbEmpty = document.getElementById('dashboardPickEmpty');
+      const dbSearch = document.getElementById('dashboardSearch');
+      const dbFilterWrap = dbModal.querySelector('.db-pick-filter');
+      const dbPagination = document.getElementById('dashboardPagination');
+      const pickedCountEl = document.getElementById('pickedCount');
+      const pickConfirmBtn = document.getElementById('pickConfirmBtn');
+
+      const PAGE_SIZE = 9;
+      let dbCurrentFilter = 'all';
+      let dbCurrentKw = '';
+      let dbCurrentPage = 1;
+      const dbPickedIds = new Set();
+
+      function openDashboardPicker() {
+        saveSelection();
+        dbPickedIds.clear();
+        dbCurrentFilter = 'all';
+        dbCurrentKw = '';
+        dbCurrentPage = 1;
+        dbSearch.value = '';
+        dbFilterWrap.querySelectorAll('.filter-btn').forEach((b) => b.classList.toggle('active', b.dataset.filter === 'all'));
+        renderDashboardGrid();
+        updatePickedCount();
+        dbMask.classList.remove('hidden');
+        dbModal.classList.remove('hidden');
+        setTimeout(() => dbSearch.focus(), 60);
+      }
+
+      function closeDashboardPicker() {
+        dbMask.classList.add('hidden');
+        dbModal.classList.add('hidden');
+      }
+
+      dbBtn.addEventListener('click', openDashboardPicker);
+      dbMask.addEventListener('click', closeDashboardPicker);
+      dbModal.querySelectorAll('[data-act="cancel"]').forEach((btn) =>
+        btn.addEventListener('click', closeDashboardPicker));
+
+      // 搜索：重置到第 1 页
+      dbSearch.addEventListener('input', function () {
+        dbCurrentKw = this.value.trim().toLowerCase();
+        dbCurrentPage = 1;
+        renderDashboardGrid();
+      });
+
+      // 筛选：重置到第 1 页
+      dbFilterWrap.addEventListener('click', function (e) {
+        const btn = e.target.closest('.filter-btn');
+        if (!btn) return;
+        dbFilterWrap.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        dbCurrentFilter = btn.dataset.filter;
+        dbCurrentPage = 1;
+        renderDashboardGrid();
+      });
+
+      // 卡片点击：toggle 选中
+      dbGrid.addEventListener('click', function (e) {
+        const card = e.target.closest('.pick-card');
+        if (!card) return;
+        const id = card.dataset.id;
+        if (dbPickedIds.has(id)) {
+          dbPickedIds.delete(id);
+          card.classList.remove('selected');
+        } else {
+          dbPickedIds.add(id);
+          card.classList.add('selected');
+        }
+        updatePickedCount();
+      });
+
+      // 分页器点击
+      dbPagination.addEventListener('click', function (e) {
+        const btn = e.target.closest('.page-btn');
+        if (!btn || btn.disabled) return;
+        const page = +btn.dataset.page;
+        if (page && page !== dbCurrentPage) {
+          dbCurrentPage = page;
+          renderDashboardGrid();
+        }
+      });
+
+      function updatePickedCount() {
+        pickedCountEl.textContent = dbPickedIds.size;
+        pickConfirmBtn.disabled = dbPickedIds.size === 0;
+      }
+
+      function getFilteredList() {
+        return DASHBOARDS.filter((d) => {
+          if (dbCurrentFilter !== 'all' && d.thumb !== dbCurrentFilter) return false;
+          if (dbCurrentKw && d.name.toLowerCase().indexOf(dbCurrentKw) < 0) return false;
+          return true;
+        });
+      }
+
+      function renderDashboardGrid() {
+        const list = getFilteredList();
+        const total = list.length;
+        const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        if (dbCurrentPage > totalPages) dbCurrentPage = totalPages;
+        if (!total) {
+          dbGrid.innerHTML = '';
+          dbGrid.classList.add('hidden');
+          dbEmpty.classList.remove('hidden');
+          renderPagination(0, 1);
+          return;
+        }
+        dbGrid.classList.remove('hidden');
+        dbEmpty.classList.add('hidden');
+        const start = (dbCurrentPage - 1) * PAGE_SIZE;
+        const pageList = list.slice(start, start + PAGE_SIZE);
+        dbGrid.innerHTML = pageList.map((d) => {
+          const sel = dbPickedIds.has(d.id) ? ' selected' : '';
+          return (
+            '<div class="pick-card' + sel + '" data-id="' + d.id + '">' +
+              '<i class="check"></i>' +
+              '<div class="pc-thumb">' + buildPickThumb(d.thumb) + '</div>' +
+              '<div class="pc-name" title="' + escapeAttrJS(d.name) + '">' + escapeHTMLJS(d.name) + '</div>' +
+              '<div class="pc-meta">' +
+                '<span class="pc-tag">' + (THUMB_TAG[d.thumb] || '图表') + '</span>' +
+                '<span>· ' + escapeHTMLJS(d.modifier) + '</span>' +
+                '<span>· ' + escapeHTMLJS(d.time) + '</span>' +
+              '</div>' +
+            '</div>'
+          );
+        }).join('');
+        renderPagination(total, totalPages);
+      }
+
+      function renderPagination(total, totalPages) {
+        if (total === 0) {
+          dbPagination.innerHTML = '<span class="page-info">共 0 条</span>';
+          return;
+        }
+        const cur = dbCurrentPage;
+        const pages = [];
+        // 计算显示哪些页码：始终显示 1、totalPages，当前页前后 1
+        const show = new Set([1, totalPages, cur - 1, cur, cur + 1]);
+        const validPages = Array.from(show).filter((p) => p >= 1 && p <= totalPages).sort((a, b) => a - b);
+        let html = '';
+        html += '<button type="button" class="page-btn" data-page="' + (cur - 1) + '"' + (cur === 1 ? ' disabled' : '') + '>‹</button>';
+        let prev = 0;
+        validPages.forEach((p) => {
+          if (p - prev > 1) html += '<span class="page-ellipsis">…</span>';
+          html += '<button type="button" class="page-btn' + (p === cur ? ' active' : '') + '" data-page="' + p + '">' + p + '</button>';
+          prev = p;
+        });
+        html += '<button type="button" class="page-btn" data-page="' + (cur + 1) + '"' + (cur === totalPages ? ' disabled' : '') + '>›</button>';
+        html += '<span class="page-info">共 ' + total + ' 条 · ' + cur + '/' + totalPages + ' 页</span>';
+        dbPagination.innerHTML = html;
+      }
+
+      function buildPickThumb(type) {
+        if (type === 'line') {
+          return (
+            '<svg viewBox="0 0 100 50" preserveAspectRatio="none">' +
+              '<defs><linearGradient id="pcl" x1="0" y1="0" x2="0" y2="1">' +
+                '<stop offset="0%" stop-color="#1677ff" stop-opacity="0.32"/>' +
+                '<stop offset="100%" stop-color="#1677ff" stop-opacity="0"/></linearGradient></defs>' +
+              '<path d="M2,40 L14,32 L26,36 L38,22 L50,28 L62,18 L74,24 L86,12 L98,16 L98,50 L2,50 Z" fill="url(#pcl)"/>' +
+              '<path d="M2,40 L14,32 L26,36 L38,22 L50,28 L62,18 L74,24 L86,12 L98,16" fill="none" stroke="#1677ff" stroke-width="1.6" stroke-linecap="round"/>' +
+            '</svg>'
+          );
+        }
+        if (type === 'bars') {
+          const heights = ['52%', '38%', '64%', '46%', '72%', '40%', '58%', '68%'];
+          return '<div class="pc-bars">' + heights.map((h) => '<span style="height:' + h + '"></span>').join('') + '</div>';
+        }
+        if (type === 'pie') {
+          return '<div class="pc-pie"></div>';
+        }
+        return '<div class="pc-table"><div class="row head"></div><div class="row"></div><div class="row"></div><div class="row"></div><div class="row"></div></div>';
+      }
+
+      // 确定 → 插入到当前光标处
+      pickConfirmBtn.addEventListener('click', function () {
+        if (dbPickedIds.size === 0) return;
+        const html = Array.from(dbPickedIds).map((id) => {
+          const d = DASHBOARDS.find((x) => x.id === id);
+          if (!d) return '';
+          const chartType = THUMB_TO_CHART[d.thumb] || 'bar';
+          const tag = THUMB_TAG[d.thumb] || '图表';
+          return (
+            '<div class="asset-preview" contenteditable="false" data-chart="' + chartType +
+              '" data-chart-title="' + escapeAttrJS(d.name) + '" data-source="dashboard:' + d.id + '">' +
+              '<div class="ap-head">' +
+                '<span class="ap-tag">' + tag + '</span>' +
+                '<span>' + escapeHTMLJS(d.name) + '</span>' +
+                '<span style="margin-left:auto;color:#94a3b8;font-weight:400;font-size:11.5px;">来自我的仪表盘 · ' + escapeHTMLJS(d.modifier) + '</span>' +
+              '</div>' +
+              '<div class="ap-body chart-canvas"></div>' +
+            '</div>'
+          );
+        }).join('');
+
+        article.focus();
+        restoreSelection();
+        try { document.execCommand('insertHTML', false, html + '<p><br/></p>'); } catch (e) {
+          article.insertAdjacentHTML('beforeend', html);
+        }
+
+        // 渲染新插入的图表
+        requestAnimationFrame(() => renderCharts(article));
+
+        showToast('已插入 ' + dbPickedIds.size + ' 个仪表盘');
+        closeDashboardPicker();
+
+        // 如果新增了 h2，更新章节侧栏
+        rebuildSectionList();
+      });
+
+      // ESC 关闭
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !dbModal.classList.contains('hidden')) {
+          closeDashboardPicker();
+        }
+      });
+    })();
+  </script>
 </body>
 </html>

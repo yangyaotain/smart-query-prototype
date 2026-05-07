@@ -1,0 +1,1481 @@
+/* ======================================================================
+ * 知识库 / 指标体系（admin/knowledge-indicator.html）
+ *  - 左：指标目录树（一级 / 二级，右键新增/重命名/删除）
+ *  - 右：查询条件 + 指标列表 + 分页
+ *  - 抽屉：查看 / 编辑 / 新增（原子 / 衍生 / 维度 三种表单动态切换）
+ * ====================================================================== */
+(function () {
+  'use strict';
+
+  // ---------- 1) Mock 字典 ----------
+  var DATA_SOURCES = [
+    { id: 'ds_metric',   name: '守正指标库',   type: 'MySQL' },
+    { id: 'ds_sales',    name: '销售业务库',   type: 'MySQL' },
+    { id: 'ds_cdw',      name: '客户数据仓库', type: 'TiDB' },
+    { id: 'ds_finance',  name: '财务核算库',   type: 'Oracle' }
+  ];
+
+  // 物理表（按数据源分组）
+  var TABLES_BY_SRC = {
+    ds_metric: [
+      'non_bidding_project_info',
+      'non_bidding_fee_detail',
+      'bidding_project_info',
+      'platform_service_fee_detail',
+      'ca_fee_detail',
+      'ecommerce_trade_detail'
+    ],
+    ds_sales: ['sales_order', 'sales_order_item', 'customer', 'product', 'channel'],
+    ds_cdw: ['customer_master', 'customer_tag', 'customer_segment'],
+    ds_finance: ['ar_master', 'ap_master', 'gl_detail']
+  };
+
+  // 物理字段（按表）
+  var FIELDS_BY_TABLE = {
+    non_bidding_project_info: [
+      'deal_amount_10k_yuan', 'deal_notice_sent_date', 'procurement_method', 'project_name', 'project_code'
+    ],
+    non_bidding_fee_detail: [
+      'service_fee_amount', 'service_fee_payment_time', 'procurement_method', 'project_id'
+    ],
+    bidding_project_info: [
+      'bidding_amount', 'bidding_method', 'service_fee_collection_time', 'project_id'
+    ],
+    platform_service_fee_detail: [
+      'service_fee_amount', 'service_fee_collection_time', 'project_id'
+    ],
+    ca_fee_detail: [
+      'ca_fee_amount', 'payment_time', 'cert_type'
+    ],
+    ecommerce_trade_detail: [
+      'trade_amount', 'acceptance_time', 'category'
+    ],
+    sales_order: ['order_id', 'sales_amount', 'order_date', 'customer_id', 'channel_id'],
+    sales_order_item: ['order_id', 'product_id', 'quantity', 'price'],
+    customer: ['customer_id', 'customer_name', 'register_date'],
+    product: ['product_id', 'product_name', 'category'],
+    channel: ['channel_id', 'channel_name'],
+    customer_master: ['customer_id', 'customer_name', 'level'],
+    customer_tag: ['customer_id', 'tag'],
+    customer_segment: ['customer_id', 'segment'],
+    ar_master: ['ar_id', 'amount', 'due_date'],
+    ap_master: ['ap_id', 'amount', 'due_date'],
+    gl_detail: ['account_id', 'amount', 'period']
+  };
+
+  var AGG_OPTIONS = ['SUM', 'COUNT', 'COUNT_DISTINCT', 'AVG', 'MAX', 'MIN'];
+  var UNIT_PRESETS = ['元', '万元', '亿元', '%', '件', '次', '人', '天'];
+  var TIME_TPL_PRESETS = [
+    { key: '按月',   formula: "DATE_FORMAT(?, '%Y-%m')" },
+    { key: '按日',   formula: "DATE_FORMAT(?, '%Y-%m-%d')" },
+    { key: '按年',   formula: 'YEAR(?)' },
+    { key: '按季度', formula: "CONCAT(YEAR(?), '-Q', QUARTER(?))" },
+    { key: '按周',   formula: "DATE_FORMAT(?, '%x-W%v')" }
+  ];
+
+  // ---------- 2) 目录树 ----------
+  var TREE = [
+    {
+      id: 'g_revenue', name: '收入指标', expanded: true,
+      children: [
+        { id: 'g_rev_sale', name: '销售收入' },
+        { id: 'g_rev_service', name: '服务收入' },
+        { id: 'g_rev_other', name: '其他收入' }
+      ]
+    },
+    {
+      id: 'g_cost', name: '成本指标', expanded: true,
+      children: [
+        { id: 'g_cost_direct', name: '直接成本' },
+        { id: 'g_cost_indirect', name: '间接成本' }
+      ]
+    },
+    {
+      id: 'g_efficiency', name: '运营效率', expanded: true,
+      children: [
+        { id: 'g_eff_conv', name: '转化率' },
+        { id: 'g_eff_cycle', name: '周期/时长' }
+      ]
+    },
+    {
+      id: 'g_dim', name: '维度', expanded: true,
+      children: [
+        { id: 'g_dim_time', name: '时间维度' },
+        { id: 'g_dim_biz', name: '业务维度' }
+      ]
+    }
+  ];
+
+  // ---------- 3) Mock 指标数据 ----------
+  var INDICATORS = [
+    {
+      id: 'i_non_bid_amt', groupId: 'g_rev_sale', type: 'atom',
+      name: '非招成交金额', synonyms: '非招成交金额',
+      desc: '非招标项目的成交金额合计。',
+      srcId: 'ds_metric',
+      table: 'non_bidding_project_info',
+      field: 'deal_amount_10k_yuan',
+      agg: 'SUM',
+      timeField: 'deal_notice_sent_date',
+      unit: '万元',
+      updatedAt: '2026-05-04'
+    },
+    {
+      id: 'i_bid_amt', groupId: 'g_rev_sale', type: 'atom',
+      name: '招标成交金额', synonyms: '招标项目成交金额',
+      desc: '招标项目的成交金额合计。',
+      srcId: 'ds_metric',
+      table: 'bidding_project_info',
+      field: 'bidding_amount',
+      agg: 'SUM',
+      timeField: 'service_fee_collection_time',
+      unit: '万元',
+      updatedAt: '2026-05-03'
+    },
+    {
+      id: 'i_platform_fee', groupId: 'g_rev_service', type: 'atom',
+      name: '招标平台服务费', synonyms: '平台服务费收入',
+      desc: '招标平台收取的服务费收入。',
+      srcId: 'ds_metric',
+      table: 'platform_service_fee_detail',
+      field: 'service_fee_amount',
+      agg: 'SUM',
+      timeField: 'service_fee_collection_time',
+      unit: '元',
+      updatedAt: '2026-05-02'
+    },
+    {
+      id: 'i_non_bid_fee', groupId: 'g_rev_service', type: 'atom',
+      name: '非招服务费', synonyms: '非招服务费收入',
+      desc: '非招标项目的服务费收入。',
+      srcId: 'ds_metric',
+      table: 'non_bidding_fee_detail',
+      field: 'service_fee_amount',
+      agg: 'SUM',
+      timeField: 'service_fee_payment_time',
+      unit: '元',
+      updatedAt: '2026-04-29'
+    },
+    {
+      id: 'i_ca_income', groupId: 'g_rev_other', type: 'atom',
+      name: 'CA证书收入', synonyms: 'CA 证书',
+      desc: 'CA 数字证书业务收入。',
+      srcId: 'ds_metric',
+      table: 'ca_fee_detail',
+      field: 'ca_fee_amount',
+      agg: 'SUM',
+      timeField: 'payment_time',
+      unit: '元',
+      updatedAt: '2026-04-25'
+    },
+    {
+      id: 'i_total_income', groupId: 'g_rev_sale', type: 'derived',
+      name: '总收入', synonyms: '总收入',
+      desc: '招标平台服务费 + 非招服务费 + CA证书收入 + 销售金额 * 0.015',
+      srcId: 'ds_metric',
+      formula: '招标平台服务费 + 非招服务费 + CA证书收入 + 销售金额 * 0.015',
+      unit: '元',
+      updatedAt: '2026-05-05'
+    },
+    {
+      id: 'i_arpu', groupId: 'g_eff_conv', type: 'derived',
+      name: '客单价', synonyms: 'ARPU,人均客单',
+      desc: '总收入 / 成交客户数',
+      srcId: 'ds_metric',
+      formula: '总收入 / 成交客户数',
+      unit: '元',
+      updatedAt: '2026-04-22'
+    },
+    {
+      id: 'd_proc_method', groupId: 'g_dim_biz', type: 'dim',
+      name: '采购方式', synonyms: '采购方式',
+      desc: '描述项目的采购方式（招标 / 询价 / 直采等）。',
+      srcId: 'ds_metric',
+      isTimeDim: false,
+      mappings: [
+        { table: 'non_bidding_fee_detail', field: 'procurement_method' },
+        { table: 'non_bidding_project_info', field: 'procurement_method' },
+        { table: 'bidding_project_info', field: 'bidding_method' }
+      ],
+      filterValues: [
+        { alias: '招标', value: 'BIDDING' },
+        { alias: '询价', value: 'INQUIRY' },
+        { alias: '直采', value: 'DIRECT' }
+      ],
+      updatedAt: '2026-04-30'
+    },
+    {
+      id: 'd_time_quarter', groupId: 'g_dim_time', type: 'dim',
+      name: '统计时间-按季度', synonyms: '同环比, 趋势',
+      desc: '按季度聚合的时间维度。',
+      srcId: 'ds_metric',
+      isTimeDim: true,
+      timeTplKey: '按季度',
+      timeFormula: "CONCAT(YEAR(?), '-Q', QUARTER(?))",
+      mappings: [
+        { table: 'platform_service_fee_detail', field: 'service_fee_collection_time' },
+        { table: 'non_bidding_fee_detail', field: 'service_fee_payment_time' },
+        { table: 'ca_fee_detail', field: 'payment_time' },
+        { table: 'bidding_project_info', field: 'service_fee_collection_time' },
+        { table: 'ecommerce_trade_detail', field: 'acceptance_time' },
+        { table: 'non_bidding_project_info', field: 'deal_notice_sent_date' }
+      ],
+      filterValues: [],
+      updatedAt: '2026-05-01'
+    },
+    {
+      id: 'd_time_month', groupId: 'g_dim_time', type: 'dim',
+      name: '统计时间-按月', synonyms: '月度, 月份',
+      desc: '按月聚合的时间维度。',
+      srcId: 'ds_metric',
+      isTimeDim: true,
+      timeTplKey: '按月',
+      timeFormula: "DATE_FORMAT(?, '%Y-%m')",
+      mappings: [
+        { table: 'platform_service_fee_detail', field: 'service_fee_collection_time' },
+        { table: 'non_bidding_project_info', field: 'deal_notice_sent_date' }
+      ],
+      filterValues: [],
+      updatedAt: '2026-04-26'
+    }
+  ];
+
+  // ---------- 4) 工具 ----------
+  function $(s, r) { return (r || document).querySelector(s); }
+  function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+  function escapeHTML(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function uid(p) { return p + '_' + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-3); }
+
+  function findGroupById(id) {
+    for (var i = 0; i < TREE.length; i++) {
+      if (TREE[i].id === id) return { parent: null, group: TREE[i], path: [TREE[i]] };
+      var c = TREE[i].children || [];
+      for (var j = 0; j < c.length; j++) {
+        if (c[j].id === id) return { parent: TREE[i], group: c[j], path: [TREE[i], c[j]] };
+      }
+    }
+    return null;
+  }
+  function findIndicatorById(id) {
+    for (var i = 0; i < INDICATORS.length; i++) {
+      if (INDICATORS[i].id === id) return INDICATORS[i];
+    }
+    return null;
+  }
+  function dsName(id) {
+    for (var i = 0; i < DATA_SOURCES.length; i++) if (DATA_SOURCES[i].id === id) return DATA_SOURCES[i].name;
+    return '';
+  }
+  function typeLabel(t) { return t === 'atom' ? '原子指标' : t === 'derived' ? '衍生指标' : '维度'; }
+  function typeAbbr(t)  { return t === 'atom' ? '原' : t === 'derived' ? '衍' : '维'; }
+
+  // 计算所有节点（含全部）每个的指标数（含子分组聚合）
+  function countByGroup() {
+    var map = {};
+    INDICATORS.forEach(function (it) { map[it.groupId] = (map[it.groupId] || 0) + 1; });
+    // 父节点统计 = 自己 + 子节点之和
+    TREE.forEach(function (g) {
+      var sum = map[g.id] || 0;
+      (g.children || []).forEach(function (c) { sum += (map[c.id] || 0); });
+      map['_total_' + g.id] = sum;
+    });
+    var all = INDICATORS.length;
+    map._all = all;
+    return map;
+  }
+
+  // 取某分组下的"包含子分组"的所有指标
+  function indicatorsInGroup(gid) {
+    if (!gid || gid === '__all__') return INDICATORS.slice();
+    var info = findGroupById(gid);
+    if (!info) return [];
+    if (!info.parent) {
+      // 一级分组：包含自身 + 所有子级
+      var ids = {};
+      ids[info.group.id] = true;
+      (info.group.children || []).forEach(function (c) { ids[c.id] = true; });
+      return INDICATORS.filter(function (it) { return ids[it.groupId]; });
+    }
+    return INDICATORS.filter(function (it) { return it.groupId === gid; });
+  }
+
+  // ---------- 5) 状态 ----------
+  var state = {
+    activeGroupId: '__all__',
+    keyword: '',
+    typeFilter: '',
+    page: 1,
+    pageSize: 10,
+    drawer: { mode: null, indicatorId: null, draft: null },  // mode: view | edit | create
+    ctx: { type: null, groupId: null }                       // 右键菜单上下文
+  };
+
+  // ---------- 6) 渲染左目录树 ----------
+  function renderTree() {
+    var box = $('#kiTree'); if (!box) return;
+    var counts = countByGroup();
+    var kw = (state.searchTreeKw || '').trim().toLowerCase();
+
+    var topAllActive = state.activeGroupId === '__all__' ? ' is-active' : '';
+    var html = ''
+      + '<div class="ki-tree-row' + topAllActive + '" data-gid="__all__" oncontextmenu="return false;">'
+      +   '<span class="chev"></span>'
+      +   '<span class="ki-tr-name">全部指标</span>'
+      +   '<span class="ki-tr-cnt">' + counts._all + '</span>'
+      + '</div>';
+
+    TREE.forEach(function (g) {
+      // 关键字过滤：名称匹配，或子节点匹配
+      var matched = !kw || g.name.toLowerCase().indexOf(kw) >= 0
+        || (g.children || []).some(function (c) { return c.name.toLowerCase().indexOf(kw) >= 0; });
+      if (!matched) return;
+      var collapsed = g.expanded === false ? ' is-collapsed' : '';
+      var active = state.activeGroupId === g.id ? ' is-active' : '';
+      var children = (g.children || []).filter(function (c) {
+        return !kw || g.name.toLowerCase().indexOf(kw) >= 0 || c.name.toLowerCase().indexOf(kw) >= 0;
+      });
+      var childHTML = children.map(function (c) {
+        var actC = state.activeGroupId === c.id ? ' is-active' : '';
+        var cnt = counts[c.id] || 0;
+        return ''
+          + '<div class="ki-tree-row' + actC + '" data-gid="' + escapeHTML(c.id) + '" data-parent="' + escapeHTML(g.id) + '">'
+          +   '<span class="ki-tr-name">' + escapeHTML(c.name) + '</span>'
+          +   '<span class="ki-tr-cnt">' + cnt + '</span>'
+          + '</div>';
+      }).join('');
+      html += ''
+        + '<div class="ki-tree-group' + collapsed + '" data-gid="' + escapeHTML(g.id) + '">'
+        +   '<div class="ki-tree-row' + active + '" data-gid="' + escapeHTML(g.id) + '">'
+        +     '<span class="chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>'
+        +     '<span class="ki-tr-name">' + escapeHTML(g.name) + '</span>'
+        +     '<span class="ki-tr-cnt">' + (counts['_total_' + g.id] || 0) + '</span>'
+        +   '</div>'
+        +   '<div class="ki-tree-children">' + childHTML + '</div>'
+        + '</div>';
+    });
+
+    box.innerHTML = html;
+  }
+
+  // ---------- 7) 渲染列表 ----------
+  function getFilteredList() {
+    var list = indicatorsInGroup(state.activeGroupId);
+    var kw = (state.keyword || '').trim().toLowerCase();
+    if (kw) {
+      list = list.filter(function (it) {
+        return (it.name || '').toLowerCase().indexOf(kw) >= 0
+          || (it.synonyms || '').toLowerCase().indexOf(kw) >= 0;
+      });
+    }
+    if (state.typeFilter) {
+      list = list.filter(function (it) { return it.type === state.typeFilter; });
+    }
+    return list;
+  }
+
+  function renderBread() {
+    var b = $('#kiBreadText'); if (!b) return;
+    var info = state.activeGroupId === '__all__' ? null : findGroupById(state.activeGroupId);
+    if (!info) {
+      b.textContent = '全部指标';
+    } else {
+      b.textContent = info.path.map(function (g) { return g.name; }).join(' / ');
+    }
+    var c = $('#kiBreadCount');
+    if (c) c.textContent = String(getFilteredList().length);
+  }
+
+  function renderList() {
+    var tbody = $('#kiTbody'); if (!tbody) return;
+    var list = getFilteredList();
+    var totalPages = Math.max(1, Math.ceil(list.length / state.pageSize));
+    if (state.page > totalPages) state.page = totalPages;
+    var start = (state.page - 1) * state.pageSize;
+    var rows = list.slice(start, start + state.pageSize);
+
+    if (!rows.length) {
+      tbody.innerHTML = ''
+        + '<tr><td colspan="6">'
+        +   '<div class="ki-empty">'
+        +     '<div class="ki-empty-ico"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></div>'
+        +     '没有匹配的指标，可右上角"新增指标"添加'
+        +   '</div>'
+        + '</td></tr>';
+      renderPager(0, 1);
+      return;
+    }
+
+    tbody.innerHTML = rows.map(function (it) {
+      var formula = '';
+      if (it.type === 'atom') {
+        formula = (it.agg || 'SUM') + '(' + (it.field || '') + ')';
+      } else if (it.type === 'derived') {
+        formula = it.formula || '';
+      } else {
+        formula = (it.mappings || []).length + ' 个表字段映射';
+      }
+      var typeKey = it.type;
+      return ''
+        + '<tr data-id="' + escapeHTML(it.id) + '">'
+        +   '<td>'
+        +     '<div class="ki-name">'
+        +       '<span class="ki-name-ico is-' + typeKey + '">' + typeAbbr(typeKey) + '</span>'
+        +       '<div class="ki-name-text">'
+        +         '<strong>' + escapeHTML(it.name) + '</strong>'
+        +         '<span>' + escapeHTML(dsName(it.srcId)) + '</span>'
+        +       '</div>'
+        +     '</div>'
+        +   '</td>'
+        +   '<td><span class="ki-type-tag is-' + typeKey + '">' + typeLabel(typeKey) + '</span></td>'
+        +   '<td><span class="ki-formula" title="' + escapeHTML(formula) + '">' + escapeHTML(formula) + '</span></td>'
+        +   '<td><span class="ki-syn" title="' + escapeHTML(it.synonyms || '') + '">' + escapeHTML(it.synonyms || '-') + '</span></td>'
+        +   '<td><span class="ki-desc" title="' + escapeHTML(it.desc || '') + '">' + escapeHTML(it.desc || '-') + '</span></td>'
+        +   '<td>'
+        +     '<div class="ki-row-act">'
+        +       '<button type="button" class="ki-icon-btn" title="查看" data-act="view"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button>'
+        +       '<button type="button" class="ki-icon-btn" title="编辑" data-act="edit"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>'
+        +       '<button type="button" class="ki-icon-btn is-danger" title="删除" data-act="delete"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>'
+        +     '</div>'
+        +   '</td>'
+        + '</tr>';
+    }).join('');
+
+    renderPager(list.length, totalPages);
+  }
+
+  function renderPager(total, totalPages) {
+    var pg = $('#kiPager'); if (!pg) return;
+    var start = total === 0 ? 0 : (state.page - 1) * state.pageSize + 1;
+    var end = Math.min(total, state.page * state.pageSize);
+    pg.innerHTML = ''
+      + '<div class="ki-pg-info">共 ' + total + ' 条，第 ' + start + ' - ' + end + ' 条</div>'
+      + '<div class="ki-pg-buttons">'
+      +   '<button type="button" data-pg="prev"' + (state.page <= 1 ? ' disabled' : '') + '>上一页</button>'
+      +   pageButtonsHTML(totalPages)
+      +   '<button type="button" data-pg="next"' + (state.page >= totalPages ? ' disabled' : '') + '>下一页</button>'
+      + '</div>'
+      + '<select class="ki-pg-size" id="kiPgSize">'
+      +   ['10', '20', '50'].map(function (n) {
+            return '<option value="' + n + '"' + (String(state.pageSize) === n ? ' selected' : '') + '>' + n + ' 条/页</option>';
+          }).join('')
+      + '</select>';
+  }
+
+  function pageButtonsHTML(totalPages) {
+    var html = '';
+    var max = Math.min(totalPages, 7);
+    var pages = [];
+    if (totalPages <= 7) {
+      for (var i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages = [1];
+      var s = Math.max(2, state.page - 2);
+      var e = Math.min(totalPages - 1, state.page + 2);
+      if (s > 2) pages.push('...');
+      for (var k = s; k <= e; k++) pages.push(k);
+      if (e < totalPages - 1) pages.push('...');
+      pages.push(totalPages);
+    }
+    pages.forEach(function (p) {
+      if (p === '...') {
+        html += '<button type="button" disabled>...</button>';
+      } else {
+        html += '<button type="button" data-pg="' + p + '"' + (p === state.page ? ' class="is-current"' : '') + '>' + p + '</button>';
+      }
+    });
+    return html;
+  }
+
+  // ---------- 8) 抽屉 ----------
+  function openDrawer(mode, indicatorId, presetGroupId) {
+    state.drawer.mode = mode;
+    state.drawer.indicatorId = indicatorId || null;
+    var it = indicatorId ? findIndicatorById(indicatorId) : null;
+    if (mode === 'create') {
+      state.drawer.draft = newIndicatorDraft(presetGroupId || state.activeGroupId);
+    } else {
+      // view / edit：编辑时拷贝一份，避免直接改源数据
+      state.drawer.draft = it ? deepClone(it) : null;
+    }
+    $('#kiDrawerMask').classList.remove('hidden');
+    var d = $('#kiDrawer');
+    d.classList.remove('hidden');
+    d.setAttribute('aria-hidden', 'false');
+    renderDrawer();
+  }
+
+  function closeDrawer() {
+    $('#kiDrawerMask').classList.add('hidden');
+    var d = $('#kiDrawer');
+    d.classList.add('hidden');
+    d.setAttribute('aria-hidden', 'true');
+    state.drawer.mode = null;
+    state.drawer.indicatorId = null;
+    state.drawer.draft = null;
+  }
+
+  function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
+
+  function newIndicatorDraft(groupId) {
+    if (!groupId || groupId === '__all__') {
+      // 找一个二级
+      for (var i = 0; i < TREE.length; i++) {
+        var c = TREE[i].children || [];
+        if (c.length) { groupId = c[0].id; break; }
+      }
+    }
+    return {
+      id: '',
+      groupId: groupId,
+      type: 'atom',
+      name: '',
+      synonyms: '',
+      desc: '',
+      srcId: DATA_SOURCES[0].id,
+      table: '',
+      field: '',
+      agg: 'SUM',
+      timeField: '',
+      unit: '万元',
+      formula: '',
+      isTimeDim: false,
+      timeTplKey: '',
+      timeFormula: '',
+      mappings: [],
+      filterValues: []
+    };
+  }
+
+  function renderDrawer() {
+    var titleEl = $('#kiDrawerTitle');
+    var subEl = $('#kiDrawerSubtitle');
+    var chip = $('#kiModeChip');
+    var body = $('#kiDrawerBody');
+    var foot = $('#kiDrawerFoot');
+    if (!body) return;
+
+    var d = state.drawer;
+    var mode = d.mode;
+    var draft = d.draft;
+    if (!draft) return;
+
+    // 头部文案
+    if (mode === 'view') {
+      titleEl.textContent = '指标详情';
+      subEl.textContent = '查看 ' + (draft.name || '') + ' 的配置';
+      chip.classList.remove('hidden', 'is-edit', 'is-create');
+      chip.textContent = '查看模式';
+    } else if (mode === 'edit') {
+      titleEl.textContent = '编辑指标';
+      subEl.textContent = '修改 ' + (draft.name || '') + ' 的字段';
+      chip.classList.remove('hidden', 'is-create');
+      chip.classList.add('is-edit');
+      chip.textContent = '编辑模式';
+    } else {
+      titleEl.textContent = '新增指标';
+      subEl.textContent = '根据类型选择"原子指标 / 衍生指标 / 维度"配置不同字段';
+      chip.classList.remove('hidden', 'is-edit');
+      chip.classList.add('is-create');
+      chip.textContent = '新增模式';
+    }
+
+    // 内容
+    if (mode === 'view') {
+      body.innerHTML = renderViewBody(draft);
+    } else {
+      body.innerHTML = renderFormBody(draft);
+    }
+
+    // 底部按钮
+    if (mode === 'view') {
+      foot.innerHTML = ''
+        + '<button type="button" class="ghost-btn" data-act="close">关闭</button>'
+        + '<button type="button" class="primary-btn" data-act="switch-edit">'
+        +   '<svg viewBox="0 0 24 24" width="14" height="14" style="fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>'
+        +   '编辑'
+        + '</button>';
+    } else {
+      foot.innerHTML = ''
+        + '<button type="button" class="ghost-btn" data-act="cancel">取消</button>'
+        + '<button type="button" class="primary-btn" data-act="save">保存修改</button>';
+    }
+  }
+
+  // ---------- 8a) 抽屉 - 查看模式 HTML ----------
+  function renderViewBody(d) {
+    function v(x) { return (x == null || x === '') ? '<span class="ki-view-value empty">—</span>' : '<div class="ki-view-value">' + escapeHTML(x) + '</div>'; }
+    var srcN = dsName(d.srcId);
+    var typeT = typeLabel(d.type);
+
+    var html = ''
+      + '<div class="ki-view-grid">'
+      +   '<div class="ki-view-cell"><div class="ki-view-label">数据源</div>' + v(srcN) + '</div>'
+      +   '<div class="ki-view-cell"><div class="ki-view-label">类型</div><div class="ki-view-value"><span class="ki-type-tag is-' + d.type + '">' + typeT + '</span></div></div>'
+      +   '<div class="ki-view-cell"><div class="ki-view-label">名称</div>' + v(d.name) + '</div>'
+      +   '<div class="ki-view-cell"><div class="ki-view-label">同义词</div>' + v(d.synonyms) + '</div>'
+      +   '<div class="ki-view-cell full"><div class="ki-view-label">描述</div>' + v(d.desc) + '</div>'
+      + '</div>';
+
+    if (d.type === 'atom') {
+      html += ''
+        + '<div class="ki-view-section">'
+        +   '<h4>物理映射</h4>'
+        +   '<div class="ki-view-grid">'
+        +     '<div class="ki-view-cell"><div class="ki-view-label">物理表名</div>' + v(d.table) + '</div>'
+        +     '<div class="ki-view-cell"><div class="ki-view-label">物理字段名</div>' + v(d.field) + '</div>'
+        +     '<div class="ki-view-cell"><div class="ki-view-label">聚合方式</div>' + v(d.agg) + '</div>'
+        +     '<div class="ki-view-cell"><div class="ki-view-label">时间字段（兜底）</div>' + v(d.timeField) + '</div>'
+        +     '<div class="ki-view-cell"><div class="ki-view-label">单位</div>' + v(d.unit) + '</div>'
+        +   '</div>'
+        + '</div>';
+    } else if (d.type === 'derived') {
+      html += ''
+        + '<div class="ki-view-section">'
+        +   '<h4>计算公式</h4>'
+        +   '<div class="ki-view-value" style="font-family:ui-monospace,Consolas,monospace;background:#f8fafc;padding:10px 12px;border-radius:8px;">'
+        +     escapeHTML(d.formula || '—')
+        +   '</div>'
+        +   '<div class="ki-form-hint">公式中的标识符必须是系统中已定义的原子指标名</div>'
+        + '</div>';
+      if (d.unit) {
+        html += '<div class="ki-view-section"><h4>单位</h4>' + v(d.unit) + '</div>';
+      }
+    } else {
+      html += ''
+        + '<div class="ki-view-section">'
+        +   '<h4>是否时间维度</h4>'
+        +   v(d.isTimeDim ? '是' : '否')
+        + '</div>';
+      if (d.isTimeDim) {
+        html += ''
+          + '<div class="ki-view-section">'
+          +   '<h4>时间函数模板</h4>'
+          +   '<div class="ki-view-value" style="font-family:ui-monospace,Consolas,monospace;background:#f8fafc;padding:10px 12px;border-radius:8px;">'
+          +     escapeHTML(d.timeFormula || '—')
+          +   '</div>'
+          + '</div>';
+      }
+      // 关联表字段
+      var ml = (d.mappings || []).map(function (m) {
+        return '<div class="ki-view-row"><strong>' + escapeHTML(m.table) + '</strong>·<span>' + escapeHTML(m.field) + '</span></div>';
+      }).join('');
+      html += ''
+        + '<div class="ki-view-section">'
+        +   '<h4>关联表字段</h4>'
+        +   (ml ? '<div class="ki-view-list">' + ml + '</div>' : v(''))
+        + '</div>';
+      // 过滤值映射
+      var fv = (d.filterValues || []).map(function (m) {
+        return '<div class="ki-view-row"><strong>' + escapeHTML(m.alias) + '</strong> → <span>' + escapeHTML(m.value) + '</span></div>';
+      }).join('');
+      html += ''
+        + '<div class="ki-view-section">'
+        +   '<h4>过滤值映射</h4>'
+        +   (fv ? '<div class="ki-view-list">' + fv + '</div>' : v(''))
+        + '</div>';
+    }
+    return html;
+  }
+
+  // ---------- 8b) 抽屉 - 表单模式 HTML ----------
+  function srcOptions(selectedId) {
+    return DATA_SOURCES.map(function (s) {
+      return '<option value="' + escapeHTML(s.id) + '"' + (s.id === selectedId ? ' selected' : '') + '>' + escapeHTML(s.name) + '</option>';
+    }).join('');
+  }
+
+  function tableOptions(srcId, selected) {
+    var arr = TABLES_BY_SRC[srcId] || [];
+    return ['<option value="">请选择</option>'].concat(arr.map(function (t) {
+      return '<option value="' + escapeHTML(t) + '"' + (t === selected ? ' selected' : '') + '>' + escapeHTML(t) + '</option>';
+    })).join('');
+  }
+
+  function fieldOptions(table, selected, includeEmpty) {
+    var arr = FIELDS_BY_TABLE[table] || [];
+    var head = includeEmpty ? '<option value="">请选择</option>' : '';
+    return [head].concat(arr.map(function (f) {
+      return '<option value="' + escapeHTML(f) + '"' + (f === selected ? ' selected' : '') + '>' + escapeHTML(f) + '</option>';
+    })).join('');
+  }
+
+  function aggOptions(selected) {
+    return AGG_OPTIONS.map(function (a) {
+      return '<option value="' + escapeHTML(a) + '"' + (a === selected ? ' selected' : '') + '>' + escapeHTML(a) + '</option>';
+    }).join('');
+  }
+
+  function unitChipsHTML(selected) {
+    return UNIT_PRESETS.map(function (u) {
+      return '<span class="ki-chip' + (selected === u ? ' is-checked' : '') + '" data-unit="' + escapeHTML(u) + '">' + escapeHTML(u) + '</span>';
+    }).join('');
+  }
+
+  function tplChipsHTML(selectedKey) {
+    return TIME_TPL_PRESETS.map(function (t) {
+      return '<span class="ki-chip' + (selectedKey === t.key ? ' is-checked' : '') + '" data-tpl="' + escapeHTML(t.key) + '">' + escapeHTML(t.key) + '</span>';
+    }).join('');
+  }
+
+  function renderFormBody(d) {
+    // 通用：数据源、名称、类型、同义词、描述
+    var common = ''
+      + '<div class="ki-form-row">'
+      +   '<label class="ki-form-label">数据源</label>'
+      +   '<select class="ki-select-form" data-bind="srcId">' + srcOptions(d.srcId) + '</select>'
+      + '</div>'
+      + '<div class="ki-form-grid">'
+      +   '<div class="ki-form-row">'
+      +     '<label class="ki-form-label">名称</label>'
+      +     '<input class="ki-input" data-bind="name" maxlength="40" value="' + escapeHTML(d.name) + '" />'
+      +   '</div>'
+      +   '<div class="ki-form-row">'
+      +     '<label class="ki-form-label">类型</label>'
+      +     '<select class="ki-select-form" data-bind="type">'
+      +       '<option value="atom"' + (d.type === 'atom' ? ' selected' : '') + '>原子指标</option>'
+      +       '<option value="derived"' + (d.type === 'derived' ? ' selected' : '') + '>衍生指标</option>'
+      +       '<option value="dim"' + (d.type === 'dim' ? ' selected' : '') + '>维度</option>'
+      +     '</select>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="ki-form-row">'
+      +   '<label class="ki-form-label">同义词</label>'
+      +   '<input class="ki-input" data-bind="synonyms" placeholder="多个同义词用英文逗号分隔" value="' + escapeHTML(d.synonyms) + '" />'
+      + '</div>'
+      + '<div class="ki-form-row">'
+      +   '<label class="ki-form-label">描述</label>'
+      +   '<textarea class="ki-textarea" data-bind="desc" maxlength="500" rows="4">' + escapeHTML(d.desc) + '</textarea>'
+      + '</div>';
+
+    var typeBlock = '';
+    if (d.type === 'atom') typeBlock = renderAtomBlock(d);
+    else if (d.type === 'derived') typeBlock = renderDerivedBlock(d);
+    else typeBlock = renderDimBlock(d);
+
+    return common + typeBlock;
+  }
+
+  function renderAtomBlock(d) {
+    return ''
+      + '<div class="ki-form-grid">'
+      +   '<div class="ki-form-row">'
+      +     '<label class="ki-form-label">物理表名</label>'
+      +     '<select class="ki-select-form" data-bind="table">' + tableOptions(d.srcId, d.table) + '</select>'
+      +   '</div>'
+      +   '<div class="ki-form-row">'
+      +     '<label class="ki-form-label">物理字段名</label>'
+      +     '<select class="ki-select-form" data-bind="field">' + fieldOptions(d.table, d.field, true) + '</select>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="ki-form-grid">'
+      +   '<div class="ki-form-row">'
+      +     '<label class="ki-form-label">聚合方式</label>'
+      +     '<select class="ki-select-form" data-bind="agg">' + aggOptions(d.agg) + '</select>'
+      +   '</div>'
+      +   '<div class="ki-form-row">'
+      +     '<label class="ki-form-label">时间字段（兜底）<span class="ki-form-tip" title="该字段用于在没有显式时间维度时兜底过滤">?</span></label>'
+      +     '<select class="ki-select-form" data-bind="timeField">' + fieldOptions(d.table, d.timeField, true) + '</select>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="ki-form-row">'
+      +   '<label class="ki-form-label">单位<span class="ki-form-tip" title="可点选预设，也可在下方文本框自定义">?</span></label>'
+      +   '<div class="ki-unit-chips" data-role="unit-chips">' + unitChipsHTML(d.unit) + '</div>'
+      +   '<input class="ki-input" data-bind="unit" maxlength="20" value="' + escapeHTML(d.unit || '') + '" placeholder="自定义单位" />'
+      + '</div>';
+  }
+
+  function renderDerivedBlock(d) {
+    return ''
+      + '<div class="ki-form-row">'
+      +   '<label class="ki-form-label">计算公式</label>'
+      +   '<textarea class="ki-textarea" data-bind="formula" rows="3" placeholder="例：销售额 / 订单量">' + escapeHTML(d.formula || '') + '</textarea>'
+      +   '<div class="ki-form-hint">公式中的标识符必须是系统中已定义的原子指标名</div>'
+      + '</div>'
+      + '<div class="ki-form-row">'
+      +   '<label class="ki-form-label">单位</label>'
+      +   '<div class="ki-unit-chips" data-role="unit-chips">' + unitChipsHTML(d.unit) + '</div>'
+      +   '<input class="ki-input" data-bind="unit" maxlength="20" value="' + escapeHTML(d.unit || '') + '" placeholder="自定义单位" />'
+      + '</div>';
+  }
+
+  function renderDimBlock(d) {
+    var html = ''
+      + '<div class="ki-form-row">'
+      +   '<label class="ki-checkbox">'
+      +     '<input type="checkbox" data-bind="isTimeDim"' + (d.isTimeDim ? ' checked' : '') + ' /> 是否时间维度'
+      +     '<span class="ki-form-tip" title="勾选后将出现"时间函数模板"配置">?</span>'
+      +   '</label>'
+      + '</div>';
+
+    if (d.isTimeDim) {
+      html += ''
+        + '<div class="ki-form-row">'
+        +   '<label class="ki-form-label">时间函数模板<span class="ki-form-tip" title="选择预设可填充公式模板">?</span></label>'
+        +   '<div class="ki-tpl-chips" data-role="tpl-chips">' + tplChipsHTML(d.timeTplKey) + '</div>'
+        +   '<input class="ki-input" data-bind="timeFormula" placeholder="时间函数公式" value="' + escapeHTML(d.timeFormula || '') + '" />'
+        + '</div>';
+    }
+
+    // 关联表字段
+    html += ''
+      + '<div class="ki-form-row">'
+      +   '<label class="ki-form-label">关联表字段<span class="ki-form-tip" title="一个维度可以关联多张表的同一含义字段">?</span></label>'
+      +   '<div class="ki-rows" data-role="mapping-rows">' + mappingRowsHTML(d) + '</div>'
+      +   '<button type="button" class="ki-add-row" data-act="add-mapping" style="margin-top:8px;">'
+      +     '<svg viewBox="0 0 24 24" width="12" height="12" style="fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 5v14"/><path d="M5 12h14"/></svg>'
+      +     '添加关联'
+      +   '</button>'
+      + '</div>';
+
+    // 过滤值映射
+    html += ''
+      + '<div class="ki-form-row">'
+      +   '<label class="ki-form-label">过滤值映射</label>'
+      +   '<div class="ki-rows" data-role="filter-rows">' + filterRowsHTML(d) + '</div>'
+      +   '<button type="button" class="ki-add-row" data-act="add-filter" style="margin-top:8px;">'
+      +     '<svg viewBox="0 0 24 24" width="12" height="12" style="fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 5v14"/><path d="M5 12h14"/></svg>'
+      +     '添加映射'
+      +   '</button>'
+      + '</div>';
+
+    return html;
+  }
+
+  function mappingRowsHTML(d) {
+    var arr = d.mappings || [];
+    if (!arr.length) return '<div class="ki-empty-line">暂无关联，可新增。</div>';
+    return arr.map(function (m, idx) {
+      return ''
+        + '<div class="ki-row-grid" data-idx="' + idx + '">'
+        +   '<select class="ki-select-form" data-row-bind="table">' + tableOptions(d.srcId, m.table) + '</select>'
+        +   '<select class="ki-select-form" data-row-bind="field">' + fieldOptions(m.table, m.field, true) + '</select>'
+        +   '<button type="button" class="ki-row-del" data-act="del-mapping">删除</button>'
+        + '</div>';
+    }).join('');
+  }
+
+  function filterRowsHTML(d) {
+    var arr = d.filterValues || [];
+    if (!arr.length) return '<div class="ki-empty-line">暂无映射，可新增。</div>';
+    return arr.map(function (m, idx) {
+      return ''
+        + '<div class="ki-row-grid" data-idx="' + idx + '">'
+        +   '<input class="ki-input" data-row-bind="alias" value="' + escapeHTML(m.alias || '') + '" placeholder="别名" />'
+        +   '<span class="ki-arrow">→</span>'
+        +   '<input class="ki-input" data-row-bind="value" value="' + escapeHTML(m.value || '') + '" placeholder="数据库值" />'
+        +   '<button type="button" class="ki-row-del" data-act="del-filter">删除</button>'
+        + '</div>';
+    }).join('');
+  }
+
+  // ---------- 8c) 抽屉事件 ----------
+  function bindDrawer() {
+    var drawer = $('#kiDrawer');
+    var mask = $('#kiDrawerMask');
+    if (!drawer) return;
+    if (mask) mask.addEventListener('click', function () {
+      // 编辑/新增有未保存内容时不直接关闭
+      if (state.drawer.mode === 'edit' || state.drawer.mode === 'create') {
+        // 简化：直接关闭（原型）
+      }
+      closeDrawer();
+    });
+
+    drawer.addEventListener('click', function (e) {
+      var act = e.target.closest && e.target.closest('[data-act]');
+      if (act) {
+        var role = act.getAttribute('data-act');
+        if (role === 'close' || role === 'cancel') { closeDrawer(); return; }
+        if (role === 'switch-edit') {
+          state.drawer.mode = 'edit';
+          renderDrawer();
+          return;
+        }
+        if (role === 'save') { saveDraft(); return; }
+        if (role === 'add-mapping') { addMapping(); return; }
+        if (role === 'add-filter') { addFilter(); return; }
+        if (role === 'del-mapping') {
+          var rowM = act.closest('.ki-row-grid');
+          if (rowM) delMapping(parseInt(rowM.getAttribute('data-idx'), 10));
+          return;
+        }
+        if (role === 'del-filter') {
+          var rowF = act.closest('.ki-row-grid');
+          if (rowF) delFilter(parseInt(rowF.getAttribute('data-idx'), 10));
+          return;
+        }
+      }
+      // chip 点击
+      var chip = e.target.closest && e.target.closest('.ki-chip');
+      if (chip) {
+        if (chip.hasAttribute('data-unit')) {
+          state.drawer.draft.unit = chip.getAttribute('data-unit');
+          renderDrawer();
+        } else if (chip.hasAttribute('data-tpl')) {
+          var key = chip.getAttribute('data-tpl');
+          state.drawer.draft.timeTplKey = key;
+          var preset = null;
+          for (var i = 0; i < TIME_TPL_PRESETS.length; i++) {
+            if (TIME_TPL_PRESETS[i].key === key) { preset = TIME_TPL_PRESETS[i]; break; }
+          }
+          if (preset) state.drawer.draft.timeFormula = preset.formula;
+          renderDrawer();
+        }
+      }
+    });
+
+    // input/change 双向绑定
+    drawer.addEventListener('input', function (e) {
+      handleBindInput(e);
+    });
+    drawer.addEventListener('change', function (e) {
+      handleBindInput(e);
+    });
+
+    // 拖动调整宽度
+    var grip = $('#kiDrawerResize');
+    if (grip) {
+      var startX = 0, startW = 0, dragging = false;
+      grip.addEventListener('mousedown', function (e) {
+        dragging = true;
+        startX = e.clientX;
+        startW = drawer.offsetWidth;
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+      });
+      document.addEventListener('mousemove', function (e) {
+        if (!dragging) return;
+        var nw = startW - (e.clientX - startX);
+        nw = Math.max(360, Math.min(window.innerWidth * 0.9, nw));
+        drawer.style.width = nw + 'px';
+      });
+      document.addEventListener('mouseup', function () {
+        if (!dragging) return;
+        dragging = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      });
+    }
+  }
+
+  function handleBindInput(e) {
+    var el = e.target;
+    if (!el || !state.drawer.draft) return;
+    var d = state.drawer.draft;
+    var bind = el.getAttribute && el.getAttribute('data-bind');
+    if (bind) {
+      if (el.type === 'checkbox') {
+        d[bind] = !!el.checked;
+        if (bind === 'isTimeDim') renderDrawer();
+        return;
+      }
+      var val = el.value;
+      d[bind] = val;
+      if (bind === 'type') {
+        // 类型切换：保留通用字段，重置类型特定字段
+        normalizeDraftByType(d);
+        renderDrawer();
+        return;
+      }
+      if (bind === 'srcId') {
+        // 数据源切换：清空表/字段，重新刷新表选项
+        d.table = '';
+        d.field = '';
+        d.timeField = '';
+        d.mappings = (d.mappings || []).map(function () { return { table: '', field: '' }; });
+        renderDrawer();
+        return;
+      }
+      if (bind === 'table') {
+        d.field = '';
+        d.timeField = '';
+        renderDrawer();
+        return;
+      }
+      if (bind === 'unit') {
+        // 同步 chip 选中态
+        renderDrawer();
+        return;
+      }
+      return;
+    }
+    // 行级：mapping / filter
+    var row = el.closest && el.closest('.ki-row-grid');
+    if (row) {
+      var idx = parseInt(row.getAttribute('data-idx'), 10);
+      var rb = el.getAttribute && el.getAttribute('data-row-bind');
+      var parent = row.parentElement;
+      if (!parent || !rb) return;
+      var role = parent.getAttribute('data-role');
+      if (role === 'mapping-rows') {
+        var m = d.mappings[idx];
+        if (!m) return;
+        m[rb] = el.value;
+        if (rb === 'table') { m.field = ''; renderDrawer(); }
+        return;
+      }
+      if (role === 'filter-rows') {
+        var fv = d.filterValues[idx];
+        if (!fv) return;
+        fv[rb] = el.value;
+      }
+    }
+  }
+
+  function normalizeDraftByType(d) {
+    if (d.type === 'atom') {
+      d.formula = '';
+      d.isTimeDim = false;
+      d.timeFormula = '';
+      d.timeTplKey = '';
+      d.mappings = [];
+      d.filterValues = [];
+      if (!d.agg) d.agg = 'SUM';
+    } else if (d.type === 'derived') {
+      d.table = '';
+      d.field = '';
+      d.agg = '';
+      d.timeField = '';
+      d.isTimeDim = false;
+      d.timeFormula = '';
+      d.timeTplKey = '';
+      d.mappings = [];
+      d.filterValues = [];
+    } else {
+      // dim
+      d.formula = '';
+      d.table = '';
+      d.field = '';
+      d.agg = '';
+      d.timeField = '';
+      d.unit = '';
+      if (!d.mappings) d.mappings = [];
+      if (!d.filterValues) d.filterValues = [];
+    }
+  }
+
+  function addMapping() {
+    var d = state.drawer.draft;
+    if (!d.mappings) d.mappings = [];
+    d.mappings.push({ table: '', field: '' });
+    renderDrawer();
+  }
+  function delMapping(idx) {
+    var d = state.drawer.draft;
+    if (!d.mappings || isNaN(idx)) return;
+    d.mappings.splice(idx, 1);
+    renderDrawer();
+  }
+  function addFilter() {
+    var d = state.drawer.draft;
+    if (!d.filterValues) d.filterValues = [];
+    d.filterValues.push({ alias: '', value: '' });
+    renderDrawer();
+  }
+  function delFilter(idx) {
+    var d = state.drawer.draft;
+    if (!d.filterValues || isNaN(idx)) return;
+    d.filterValues.splice(idx, 1);
+    renderDrawer();
+  }
+
+  function saveDraft() {
+    var d = state.drawer.draft;
+    if (!d) return;
+    if (!(d.name || '').trim()) {
+      if (typeof showToast === 'function') showToast('请输入指标名称');
+      return;
+    }
+    if (state.drawer.mode === 'create') {
+      d.id = uid('i');
+      d.updatedAt = todayStr();
+      INDICATORS.push(d);
+      if (typeof showToast === 'function') showToast('已新增：' + d.name);
+    } else {
+      var orig = findIndicatorById(state.drawer.indicatorId);
+      if (orig) {
+        Object.keys(d).forEach(function (k) { orig[k] = d[k]; });
+        orig.updatedAt = todayStr();
+      }
+      if (typeof showToast === 'function') showToast('已保存：' + d.name);
+    }
+    closeDrawer();
+    renderTree();
+    renderBread();
+    renderList();
+  }
+
+  function todayStr() {
+    var d = new Date();
+    function pad(n) { return n < 10 ? '0' + n : n; }
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+
+  // ---------- 9) 通用确认弹窗 ----------
+  var confirmCb = null;
+  function showConfirm(opts) {
+    opts = opts || {};
+    $('#kiConfirmTitle').textContent = opts.title || '操作确认';
+    $('#kiConfirmSubtitle').textContent = opts.subtitle || '操作不可恢复（仅原型示例数据）。';
+    $('#kiConfirmMessage').textContent = opts.message || '确定执行该操作吗？';
+    var ok = $('#kiConfirmOk');
+    if (ok) {
+      ok.textContent = opts.okText || '确认';
+      if (opts.danger === false) { ok.style.background = ''; ok.style.boxShadow = ''; }
+      else {
+        ok.style.background = '#ef4444';
+        ok.style.boxShadow = '0 8px 20px rgba(239,68,68,.22)';
+      }
+    }
+    $('#kiConfirmMask').classList.remove('hidden');
+    $('#kiConfirmModal').classList.remove('hidden');
+    confirmCb = opts.onOk || null;
+  }
+  function closeConfirm() {
+    $('#kiConfirmMask').classList.add('hidden');
+    $('#kiConfirmModal').classList.add('hidden');
+    confirmCb = null;
+  }
+  function bindConfirm() {
+    var modal = $('#kiConfirmModal');
+    var mask = $('#kiConfirmMask');
+    if (!modal) return;
+    if (mask) mask.addEventListener('click', closeConfirm);
+    modal.addEventListener('click', function (e) {
+      var act = e.target.closest && e.target.closest('[data-act]');
+      if (!act) return;
+      if (act.getAttribute('data-act') === 'cancel') closeConfirm();
+      else {
+        var cb = confirmCb; closeConfirm();
+        if (typeof cb === 'function') cb();
+      }
+    });
+  }
+
+  // ---------- 10) 名称输入弹窗（新增/重命名目录） ----------
+  var nameCb = null;
+  function showNameModal(opts) {
+    opts = opts || {};
+    $('#kiNameTitle').textContent = opts.title || '新增目录';
+    $('#kiNameSubtitle').textContent = opts.subtitle || '目录名称用于在指标库中分组管理。';
+    $('#kiNameInput').value = opts.value || '';
+    $('#kiNameHint').textContent = opts.hint || '不超过 30 字';
+    $('#kiNameMask').classList.remove('hidden');
+    $('#kiNameModal').classList.remove('hidden');
+    nameCb = opts.onOk || null;
+    setTimeout(function () { var i = $('#kiNameInput'); if (i) { i.focus(); i.select(); } }, 60);
+  }
+  function closeNameModal() {
+    $('#kiNameMask').classList.add('hidden');
+    $('#kiNameModal').classList.add('hidden');
+    nameCb = null;
+  }
+  function bindNameModal() {
+    var modal = $('#kiNameModal');
+    var mask = $('#kiNameMask');
+    if (!modal) return;
+    if (mask) mask.addEventListener('click', closeNameModal);
+    modal.addEventListener('click', function (e) {
+      var act = e.target.closest && e.target.closest('[data-act]');
+      if (!act) return;
+      if (act.getAttribute('data-act') === 'cancel') closeNameModal();
+      else {
+        var v = ($('#kiNameInput').value || '').trim();
+        if (!v) { if (typeof showToast === 'function') showToast('请输入目录名称'); return; }
+        if (v.length > 30) { if (typeof showToast === 'function') showToast('目录名称不超过 30 字'); return; }
+        var cb = nameCb; closeNameModal();
+        if (typeof cb === 'function') cb(v);
+      }
+    });
+    $('#kiNameInput').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        var v = ($('#kiNameInput').value || '').trim();
+        if (!v) { if (typeof showToast === 'function') showToast('请输入目录名称'); return; }
+        var cb = nameCb; closeNameModal();
+        if (typeof cb === 'function') cb(v);
+      }
+    });
+  }
+
+  // ---------- 11) 右键菜单 ----------
+  function bindContextMenu() {
+    var menu = $('#kiCtxMenu');
+    var tree = $('#kiTree');
+    if (!menu || !tree) return;
+
+    tree.addEventListener('contextmenu', function (e) {
+      e.preventDefault();
+      var row = e.target.closest && e.target.closest('.ki-tree-row');
+      if (!row) {
+        state.ctx = { type: null, groupId: null };
+        return;
+      }
+      var gid = row.getAttribute('data-gid');
+      if (gid === '__all__') {
+        // 仅"新增一级目录"
+        state.ctx = { type: 'root', groupId: null };
+      } else {
+        state.ctx = { type: row.getAttribute('data-parent') ? 'child' : 'parent', groupId: gid };
+        selectGroup(gid);
+      }
+      var x = e.clientX, y = e.clientY;
+      menu.classList.remove('hidden');
+      var vw = window.innerWidth, vh = window.innerHeight;
+      menu.style.left = Math.min(x, vw - 170) + 'px';
+      menu.style.top = Math.min(y, vh - 130) + 'px';
+
+      // 调整菜单可用项
+      var allowDelete = state.ctx.type !== 'root';
+      var allowRename = state.ctx.type !== 'root';
+      $$('.ki-ctx-item', menu).forEach(function (b) {
+        var act = b.getAttribute('data-act');
+        var enabled = true;
+        if (act === 'delete') enabled = allowDelete;
+        else if (act === 'rename') enabled = allowRename;
+        b.disabled = !enabled;
+        b.style.opacity = enabled ? '' : '.45';
+        b.style.cursor = enabled ? '' : 'not-allowed';
+      });
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!menu.contains(e.target)) menu.classList.add('hidden');
+    });
+    window.addEventListener('blur', function () { menu.classList.add('hidden'); });
+    window.addEventListener('resize', function () { menu.classList.add('hidden'); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') menu.classList.add('hidden');
+    });
+
+    menu.addEventListener('click', function (e) {
+      var btn = e.target.closest && e.target.closest('.ki-ctx-item');
+      if (!btn || btn.disabled) return;
+      menu.classList.add('hidden');
+      var act = btn.getAttribute('data-act');
+      if (act === 'new') addGroup(state.ctx.type === 'root' ? null : state.ctx.groupId);
+      else if (act === 'rename') renameGroup(state.ctx.groupId);
+      else if (act === 'delete') confirmDeleteGroup(state.ctx.groupId);
+    });
+  }
+
+  function addGroup(parentId) {
+    var subtitle, isRoot = !parentId;
+    showNameModal({
+      title: isRoot ? '新增一级目录' : '新增子目录',
+      subtitle: isRoot ? '在指标目录顶层新增一级分组。' : '在所选目录下新增子分组。',
+      value: '',
+      onOk: function (name) {
+        if (isRoot) {
+          TREE.push({ id: uid('g'), name: name, expanded: true, children: [] });
+        } else {
+          var info = findGroupById(parentId);
+          if (!info || info.parent) {
+            // 二级不能再加子级
+            if (typeof showToast === 'function') showToast('当前目录不允许新增子级');
+            return;
+          }
+          info.group.children = info.group.children || [];
+          info.group.children.push({ id: uid('g'), name: name });
+          info.group.expanded = true;
+        }
+        renderTree();
+        if (typeof showToast === 'function') showToast('已新增：' + name);
+      }
+    });
+  }
+
+  function renameGroup(gid) {
+    var info = findGroupById(gid); if (!info) return;
+    showNameModal({
+      title: '重命名目录',
+      subtitle: '修改目录名称（不影响其下指标的归属）。',
+      value: info.group.name,
+      onOk: function (name) {
+        info.group.name = name;
+        renderTree();
+        renderBread();
+        if (typeof showToast === 'function') showToast('已重命名为：' + name);
+      }
+    });
+  }
+
+  function confirmDeleteGroup(gid) {
+    var info = findGroupById(gid); if (!info) return;
+    var subCount = (info.group.children || []).length;
+    var indCount = INDICATORS.filter(function (it) {
+      if (it.groupId === gid) return true;
+      // 一级：检查所有子级
+      if (!info.parent) {
+        return (info.group.children || []).some(function (c) { return c.groupId === it.groupId; });
+      }
+      return false;
+    }).length;
+    showConfirm({
+      title: '删除目录',
+      subtitle: '删除目录将一并清空其下子目录的归属（指标本身保留，可在"全部指标"中找到）。',
+      message: '确定要删除目录"' + info.group.name + '"吗？'
+        + (subCount ? '\n该目录下还有 ' + subCount + ' 个子目录。' : '')
+        + (indCount ? '\n影响指标：' + indCount + ' 个，将归到"未分类"。' : ''),
+      okText: '确认删除',
+      onOk: function () { doDeleteGroup(gid); }
+    });
+  }
+
+  function doDeleteGroup(gid) {
+    var info = findGroupById(gid); if (!info) return;
+    var name = info.group.name;
+    // 收集要被影响的指标 id（一级含全子级）
+    var affectedGids = [info.group.id];
+    if (!info.parent) (info.group.children || []).forEach(function (c) { affectedGids.push(c.id); });
+    INDICATORS.forEach(function (it) {
+      if (affectedGids.indexOf(it.groupId) >= 0) it.groupId = '__uncategorized__';
+    });
+
+    if (info.parent) {
+      info.parent.children = (info.parent.children || []).filter(function (c) { return c.id !== gid; });
+    } else {
+      var idx = -1;
+      for (var i = 0; i < TREE.length; i++) if (TREE[i].id === gid) { idx = i; break; }
+      if (idx >= 0) TREE.splice(idx, 1);
+    }
+    if (state.activeGroupId === gid) state.activeGroupId = '__all__';
+    renderTree();
+    renderBread();
+    renderList();
+    if (typeof showToast === 'function') showToast('已删除：' + name);
+  }
+
+  function selectGroup(gid) {
+    if (state.activeGroupId === gid) return;
+    state.activeGroupId = gid;
+    state.page = 1;
+    renderTree();
+    renderBread();
+    renderList();
+  }
+
+  // ---------- 12) 列表行操作 / 杂项绑定 ----------
+  function bindMisc() {
+    // 左侧目录树点击
+    var tree = $('#kiTree');
+    if (tree) tree.addEventListener('click', function (e) {
+      var chev = e.target.closest && e.target.closest('.chev');
+      var row = e.target.closest && e.target.closest('.ki-tree-row');
+      if (!row) return;
+      var gid = row.getAttribute('data-gid');
+      if (chev && row.parentElement && row.parentElement.classList.contains('ki-tree-group')) {
+        // 折叠/展开
+        e.stopPropagation();
+        row.parentElement.classList.toggle('is-collapsed');
+        var info = findGroupById(gid);
+        if (info) info.group.expanded = !row.parentElement.classList.contains('is-collapsed');
+        return;
+      }
+      selectGroup(gid);
+    });
+
+    // 左侧搜索
+    var ts = $('#kiTreeSearch');
+    if (ts) ts.addEventListener('input', function () {
+      state.searchTreeKw = ts.value || '';
+      renderTree();
+    });
+
+    // 左侧 + 按钮（新增一级目录）
+    var addG = $('#kiBtnNewGroup');
+    if (addG) addG.addEventListener('click', function () { addGroup(null); });
+
+    // 顶部 新增指标
+    var addI = $('#kiBtnNewIndicator');
+    if (addI) addI.addEventListener('click', function () { openDrawer('create', null, state.activeGroupId); });
+
+    // 查询框 / 类型筛选 / 重置
+    var kw = $('#kiKwInput');
+    if (kw) kw.addEventListener('input', function () { state.keyword = kw.value || ''; state.page = 1; renderBread(); renderList(); });
+    var tf = $('#kiTypeFilter');
+    if (tf) tf.addEventListener('change', function () { state.typeFilter = tf.value || ''; state.page = 1; renderBread(); renderList(); });
+    var rs = $('#kiBtnReset');
+    if (rs) rs.addEventListener('click', function () {
+      state.keyword = ''; state.typeFilter = ''; state.page = 1;
+      if (kw) kw.value = ''; if (tf) tf.value = '';
+      renderBread(); renderList();
+    });
+
+    // 列表行操作
+    var tbody = $('#kiTbody');
+    if (tbody) tbody.addEventListener('click', function (e) {
+      var btn = e.target.closest && e.target.closest('[data-act]');
+      if (!btn) return;
+      var tr = btn.closest('tr');
+      if (!tr) return;
+      var id = tr.getAttribute('data-id');
+      var act = btn.getAttribute('data-act');
+      if (act === 'view') openDrawer('view', id);
+      else if (act === 'edit') openDrawer('edit', id);
+      else if (act === 'delete') confirmDeleteIndicator(id);
+    });
+
+    // 分页
+    var pager = $('#kiPager');
+    if (pager) pager.addEventListener('click', function (e) {
+      var btn = e.target.closest && e.target.closest('button[data-pg]');
+      if (!btn || btn.disabled) return;
+      var v = btn.getAttribute('data-pg');
+      var list = getFilteredList();
+      var totalPages = Math.max(1, Math.ceil(list.length / state.pageSize));
+      if (v === 'prev') state.page = Math.max(1, state.page - 1);
+      else if (v === 'next') state.page = Math.min(totalPages, state.page + 1);
+      else state.page = parseInt(v, 10) || 1;
+      renderList();
+    });
+    if (pager) pager.addEventListener('change', function (e) {
+      if (e.target && e.target.id === 'kiPgSize') {
+        state.pageSize = parseInt(e.target.value, 10) || 10;
+        state.page = 1;
+        renderList();
+      }
+    });
+  }
+
+  function confirmDeleteIndicator(id) {
+    var it = findIndicatorById(id); if (!it) return;
+    showConfirm({
+      title: '删除指标',
+      subtitle: '指标删除后将不可恢复，可能影响已绑定该指标的看板和问数。',
+      message: '确定要删除指标"' + it.name + '"吗？',
+      okText: '确认删除',
+      onOk: function () {
+        var idx = -1;
+        for (var i = 0; i < INDICATORS.length; i++) if (INDICATORS[i].id === id) { idx = i; break; }
+        if (idx >= 0) INDICATORS.splice(idx, 1);
+        renderTree();
+        renderBread();
+        renderList();
+        if (typeof showToast === 'function') showToast('已删除：' + it.name);
+      }
+    });
+  }
+
+  // ---------- 13) 启动 ----------
+  document.addEventListener('DOMContentLoaded', function () {
+    renderTree();
+    renderBread();
+    renderList();
+    bindMisc();
+    bindContextMenu();
+    bindDrawer();
+    bindConfirm();
+    bindNameModal();
+  });
+
+  // 控制台调试
+  window.__KI = {
+    TREE: TREE, INDICATORS: INDICATORS, state: state,
+    open: openDrawer
+  };
+})();

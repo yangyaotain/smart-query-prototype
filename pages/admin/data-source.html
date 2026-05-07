@@ -6,40 +6,3123 @@
   <title>数据源管理 - 智能问数管理后台</title>
   <link rel="stylesheet" href="../../assets/css/theme.css" />
   <link rel="stylesheet" href="../../assets/css/admin.css" />
+  <style>
+    /* ============================================================
+     * 数据源管理页面 - 左侧目录树 + 右侧表列表
+     * ============================================================ */
+    .ds-page {
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .ds-layout {
+      height: 100%;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 16px;
+      padding: 16px 18px;
+      box-sizing: border-box;
+    }
+
+    /* —— 左侧目录树 —— */
+    .ds-sidebar {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .ds-side-head {
+      flex: none;
+      padding: 14px 14px 12px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+    }
+
+    .ds-side-head h3 {
+      margin: 0 0 10px;
+      font-size: 14px;
+      color: #102a48;
+    }
+
+    .ds-side-head .search-box {
+      width: 100%;
+      height: 34px;
+      padding: 0 12px;
+      color: #374151;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .ds-side-head .search-box:focus {
+      border-color: #93c5fd;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+    }
+
+    .ds-tree {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 8px 6px 12px;
+    }
+
+    .dst-node {
+      margin-bottom: 2px;
+    }
+
+    .dst-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 34px;
+      padding: 0 8px;
+      color: #374151;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .dst-row:hover {
+      color: var(--primary);
+      background: #f4f8ff;
+    }
+
+    .dst-row.active {
+      color: var(--primary);
+      background: linear-gradient(90deg, #eaf3ff 0%, #f8fbff 100%);
+      font-weight: 700;
+    }
+
+    .dst-toggle {
+      width: 14px;
+      height: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      color: #9ca3af;
+      transition: transform 0.18s ease, color 0.18s ease;
+    }
+
+    .dst-toggle svg {
+      width: 12px;
+      height: 12px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .dst-node.collapsed > .dst-row > .dst-toggle {
+      transform: rotate(-90deg);
+    }
+
+    .dst-toggle.empty {
+      visibility: hidden;
+    }
+
+    .dst-icon {
+      width: 18px;
+      height: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      color: #94a3b8;
+    }
+
+    .dst-row.active .dst-icon,
+    .dst-row:hover .dst-icon {
+      color: var(--primary);
+    }
+
+    .dst-icon svg {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .dst-label {
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .dst-meta {
+      flex: 0 0 auto;
+      padding: 1px 7px;
+      color: var(--weak);
+      background: #f3f4f6;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .dst-row.active > .dst-meta {
+      color: var(--primary);
+      background: rgba(22, 119, 255, 0.12);
+    }
+
+    .dst-children {
+      padding-left: 16px;
+      margin: 2px 0 4px;
+    }
+
+    .dst-node.collapsed > .dst-children {
+      display: none;
+    }
+
+    /* 二级（数据源）行：层级感 */
+    .dst-children .dst-row {
+      height: 32px;
+      font-size: 12.5px;
+      font-weight: 500;
+    }
+
+    .dst-children .dst-row.active {
+      font-weight: 700;
+    }
+
+    .dst-empty {
+      padding: 18px 14px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+
+    /* —— 右侧主区 —— */
+    .ds-main {
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: auto;
+    }
+
+    .ds-detail-card {
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: linear-gradient(120deg, #f7fbff 0%, #ffffff 60%);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+
+    .ds-detail-meta h2 {
+      margin: 0 0 4px;
+      color: #102a48;
+      font-size: 18px;
+    }
+
+    .ds-detail-meta p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+
+    .ds-detail-meta .ds-tag {
+      display: inline-flex;
+      align-items: center;
+      height: 22px;
+      padding: 0 9px;
+      margin-right: 6px;
+      color: var(--primary);
+      background: var(--primary-soft);
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+
+    .ds-detail-meta .ds-tag.ok {
+      color: #047857;
+      background: #ecfdf5;
+    }
+
+    .ds-detail-meta .ds-tag.warn {
+      color: #b45309;
+      background: #fff7ed;
+    }
+
+    .ds-detail-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .ds-table-card .data-table {
+      table-layout: auto;
+    }
+
+    .ds-table-card .data-table td:first-child {
+      font-weight: 700;
+      color: #102a48;
+    }
+
+    .ds-table-card .data-table td:last-child a {
+      margin-right: 0;
+    }
+
+    .ds-table-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .ds-act-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: #2563eb;
+      text-decoration: none;
+      font-size: 13px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .ds-act-link:hover {
+      color: #1d4ed8;
+      text-decoration: underline;
+    }
+
+    .ds-act-link svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+
+    .ds-table-card .admin-card-head .toolbar input {
+      width: 200px;
+    }
+
+    .ds-table-card .admin-card-head .toolbar select {
+      min-width: 110px;
+    }
+
+    /* —— 右键菜单 —— */
+    .ds-ctx-menu {
+      position: fixed;
+      z-index: 70;
+      min-width: 168px;
+      padding: 6px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+      animation: dsCtxIn 0.12s ease both;
+    }
+
+    @keyframes dsCtxIn {
+      from { opacity: 0; transform: translateY(-3px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .ds-ctx-menu button {
+      width: 100%;
+      height: 32px;
+      padding: 0 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #374151;
+      background: #fff;
+      border: 0;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+      transition: background-color 0.14s ease, color 0.14s ease;
+    }
+
+    .ds-ctx-menu button:hover {
+      color: var(--primary);
+      background: #f4f8ff;
+    }
+
+    .ds-ctx-menu button.danger {
+      color: #ef4444;
+    }
+
+    .ds-ctx-menu button.danger:hover {
+      color: #dc2626;
+      background: #fef2f2;
+    }
+
+    .ds-ctx-menu button[disabled] {
+      color: #c0c5cf;
+      background: #fff;
+      cursor: not-allowed;
+    }
+
+    .ds-ctx-menu .ctx-divider {
+      height: 1px;
+      margin: 4px 2px;
+      background: var(--line);
+    }
+
+    .ds-ctx-menu .ctx-icon {
+      width: 16px;
+      height: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      color: currentColor;
+    }
+
+    .ds-ctx-menu .ctx-icon svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* 右键聚焦行 */
+    .dst-row.context-active {
+      box-shadow: inset 0 0 0 1.5px rgba(22, 119, 255, 0.32);
+    }
+
+    /* 行内编辑输入框 */
+    .dst-edit-input {
+      flex: 1;
+      min-width: 0;
+      height: 24px;
+      padding: 0 6px;
+      color: #1f2937;
+      background: #fff;
+      border: 1px solid var(--primary);
+      border-radius: 6px;
+      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+      font-size: 12.5px;
+      font-weight: 600;
+      outline: none;
+    }
+
+    /* 新增节点高亮闪一下 */
+    .dst-node.dst-flash > .dst-row {
+      animation: dsFlash 0.9s ease;
+    }
+
+    @keyframes dsFlash {
+      0% { background: #fff7d6; }
+      100% { background: transparent; }
+    }
+
+    /* ============================================================
+     * 新增 / 编辑数据源 弹窗表单
+     * ============================================================ */
+    .modal.ds-edit-modal { width: 760px; }
+
+    .ds-edit-modal .modal-body { padding: 22px 26px; }
+
+    .dse-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px 20px;
+    }
+
+    .dse-grid .full { grid-column: 1 / -1; }
+
+    .dse-field label {
+      display: block;
+      margin-bottom: 6px;
+      color: #102a48;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .dse-field label .req { color: #ef4444; margin-left: 4px; }
+
+    .dse-field input {
+      width: 100%;
+      height: 36px;
+      padding: 0 12px;
+      color: #1f2937;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 13px;
+      outline: none;
+      box-sizing: border-box;
+      transition: border-color .15s, box-shadow .15s;
+    }
+
+    .dse-field input:focus,
+    .dse-tree-btn:focus {
+      border-color: #93c5fd;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+    }
+
+    .dse-field .hint {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    /* 下拉目录树 */
+    .dse-tree-wrap { position: relative; }
+
+    .dse-tree-btn {
+      width: 100%;
+      height: 36px;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #1f2937;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 13px;
+      cursor: pointer;
+      box-sizing: border-box;
+      text-align: left;
+      transition: border-color .15s, box-shadow .15s;
+    }
+
+    .dse-tree-btn .dse-tree-text {
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .dse-tree-btn .dse-tree-text.placeholder { color: #9ca3af; }
+
+    .dse-tree-btn .arrow {
+      width: 14px; height: 14px;
+      color: #94a3b8;
+      transition: transform .18s ease;
+      flex: 0 0 auto;
+    }
+
+    .dse-tree-btn .arrow svg,
+    .dse-tree-row .toggle svg {
+      width: 12px; height: 12px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .dse-tree-wrap.open .dse-tree-btn .arrow { transform: rotate(180deg); }
+
+    .dse-tree-pop {
+      position: absolute;
+      z-index: 80;
+      left: 0; right: 0;
+      top: calc(100% + 6px);
+      max-height: 260px;
+      overflow: auto;
+      padding: 6px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, .16);
+    }
+
+    .dse-tree-wrap:not(.open) .dse-tree-pop { display: none; }
+
+    .dse-tree-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 32px;
+      padding: 0 8px;
+      color: #374151;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background-color .14s, color .14s;
+    }
+
+    .dse-tree-row:hover { color: var(--primary); background: #f4f8ff; }
+
+    .dse-tree-row.active {
+      color: var(--primary);
+      background: #eaf3ff;
+      font-weight: 700;
+    }
+
+    .dse-tree-row .toggle {
+      width: 14px; height: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #9ca3af;
+      transition: transform .18s ease;
+      flex: 0 0 auto;
+    }
+
+    .dse-tree-row.empty-toggle .toggle { visibility: hidden; }
+
+    .dse-tree-children { padding-left: 18px; }
+
+    .dse-tree-node.collapsed > .dse-tree-children { display: none; }
+
+    .dse-tree-node.collapsed > .dse-tree-row .toggle { transform: rotate(-90deg); }
+
+    /* 测试连接 */
+    .dse-test-row {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: stretch;
+      gap: 12px;
+      flex-wrap: nowrap;
+    }
+
+    .dse-test-row .secondary-btn {
+      flex: 0 0 auto;
+      align-self: flex-start;
+      min-width: 100px;
+    }
+
+    .dse-result {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 12px;
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      color: #6b7280;
+      font-size: 12.5px;
+      line-height: 1.7;
+    }
+
+    .dse-result.testing {
+      background: #f8fbff;
+      border-color: #c7dcff;
+      color: #1d4ed8;
+    }
+
+    .dse-result.ok {
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+      color: #047857;
+    }
+
+    .dse-result.err {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #b91c1c;
+    }
+
+    .dse-result strong { color: inherit; font-weight: 700; }
+
+    .dse-result pre {
+      margin: 4px 0 0;
+      padding: 0;
+      background: transparent;
+      color: inherit;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .dse-result .spinner {
+      display: inline-block;
+      width: 12px; height: 12px;
+      margin-right: 6px;
+      vertical-align: -2px;
+      border: 2px solid #93c5fd;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: dseSpin .8s linear infinite;
+    }
+
+    @keyframes dseSpin { to { transform: rotate(360deg); } }
+
+    /* ============================================================
+     * 注册管理视图（B 视图）样式 — CSS-1
+     * ============================================================ */
+    .ds-view {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 0;
+    }
+    .ds-view.hidden { display: none; }
+
+    /* 顶部信息条 */
+    .dsr-header {
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: linear-gradient(120deg, #f7fbff 0%, #ffffff 60%);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .dsr-header-meta h2 {
+      margin: 0 0 4px;
+      color: #102a48;
+      font-size: 18px;
+    }
+    .dsr-header-meta p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+    .dsr-header-meta .ds-tag {
+      display: inline-flex;
+      align-items: center;
+      height: 22px;
+      padding: 0 9px;
+      margin-right: 6px;
+      color: var(--primary);
+      background: var(--primary-soft);
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+
+    /* 工具条彩色按钮 */
+    .dsr-btn {
+      height: 34px;
+      padding: 0 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      color: #fff;
+      border: 0;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: filter .14s, transform .04s;
+    }
+    .dsr-btn:hover { filter: brightness(1.06); }
+    .dsr-btn:active { transform: translateY(1px); }
+    .dsr-btn:disabled { filter: grayscale(.4) brightness(.96); opacity: .65; cursor: not-allowed; }
+    .dsr-blue  { background: #3b82f6; box-shadow: 0 4px 10px rgba(59,130,246,.22); }
+    .dsr-red   { background: #ef4444; box-shadow: 0 4px 10px rgba(239,68,68,.22); }
+    .dsr-green { background: #10b981; box-shadow: 0 4px 10px rgba(16,185,129,.22); }
+    .dsr-gray  {
+      color: #374151;
+      background: #f3f4f6;
+      border: 1px solid var(--border);
+      box-shadow: none;
+    }
+    .dsr-gray:hover { background: #e9eef5; }
+
+    /* 注册管理视图工具条与表格 — CSS-2 */
+    .dsr-card .admin-card-head {
+      gap: 12px;
+      padding: 14px 16px;
+    }
+    .dsr-toolbar-left,
+    .dsr-toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .dsr-toolbar-right { margin-left: auto; }
+    .dsr-toolbar-right select,
+    .dsr-toolbar-right input {
+      height: 34px;
+      padding: 0 12px;
+      color: #374151;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      outline: none;
+    }
+    .dsr-toolbar-right select { min-width: 110px; }
+    .dsr-toolbar-right input { width: 200px; }
+    .dsr-toolbar-right select:focus,
+    .dsr-toolbar-right input:focus {
+      border-color: #93c5fd;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+    }
+
+    .dsr-table th,
+    .dsr-table td {
+      text-align: center;
+      vertical-align: middle;
+    }
+    .dsr-table th:nth-child(2),
+    .dsr-table th:nth-child(3),
+    .dsr-table th:nth-child(4),
+    .dsr-table td:nth-child(2),
+    .dsr-table td:nth-child(3),
+    .dsr-table td:nth-child(4) { text-align: left; }
+    .dsr-table .col-check { width: 44px; }
+    .dsr-table .col-status { width: 110px; }
+    .dsr-table tbody tr.row-selected td { background: #f4f8ff; }
+    .dsr-table input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      vertical-align: middle;
+      cursor: pointer;
+      accent-color: var(--primary);
+    }
+    .dsr-table th.sortable { cursor: pointer; user-select: none; }
+    .dsr-table th.sortable .sort-icon {
+      display: inline-block;
+      width: 10px;
+      margin-left: 6px;
+      color: #9ca3af;
+      font-size: 10px;
+      line-height: 1;
+      vertical-align: middle;
+    }
+    .dsr-table th.sortable .sort-icon::before { content: '▲'; opacity: .35; display: block; }
+    .dsr-table th.sortable .sort-icon::after  { content: '▼'; opacity: .35; display: block; margin-top: 1px; }
+    .dsr-table th.sortable.sort-asc  .sort-icon::before { opacity: 1; color: var(--primary); }
+    .dsr-table th.sortable.sort-desc .sort-icon::after  { opacity: 1; color: var(--primary); }
+
+    .dsr-empty {
+      padding: 36px 14px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* 注册管理分页 — CSS-3 */
+    .dsr-pager {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 12px 16px 14px;
+      border-top: 1px solid var(--line);
+      background: #fff;
+    }
+    .dsr-pager-info {
+      color: #4b5563;
+      font-size: 13px;
+    }
+    .dsr-pager-info strong { color: #102a48; font-weight: 700; }
+    .dsr-page-size {
+      margin-left: 8px;
+      color: #6b7280;
+    }
+    .dsr-page-size select {
+      height: 28px;
+      padding: 0 6px;
+      margin: 0 4px;
+      color: #374151;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 12.5px;
+    }
+    .dsr-pages {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .dsr-pages button {
+      min-width: 32px;
+      height: 32px;
+      padding: 0 10px;
+      color: #374151;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background-color .14s, color .14s, border-color .14s;
+    }
+    .dsr-pages button:hover:not(:disabled) {
+      color: var(--primary);
+      border-color: #93c5fd;
+      background: #f4f8ff;
+    }
+    .dsr-pages button.active {
+      color: #fff;
+      background: var(--primary);
+      border-color: var(--primary);
+      font-weight: 700;
+    }
+    .dsr-pages button:disabled {
+      color: #c0c5cf;
+      background: #f9fafb;
+      cursor: not-allowed;
+    }
+
+    /* 数据预览视图 */
+    .dspv-header {
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: linear-gradient(120deg, #f7fbff 0%, #ffffff 60%);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .dspv-header h2 {
+      margin: 0 0 4px;
+      color: #102a48;
+      font-size: 18px;
+    }
+    .dspv-header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+    .dspv-header .ds-tag {
+      display: inline-flex;
+      align-items: center;
+      height: 22px;
+      padding: 0 9px;
+      margin-right: 6px;
+      color: var(--primary);
+      background: var(--primary-soft);
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+    .dspv-table { table-layout: auto; }
+    .dspv-table th,
+    .dspv-table td { white-space: nowrap; }
+
+    /* 表结构视图（D） */
+    .dssc-header {
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: linear-gradient(120deg, #f7fbff 0%, #ffffff 60%);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .dssc-header h2 {
+      margin: 0 0 4px;
+      color: #102a48;
+      font-size: 18px;
+    }
+    .dssc-header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+    .dssc-header .ds-tag {
+      display: inline-flex;
+      align-items: center;
+      height: 22px;
+      padding: 0 9px;
+      margin-right: 6px;
+      color: var(--primary);
+      background: var(--primary-soft);
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+    .dssc-meta { min-width: 0; flex: 1; }
+    .dssc-meta-row {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin: 6px 0 4px;
+    }
+    .dssc-meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #1f2937;
+      font-size: 12.5px;
+      max-width: 100%;
+      min-width: 0;
+    }
+    .dssc-meta-item .dssc-meta-label {
+      color: var(--muted);
+      flex: 0 0 auto;
+    }
+    .dssc-meta-item .dssc-meta-value {
+      display: inline-block;
+      max-width: 360px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      vertical-align: bottom;
+      font-weight: 600;
+    }
+    .dssc-meta-item .dssc-meta-value.empty {
+      color: #9ca3af;
+      font-weight: 500;
+    }
+    .dssc-meta-item-comment .dssc-meta-value { max-width: 520px; }
+    .dssc-meta-input {
+      height: 28px;
+      min-width: 200px;
+      padding: 0 8px;
+      color: #1f2937;
+      background: #fff;
+      border: 1px solid var(--primary);
+      border-radius: 6px;
+      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+      font-size: 12.5px;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .dssc-meta-item-comment .dssc-meta-input { min-width: 320px; }
+    .dssc-table { table-layout: fixed; width: 100%; }
+    .dssc-table th,
+    .dssc-table td {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: middle;
+    }
+    .dssc-table td.col-attrs {
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+    }
+    .dssc-table th:last-child,
+    .dssc-table td:last-child {
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+      word-break: break-word;
+    }
+
+    /* 字段属性 tag */
+    .dssc-attr {
+      display: inline-flex;
+      align-items: center;
+      height: 20px;
+      padding: 0 7px;
+      margin: 1px 4px 1px 0;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .2px;
+    }
+    .dssc-attr-pk { color: #1e3a8a; background: #dbeafe; }
+    .dssc-attr-nn { color: #475569; background: #e2e8f0; }
+    .dssc-attr-ai { color: #6d28d9; background: #ede9fe; }
+    .dssc-attr-pt { color: #b45309; background: #fff7ed; }
+
+    /* 别名编辑图标 */
+    .dssc-alias-cell {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      min-width: 0;
+    }
+    .dssc-alias-text {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .dssc-alias-edit {
+      width: 22px;
+      height: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      background: transparent;
+      border: 0;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: color .14s, background-color .14s;
+    }
+    .dssc-alias-edit:hover { color: var(--primary); background: #f4f8ff; }
+    .dssc-alias-edit svg {
+      width: 14px; height: 14px;
+      fill: none; stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .dssc-alias-input {
+      flex: 1;
+      min-width: 0;
+      width: 100%;
+      height: 28px;
+      padding: 0 8px;
+      color: #1f2937;
+      background: #fff;
+      border: 1px solid var(--primary);
+      border-radius: 6px;
+      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+      font-size: 12.5px;
+      outline: none;
+      box-sizing: border-box;
+    }
+  </style>
 </head>
 <body>
   <div class="admin-shell">
     <aside class="admin-sidebar">
       <div class="admin-brand"><div class="logo">管</div><span>智能问数管理后台</span></div>
-      <nav class="admin-menu">
-        <a class="active" href="data-source.html">数据源管理</a><a href="data-model.html">数据模型管理</a><a href="knowledge.html">知识库管理</a><a href="operation.html">运营管理</a><a href="theme.html">分析主题管理</a><a href="users.html">用户管理</a><a href="roles.html">角色管理</a>
-      </nav>
+      <nav class="admin-menu"></nav>
     </aside>
     <main class="admin-main">
-      <header class="admin-topbar"><strong>数据源管理</strong><div class="toolbar"><button class="secondary-btn" onclick="goTo('../business/smart-query.html')">智能问数</button><button class="ghost-btn" onclick="goTo('admin-profile.html')">张三</button></div></header>
-      <section class="admin-content">
-        <div class="admin-page-head"><div><h1>数据源管理</h1><p>维护数据库连接、同步元数据、注册可用于问数的数据模型。</p></div><button class="primary-btn" onclick="goTo('data-source-edit.html')">新增数据源</button></div>
-        <div class="admin-grid admin-kpi-grid">
-          <div class="admin-card"><div class="admin-card-body"><p>数据源总数</p><h2>8</h2></div></div>
-          <div class="admin-card"><div class="admin-card-body"><p>已注册模型</p><h2>42</h2></div></div>
-          <div class="admin-card"><div class="admin-card-body"><p>今日同步任务</p><h2>6</h2></div></div>
+      <header class="admin-topbar">
+        <strong>数据源管理</strong>
+        <div class="toolbar">
+          <button class="secondary-btn icon-btn" onclick="goTo('../business/smart-query.html')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M5.6 5.6l2.1 2.1"/><path d="M16.3 16.3l2.1 2.1"/><path d="M5.6 18.4l2.1-2.1"/><path d="M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3.4"/></svg>智能问数</button>
+          <button class="user-trigger" type="button"><div class="avatar">张</div><strong>张三</strong><span class="dropdown-arrow"></span></button>
         </div>
-        <div class="admin-card">
-          <div class="admin-card-head"><h2>数据源列表</h2><div class="toolbar"><input placeholder="搜索数据源" /><button class="secondary-btn" onclick="goTo('data-source-ops.html')">测试连接</button><button class="secondary-btn" onclick="goTo('data-source-ops.html')">同步元数据</button></div></div>
-          <div class="admin-card-body">
-            <table class="data-table">
-              <thead><tr><th>数据源名称</th><th>类型</th><th>连接地址</th><th>状态</th><th>注册模型</th><th>最近同步</th><th>操作</th></tr></thead>
-              <tbody>
-                <tr><td>销售业务库</td><td>MySQL</td><td>sales-prod.internal</td><td><span class="status-ok">连接正常</span></td><td>12</td><td>今日 08:00</td><td><a href="data-source-edit.html">编辑</a> / <a href="data-source-tables.html">表结构</a> / <a href="data-source-preview.html">数据预览</a> / <a href="data-model.html">注册模型</a></td></tr>
-                <tr><td>客户数据仓库</td><td>PostgreSQL</td><td>customer-dw.internal</td><td><span class="status-ok">连接正常</span></td><td>9</td><td>昨日 23:00</td><td><a href="data-source-edit.html">编辑</a> / <a href="data-source-tables.html">表结构</a> / <a href="data-source-preview.html">数据预览</a> / <a href="data-model.html">注册模型</a></td></tr>
-                <tr><td>库存分析库</td><td>Oracle</td><td>inventory-db.internal</td><td><span class="status-warn">待同步</span></td><td>6</td><td>04-26</td><td><a href="data-source-edit.html">编辑</a> / <a href="data-source-tables.html">表结构</a> / <a href="data-source-preview.html">数据预览</a> / <a href="data-model.html">注册模型</a></td></tr>
-              </tbody>
-            </table>
+      </header>
+      <section class="admin-content ds-page">
+        <div class="ds-layout">
+          <!-- 左侧目录树 -->
+          <aside class="ds-sidebar">
+            <div class="ds-side-head">
+              <h3>数据源目录</h3>
+              <input class="search-box" id="dsTreeSearch" placeholder="搜索分组 / 数据源" />
+            </div>
+            <div class="ds-tree" id="dsTree"></div>
+          </aside>
+
+          <!-- 右侧主区 -->
+          <div class="ds-main">
+            <!-- A. 数据源详情视图 -->
+            <div id="dsViewDetail" class="ds-view">
+            <!-- 当前数据源信息卡 -->
+            <div class="ds-detail-card">
+              <div class="ds-detail-meta">
+                <h2 id="dsTitle">销售业务库</h2>
+                <p>
+                  <span class="ds-tag" id="dsTagType">MySQL</span>
+                  <span class="ds-tag ok" id="dsTagStatus">连接正常</span>
+                  <span id="dsAddr">sales-prod.internal · 12 张表 · 最近同步 今日 08:00</span>
+                </p>
+              </div>
+              <div class="ds-detail-actions">
+                <button class="primary-btn" type="button" id="dsBtnAdd">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                  新增
+                </button>
+                <button class="ghost-btn" type="button" id="dsBtnEdit">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+                  编辑
+                </button>
+                <button class="ghost-btn" type="button" id="dsBtnSync">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;"><path d="M21 12a9 9 0 1 1-3.1-6.8"/><path d="M21 4v5h-5"/></svg>
+                  同步
+                </button>
+                <button class="ghost-btn" type="button" id="dsBtnRegister">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>
+                  注册管理
+                </button>
+              </div>
+            </div>
+
+            <!-- 数据列表卡 -->
+            <div class="admin-card ds-table-card">
+              <div class="admin-card-head">
+                <h2>数据列表</h2>
+                <div class="toolbar">
+                  <input id="dsTableSearch" placeholder="搜索表名 / 注释" />
+                  <select id="dsTableType">
+                    <option value="">全部类型</option>
+                    <option value="fact">事实表</option>
+                    <option value="dim">维度表</option>
+                    <option value="bridge">桥接表</option>
+                  </select>
+                  <select id="dsTableReg">
+                    <option value="">全部注册状态</option>
+                    <option value="registered">已注册</option>
+                    <option value="unregistered">未注册</option>
+                  </select>
+                  <button class="primary-btn" type="button" id="dsBtnQuery">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                    查询
+                  </button>
+                  <button class="ghost-btn" type="button" id="dsBtnImport">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+                    导入
+                  </button>
+                  <button class="ghost-btn" type="button" id="dsBtnExport">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5-5 5 5"/><path d="M12 5v12"/></svg>
+                    导出
+                  </button>
+                </div>
+              </div>
+              <div class="admin-card-body">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th style="width:180px;">表名</th>
+                      <th style="width:180px;">别名</th>
+                      <th>注释</th>
+                      <th style="width:80px;">类型</th>
+                      <th style="width:70px;">字段数</th>
+                      <th style="width:110px;">记录数</th>
+                      <th style="width:170px;">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dsTableBody"></tbody>
+                </table>
+                <div id="dsTableEmpty" class="dst-empty hidden">没有匹配的表，换个搜索条件试试。</div>
+              </div>
+            </div>
+            </div><!-- /#dsViewDetail -->
+
+            <!-- D. 表结构视图 -->
+            <div id="dsViewSchema" class="ds-view hidden">
+              <div class="dssc-header">
+                <div class="dssc-meta">
+                  <h2>
+                    <span class="ds-tag">表结构</span>
+                    <span id="dsscTableName">sales_order</span>
+                  </h2>
+                  <div class="dssc-meta-row">
+                    <span class="dssc-meta-item" id="dsscMetaAlias">
+                      <span class="dssc-meta-label">别名：</span>
+                      <span class="dssc-meta-value" id="dsscTableAlias">-</span>
+                      <button type="button" class="dssc-alias-edit" data-edit-meta="alias" title="编辑别名">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+                      </button>
+                    </span>
+                    <span class="dssc-meta-item dssc-meta-item-comment" id="dsscMetaComment">
+                      <span class="dssc-meta-label">注释：</span>
+                      <span class="dssc-meta-value" id="dsscTableComment">-</span>
+                      <button type="button" class="dssc-alias-edit" data-edit-meta="comment" title="编辑注释">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+                      </button>
+                    </span>
+                  </div>
+                  <p id="dsscTableSummary">共 0 个字段</p>
+                </div>
+                <div>
+                  <button class="dsr-btn dsr-gray" type="button" id="dsscBtnBack">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;margin-right:4px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M15 18l-6-6 6-6"/></svg>
+                    返回
+                  </button>
+                </div>
+              </div>
+              <div class="admin-card">
+                <div class="admin-card-body">
+                  <table class="data-table dssc-table">
+                    <colgroup>
+                      <col style="width:18%;" />
+                      <col style="width:20%;" />
+                      <col style="width:11%;" />
+                      <col style="width:7%;" />
+                      <col style="width:7%;" />
+                      <col style="width:18%;" />
+                      <col style="width:19%;" />
+                    </colgroup>
+                    <thead>
+                      <tr>
+                        <th>字段名</th>
+                        <th>别名</th>
+                        <th>数据类型</th>
+                        <th>长度</th>
+                        <th>精度</th>
+                        <th class="col-attrs">属性</th>
+                        <th>注释</th>
+                      </tr>
+                    </thead>
+                    <tbody id="dsscTbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- C. 数据预览视图 -->
+            <div id="dsViewPreview" class="ds-view hidden">
+              <div class="dspv-header">
+                <div class="dssc-meta">
+                  <h2>
+                    <span class="ds-tag">数据预览</span>
+                    <span id="dspvTableName">sales_order</span>
+                  </h2>
+                  <div class="dssc-meta-row">
+                    <span class="dssc-meta-item">
+                      <span class="dssc-meta-label">别名：</span>
+                      <span class="dssc-meta-value" id="dspvTableAlias">-</span>
+                    </span>
+                    <span class="dssc-meta-item dssc-meta-item-comment">
+                      <span class="dssc-meta-label">注释：</span>
+                      <span class="dssc-meta-value" id="dspvTableComment">-</span>
+                    </span>
+                  </div>
+                  <p id="dspvTableSummary">展示前 10 条样例数据</p>
+                </div>
+                <div>
+                  <button class="dsr-btn dsr-gray" type="button" id="dspvBtnBack">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;margin-right:4px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M15 18l-6-6 6-6"/></svg>
+                    返回
+                  </button>
+                </div>
+              </div>
+              <div class="admin-card">
+                <div class="admin-card-body">
+                  <table class="data-table dspv-table">
+                    <thead><tr id="dspvThead"></tr></thead>
+                    <tbody id="dspvTbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- B. 注册管理视图（点击右上角"注册管理"切换显示） -->
+            <div id="dsViewRegister" class="ds-view hidden">
+              <!-- 顶部信息条（唯一的"返回"入口） -->
+              <div class="dsr-header">
+                <div class="dsr-header-meta">
+                  <h2>
+                    <span class="ds-tag">注册管理</span>
+                    <span id="dsrSourceName">销售业务库</span>
+                  </h2>
+                  <p id="dsrSourceSummary">共 0 张表 · 已注册 0 张 · 未注册 0 张</p>
+                </div>
+                <div>
+                  <button class="dsr-btn dsr-gray" type="button" id="dsrBtnBack">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;margin-right:4px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M15 18l-6-6 6-6"/></svg>
+                    返回
+                  </button>
+                </div>
+              </div>
+              <!-- 注册管理列表卡 -->
+              <div class="admin-card dsr-card-placeholder-anchor" style="display:none"></div><div class="admin-card dsr-card">
+                <div class="admin-card-head">
+                  <div class="dsr-toolbar-left">
+                    <button class="dsr-btn dsr-blue"  type="button" id="dsrBtnRegister">注册</button>
+                    <button class="dsr-btn dsr-red"   type="button" id="dsrBtnUnregister">取消注册</button>
+                    <button class="dsr-btn dsr-green" type="button" id="dsrBtnRegisterAll">全部注册</button>
+                    <button class="dsr-btn dsr-green" type="button" id="dsrBtnUnregisterAll">全部取消</button>
+                    <button class="dsr-btn dsr-blue"  type="button" id="dsrBtnImport">导入注册</button>
+                    <button class="dsr-btn dsr-blue"  type="button" id="dsrBtnRefresh">刷新</button>
+                  </div>
+                  <div class="dsr-toolbar-right">
+                    <select id="dsrFilterStatus">
+                      <option value="">全部</option>
+                      <option value="registered">已注册</option>
+                      <option value="unregistered">未注册</option>
+                    </select>
+                    <input id="dsrFilterName" placeholder="输入英文名称" />
+                    <button class="dsr-btn dsr-blue" type="button" id="dsrBtnQuery">查询</button>
+                  </div>
+                </div>
+                <div class="admin-card-body">
+                  <table class="data-table dsr-table">
+                    <thead>
+                      <tr>
+                        <th class="col-check"><input type="checkbox" id="dsrCheckAll" /></th>
+                        <th class="sortable" data-sort="name">英文名称<span class="sort-icon"></span></th>
+                        <th>别名</th>
+                        <th>描述</th>
+                        <th class="col-status">状态</th>
+                      </tr>
+                    </thead>
+                    <tbody id="dsrTbody"></tbody>
+                  </table>
+                  <div id="dsrEmpty" class="dsr-empty hidden">没有匹配的数据，换个搜索条件试试。</div>
+                </div>
+                <div class="dsr-pager">
+                  <div class="dsr-pager-info">
+                    显示第 <strong id="dsrPagerFrom">0</strong> 到第 <strong id="dsrPagerTo">0</strong> 条记录，
+                    总共 <strong id="dsrPagerTotal">0</strong> 条记录
+                    <span class="dsr-page-size">
+                      每页显示
+                      <select id="dsrPageSize">
+                        <option value="10" selected>10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                      </select>
+                      条记录
+                    </span>
+                  </div>
+                  <div class="dsr-pages" id="dsrPages"></div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
     </main>
   </div>
+
+  <!-- 目录树右键菜单 -->
+  <div class="ds-ctx-menu hidden" id="dsCtxMenu" role="menu">
+    <button type="button" data-action="add-domain"><span class="ctx-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18"/><path d="M5 7v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M12 11v6"/><path d="M9 14h6"/></svg></span>新建分组</button>
+    <div class="ctx-divider"></div>
+    <button type="button" data-action="rename"><span class="ctx-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></span>重命名</button>
+    <button type="button" data-action="delete" class="danger"><span class="ctx-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span>删除</button>
+  </div>
+
+  <!-- 新增 / 编辑数据源 弹窗表单 -->
+  <div class="modal-mask hidden" id="dseEditMask"></div>
+  <div class="modal ds-edit-modal hidden" id="dseEditModal" role="dialog" aria-modal="true" aria-labelledby="dseEditTitle">
+    <div class="modal-head">
+      <div>
+        <h3 id="dseEditTitle">新增数据源</h3>
+        <p id="dseEditSubtitle">请填写数据源连接信息，建议先「测试连接」再保存。</p>
+      </div>
+      <button type="button" class="close" data-act="cancel" aria-label="关闭">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="dse-grid">
+        <!-- 数据库类型 -->
+        <div class="dse-field">
+          <label>数据库类型<span class="req">*</span></label>
+          <div class="dse-tree-wrap" id="dseTypeWrap">
+            <button type="button" class="dse-tree-btn" id="dseTypeBtn">
+              <span class="dse-tree-text placeholder">请选择数据库类型</span>
+              <span class="arrow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>
+            </button>
+            <div class="dse-tree-pop" id="dseTypePop"></div>
+          </div>
+        </div>
+
+        <!-- 所属目录 -->
+        <div class="dse-field">
+          <label>所属目录<span class="req">*</span></label>
+          <div class="dse-tree-wrap" id="dseDomainWrap">
+            <button type="button" class="dse-tree-btn" id="dseDomainBtn">
+              <span class="dse-tree-text placeholder">请选择所属目录</span>
+              <span class="arrow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>
+            </button>
+            <div class="dse-tree-pop" id="dseDomainPop"></div>
+          </div>
+        </div>
+
+        <!-- 数据库名称 -->
+        <div class="dse-field">
+          <label>数据库名称<span class="req">*</span></label>
+          <input id="dseDbName" placeholder="例如：sales_dw" maxlength="50" />
+          <p class="hint">字母开头，只允许英文、数字、下划线，50 个字符以内</p>
+        </div>
+
+        <!-- 数据库别名 -->
+        <div class="dse-field">
+          <label>数据库别名</label>
+          <input id="dseDbAlias" placeholder="例如：销售业务库" maxlength="50" />
+          <p class="hint">支持中英文、数字、下划线，50 个字符以内</p>
+        </div>
+
+        <!-- URL -->
+        <div class="dse-field full">
+          <label>URL<span class="req">*</span></label>
+          <input id="dseUrl" placeholder="jdbc:mysql://地址:端口/库名" />
+          <p class="hint">示例：jdbc:mysql://192.168.61.111:32001/tms_dm0</p>
+        </div>
+
+        <!-- 账号 -->
+        <div class="dse-field">
+          <label>账号<span class="req">*</span></label>
+          <input id="dseUser" placeholder="数据库登录账号" maxlength="64" />
+        </div>
+
+        <!-- 密码 -->
+        <div class="dse-field">
+          <label>密码<span class="req">*</span></label>
+          <input type="password" id="dsePwd" placeholder="数据库密码" maxlength="64" />
+        </div>
+
+        <!-- 测试连接 -->
+        <div class="dse-test-row">
+          <button class="secondary-btn" type="button" id="dseBtnTest">测试连接</button>
+          <div class="dse-result" id="dseResult">尚未测试，请填写连接信息后点击「测试连接」。</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="ghost-btn" data-act="cancel">取消</button>
+      <button type="button" class="primary-btn" id="dseBtnSave">保存</button>
+    </div>
+  </div>
+
+  <!-- 删除确认弹窗 -->
+  <div class="modal-mask hidden" id="dsConfirmMask"></div>
+  <div class="modal small hidden" id="dsConfirmModal" role="dialog" aria-modal="true" aria-labelledby="dsConfirmTitle">
+    <div class="modal-head">
+      <div>
+        <h3 id="dsConfirmTitle">删除确认</h3>
+        <p id="dsConfirmSubtitle">删除后将无法恢复。</p>
+      </div>
+      <button type="button" class="close" data-act="cancel" aria-label="关闭">×</button>
+    </div>
+    <div class="modal-body">
+      <p id="dsConfirmMessage" style="margin:0;font-size:14px;color:#374151;line-height:1.7;">确定要删除该条数据吗？</p>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="ghost-btn" data-act="cancel">取消</button>
+      <button type="button" class="primary-btn" data-act="ok" style="background:#ef4444;box-shadow:0 8px 20px rgba(239,68,68,.22);">确认删除</button>
+    </div>
+  </div>
+
   <script src="../../assets/js/common.js"></script>
+  <script>
+    // ============================================================
+    // 数据源 + 表 数据集（按业务域两级目录组织）
+    // ============================================================
+    let DS_DATA = [
+      {
+        id: 'd_sales', name: '销售域', icon: 'sales', sources: [
+          {
+            id: 's_sales_prod', name: '销售业务库', type: 'MySQL', addr: 'sales-prod.internal', status: 'ok', sync: '今日 08:00',
+            tables: [
+              { name: 'sales_order', alias: '销售订单', comment: '销售订单主表', type: 'fact', fields: 18, rows: 1200000, updated: '今日 08:00', registered: true },
+              { name: 'sales_order_item', alias: '订单明细', comment: '销售订单明细', type: 'fact', fields: 14, rows: 5400000, updated: '今日 08:00', registered: true },
+              { name: 'sales_target', alias: '销售目标', comment: '销售目标月度', type: 'fact', fields: 9, rows: 4200, updated: '今日 08:00', registered: true },
+              { name: 'sales_promotion', alias: '促销活动', comment: '促销活动配置', type: 'dim', fields: 12, rows: 320, updated: '昨日 23:00', registered: false },
+              { name: 'channel_sales_daily', alias: '渠道销售日表', comment: '渠道销售日表', type: 'fact', fields: 11, rows: 230000, updated: '今日 08:00', registered: true },
+              { name: 'region_dim', alias: '销售区域', comment: '销售区域维度', type: 'dim', fields: 7, rows: 36, updated: '04-26', registered: true }
+            ]
+          },
+          {
+            id: 's_order_svc', name: '订单服务库', type: 'MySQL', addr: 'order-svc.internal', status: 'ok', sync: '今日 08:30',
+            tables: [
+              { name: 'order_pay', alias: '订单支付', comment: '订单支付流水', type: 'fact', fields: 12, rows: 3800000, updated: '今日 08:30', registered: true },
+              { name: 'order_refund', alias: '订单退款', comment: '订单退款流水', type: 'fact', fields: 10, rows: 120000, updated: '今日 08:30', registered: false },
+              { name: 'pay_channel_dim', alias: '支付渠道', comment: '支付渠道维度', type: 'dim', fields: 8, rows: 24, updated: '04-26', registered: true }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'd_customer', name: '客户域', icon: 'customer', sources: [
+          {
+            id: 's_customer_dw', name: '客户数据仓库', type: 'PostgreSQL', addr: 'customer-dw.internal', status: 'ok', sync: '昨日 23:00',
+            tables: [
+              { name: 'customer', alias: '客户', comment: '客户主表', type: 'dim', fields: 22, rows: 860000, updated: '昨日 23:00', registered: true },
+              { name: 'customer_tag', alias: '客户标签', comment: '客户标签', type: 'bridge', fields: 6, rows: 5600000, updated: '昨日 23:00', registered: true },
+              { name: 'customer_event', alias: '客户事件', comment: '客户行为事件', type: 'fact', fields: 16, rows: 12400000, updated: '昨日 23:00', registered: true },
+              { name: 'customer_segment', alias: '客户分群', comment: '客户分群', type: 'dim', fields: 9, rows: 24, updated: '04-26', registered: false }
+            ]
+          },
+          {
+            id: 's_crm', name: 'CRM 业务库', type: 'PostgreSQL', addr: 'crm.internal', status: 'warn', sync: '04-30 22:00',
+            tables: [
+              { name: 'crm_lead', alias: '销售线索', comment: '销售线索', type: 'fact', fields: 14, rows: 420000, updated: '04-30 22:00', registered: true },
+              { name: 'crm_account', alias: '客户档案', comment: '客户档案', type: 'dim', fields: 18, rows: 92000, updated: '04-30 22:00', registered: true },
+              { name: 'crm_activity', alias: '跟进活动', comment: '跟进活动', type: 'fact', fields: 11, rows: 1400000, updated: '04-30 22:00', registered: false }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'd_inventory', name: '库存域', icon: 'inventory', sources: [
+          {
+            id: 's_inventory', name: '库存分析库', type: 'Oracle', addr: 'inventory-db.internal', status: 'warn', sync: '04-26',
+            tables: [
+              { name: 'inventory_log', alias: '库存日志', comment: '库存日志流水', type: 'fact', fields: 13, rows: 8200000, updated: '04-26', registered: true },
+              { name: 'inventory_snapshot', alias: '库存快照', comment: '库存月末快照', type: 'fact', fields: 9, rows: 320000, updated: '04-26', registered: true },
+              { name: 'warehouse_dim', alias: '仓库', comment: '仓库维度', type: 'dim', fields: 7, rows: 48, updated: '04-26', registered: true },
+              { name: 'sku_dim', alias: 'SKU', comment: 'SKU 维度', type: 'dim', fields: 16, rows: 12000, updated: '04-26', registered: false }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'd_finance', name: '财务域', icon: 'finance', sources: [
+          {
+            id: 's_finance', name: '财务核算库', type: 'SQLServer', addr: 'finance.internal', status: 'ok', sync: '今日 06:00',
+            tables: [
+              { name: 'fin_voucher', alias: '财务凭证', comment: '财务凭证', type: 'fact', fields: 24, rows: 4600000, updated: '今日 06:00', registered: true },
+              { name: 'fin_account_dim', alias: '会计科目', comment: '科目维度', type: 'dim', fields: 8, rows: 320, updated: '今日 06:00', registered: true },
+              { name: 'fin_period_dim', alias: '会计期间', comment: '会计期间维度', type: 'dim', fields: 5, rows: 120, updated: '今日 06:00', registered: true },
+              { name: 'fin_budget', alias: '预算明细', comment: '预算明细', type: 'fact', fields: 12, rows: 88000, updated: '今日 06:00', registered: false }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'd_ops', name: '运营域', icon: 'ops', sources: [
+          {
+            id: 's_realtime', name: '实时分析库', type: 'ClickHouse', addr: 'realtime-ch.internal', status: 'ok', sync: '今日 09:10',
+            tables: [
+              { name: 'event_track', alias: '埋点事件', comment: '埋点事件大表', type: 'fact', fields: 20, rows: 320000000, updated: '今日 09:10', registered: true },
+              { name: 'page_view_daily', alias: '页面访问日', comment: '页面访问日表', type: 'fact', fields: 12, rows: 6400000, updated: '今日 09:10', registered: true },
+              { name: 'campaign_dim', alias: '活动', comment: '活动维度', type: 'dim', fields: 9, rows: 180, updated: '今日 09:10', registered: false }
+            ]
+          },
+          {
+            id: 's_metric', name: '运营指标库', type: 'ClickHouse', addr: 'metric-ch.internal', status: 'ok', sync: '今日 09:10',
+            tables: [
+              { name: 'metric_daily', alias: '运营指标日', comment: '运营指标日表', type: 'fact', fields: 18, rows: 2400000, updated: '今日 09:10', registered: true },
+              { name: 'metric_dim', alias: '指标维度', comment: '指标维度字典', type: 'dim', fields: 8, rows: 420, updated: '今日 09:10', registered: true }
+            ]
+          }
+        ]
+      }
+    ];
+
+    const ICONS = {
+      domain: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7l8-4 8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4"/><path d="M4 17l8 4 8-4"/></svg>',
+      source: '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5V12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V5.5"/><path d="M5 12v6.5c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V12"/></svg>',
+      chevron: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>'
+    };
+
+    const TYPE_LABELS = { fact: '事实表', dim: '维度表', bridge: '桥接表' };
+    const TYPE_BADGES = {
+      fact: '<span class="status-blue">事实表</span>',
+      dim: '<span class="status-ok">维度表</span>',
+      bridge: '<span class="status-warn">桥接表</span>'
+    };
+
+    let activeSourceId = DS_DATA[0].sources[0].id;
+    let treeKeyword = '';
+    let tableKeyword = '';
+    let tableTypeFilter = '';
+    let tableRegFilter = '';
+
+    // ----------------------------------------------------------------
+    // 渲染 - 目录树
+    // ----------------------------------------------------------------
+    function renderTree() {
+      const tree = document.getElementById('dsTree');
+      const keyword = treeKeyword.trim().toLowerCase();
+      const matchDomain = (d) => !keyword || d.name.toLowerCase().includes(keyword) || d.sources.some((s) => s.name.toLowerCase().includes(keyword));
+
+      const html = DS_DATA.filter(matchDomain).map((domain) => {
+        const sources = keyword
+          ? domain.sources.filter((s) => domain.name.toLowerCase().includes(keyword) || s.name.toLowerCase().includes(keyword))
+          : domain.sources;
+        const groupHasActive = sources.some((s) => s.id === activeSourceId);
+        const collapsed = !!keyword ? false : !groupHasActive && DS_DATA[0].id !== domain.id;
+        const sourceHTML = sources.map((s) => {
+          const cls = s.id === activeSourceId ? 'dst-row active' : 'dst-row';
+          return (
+            '<div class="dst-node leaf" data-source-id="' + s.id + '">'
+              + '<div class="' + cls + '" data-source-id="' + s.id + '">'
+                + '<span class="dst-toggle empty"></span>'
+                + '<span class="dst-icon">' + ICONS.source + '</span>'
+                + '<span class="dst-label">' + escapeHTML(s.name) + '</span>'
+                + '<span class="dst-meta">' + s.tables.length + '</span>'
+              + '</div>'
+            + '</div>'
+          );
+        }).join('');
+        return (
+          '<div class="dst-node' + (collapsed ? ' collapsed' : '') + '" data-domain-id="' + domain.id + '">'
+            + '<div class="dst-row" data-domain-id="' + domain.id + '">'
+              + '<span class="dst-toggle">' + ICONS.chevron + '</span>'
+              + '<span class="dst-icon">' + ICONS.domain + '</span>'
+              + '<span class="dst-label">' + escapeHTML(domain.name) + '</span>'
+              + '<span class="dst-meta">' + domain.sources.length + '</span>'
+            + '</div>'
+            + '<div class="dst-children">' + sourceHTML + '</div>'
+          + '</div>'
+        );
+      }).join('');
+
+      tree.innerHTML = html || '<div class="dst-empty">没有匹配的数据源</div>';
+    }
+
+    function escapeHTML(s) {
+      return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    }
+
+    // 记录数格式化：超过 1 万带"万"单位；未超过则按千分位原样展示
+    function formatRowsWan(n) {
+      if (n == null || n === '') return '';
+      const num = Number(n);
+      if (!isFinite(num)) return String(n);
+      if (num < 10000) return num.toLocaleString();
+      const wan = num / 10000;
+      if (wan >= 100) return wan.toFixed(0) + ' 万';
+      if (wan >= 10) return wan.toFixed(1) + ' 万';
+      return wan.toFixed(2) + ' 万';
+    }
+
+    // ----------------------------------------------------------------
+    // 渲染 - 当前数据源信息 + 表列表
+    // ----------------------------------------------------------------
+    function findSource(id) {
+      for (const d of DS_DATA) {
+        for (const s of d.sources) {
+          if (s.id === id) return { domain: d, source: s };
+        }
+      }
+      return null;
+    }
+
+    function renderDetail() {
+      const found = findSource(activeSourceId);
+      if (!found) return;
+      const { source } = found;
+      document.getElementById('dsTitle').textContent = source.name;
+      const typeEl = document.getElementById('dsTagType');
+      typeEl.textContent = source.type;
+      const statusEl = document.getElementById('dsTagStatus');
+      statusEl.textContent = source.status === 'ok' ? '连接正常' : '待同步';
+      statusEl.className = 'ds-tag ' + (source.status === 'ok' ? 'ok' : 'warn');
+      document.getElementById('dsAddr').textContent = source.addr + ' · ' + source.tables.length + ' 张表 · 最近同步 ' + source.sync;
+    }
+
+    function renderTableList() {
+      const found = findSource(activeSourceId);
+      const tbody = document.getElementById('dsTableBody');
+      const emptyEl = document.getElementById('dsTableEmpty');
+      if (!found) {
+        tbody.innerHTML = '';
+        emptyEl.classList.remove('hidden');
+        emptyEl.textContent = '请先选择一个数据源';
+        return;
+      }
+      emptyEl.textContent = '没有匹配的表，换个搜索条件试试。';
+      const kw = tableKeyword.trim().toLowerCase();
+      const list = found.source.tables.filter((t) => {
+        if (kw && !(t.name.toLowerCase().includes(kw) || (t.comment || '').toLowerCase().includes(kw))) return false;
+        if (tableTypeFilter && t.type !== tableTypeFilter) return false;
+        if (tableRegFilter === 'registered' && !t.registered) return false;
+        if (tableRegFilter === 'unregistered' && t.registered) return false;
+        return true;
+      });
+      if (!list.length) {
+        tbody.innerHTML = '';
+        emptyEl.classList.remove('hidden');
+        return;
+      }
+      emptyEl.classList.add('hidden');
+      tbody.innerHTML = list.map((t) => (
+        '<tr data-name="' + escapeHTML(t.name) + '">'
+          + '<td>' + escapeHTML(t.name) + '</td>'
+          + '<td>'
+            + '<span class="dssc-alias-cell">'
+              + '<span class="dssc-alias-text">' + escapeHTML(t.alias || '') + '</span>'
+              + '<button type="button" class="dssc-alias-edit" data-role="ds-table-alias-edit" title="编辑别名">'
+                + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>'
+              + '</button>'
+            + '</span>'
+          + '</td>'
+          + '<td>'
+            + '<span class="dssc-alias-cell">'
+              + '<span class="dssc-alias-text">' + escapeHTML(t.comment || '') + '</span>'
+              + '<button type="button" class="dssc-alias-edit" data-role="ds-table-comment-edit" title="编辑注释">'
+                + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>'
+              + '</button>'
+            + '</span>'
+          + '</td>'
+          + '<td>' + (TYPE_BADGES[t.type] || TYPE_LABELS[t.type] || t.type) + '</td>'
+          + '<td>' + t.fields + '</td>'
+          + '<td>' + formatRowsWan(t.rows) + '</td>'
+          + '<td>'
+            + '<span class="ds-table-actions">'
+              + '<a href="javascript:void(0)" class="ds-act-link ds-act-preview" data-name="' + escapeHTML(t.name) + '">'
+                + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>'
+                + '数据预览'
+              + '</a>'
+              + '<a href="javascript:void(0)" class="ds-act-link ds-act-schema" data-name="' + escapeHTML(t.name) + '">'
+                + '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 3v18"/></svg>'
+                + '表结构'
+              + '</a>'
+            + '</span>'
+          + '</td>'
+        + '</tr>'
+      )).join('');
+    }
+
+    function selectSource(id) {
+      activeSourceId = id;
+      renderTree();
+      renderDetail();
+      renderTableList();
+    }
+
+    // ----------------------------------------------------------------
+    // 事件绑定
+    // ----------------------------------------------------------------
+    document.addEventListener('click', (e) => {
+      const sourceRow = e.target.closest('.dst-row[data-source-id]');
+      if (sourceRow) {
+        selectSource(sourceRow.dataset.sourceId);
+        return;
+      }
+      const domainRow = e.target.closest('.dst-row[data-domain-id]');
+      if (domainRow) {
+        const node = domainRow.parentElement;
+        node.classList.toggle('collapsed');
+      }
+    });
+
+    document.getElementById('dsTreeSearch').addEventListener('input', (e) => {
+      treeKeyword = e.target.value || '';
+      renderTree();
+    });
+
+    document.getElementById('dsTableSearch').addEventListener('input', (e) => {
+      tableKeyword = e.target.value || '';
+      renderTableList();
+    });
+
+    document.getElementById('dsTableType').addEventListener('change', (e) => {
+      tableTypeFilter = e.target.value || '';
+      renderTableList();
+    });
+
+    document.getElementById('dsTableReg').addEventListener('change', (e) => {
+      tableRegFilter = e.target.value || '';
+      renderTableList();
+    });
+
+    // ----------------------------------------------------------------
+    // 右键菜单 / 行内编辑 / 删除确认
+    // ----------------------------------------------------------------
+    const dsCtxMenu = document.getElementById('dsCtxMenu');
+    const dsConfirmMask = document.getElementById('dsConfirmMask');
+    const dsConfirmModal = document.getElementById('dsConfirmModal');
+    let ctxTarget = null; // { type:'domain'|'source', id, domainId? }
+
+    function findDomain(id) {
+      return DS_DATA.find((d) => d.id === id) || null;
+    }
+
+    function findSourceCtx(id) {
+      for (const d of DS_DATA) {
+        const s = d.sources.find((x) => x.id === id);
+        if (s) return { domain: d, source: s };
+      }
+      return null;
+    }
+
+    function clearCtxActive() {
+      document.querySelectorAll('.dst-row.context-active').forEach((el) => el.classList.remove('context-active'));
+    }
+
+    function showCtxMenu(x, y) {
+      dsCtxMenu.classList.remove('hidden');
+      const w = dsCtxMenu.offsetWidth || 168;
+      const h = dsCtxMenu.offsetHeight || 200;
+      const nx = Math.min(x, window.innerWidth - w - 8);
+      const ny = Math.min(y, window.innerHeight - h - 8);
+      dsCtxMenu.style.left = nx + 'px';
+      dsCtxMenu.style.top = ny + 'px';
+    }
+
+    function hideCtxMenu() {
+      dsCtxMenu.classList.add('hidden');
+      clearCtxActive();
+    }
+
+    document.getElementById('dsTree').addEventListener('contextmenu', (e) => {
+      const sourceRow = e.target.closest('.dst-row[data-source-id]');
+      const domainRow = e.target.closest('.dst-row[data-domain-id]');
+      if (!sourceRow && !domainRow) return;
+      e.preventDefault();
+      clearCtxActive();
+      if (sourceRow) {
+        sourceRow.classList.add('context-active');
+        const found = findSourceCtx(sourceRow.dataset.sourceId);
+        ctxTarget = { type: 'source', id: sourceRow.dataset.sourceId, domainId: found ? found.domain.id : null };
+      } else {
+        domainRow.classList.add('context-active');
+        ctxTarget = { type: 'domain', id: domainRow.dataset.domainId };
+      }
+      showCtxMenu(e.clientX, e.clientY);
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#dsCtxMenu')) hideCtxMenu();
+    });
+    window.addEventListener('scroll', hideCtxMenu, true);
+    window.addEventListener('resize', hideCtxMenu);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !dsCtxMenu.classList.contains('hidden')) hideCtxMenu();
+    });
+
+    dsCtxMenu.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-action]');
+      if (!btn || btn.disabled) return;
+      e.stopPropagation();
+      const action = btn.dataset.action;
+      hideCtxMenu();
+      if (!ctxTarget) return;
+      if (action === 'add-domain') addDomain();
+      else if (action === 'rename') renameTarget(ctxTarget);
+      else if (action === 'delete') deleteTarget(ctxTarget);
+    });
+
+    function genId(prefix) {
+      return prefix + '_' + Date.now().toString(36) + Math.random().toString(16).slice(2, 5);
+    }
+
+    function flashNode(selector) {
+      const el = document.querySelector(selector);
+      if (!el) return;
+      el.classList.add('dst-flash');
+      setTimeout(() => el.classList.remove('dst-flash'), 950);
+    }
+
+    function addDomain() {
+      const id = genId('d');
+      const newDomain = { id, name: '新建分组', icon: 'domain', sources: [] };
+      DS_DATA.push(newDomain);
+      renderTree();
+      const node = document.querySelector('.dst-node[data-domain-id="' + id + '"]');
+      flashNode('.dst-node[data-domain-id="' + id + '"]');
+      if (!node) return;
+      const labelEl = node.querySelector(':scope > .dst-row > .dst-label');
+      enterEditDS(labelEl, '新建分组', (val, ok) => {
+        if (!ok || !val) {
+          DS_DATA = DS_DATA.filter((d) => d.id !== id);
+        } else {
+          newDomain.name = val;
+          showToast('已新增分组：' + val);
+        }
+        renderTree();
+      });
+    }
+
+    function addSource(domainId) {
+      const domain = findDomain(domainId);
+      if (!domain) return;
+      const id = genId('s');
+      const newSource = {
+        id,
+        name: '新建数据源',
+        type: 'MySQL',
+        addr: 'new-source.internal',
+        status: 'warn',
+        sync: '尚未同步',
+        tables: []
+      };
+      domain.sources.push(newSource);
+      // 强制展开该分组并选中新数据源
+      activeSourceId = id;
+      renderTree();
+      flashNode('.dst-node[data-source-id="' + id + '"]');
+      const node = document.querySelector('.dst-node[data-source-id="' + id + '"]');
+      if (!node) return;
+      const labelEl = node.querySelector(':scope > .dst-row > .dst-label');
+      enterEditDS(labelEl, '新建数据源', (val, ok) => {
+        if (!ok || !val) {
+          domain.sources = domain.sources.filter((s) => s.id !== id);
+          if (domain.sources[0]) activeSourceId = domain.sources[0].id;
+          else if (DS_DATA[0] && DS_DATA[0].sources[0]) activeSourceId = DS_DATA[0].sources[0].id;
+        } else {
+          newSource.name = val;
+          showToast('已新增数据源：' + val);
+        }
+        renderTree();
+        renderDetail();
+        renderTableList();
+      });
+    }
+
+    function renameTarget(target) {
+      let labelEl = null;
+      let original = '';
+      if (target.type === 'domain') {
+        const node = document.querySelector('.dst-node[data-domain-id="' + target.id + '"]');
+        if (!node) return;
+        labelEl = node.querySelector(':scope > .dst-row > .dst-label');
+        const d = findDomain(target.id);
+        original = d ? d.name : (labelEl ? labelEl.textContent : '');
+      } else {
+        const node = document.querySelector('.dst-node[data-source-id="' + target.id + '"]');
+        if (!node) return;
+        labelEl = node.querySelector(':scope > .dst-row > .dst-label');
+        const found = findSourceCtx(target.id);
+        original = found ? found.source.name : (labelEl ? labelEl.textContent : '');
+      }
+      if (!labelEl) return;
+      enterEditDS(labelEl, original, (val, ok) => {
+        if (!ok || !val) {
+          renderTree();
+          return;
+        }
+        if (target.type === 'domain') {
+          const d = findDomain(target.id);
+          if (d) d.name = val;
+        } else {
+          const found = findSourceCtx(target.id);
+          if (found) found.source.name = val;
+        }
+        renderTree();
+        renderDetail();
+        showToast('已重命名为：' + val);
+      });
+    }
+
+    function deleteTarget(target) {
+      if (target.type === 'domain') {
+        const d = findDomain(target.id);
+        if (!d) return;
+        const cnt = d.sources.length;
+        const subtitle = cnt > 0
+          ? '该分组下包含 ' + cnt + ' 个数据源，删除后将一并移除（仅原型示例数据）。'
+          : '删除后，该分组将不再展示。';
+        showDsConfirm({
+          title: '删除分组',
+          subtitle,
+          message: '确定要删除分组「<strong style="color:#102a48;">' + escapeHTML(d.name) + '</strong>」吗？',
+          onConfirm: function () {
+            const wasActiveInside = d.sources.some((s) => s.id === activeSourceId);
+            DS_DATA = DS_DATA.filter((x) => x.id !== d.id);
+            if (wasActiveInside) {
+              if (DS_DATA[0] && DS_DATA[0].sources[0]) activeSourceId = DS_DATA[0].sources[0].id;
+              else activeSourceId = null;
+            }
+            renderTree();
+            renderDetail();
+            renderTableList();
+            showToast('已删除分组：' + d.name);
+          }
+        });
+      } else {
+        const found = findSourceCtx(target.id);
+        if (!found) return;
+        const tableCnt = found.source.tables.length;
+        const subtitle = tableCnt > 0
+          ? '该数据源下登记 ' + tableCnt + ' 张表的元信息，删除后将一并移除（仅原型示例数据）。'
+          : '删除后，该数据源将不再展示。';
+        showDsConfirm({
+          title: '删除数据源',
+          subtitle,
+          message: '确定要删除数据源「<strong style="color:#102a48;">' + escapeHTML(found.source.name) + '</strong>」吗？',
+          onConfirm: function () {
+            const wasActive = activeSourceId === found.source.id;
+            found.domain.sources = found.domain.sources.filter((s) => s.id !== found.source.id);
+            if (wasActive) {
+              if (found.domain.sources[0]) activeSourceId = found.domain.sources[0].id;
+              else if (DS_DATA[0] && DS_DATA[0].sources[0]) activeSourceId = DS_DATA[0].sources[0].id;
+              else activeSourceId = null;
+            }
+            renderTree();
+            renderDetail();
+            renderTableList();
+            showToast('已删除数据源：' + found.source.name);
+          }
+        });
+      }
+    }
+
+    function enterEditDS(labelEl, initial, onCommit) {
+      if (!labelEl) return;
+      const original = labelEl.textContent;
+      const input = document.createElement('input');
+      input.className = 'dst-edit-input';
+      input.value = initial;
+      input.maxLength = 30;
+      labelEl.textContent = '';
+      labelEl.appendChild(input);
+      setTimeout(() => { input.focus(); input.select(); }, 0);
+      let finished = false;
+      const finish = (commit) => {
+        if (finished) return;
+        finished = true;
+        const v = (input.value || '').trim();
+        const ok = commit && !!v;
+        const next = ok ? v : original;
+        if (input.parentElement) input.parentElement.removeChild(input);
+        labelEl.textContent = next;
+        if (onCommit) onCommit(next, ok);
+      };
+      input.addEventListener('blur', () => finish(true));
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+        else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+      });
+      input.addEventListener('click', (e) => e.stopPropagation());
+      input.addEventListener('contextmenu', (e) => e.stopPropagation());
+    }
+
+    function showDsConfirm(opts) {
+      const o = Object.assign({
+        title: '删除确认',
+        subtitle: '删除后将无法恢复。',
+        message: '确定要删除该条数据吗？',
+        okText: '确认删除',
+        cancelText: '取消'
+      }, opts || {});
+      document.getElementById('dsConfirmTitle').textContent = o.title;
+      document.getElementById('dsConfirmSubtitle').textContent = o.subtitle;
+      document.getElementById('dsConfirmMessage').innerHTML = o.message;
+      const okBtn = dsConfirmModal.querySelector('.modal-foot [data-act="ok"]');
+      const cancelBtn = dsConfirmModal.querySelector('.modal-foot [data-act="cancel"]');
+      const closeBtn = dsConfirmModal.querySelector('.modal-head [data-act="cancel"]');
+      okBtn.textContent = o.okText;
+      cancelBtn.textContent = o.cancelText;
+      dsConfirmMask.classList.remove('hidden');
+      dsConfirmModal.classList.remove('hidden');
+      const cleanup = () => {
+        dsConfirmMask.classList.add('hidden');
+        dsConfirmModal.classList.add('hidden');
+        okBtn.onclick = null;
+        cancelBtn.onclick = null;
+        closeBtn.onclick = null;
+        dsConfirmMask.onclick = null;
+        document.removeEventListener('keydown', onKey);
+      };
+      const onKey = (e) => {
+        if (e.key === 'Escape') { e.preventDefault(); cleanup(); }
+        else if (e.key === 'Enter') { e.preventDefault(); cleanup(); o.onConfirm && o.onConfirm(); }
+      };
+      okBtn.onclick = () => { cleanup(); o.onConfirm && o.onConfirm(); };
+      cancelBtn.onclick = cleanup;
+      closeBtn.onclick = cleanup;
+      dsConfirmMask.onclick = cleanup;
+      document.addEventListener('keydown', onKey);
+    }
+
+    // ----------------------------------------------------------------
+    // 新增 / 编辑数据源 弹窗
+    // ----------------------------------------------------------------
+    const DB_TYPES = [
+      { name: '关系型数据库', children: [
+        { name: 'MySQL' }, { name: 'PostgreSQL' }, { name: 'Oracle' }, { name: 'SQL Server' }, { name: 'DB2' }
+      ]},
+      { name: '分析型数据库', children: [
+        { name: 'ClickHouse' }, { name: 'Doris' }, { name: 'StarRocks' }, { name: 'Greenplum' }
+      ]},
+      { name: '大数据 / 数据仓库', children: [
+        { name: 'Hive' }, { name: 'Spark SQL' }, { name: 'MaxCompute' }, { name: 'Hologres' }
+      ]},
+      { name: '云数据库', children: [
+        { name: '云数据库 MySQL' }, { name: '云数据库 PostgreSQL' }, { name: 'AnalyticDB' }
+      ]}
+    ];
+
+    function getDomainTreeForEdit() {
+      return DS_DATA.map((d) => ({
+        name: d.name,
+        children: (d.sources || []).map((s) => ({ name: s.name }))
+      }));
+    }
+
+    function buildDseTree(popEl, btnEl, data, options) {
+      const opts = options || {};
+      const onlyLeafSelect = !!opts.onlyLeafSelect;
+      const renderNodes = (nodes) => nodes.map((n) => {
+        const hasChild = !!(n.children && n.children.length);
+        return (
+          '<div class="dse-tree-node' + (hasChild ? '' : ' leaf') + '">'
+            + '<div class="dse-tree-row' + (hasChild ? '' : ' empty-toggle') + '"'
+              + ' data-name="' + escapeHTML(n.name) + '"'
+              + ' data-leaf="' + (hasChild ? '0' : '1') + '">'
+              + '<span class="toggle">' + (hasChild ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>' : '') + '</span>'
+              + '<span class="text">' + escapeHTML(n.name) + '</span>'
+            + '</div>'
+            + (hasChild ? '<div class="dse-tree-children">' + renderNodes(n.children) + '</div>' : '')
+          + '</div>'
+        );
+      }).join('');
+      popEl.innerHTML = renderNodes(data);
+
+      popEl.onclick = (e) => {
+        const row = e.target.closest('.dse-tree-row');
+        if (!row) return;
+        e.stopPropagation();
+        const isLeaf = row.dataset.leaf === '1';
+        if (!isLeaf) {
+          row.parentElement.classList.toggle('collapsed');
+          if (onlyLeafSelect) return;
+        }
+        popEl.querySelectorAll('.dse-tree-row.active').forEach((el) => el.classList.remove('active'));
+        row.classList.add('active');
+        const txt = btnEl.querySelector('.dse-tree-text');
+        txt.textContent = row.dataset.name;
+        txt.classList.remove('placeholder');
+        btnEl.parentElement.classList.remove('open');
+      };
+
+      btnEl.onclick = (e) => {
+        e.stopPropagation();
+        const wrap = btnEl.parentElement;
+        const willOpen = !wrap.classList.contains('open');
+        document.querySelectorAll('.dse-tree-wrap.open').forEach((el) => el.classList.remove('open'));
+        if (willOpen) wrap.classList.add('open');
+      };
+    }
+
+    function setTreeBtnValue(btnEl, value, fallbackPlaceholder) {
+      const txt = btnEl.querySelector('.dse-tree-text');
+      if (value) {
+        txt.textContent = value;
+        txt.classList.remove('placeholder');
+      } else {
+        txt.textContent = fallbackPlaceholder;
+        txt.classList.add('placeholder');
+      }
+    }
+
+    function resetDseResult() {
+      const r = document.getElementById('dseResult');
+      r.className = 'dse-result';
+      r.textContent = '尚未测试，请填写连接信息后点击「测试连接」。';
+    }
+
+    const dseEditMask = document.getElementById('dseEditMask');
+    const dseEditModal = document.getElementById('dseEditModal');
+    let dseCurrentMode = 'add';
+
+    function openDseEdit(mode, presets) {
+      dseCurrentMode = mode === 'edit' ? 'edit' : 'add';
+      document.getElementById('dseEditTitle').textContent = dseCurrentMode === 'edit' ? '编辑数据源' : '新增数据源';
+      document.getElementById('dseEditSubtitle').textContent = dseCurrentMode === 'edit'
+        ? '修改数据源连接信息，建议先「测试连接」再保存。'
+        : '请填写数据源连接信息，建议先「测试连接」再保存。';
+
+      // 重新构建两棵下拉树（域目录可能因新增/重命名而变化）
+      buildDseTree(
+        document.getElementById('dseTypePop'),
+        document.getElementById('dseTypeBtn'),
+        DB_TYPES,
+        { onlyLeafSelect: true }
+      );
+      buildDseTree(
+        document.getElementById('dseDomainPop'),
+        document.getElementById('dseDomainBtn'),
+        getDomainTreeForEdit(),
+        { onlyLeafSelect: false }
+      );
+
+      const data = presets || {};
+      setTreeBtnValue(document.getElementById('dseTypeBtn'), data.type || '', '请选择数据库类型');
+      setTreeBtnValue(document.getElementById('dseDomainBtn'), data.domain || '', '请选择所属目录');
+      document.getElementById('dseDbName').value = data.dbName || '';
+      document.getElementById('dseDbAlias').value = data.dbAlias || '';
+      document.getElementById('dseUrl').value = data.url || '';
+      document.getElementById('dseUser').value = data.user || '';
+      document.getElementById('dsePwd').value = data.pwd || '';
+      resetDseResult();
+
+      dseEditMask.classList.remove('hidden');
+      dseEditModal.classList.remove('hidden');
+    }
+
+    function closeDseEdit() {
+      dseEditMask.classList.add('hidden');
+      dseEditModal.classList.add('hidden');
+      document.querySelectorAll('.dse-tree-wrap.open').forEach((el) => el.classList.remove('open'));
+    }
+
+    document.getElementById('dsBtnAdd').addEventListener('click', () => openDseEdit('add'));
+
+    document.getElementById('dsBtnEdit').addEventListener('click', () => {
+      const found = findSource(activeSourceId);
+      const presets = found ? {
+        type: found.source.type,
+        domain: found.domain.name,
+        dbName: found.source.name,
+        dbAlias: found.source.name,
+        url: 'jdbc:mysql://' + (found.source.addr || 'localhost') + ':3306/' + found.source.name,
+        user: 'readonly_user',
+        pwd: '******'
+      } : {};
+      openDseEdit('edit', presets);
+    });
+
+    dseEditMask.addEventListener('click', closeDseEdit);
+    dseEditModal.querySelectorAll('[data-act="cancel"]').forEach((el) => {
+      el.addEventListener('click', closeDseEdit);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !dseEditModal.classList.contains('hidden')) closeDseEdit();
+    });
+
+    // 点击弹窗内空白处关闭下拉树
+    dseEditModal.addEventListener('click', (e) => {
+      if (!e.target.closest('.dse-tree-wrap')) {
+        document.querySelectorAll('.dse-tree-wrap.open').forEach((el) => el.classList.remove('open'));
+      }
+    });
+
+    // 测试连接
+    document.getElementById('dseBtnTest').addEventListener('click', () => {
+      const url = (document.getElementById('dseUrl').value || '').trim()
+        || 'jdbc:mysql://192.168.61.111:32001/tms_dm0';
+      const user = (document.getElementById('dseUser').value || '').trim() || 'root';
+      const resultEl = document.getElementById('dseResult');
+      const btn = document.getElementById('dseBtnTest');
+      resultEl.className = 'dse-result testing';
+      resultEl.innerHTML = '<span class="spinner"></span>正在测试连接，请稍候…';
+      btn.disabled = true;
+      setTimeout(() => {
+        btn.disabled = false;
+        const fail = /tms_dm0|fail/i.test(url);
+        if (fail) {
+          resultEl.className = 'dse-result err';
+          resultEl.innerHTML = '<strong>连接失败</strong>'
+            + '<pre>连接数据库时发生异常，示例错误信息：\n'
+            + 'URL: ' + escapeHTML(url) + '\n'
+            + 'USERNAME: ' + escapeHTML(user) + '\n'
+            + '具体错误信息：Unknown database \'tms_dm0\'</pre>';
+        } else {
+          resultEl.className = 'dse-result ok';
+          resultEl.innerHTML = '<strong>已连接</strong>（403 ms）'
+            + '<pre>Server: MySQL 5.7.28-log\n'
+            + 'Driver: MySQL Connector/J mysql-connector-java-8.0.30 '
+            + '(Revision: 1de2fe873fe26189564c030a343885011412976a)</pre>';
+        }
+      }, 1000);
+    });
+
+    // 保存
+    document.getElementById('dseBtnSave').addEventListener('click', () => {
+      const dbName = (document.getElementById('dseDbName').value || '').trim();
+      if (!dbName) {
+        showToast && showToast('请填写数据库名称');
+        return;
+      }
+      closeDseEdit();
+      showToast && showToast(dseCurrentMode === 'edit' ? '已保存修改' : '已新增数据源');
+    });
+
+    // ----------------------------------------------------------------
+    // 初始化
+    // ----------------------------------------------------------------
+    renderTree();
+    renderDetail();
+    renderTableList();
+
+    // ============================================================
+    // 注册管理（B 视图）— 数据 / 状态 / 工具函数
+    // ============================================================
+    function buildRegDataset() {
+      const rows = [
+        { name: 'ads_trans_order_stats',           desc: '运输订单汇总' },
+        { name: 'ads_trans_order_stats_td',        desc: '' },
+        { name: 'ads_trans_stats',                 desc: '运输统计 ADS 大宽表' },
+        { name: 'daily_cmp_order',                 desc: '' },
+        { name: 'daily_cmp_order_20250121171941',  desc: '' },
+        { name: 'dm_city_stats',                   desc: '城市维度日表' },
+        { name: 'dm_driver_stats',                 desc: '司机维度日表' },
+        { name: 'dm_driver_stats_test',            desc: '司机维度（测试）' },
+        { name: 'dm_express_city_stats',           desc: '快递城市维度' },
+        { name: 'dm_express_org_stats',            desc: '快递机构维度' },
+        { name: 'dm_express_route_stats',          desc: '快递线路维度' },
+        { name: 'dm_order_attribution',            desc: '订单归因' },
+        { name: 'dm_order_path',                   desc: '订单路径' },
+        { name: 'dm_order_stats',                  desc: '订单维度日表' },
+        { name: 'dm_org_daily_stats',              desc: '机构维度日表' },
+        { name: 'dm_promotion_stats',              desc: '促销维度日表' },
+        { name: 'dm_route_daily_stats',            desc: '线路维度日表' },
+        { name: 'dm_sku_daily_stats',              desc: 'SKU 维度日表' },
+        { name: 'dm_user_event_log',               desc: '' },
+        { name: 'dm_warehouse_stats',              desc: '仓库维度日表' },
+        { name: 'dwd_order_detail',                desc: '订单明细 DWD' },
+        { name: 'dwd_pay_detail',                  desc: '支付明细 DWD' },
+        { name: 'dwd_refund_detail',               desc: '退款明细 DWD' },
+        { name: 'dws_finance_daily',               desc: '财务汇总日表' },
+        { name: 'dws_inventory_daily',             desc: '库存汇总日表' },
+        { name: 'dws_order_summary',               desc: '订单汇总' },
+        { name: 'dws_user_active_daily',           desc: '用户活跃日表' },
+        { name: 'fact_logistics_event',            desc: '物流事件事实表' },
+        { name: 'fact_order_pay',                  desc: '订单支付事实' },
+        { name: 'fact_order_refund',               desc: '订单退款事实' },
+        { name: 'ods_customer_master',             desc: '客户主档（ODS）' },
+        { name: 'ods_payment_log',                 desc: '支付流水（ODS）' }
+      ];
+      return rows.map((r, i) => ({
+        id: 'tbl_' + i,
+        name: r.name,
+        alias: r.name,
+        desc: r.desc || '',
+        registered: i % 5 !== 1
+      }));
+    }
+
+    const REG_STATE = {
+      list: [],
+      keyword: '',
+      statusFilter: '',
+      sortBy: '',
+      sortDir: 'asc',
+      pageSize: 10,
+      pageIdx: 1,
+      selectedIds: new Set()
+    };
+
+    function getRegFilteredList() {
+      const kw = (REG_STATE.keyword || '').trim().toLowerCase();
+      let list = REG_STATE.list.filter((t) => {
+        if (kw && !(t.name.toLowerCase().includes(kw) || (t.alias || '').toLowerCase().includes(kw))) return false;
+        if (REG_STATE.statusFilter === 'registered' && !t.registered) return false;
+        if (REG_STATE.statusFilter === 'unregistered' && t.registered) return false;
+        return true;
+      });
+      if (REG_STATE.sortBy === 'name') {
+        const dir = REG_STATE.sortDir === 'desc' ? -1 : 1;
+        list = list.slice().sort((a, b) => a.name.localeCompare(b.name) * dir);
+      }
+      return list;
+    }
+
+    function getRegPageList() {
+      const list = getRegFilteredList();
+      const total = list.length;
+      const pageSize = REG_STATE.pageSize;
+      const totalPages = Math.max(1, Math.ceil(total / pageSize));
+      if (REG_STATE.pageIdx > totalPages) REG_STATE.pageIdx = totalPages;
+      if (REG_STATE.pageIdx < 1) REG_STATE.pageIdx = 1;
+      const from = total === 0 ? 0 : (REG_STATE.pageIdx - 1) * pageSize;
+      const to = Math.min(total, from + pageSize);
+      return { list: list.slice(from, to), total, totalPages, from, to };
+    }
+
+    function renderRegTable() {
+      const { list } = getRegPageList();
+      const tbody = document.getElementById('dsrTbody');
+      const emptyEl = document.getElementById('dsrEmpty');
+
+      if (!list.length) {
+        tbody.innerHTML = '';
+        emptyEl.classList.remove('hidden');
+      } else {
+        emptyEl.classList.add('hidden');
+        tbody.innerHTML = list.map((t) => {
+          const checked = REG_STATE.selectedIds.has(t.id);
+          const rowCls = checked ? 'row-selected' : '';
+          const status = t.registered
+            ? '<span class="status-ok">已注册</span>'
+            : '<span class="status-warn">未注册</span>';
+          return (
+            '<tr class="' + rowCls + '" data-id="' + t.id + '">'
+              + '<td class="col-check"><input type="checkbox" class="dsr-row-check"' + (checked ? ' checked' : '') + ' /></td>'
+              + '<td>' + escapeHTML(t.name) + '</td>'
+              + '<td>' + escapeHTML(t.alias || '') + '</td>'
+              + '<td>' + escapeHTML(t.desc || '') + '</td>'
+              + '<td class="col-status">' + status + '</td>'
+            + '</tr>'
+          );
+        }).join('');
+      }
+
+      const checkAll = document.getElementById('dsrCheckAll');
+      if (!list.length) {
+        checkAll.checked = false;
+        checkAll.indeterminate = false;
+      } else {
+        const allChecked = list.every((t) => REG_STATE.selectedIds.has(t.id));
+        const someChecked = list.some((t) => REG_STATE.selectedIds.has(t.id));
+        checkAll.checked = allChecked;
+        checkAll.indeterminate = !allChecked && someChecked;
+      }
+
+      document.querySelectorAll('.dsr-table th.sortable').forEach((th) => {
+        th.classList.remove('sort-asc', 'sort-desc');
+        if (th.dataset.sort === REG_STATE.sortBy) {
+          th.classList.add(REG_STATE.sortDir === 'desc' ? 'sort-desc' : 'sort-asc');
+        }
+      });
+    }
+
+    function renderRegPager() {
+      const { total, totalPages, from, to } = getRegPageList();
+      document.getElementById('dsrPagerFrom').textContent = String(total === 0 ? 0 : from + 1);
+      document.getElementById('dsrPagerTo').textContent = String(to);
+      document.getElementById('dsrPagerTotal').textContent = String(total);
+
+      const cur = REG_STATE.pageIdx;
+      const pages = [];
+      const add = (n) => pages.push(n);
+      if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) add(i);
+      } else {
+        add(1);
+        if (cur > 4) add('...');
+        const lo = Math.max(2, cur - 1);
+        const hi = Math.min(totalPages - 1, cur + 1);
+        for (let i = lo; i <= hi; i++) add(i);
+        if (cur < totalPages - 3) add('...');
+        add(totalPages);
+      }
+
+      const html = []
+        .concat(['<button type="button" data-page="prev"' + (cur <= 1 ? ' disabled' : '') + '>上一页</button>'])
+        .concat(pages.map((p) => p === '...'
+          ? '<button type="button" disabled>…</button>'
+          : '<button type="button" data-page="' + p + '"' + (p === cur ? ' class="active"' : '') + '>' + p + '</button>'
+        ))
+        .concat(['<button type="button" data-page="next"' + (cur >= totalPages ? ' disabled' : '') + '>下一页</button>'])
+        .join('');
+      document.getElementById('dsrPages').innerHTML = html;
+    }
+
+    function renderRegSummary() {
+      const total = REG_STATE.list.length;
+      const ok = REG_STATE.list.filter((t) => t.registered).length;
+      const no = total - ok;
+      document.getElementById('dsrSourceSummary').textContent =
+        '共 ' + total + ' 张表 · 已注册 ' + ok + ' 张 · 未注册 ' + no + ' 张';
+    }
+
+    function renderRegAll() {
+      renderRegSummary();
+      renderRegTable();
+      renderRegPager();
+    }
+
+    document.getElementById('dsrTbody').addEventListener('change', (e) => {
+      const cb = e.target.closest('.dsr-row-check');
+      if (!cb) return;
+      const tr = cb.closest('tr');
+      if (!tr) return;
+      const id = tr.dataset.id;
+      if (cb.checked) REG_STATE.selectedIds.add(id);
+      else REG_STATE.selectedIds.delete(id);
+      tr.classList.toggle('row-selected', cb.checked);
+      const { list } = getRegPageList();
+      const checkAll = document.getElementById('dsrCheckAll');
+      const allChecked = list.length > 0 && list.every((t) => REG_STATE.selectedIds.has(t.id));
+      const someChecked = list.some((t) => REG_STATE.selectedIds.has(t.id));
+      checkAll.checked = allChecked;
+      checkAll.indeterminate = !allChecked && someChecked;
+    });
+
+    document.getElementById('dsrCheckAll').addEventListener('change', (e) => {
+      const checked = e.target.checked;
+      const { list } = getRegPageList();
+      list.forEach((t) => {
+        if (checked) REG_STATE.selectedIds.add(t.id);
+        else REG_STATE.selectedIds.delete(t.id);
+      });
+      renderRegTable();
+    });
+
+    document.getElementById('dsrPages').addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-page]');
+      if (!btn || btn.disabled) return;
+      const v = btn.dataset.page;
+      const { totalPages } = getRegPageList();
+      if (v === 'prev') REG_STATE.pageIdx = Math.max(1, REG_STATE.pageIdx - 1);
+      else if (v === 'next') REG_STATE.pageIdx = Math.min(totalPages, REG_STATE.pageIdx + 1);
+      else REG_STATE.pageIdx = parseInt(v, 10) || 1;
+      renderRegAll();
+    });
+
+    document.getElementById('dsrPageSize').addEventListener('change', (e) => {
+      REG_STATE.pageSize = parseInt(e.target.value, 10) || 10;
+      REG_STATE.pageIdx = 1;
+      renderRegAll();
+    });
+
+    function applyRegQuery() {
+      REG_STATE.keyword = (document.getElementById('dsrFilterName').value || '').trim();
+      REG_STATE.statusFilter = document.getElementById('dsrFilterStatus').value || '';
+      REG_STATE.pageIdx = 1;
+      renderRegAll();
+    }
+
+    document.getElementById('dsrBtnQuery').addEventListener('click', applyRegQuery);
+    document.getElementById('dsrFilterStatus').addEventListener('change', applyRegQuery);
+    document.getElementById('dsrFilterName').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); applyRegQuery(); }
+    });
+
+    document.querySelectorAll('.dsr-table th.sortable').forEach((th) => {
+      th.addEventListener('click', () => {
+        const key = th.dataset.sort;
+        if (REG_STATE.sortBy !== key) {
+          REG_STATE.sortBy = key;
+          REG_STATE.sortDir = 'asc';
+        } else if (REG_STATE.sortDir === 'asc') {
+          REG_STATE.sortDir = 'desc';
+        } else {
+          REG_STATE.sortBy = '';
+          REG_STATE.sortDir = 'asc';
+        }
+        renderRegAll();
+      });
+    });
+
+    function getRegSelected() {
+      return REG_STATE.list.filter((t) => REG_STATE.selectedIds.has(t.id));
+    }
+
+    function setRegisteredForSelected(value) {
+      const rows = getRegSelected();
+      if (!rows.length) {
+        showToast && showToast('请先勾选要操作的表');
+        return 0;
+      }
+      let changed = 0;
+      rows.forEach((t) => { if (t.registered !== value) { t.registered = value; changed++; } });
+      REG_STATE.selectedIds.clear();
+      renderRegAll();
+      return changed;
+    }
+
+    function setRegisteredForAll(value) {
+      const list = getRegFilteredList();
+      let changed = 0;
+      list.forEach((t) => { if (t.registered !== value) { t.registered = value; changed++; } });
+      REG_STATE.selectedIds.clear();
+      renderRegAll();
+      return changed;
+    }
+
+    document.getElementById('dsrBtnRegister').addEventListener('click', () => {
+      const cnt = setRegisteredForSelected(true);
+      if (cnt > 0) showToast && showToast('已注册 ' + cnt + ' 张表');
+    });
+
+    document.getElementById('dsrBtnUnregister').addEventListener('click', () => {
+      const before = getRegSelected().length;
+      const cnt = setRegisteredForSelected(false);
+      if (before > 0) showToast && showToast('已取消注册 ' + cnt + ' 张表');
+    });
+
+    document.getElementById('dsrBtnRegisterAll').addEventListener('click', () => {
+      const cnt = setRegisteredForAll(true);
+      showToast && showToast('已注册当前筛选下全部 ' + cnt + ' 张表');
+    });
+
+    document.getElementById('dsrBtnUnregisterAll').addEventListener('click', () => {
+      const cnt = setRegisteredForAll(false);
+      showToast && showToast('已取消注册当前筛选下全部 ' + cnt + ' 张表');
+    });
+
+    document.getElementById('dsrBtnImport').addEventListener('click', () => {
+      showToast && showToast('请选择 .csv / .xlsx 文件以批量导入注册（演示）');
+    });
+
+    document.getElementById('dsrBtnRefresh').addEventListener('click', () => {
+      REG_STATE.selectedIds.clear();
+      renderRegAll();
+      showToast && showToast('已刷新');
+    });
+
+    // ============================================================
+    // 视图切换：A（详情）↔ B（注册管理）
+    // ============================================================
+    function showRegisterView() {
+      const found = findSource(activeSourceId);
+      if (!found) { showToast && showToast('请先选择一个数据源'); return; }
+      document.getElementById('dsrSourceName').textContent = found.source.name;
+      // 重置筛选 / 选择 / 数据
+      REG_STATE.list = buildRegDataset();
+      REG_STATE.keyword = '';
+      REG_STATE.statusFilter = '';
+      REG_STATE.sortBy = '';
+      REG_STATE.sortDir = 'asc';
+      REG_STATE.pageIdx = 1;
+      REG_STATE.pageSize = 10;
+      REG_STATE.selectedIds.clear();
+      const nameEl = document.getElementById('dsrFilterName');
+      const statEl = document.getElementById('dsrFilterStatus');
+      const sizeEl = document.getElementById('dsrPageSize');
+      if (nameEl) nameEl.value = '';
+      if (statEl) statEl.value = '';
+      if (sizeEl) sizeEl.value = '10';
+
+      document.getElementById('dsViewDetail').classList.add('hidden');
+      const pv = document.getElementById('dsViewPreview');
+      const sc = document.getElementById('dsViewSchema');
+      if (pv) pv.classList.add('hidden');
+      if (sc) sc.classList.add('hidden');
+      document.getElementById('dsViewRegister').classList.remove('hidden');
+      renderRegAll();
+    }
+
+    function showDetailView() {
+      document.getElementById('dsViewRegister').classList.add('hidden');
+      document.getElementById('dsViewDetail').classList.remove('hidden');
+    }
+
+    document.getElementById('dsBtnRegister').addEventListener('click', showRegisterView);
+    document.getElementById('dsrBtnBack').addEventListener('click', showDetailView);
+
+    // 切换左侧数据源时，若处于 B/C 视图则自动切回 A
+    const __origSelectSource = selectSource;
+    selectSource = function (id) {
+      const reg = document.getElementById('dsViewRegister');
+      const pv = document.getElementById('dsViewPreview');
+      const sc = document.getElementById('dsViewSchema');
+      const inOther =
+        (reg && !reg.classList.contains('hidden')) ||
+        (pv && !pv.classList.contains('hidden')) ||
+        (sc && !sc.classList.contains('hidden'));
+      __origSelectSource(id);
+      if (inOther) {
+        if (reg) reg.classList.add('hidden');
+        if (pv) pv.classList.add('hidden');
+        if (sc) sc.classList.add('hidden');
+        document.getElementById('dsViewDetail').classList.remove('hidden');
+      }
+    };
+
+    // ============================================================
+    // 数据预览（C 视图）
+    // ============================================================
+    const PREVIEW_SCHEMAS = {};
+
+    PREVIEW_SCHEMAS['sales_order'] = {
+      columns: ['order_id', 'order_date', 'customer_id', 'sales_amount', 'region', 'channel', 'status'],
+      rows: [
+        ['SO20260428001', '2026-04-28', 'C100231', '12,800.00', '华东', '线上', '已完成'],
+        ['SO20260428002', '2026-04-28', 'C100542', '9,240.00',  '华南', '线下', '已完成'],
+        ['SO20260428003', '2026-04-28', 'C100319', '18,620.00', '华东', '分销', '已完成'],
+        ['SO20260428004', '2026-04-28', 'C100876', '6,420.00',  '华北', '线上', '已退款'],
+        ['SO20260428005', '2026-04-28', 'C100442', '32,150.00', '华南', '线上', '已完成'],
+        ['SO20260428006', '2026-04-28', 'C100087', '4,580.00',  '西南', '线下', '已完成'],
+        ['SO20260428007', '2026-04-28', 'C100913', '21,300.00', '华东', '线上', '处理中'],
+        ['SO20260428008', '2026-04-28', 'C100256', '7,860.00',  '华中', '分销', '已完成'],
+        ['SO20260428009', '2026-04-28', 'C100631', '15,400.00', '华南', '线上', '已完成'],
+        ['SO20260428010', '2026-04-28', 'C100128', '11,200.00', '华东', '线下', '已完成']
+      ]
+    };
+
+    PREVIEW_SCHEMAS['customer'] = {
+      columns: ['customer_id', 'name', 'level', 'phone', 'email', 'city', 'created_at'],
+      rows: [
+        ['C100231', '北京方圆科技', 'VIP',  '13800000231', 'fangyuan@demo.com',  '北京', '2024-08-12'],
+        ['C100542', '上海蓝海贸易', 'GOLD', '13800000542', 'lanhai@demo.com',    '上海', '2025-01-08'],
+        ['C100319', '广州顺达物流', 'GOLD', '13800000319', 'shunda@demo.com',    '广州', '2024-11-21'],
+        ['C100876', '深圳腾跃科技', 'VIP',  '13800000876', 'tengyue@demo.com',   '深圳', '2025-03-04'],
+        ['C100442', '杭州宇航电子', 'NORM', '13800000442', 'yuhang@demo.com',    '杭州', '2025-02-19'],
+        ['C100087', '成都飞鸿网络', 'NORM', '13800000087', 'feihong@demo.com',   '成都', '2024-09-30'],
+        ['C100913', '武汉信达制造', 'GOLD', '13800000913', 'xinda@demo.com',     '武汉', '2025-04-02'],
+        ['C100256', '南京创智软件', 'NORM', '13800000256', 'chuangzhi@demo.com', '南京', '2024-12-15'],
+        ['C100631', '苏州明德商贸', 'VIP',  '13800000631', 'mingde@demo.com',    '苏州', '2025-04-18'],
+        ['C100128', '青岛海蓝食品', 'NORM', '13800000128', 'hailan@demo.com',    '青岛', '2024-10-09']
+      ]
+    };
+
+    PREVIEW_SCHEMAS['inventory_log'] = {
+      columns: ['log_id', 'sku_id', 'warehouse_id', 'type', 'qty', 'created_time'],
+      rows: [
+        ['IL202604280001', 'SKU000231', 'WH-SH01', '入库', '+200',  '2026-04-28 08:12:31'],
+        ['IL202604280002', 'SKU000542', 'WH-SH01', '出库', '-50',   '2026-04-28 08:35:14'],
+        ['IL202604280003', 'SKU000319', 'WH-BJ02', '入库', '+1500', '2026-04-28 09:02:46'],
+        ['IL202604280004', 'SKU000876', 'WH-GZ01', '调拨', '-120',  '2026-04-28 09:18:02'],
+        ['IL202604280005', 'SKU000442', 'WH-CD01', '出库', '-30',   '2026-04-28 10:05:33'],
+        ['IL202604280006', 'SKU000087', 'WH-WH01', '入库', '+800',  '2026-04-28 10:42:11'],
+        ['IL202604280007', 'SKU000913', 'WH-SH01', '出库', '-200',  '2026-04-28 11:21:09'],
+        ['IL202604280008', 'SKU000256', 'WH-BJ02', '盘点', '+2',    '2026-04-28 13:14:55'],
+        ['IL202604280009', 'SKU000631', 'WH-XA01', '入库', '+450',  '2026-04-28 14:08:27'],
+        ['IL202604280010', 'SKU000128', 'WH-NJ01', '出库', '-15',   '2026-04-28 15:30:48']
+      ]
+    };
+
+    function buildPreviewFallback(tableName) {
+      const prefix = (tableName || 'tbl').slice(0, 3).toLowerCase();
+      const columns = ['id', tableName + '_name', 'category', 'value', 'status', 'updated_time'];
+      const statuses = ['启用', '停用', '处理中'];
+      const cats = ['类型A', '类型B', '类型C', '类型D'];
+      const today = '2026-04-28';
+      const rows = [];
+      for (let i = 1; i <= 10; i++) {
+        const id = (prefix + '_' + (1000 + i));
+        rows.push([
+          id,
+          tableName + '_示例_' + i,
+          cats[(i - 1) % cats.length],
+          ((i * 137) % 9999).toLocaleString(),
+          statuses[(i - 1) % statuses.length],
+          today + ' ' + String(8 + (i % 10)).padStart(2, '0') + ':' + String((i * 7) % 60).padStart(2, '0')
+        ]);
+      }
+      return { columns, rows };
+    }
+
+    function getPreviewSchema(tableName) {
+      return PREVIEW_SCHEMAS[tableName] || buildPreviewFallback(tableName);
+    }
+
+    function renderPreview(tableName) {
+      const schema = getPreviewSchema(tableName);
+      document.getElementById('dspvTableName').textContent = tableName;
+      const found = findSource(activeSourceId);
+      const tbl = found ? (found.source.tables || []).find((t) => t.name === tableName) : null;
+      const aliasVal = (tbl && tbl.alias) || '';
+      const commentVal = (tbl && tbl.comment) || '';
+      const aliasEl = document.getElementById('dspvTableAlias');
+      const commentEl = document.getElementById('dspvTableComment');
+      aliasEl.textContent = aliasVal || '未设置';
+      aliasEl.classList.toggle('empty', !aliasVal);
+      commentEl.textContent = commentVal || '未设置';
+      commentEl.classList.toggle('empty', !commentVal);
+      document.getElementById('dspvTableSummary').textContent = '展示前 10 条样例数据';
+
+      const thead = document.getElementById('dspvThead');
+      thead.innerHTML = schema.columns.map((c) => '<th>' + escapeHTML(c) + '</th>').join('');
+
+      const tbody = document.getElementById('dspvTbody');
+      tbody.innerHTML = schema.rows.map((row) => (
+        '<tr>' + row.map((cell) => '<td>' + escapeHTML(cell) + '</td>').join('') + '</tr>'
+      )).join('');
+    }
+
+    function showPreviewView(tableName) {
+      renderPreview(tableName);
+      document.getElementById('dsViewDetail').classList.add('hidden');
+      document.getElementById('dsViewRegister').classList.add('hidden');
+      const sc = document.getElementById('dsViewSchema');
+      if (sc) sc.classList.add('hidden');
+      document.getElementById('dsViewPreview').classList.remove('hidden');
+    }
+
+    function showDetailViewAll() {
+      document.getElementById('dsViewRegister').classList.add('hidden');
+      document.getElementById('dsViewPreview').classList.add('hidden');
+      document.getElementById('dsViewDetail').classList.remove('hidden');
+    }
+
+    document.getElementById('dspvBtnBack').addEventListener('click', showDetailViewAll);
+
+    function startDsTableFieldEdit(cellEl, tableName, kind) {
+      const found = findSource(activeSourceId);
+      if (!found) return;
+      const tbl = (found.source.tables || []).find((t) => t.name === tableName);
+      if (!tbl) return;
+      const isAlias = kind === 'alias';
+      const original = (isAlias ? tbl.alias : tbl.comment) || '';
+      const maxLen = isAlias ? 50 : 200;
+      cellEl.innerHTML =
+        '<span class="dssc-alias-cell">'
+          + '<input type="text" class="dssc-alias-input" maxlength="' + maxLen + '" />'
+          + '<button type="button" class="dssc-alias-edit" tabindex="-1" disabled aria-hidden="true">'
+            + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>'
+          + '</button>'
+        + '</span>';
+      const input = cellEl.querySelector('input');
+      input.value = original;
+      setTimeout(() => { input.focus(); input.select(); }, 0);
+      let finished = false;
+      const finish = (commit) => {
+        if (finished) return;
+        finished = true;
+        const v = (input.value || '').trim();
+        let next;
+        if (commit) {
+          next = isAlias ? (v || original) : v;
+        } else {
+          next = original;
+        }
+        if (isAlias) tbl.alias = next;
+        else tbl.comment = next;
+        renderTableList();
+        if (commit && next !== original) {
+          showToast && showToast(isAlias ? ('已更新别名：' + next) : '已更新注释');
+        }
+      };
+      input.addEventListener('blur', () => finish(true));
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+        else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+      });
+    }
+
+    document.getElementById('dsTableBody').addEventListener('click', (e) => {
+      const aliasBtn = e.target.closest('[data-role="ds-table-alias-edit"]');
+      if (aliasBtn) {
+        e.preventDefault();
+        const tr = aliasBtn.closest('tr');
+        const cell = aliasBtn.closest('td');
+        if (tr && cell) startDsTableFieldEdit(cell, tr.dataset.name || '', 'alias');
+        return;
+      }
+      const commentBtn = e.target.closest('[data-role="ds-table-comment-edit"]');
+      if (commentBtn) {
+        e.preventDefault();
+        const tr = commentBtn.closest('tr');
+        const cell = commentBtn.closest('td');
+        if (tr && cell) startDsTableFieldEdit(cell, tr.dataset.name || '', 'comment');
+        return;
+      }
+      const aPv = e.target.closest('.ds-act-preview');
+      if (aPv) {
+        e.preventDefault();
+        const name = aPv.dataset.name || '';
+        if (name) showPreviewView(name);
+        return;
+      }
+      const aSc = e.target.closest('.ds-act-schema');
+      if (aSc) {
+        e.preventDefault();
+        const name = aSc.dataset.name || '';
+        if (name) showSchemaView(name);
+      }
+    });
+
+    /* === DSPV-JS-INSERT === */
+    // ============================================================
+    // 表结构（D 视图）
+    // ============================================================
+    // field: { name, alias, type, length, precision, pk, nn, ai, pt, comment }
+    const SCHEMA_DATA = {};
+
+    SCHEMA_DATA['sales_order'] = [
+      { name: 'order_id',     alias: '订单编号',   type: 'VARCHAR',  length: 32,  precision: 0, pk: true,  nn: true,  ai: false, pt: false, comment: '订单唯一编号' },
+      { name: 'order_no',     alias: '订单号',     type: 'VARCHAR',  length: 64,  precision: 0, pk: false, nn: true,  ai: false, pt: false, comment: '业务订单号' },
+      { name: 'order_date',   alias: '订单日期',   type: 'DATE',     length: 0,   precision: 0, pk: false, nn: true,  ai: false, pt: true,  comment: '订单创建日期（分区字段）' },
+      { name: 'customer_id',  alias: '客户ID',    type: 'VARCHAR',  length: 32,  precision: 0, pk: false, nn: true,  ai: false, pt: false, comment: '客户唯一编号' },
+      { name: 'sales_amount', alias: '销售金额',   type: 'DECIMAL',  length: 18,  precision: 2, pk: false, nn: true,  ai: false, pt: false, comment: '订单总金额（元）' },
+      { name: 'discount',     alias: '优惠金额',   type: 'DECIMAL',  length: 18,  precision: 2, pk: false, nn: false, ai: false, pt: false, comment: '优惠/折扣金额' },
+      { name: 'region',       alias: '销售区域',   type: 'VARCHAR',  length: 32,  precision: 0, pk: false, nn: false, ai: false, pt: false, comment: '销售大区' },
+      { name: 'channel',      alias: '渠道',       type: 'VARCHAR',  length: 16,  precision: 0, pk: false, nn: false, ai: false, pt: false, comment: '订单来源渠道' },
+      { name: 'status',       alias: '状态',       type: 'VARCHAR',  length: 16,  precision: 0, pk: false, nn: true,  ai: false, pt: false, comment: '订单状态' },
+      { name: 'created_at',   alias: '创建时间',   type: 'DATETIME', length: 0,   precision: 0, pk: false, nn: true,  ai: false, pt: false, comment: '创建时间' },
+      { name: 'updated_at',   alias: '更新时间',   type: 'DATETIME', length: 0,   precision: 0, pk: false, nn: false, ai: false, pt: false, comment: '更新时间' }
+    ];
+
+    SCHEMA_DATA['customer'] = [
+      { name: 'customer_id', alias: '客户ID',    type: 'VARCHAR',  length: 32, precision: 0, pk: true,  nn: true,  ai: false, pt: false, comment: '客户唯一编号' },
+      { name: 'name',        alias: '客户名称',   type: 'VARCHAR',  length: 128, precision: 0, pk: false, nn: true,  ai: false, pt: false, comment: '公司或个人名称' },
+      { name: 'level',       alias: '客户等级',   type: 'VARCHAR',  length: 8,  precision: 0, pk: false, nn: true,  ai: false, pt: false, comment: 'VIP/GOLD/NORM' },
+      { name: 'phone',       alias: '联系电话',   type: 'VARCHAR',  length: 32, precision: 0, pk: false, nn: false, ai: false, pt: false, comment: '联系电话' },
+      { name: 'email',       alias: '邮箱',       type: 'VARCHAR',  length: 128, precision: 0, pk: false, nn: false, ai: false, pt: false, comment: '联系邮箱' },
+      { name: 'city',        alias: '城市',       type: 'VARCHAR',  length: 32, precision: 0, pk: false, nn: false, ai: false, pt: false, comment: '所在城市' },
+      { name: 'tags',        alias: '客户标签',   type: 'VARCHAR',  length: 256, precision: 0, pk: false, nn: false, ai: false, pt: false, comment: '逗号分隔的标签列表' },
+      { name: 'created_at',  alias: '创建时间',   type: 'DATETIME', length: 0,  precision: 0, pk: false, nn: true,  ai: false, pt: false, comment: '创建时间' },
+      { name: 'updated_at',  alias: '更新时间',   type: 'DATETIME', length: 0,  precision: 0, pk: false, nn: false, ai: false, pt: false, comment: '更新时间' }
+    ];
+
+    SCHEMA_DATA['inventory_log'] = [
+      { name: 'log_id',       alias: '日志ID',     type: 'BIGINT',   length: 20, precision: 0, pk: true,  nn: true,  ai: true,  pt: false, comment: '日志主键（自增）' },
+      { name: 'sku_id',       alias: 'SKU 编号',  type: 'VARCHAR',  length: 32, precision: 0, pk: false, nn: true,  ai: false, pt: false, comment: 'SKU 唯一编号' },
+      { name: 'warehouse_id', alias: '仓库编号',   type: 'VARCHAR',  length: 16, precision: 0, pk: false, nn: true,  ai: false, pt: false, comment: '仓库编号' },
+      { name: 'type',         alias: '操作类型',   type: 'VARCHAR',  length: 8,  precision: 0, pk: false, nn: true,  ai: false, pt: false, comment: '入库/出库/调拨/盘点' },
+      { name: 'qty',          alias: '数量',       type: 'INT',      length: 11, precision: 0, pk: false, nn: true,  ai: false, pt: false, comment: '变动数量（带正负号）' },
+      { name: 'created_time', alias: '发生时间',   type: 'DATETIME', length: 0,  precision: 0, pk: false, nn: true,  ai: false, pt: true,  comment: '发生时间（分区字段）' },
+      { name: 'operator',     alias: '操作人',     type: 'VARCHAR',  length: 32, precision: 0, pk: false, nn: false, ai: false, pt: false, comment: '操作人账号' }
+    ];
+
+    function buildSchemaFallback(tableName) {
+      return [
+        { name: 'id',           alias: '主键ID',     type: 'BIGINT',   length: 20, precision: 0, pk: true,  nn: true,  ai: true,  pt: false, comment: '主键（自增）' },
+        { name: 'name',         alias: '名称',       type: 'VARCHAR',  length: 128, precision: 0, pk: false, nn: true,  ai: false, pt: false, comment: tableName + ' 名称' },
+        { name: 'category',     alias: '分类',       type: 'VARCHAR',  length: 32, precision: 0, pk: false, nn: false, ai: false, pt: false, comment: '分类标签' },
+        { name: 'value',        alias: '指标值',     type: 'DECIMAL',  length: 18, precision: 4, pk: false, nn: false, ai: false, pt: false, comment: '指标数值' },
+        { name: 'status',       alias: '状态',       type: 'VARCHAR',  length: 16, precision: 0, pk: false, nn: true,  ai: false, pt: false, comment: '业务状态' },
+        { name: 'biz_date',     alias: '业务日期',   type: 'DATE',     length: 0,  precision: 0, pk: false, nn: true,  ai: false, pt: true,  comment: '业务日期（分区字段）' },
+        { name: 'created_at',   alias: '创建时间',   type: 'DATETIME', length: 0,  precision: 0, pk: false, nn: true,  ai: false, pt: false, comment: '创建时间' },
+        { name: 'updated_at',   alias: '更新时间',   type: 'DATETIME', length: 0,  precision: 0, pk: false, nn: false, ai: false, pt: false, comment: '更新时间' }
+      ];
+    }
+
+    function getSchema(tableName) {
+      if (!SCHEMA_DATA[tableName]) {
+        SCHEMA_DATA[tableName] = buildSchemaFallback(tableName);
+      }
+      return SCHEMA_DATA[tableName];
+    }
+
+    let CURRENT_SCHEMA_TABLE = '';
+
+    function renderAttrs(f) {
+      const tags = [];
+      if (f.pk) tags.push('<span class="dssc-attr dssc-attr-pk">主键</span>');
+      if (f.nn) tags.push('<span class="dssc-attr dssc-attr-nn">非空</span>');
+      if (f.ai) tags.push('<span class="dssc-attr dssc-attr-ai">自增长</span>');
+      if (f.pt) tags.push('<span class="dssc-attr dssc-attr-pt">分区</span>');
+      return tags.length ? tags.join('') : '<span style="color:#9ca3af;">-</span>';
+    }
+
+    function renderSchema(tableName) {
+      CURRENT_SCHEMA_TABLE = tableName;
+      const fields = getSchema(tableName);
+      document.getElementById('dsscTableName').textContent = tableName;
+      const found = findSource(activeSourceId);
+      const tbl = found ? (found.source.tables || []).find((t) => t.name === tableName) : null;
+      const aliasEl = document.getElementById('dsscTableAlias');
+      const commentEl = document.getElementById('dsscTableComment');
+      const aliasVal = (tbl && tbl.alias) || '';
+      const commentVal = (tbl && tbl.comment) || '';
+      aliasEl.textContent = aliasVal || '未设置';
+      aliasEl.classList.toggle('empty', !aliasVal);
+      commentEl.textContent = commentVal || '未设置';
+      commentEl.classList.toggle('empty', !commentVal);
+      document.getElementById('dsscTableSummary').textContent = '共 ' + fields.length + ' 个字段';
+
+      const tbody = document.getElementById('dsscTbody');
+      tbody.innerHTML = fields.map((f, idx) => {
+        const lenTxt = (f.length === 0 || f.length == null) ? '-' : String(f.length);
+        const preTxt = (f.precision === 0 || f.precision == null) ? '-' : String(f.precision);
+        return (
+          '<tr data-idx="' + idx + '">'
+            + '<td>' + escapeHTML(f.name) + '</td>'
+            + '<td>'
+              + '<span class="dssc-alias-cell">'
+                + '<span class="dssc-alias-text" data-role="alias-text">' + escapeHTML(f.alias || '') + '</span>'
+                + '<button type="button" class="dssc-alias-edit" data-role="alias-edit" title="编辑别名">'
+                  + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>'
+                + '</button>'
+              + '</span>'
+            + '</td>'
+            + '<td>' + escapeHTML(f.type) + '</td>'
+            + '<td>' + lenTxt + '</td>'
+            + '<td>' + preTxt + '</td>'
+            + '<td class="col-attrs">' + renderAttrs(f) + '</td>'
+            + '<td>'
+              + '<span class="dssc-alias-cell">'
+                + '<span class="dssc-alias-text" data-role="comment-text">' + escapeHTML(f.comment || '') + '</span>'
+                + '<button type="button" class="dssc-alias-edit" data-role="comment-edit" title="编辑注释">'
+                  + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>'
+                + '</button>'
+              + '</span>'
+            + '</td>'
+          + '</tr>'
+        );
+      }).join('');
+    }
+
+    function showSchemaView(tableName) {
+      renderSchema(tableName);
+      document.getElementById('dsViewDetail').classList.add('hidden');
+      document.getElementById('dsViewRegister').classList.add('hidden');
+      document.getElementById('dsViewPreview').classList.add('hidden');
+      document.getElementById('dsViewSchema').classList.remove('hidden');
+    }
+
+    document.getElementById('dsscBtnBack').addEventListener('click', () => {
+      document.getElementById('dsViewSchema').classList.add('hidden');
+      document.getElementById('dsViewDetail').classList.remove('hidden');
+    });
+
+    function startFieldEdit(cellEl, idx, kind) {
+      const fields = SCHEMA_DATA[CURRENT_SCHEMA_TABLE] || [];
+      const f = fields[idx];
+      if (!f) return;
+      const isAlias = kind === 'alias';
+      const original = (isAlias ? f.alias : f.comment) || '';
+      const maxLen = isAlias ? 50 : 200;
+      cellEl.innerHTML =
+        '<span class="dssc-alias-cell">'
+          + '<input type="text" class="dssc-alias-input" maxlength="' + maxLen + '" />'
+          + '<button type="button" class="dssc-alias-edit" tabindex="-1" disabled aria-hidden="true">'
+            + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>'
+          + '</button>'
+        + '</span>';
+      const input = cellEl.querySelector('input');
+      input.value = original;
+      setTimeout(() => { input.focus(); input.select(); }, 0);
+
+      let finished = false;
+      const finish = (commit) => {
+        if (finished) return;
+        finished = true;
+        const v = (input.value || '').trim();
+        let next;
+        if (commit) {
+          // 别名不能为空（回退到原值）；注释允许为空
+          next = isAlias ? (v || original) : v;
+        } else {
+          next = original;
+        }
+        if (isAlias) f.alias = next;
+        else f.comment = next;
+        renderSchema(CURRENT_SCHEMA_TABLE);
+        if (commit && next !== original) {
+          showToast && showToast(isAlias ? ('已更新别名：' + next) : '已更新注释');
+        }
+      };
+      input.addEventListener('blur', () => finish(true));
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+        else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+      });
+    }
+
+    document.getElementById('dsscTbody').addEventListener('click', (e) => {
+      const aliasBtn = e.target.closest('[data-role="alias-edit"]');
+      const commentBtn = aliasBtn ? null : e.target.closest('[data-role="comment-edit"]');
+      const editBtn = aliasBtn || commentBtn;
+      if (!editBtn) return;
+      e.preventDefault();
+      const tr = editBtn.closest('tr');
+      if (!tr) return;
+      const idx = parseInt(tr.dataset.idx, 10);
+      const cell = editBtn.closest('td');
+      const kind = aliasBtn ? 'alias' : 'comment';
+      if (cell) startFieldEdit(cell, idx, kind);
+    });
+
+    function startMetaEdit(itemEl, kind) {
+      const found = findSource(activeSourceId);
+      if (!found) return;
+      const tbl = (found.source.tables || []).find((t) => t.name === CURRENT_SCHEMA_TABLE);
+      if (!tbl) return;
+      const original = (kind === 'alias' ? tbl.alias : tbl.comment) || '';
+
+      const valueEl = itemEl.querySelector('.dssc-meta-value');
+      const editBtn = itemEl.querySelector('[data-edit-meta]');
+      if (!valueEl || !editBtn) return;
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'dssc-meta-input';
+      input.maxLength = kind === 'alias' ? 50 : 200;
+      input.value = original;
+
+      valueEl.style.display = 'none';
+      editBtn.disabled = true;
+      itemEl.insertBefore(input, editBtn);
+      setTimeout(() => { input.focus(); input.select(); }, 0);
+
+      let finished = false;
+      const finish = (commit) => {
+        if (finished) return;
+        finished = true;
+        const v = (input.value || '').trim();
+        let next;
+        if (commit) {
+          if (kind === 'alias') {
+            next = v || tbl.alias || tbl.name;
+          } else {
+            next = v;
+          }
+        } else {
+          next = original;
+        }
+        if (kind === 'alias') tbl.alias = next;
+        else tbl.comment = next;
+
+        // 还原 UI：移除 input、恢复 value 显示、解锁编辑按钮
+        if (input.parentElement) input.parentElement.removeChild(input);
+        valueEl.style.display = '';
+        editBtn.disabled = false;
+
+        renderSchema(CURRENT_SCHEMA_TABLE);
+        renderTableList();
+        if (commit && next !== original) {
+          showToast && showToast(kind === 'alias' ? '已更新别名：' + next : '已更新注释');
+        }
+      };
+      input.addEventListener('blur', () => finish(true));
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+        else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+      });
+    }
+
+    document.querySelectorAll('[data-edit-meta]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const kind = btn.dataset.editMeta;
+        const itemEl = btn.closest('.dssc-meta-item');
+        if (itemEl) startMetaEdit(itemEl, kind);
+      });
+    });
+
+    /* === DSSC-JS-INSERT === */
+  </script>
 </body>
 </html>

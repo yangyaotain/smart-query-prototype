@@ -16,7 +16,7 @@
       <button class="menu-item active">我的看板</button>
       <button class="menu-item" onclick="goTo('report.html')">我的报告</button>
     </nav>
-    <div class="top-actions"><button class="admin-link icon-btn" onclick="goTo('../admin/data-source.html')"><span class="btn-icon">⚙</span>管理后台</button><button class="user-trigger" onclick="goTo('profile.html')"><div class="avatar">张</div><strong>张三</strong><span class="dropdown-arrow">⌄</span></button></div>
+    <div class="top-actions"><button class="admin-link icon-btn" onclick="goTo('../admin/data-source.html')"><span class="btn-icon">⚙</span>管理后台</button><button class="user-trigger" type="button"><div class="avatar">张</div><strong>张三</strong><span class="dropdown-arrow"></span></button></div>
   </header>
 
   <main class="business-page">
@@ -167,7 +167,7 @@
         <div class="board-canvas" id="boardCanvas">
           <!-- KPI 概览 -->
           <div class="canvas-widget wide">
-            <h3>经营总览 <span class="widget-tag">实时同步</span></h3>
+            <h3>经营总览</h3>
             <div class="kpi-grid" id="kpiGrid">
               <div class="kpi-card primary"><p>销售额（万元）</p><h2>3,248</h2><span class="up">↗ +4.1% 环比</span></div>
               <div class="kpi-card"><p>订单量（单）</p><h2>17,260</h2><span class="up">↗ +2.3% 环比</span></div>
@@ -178,43 +178,43 @@
 
           <!-- 销售额月度趋势（含预测） -->
           <div class="canvas-widget wide">
-            <h3>销售额月度趋势 <span class="widget-tag">单位：万元</span></h3>
+            <h3>销售额月度趋势</h3>
             <div class="widget-chart tall" id="chartTrend"></div>
           </div>
 
           <!-- 各大区销售额对比 -->
           <div class="canvas-widget">
-            <h3>各大区销售额对比 <span class="widget-tag">本月</span></h3>
+            <h3>各大区销售额对比</h3>
             <div class="widget-chart" id="chartRegion"></div>
           </div>
 
           <!-- 渠道销售占比 -->
           <div class="canvas-widget">
-            <h3>渠道销售占比 <span class="widget-tag">环形图</span></h3>
+            <h3>渠道销售占比</h3>
             <div class="widget-chart" id="chartChannel"></div>
           </div>
 
           <!-- 销售目标完成率（仪表盘） -->
           <div class="canvas-widget">
-            <h3>销售目标完成率 <span class="widget-tag">本季度</span></h3>
+            <h3>销售目标完成率</h3>
             <div class="widget-chart" id="chartGauge"></div>
           </div>
 
           <!-- TOP10 客户贡献 -->
           <div class="canvas-widget">
-            <h3>TOP10 客户贡献 <span class="widget-tag">销售额排序</span></h3>
+            <h3>TOP10 客户贡献</h3>
             <div class="widget-chart" id="chartTopCustomer"></div>
           </div>
 
           <!-- 产品线销售构成 -->
           <div class="canvas-widget wide">
-            <h3>产品线销售构成 <span class="widget-tag">堆叠柱状图</span></h3>
+            <h3>产品线销售构成</h3>
             <div class="widget-chart" id="chartProductMix"></div>
           </div>
 
           <!-- AI 看板解读 -->
           <div class="canvas-widget wide insight-widget">
-            <h3>AI 看板解读 <span class="widget-tag">由智能助手生成</span></h3>
+            <h3>AI 看板解读</h3>
             <p id="boardInsight">本月华东区销售趋势继续上行，线上渠道贡献较高。建议重点关注 4 月异常增长原因，并评估促销策略是否可复制到其他区域。整体目标完成率 86%，距离季度目标尚有 14%，TOP3 客户贡献集中，建议下沉中长尾客户激活动作。</p>
             <div class="insight-tags" id="boardInsightTags">
               <span>趋势上行</span><span>线上渠道领跑</span><span>TOP3客户高集中度</span><span>目标差距 14%</span>

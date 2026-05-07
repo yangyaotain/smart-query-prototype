@@ -21,23 +21,11 @@
     </nav>
     <div class="top-actions">
       <button class="admin-link icon-btn" onclick="goTo('../admin/data-source.html')"><span class="btn-icon">⚙</span>管理后台</button>
-      <button class="user-trigger" onclick="toggleUserMenu(event)">
+      <button class="user-trigger" type="button">
         <div class="avatar">张</div>
         <strong>张三</strong>
-        <span class="dropdown-arrow">⌄</span>
+        <span class="dropdown-arrow"></span>
       </button>
-      <div id="userMenu" class="user-menu hidden">
-        <div class="user-menu-head">
-          <div class="avatar">张</div>
-          <div>
-            <strong>张三</strong>
-            <span>销售运营部</span>
-          </div>
-        </div>
-        <div class="user-menu-row"><span>账号</span><strong>zhangsan</strong></div>
-        <div class="user-menu-row"><span>角色</span><strong>业务分析师</strong></div>
-        <button class="user-menu-action" onclick="goTo('login.html')"><span class="btn-icon">↩</span>退出登录</button>
-      </div>
     </div>
   </header>
 
@@ -503,6 +491,343 @@
                         </div>
                       </div>
                     </section>
+                    <section id="comparisonResult" class="analysis-section comparison-report-section hidden">
+                      <h4 id="comparisonReportTitle">对比分析报告</h4>
+                      <div class="analysis-report-block" data-comparison-block="0">
+                        <h5>一、对比分析概述</h5>
+                        <div class="comparison-upload-chip" aria-label="上传文件信息">
+                          <span class="comparison-upload-ic">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                              <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>
+                              <path d="M14 3v5h5"/>
+                              <path d="M9 14h6"/>
+                              <path d="M9 17h4"/>
+                            </svg>
+                          </span>
+                          <span class="comparison-upload-name">2025年1-6月华东区销售明细.xlsx</span>
+                          <span class="comparison-upload-meta">约 7.5 万行 · 2.4 MB</span>
+                          <span class="comparison-upload-status"><span class="comparison-upload-dot"></span>已解析</span>
+                        </div>
+                        <p id="comparisonOverview"></p>
+                      </div>
+                      <div class="analysis-report-block" data-comparison-block="1">
+                        <h5>二、关键指标对比表</h5>
+                        <p class="comparison-block-intro" id="comparisonTableIntro">从销售规模、运营效率、客户结构、盈利质量 6 个核心指标量化 2025 与 2026 同期差异，标注关键变化。</p>
+                        <div class="comparison-table-wrap">
+                          <table class="comparison-table">
+                            <thead>
+                              <tr>
+                                <th>核心指标</th>
+                                <th class="num">2025 年 1-6 月</th>
+                                <th class="num">2026 年 1-6 月</th>
+                                <th class="num">差值</th>
+                                <th class="num">同比</th>
+                                <th>关键标注</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr class="comparison-row-key">
+                                <td><strong>销售额</strong><span class="comparison-row-unit">万元</span></td>
+                                <td class="num">12,640</td>
+                                <td class="num group-b">16,308</td>
+                                <td class="num diff up">+3,668</td>
+                                <td class="num diff up">+29.0% ▲</td>
+                                <td><span class="comparison-tag-key">规模拉动</span></td>
+                              </tr>
+                              <tr>
+                                <td><strong>订单量</strong><span class="comparison-row-unit">万单</span></td>
+                                <td class="num">7.81</td>
+                                <td class="num group-b">8.97</td>
+                                <td class="num diff up">+1.16</td>
+                                <td class="num diff up">+14.9% ▲</td>
+                                <td><span class="comparison-tag-info">购买频次提升</span></td>
+                              </tr>
+                              <tr>
+                                <td><strong>客单价</strong><span class="comparison-row-unit">元</span></td>
+                                <td class="num">1,619</td>
+                                <td class="num group-b">1,818</td>
+                                <td class="num diff up">+199</td>
+                                <td class="num diff up">+12.3% ▲</td>
+                                <td><span class="comparison-tag-info">结构改善</span></td>
+                              </tr>
+                              <tr class="comparison-row-key">
+                                <td><strong>复购率</strong></td>
+                                <td class="num">22.6%</td>
+                                <td class="num group-b">26.8%</td>
+                                <td class="num diff up">+4.2pp</td>
+                                <td class="num diff up">+18.6% ▲</td>
+                                <td><span class="comparison-tag-key">客户粘性提升</span></td>
+                              </tr>
+                              <tr class="comparison-row-key down">
+                                <td><strong>退货率</strong></td>
+                                <td class="num">4.5%</td>
+                                <td class="num group-b">3.6%</td>
+                                <td class="num diff down">-0.9pp</td>
+                                <td class="num diff down">-20.0% ▼</td>
+                                <td><span class="comparison-tag-good">质量改善</span></td>
+                              </tr>
+                              <tr class="comparison-row-key">
+                                <td><strong>毛利率</strong></td>
+                                <td class="num">30.2%</td>
+                                <td class="num group-b">32.5%</td>
+                                <td class="num diff up">+2.3pp</td>
+                                <td class="num diff up">+7.6% ▲</td>
+                                <td><span class="comparison-tag-good">盈利质量改善</span></td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                      <div class="analysis-report-block" data-comparison-block="2">
+                        <h5>三、差异趋势对比图</h5>
+                        <p class="comparison-block-intro">月度走势对比：2025 与 2026 同期 1-6 月销售额变化轨迹与同比增速。</p>
+                        <div id="comparisonEmbeddedChart" class="report-embedded-chart">
+                          <div class="report-chart-head">
+                            <h6>2025 vs 2026 同期销售额月度对比</h6>
+                            <span class="report-chart-tag comparison-tag">双折线 + 同比柱 · 单位：万元 / %</span>
+                          </div>
+                          <div class="report-chart-area">
+                            <div id="comparisonChartCanvas" class="report-chart-canvas"></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="analysis-report-block" data-comparison-block="3">
+                        <h5>四、差异原因分析</h5>
+                        <p class="comparison-block-intro">拆解 2026 较 2025 同期 +3,668 万元增量来源，按贡献占比从高到低排序。</p>
+                        <div class="comparison-driver-grid">
+                          <div class="comparison-driver-card">
+                            <div class="comparison-driver-head">
+                              <strong>营销驱动</strong>
+                              <span class="comparison-driver-percent">≈40%</span>
+                            </div>
+                            <div class="comparison-driver-bar"><span style="--w:40%"></span></div>
+                            <ul>
+                              <li id="comparisonDriverM1"></li>
+                              <li id="comparisonDriverM2"></li>
+                            </ul>
+                          </div>
+                          <div class="comparison-driver-card">
+                            <div class="comparison-driver-head">
+                              <strong>渠道结构</strong>
+                              <span class="comparison-driver-percent">≈35%</span>
+                            </div>
+                            <div class="comparison-driver-bar"><span style="--w:35%"></span></div>
+                            <ul>
+                              <li id="comparisonDriverC1"></li>
+                              <li id="comparisonDriverC2"></li>
+                            </ul>
+                          </div>
+                          <div class="comparison-driver-card">
+                            <div class="comparison-driver-head">
+                              <strong>产品升级</strong>
+                              <span class="comparison-driver-percent">≈25%</span>
+                            </div>
+                            <div class="comparison-driver-bar"><span style="--w:25%"></span></div>
+                            <ul>
+                              <li id="comparisonDriverS1"></li>
+                              <li id="comparisonDriverS2"></li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="analysis-report-block" data-comparison-block="4">
+                        <h5>五、行动建议</h5>
+                        <ul class="comparison-action-list">
+                          <li><span class="comparison-action-tag">节奏延续</span><span id="comparisonAction1"></span></li>
+                          <li><span class="comparison-action-tag">区域复制</span><span id="comparisonAction2"></span></li>
+                          <li><span class="comparison-action-tag">指标监控</span><span id="comparisonAction3"></span></li>
+                        </ul>
+                      </div>
+                      <div id="comparisonFooter" class="analysis-report-foot">
+                        <div class="answer-action-left report-foot-feedback">
+                          <span class="answer-action-title">这个回答准确吗？</span>
+                          <button class="answer-action-btn" type="button" data-tip="喜欢" data-vote="like" onclick="setAnswerVote('like')" aria-label="喜欢">
+                            <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10v12"></path><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88z"></path></svg>
+                          </button>
+                          <button class="answer-action-btn" type="button" data-tip="不喜欢" data-vote="dislike" onclick="setAnswerVote('dislike')" aria-label="不喜欢">
+                            <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 14V2"></path><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88z"></path></svg>
+                          </button>
+                          <button class="answer-action-btn" type="button" data-tip="反馈" onclick="openFeedback()" aria-label="反馈">
+                            <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg>
+                          </button>
+                        </div>
+                        <div class="answer-action-right">
+                          <button class="action-dropdown-btn" type="button" onclick="toggleAddMenu(event)">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+                            <span>添加</span>
+                            <svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
+                          </button>
+                          <button class="action-dropdown-btn" type="button" onclick="toggleExport(event)">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"></path><path d="M8.5 10.5L12 14l3.5-3.5"></path><path d="M5 19h14"></path></svg>
+                            <span>导出</span>
+                            <svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
+                          </button>
+                          <button class="action-dropdown-btn primary" type="button" onclick="toggleAskMenu(event)">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.4 5.6L20 11l-5.6 2.4L12 19l-2.4-5.6L4 11l5.6-2.4Z"></path></svg>
+                            <span>追问</span>
+                            <svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
+                          </button>
+                        </div>
+                      </div>
+                    </section>
+                    <section id="templateResult" class="analysis-section template-report-section hidden">
+                      <h4 id="templateReportTitle">5 月份销售分析月报</h4>
+                      <div class="analysis-report-block" data-template-block="0">
+                        <h5>报告摘要</h5>
+                        <p id="templateSummary"></p>
+                        <div class="template-kpi-grid">
+                          <div class="template-kpi-card">
+                            <div class="template-kpi-label">销售额</div>
+                            <div class="template-kpi-value">3,108<span>万元</span></div>
+                            <div class="template-kpi-meta">
+                              <span class="template-kpi-target">目标 2,960 万 · 完成 105.0%</span>
+                              <span class="template-kpi-up">同比 +33.6%</span>
+                            </div>
+                          </div>
+                          <div class="template-kpi-card">
+                            <div class="template-kpi-label">订单量</div>
+                            <div class="template-kpi-value">4.18<span>万单</span></div>
+                            <div class="template-kpi-meta">
+                              <span class="template-kpi-target">目标 4.10 万单 · 完成 102.0%</span>
+                              <span class="template-kpi-up">同比 +28.2%</span>
+                            </div>
+                          </div>
+                          <div class="template-kpi-card">
+                            <div class="template-kpi-label">客单价</div>
+                            <div class="template-kpi-value">743<span>元</span></div>
+                            <div class="template-kpi-meta">
+                              <span class="template-kpi-target">目标 732 元 · 完成 101.5%</span>
+                              <span class="template-kpi-up">同比 +4.2%</span>
+                            </div>
+                          </div>
+                          <div class="template-kpi-card">
+                            <div class="template-kpi-label">毛利率</div>
+                            <div class="template-kpi-value">32.5<span>%</span></div>
+                            <div class="template-kpi-meta">
+                              <span class="template-kpi-target">目标 31.0% · 高 1.5pp</span>
+                              <span class="template-kpi-up">环比 +0.4pp</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="analysis-report-block" data-template-block="1">
+                        <h5>一、月度业绩概述</h5>
+                        <p id="templateOverview"></p>
+                      </div>
+                      <div class="analysis-report-block" data-template-block="2">
+                        <h5>二、核心指标完成情况</h5>
+                        <p class="template-block-intro">按月度目标对齐，跟踪 5 项核心指标的完成度，颜色越深完成度越高。</p>
+                        <ul class="template-progress-list">
+                          <li>
+                            <span class="template-progress-name">销售额完成率</span>
+                            <div class="template-progress-bar"><span class="template-progress-fill" style="--w:105%"></span></div>
+                            <span class="template-progress-value">105.0%</span>
+                          </li>
+                          <li>
+                            <span class="template-progress-name">订单量完成率</span>
+                            <div class="template-progress-bar"><span class="template-progress-fill" style="--w:102%"></span></div>
+                            <span class="template-progress-value">102.0%</span>
+                          </li>
+                          <li>
+                            <span class="template-progress-name">客单价完成率</span>
+                            <div class="template-progress-bar"><span class="template-progress-fill" style="--w:101.5%"></span></div>
+                            <span class="template-progress-value">101.5%</span>
+                          </li>
+                          <li>
+                            <span class="template-progress-name">毛利率完成率</span>
+                            <div class="template-progress-bar"><span class="template-progress-fill" style="--w:104.8%"></span></div>
+                            <span class="template-progress-value">104.8%</span>
+                          </li>
+                          <li>
+                            <span class="template-progress-name">复购率完成率</span>
+                            <div class="template-progress-bar"><span class="template-progress-fill" style="--w:107.2%"></span></div>
+                            <span class="template-progress-value">107.2%</span>
+                          </li>
+                        </ul>
+                      </div>
+                      <div class="analysis-report-block" data-template-block="3">
+                        <h5>三、区域与渠道贡献</h5>
+                        <p class="template-block-intro">5 月份区域、渠道、产品三个维度 TOP 贡献排名。</p>
+                        <div class="template-contribution-grid">
+                          <div class="template-contribution-card">
+                            <div class="template-contribution-head">区域贡献 TOP3</div>
+                            <ul>
+                              <li><span class="template-contribution-name">上海</span><div class="template-contribution-bar"><span style="--w:32.4%"></span></div><span class="template-contribution-value">32.4%</span></li>
+                              <li><span class="template-contribution-name">苏州</span><div class="template-contribution-bar"><span style="--w:21.1%"></span></div><span class="template-contribution-value">21.1%</span></li>
+                              <li><span class="template-contribution-name">杭州</span><div class="template-contribution-bar"><span style="--w:15.3%"></span></div><span class="template-contribution-value">15.3%</span></li>
+                            </ul>
+                          </div>
+                          <div class="template-contribution-card">
+                            <div class="template-contribution-head">渠道贡献 TOP3</div>
+                            <ul>
+                              <li><span class="template-contribution-name">线上自营</span><div class="template-contribution-bar"><span style="--w:41.6%"></span></div><span class="template-contribution-value">41.6%</span></li>
+                              <li><span class="template-contribution-name">线下门店</span><div class="template-contribution-bar"><span style="--w:36.4%"></span></div><span class="template-contribution-value">36.4%</span></li>
+                              <li><span class="template-contribution-name">经销商</span><div class="template-contribution-bar"><span style="--w:22.0%"></span></div><span class="template-contribution-value">22.0%</span></li>
+                            </ul>
+                          </div>
+                          <div class="template-contribution-card">
+                            <div class="template-contribution-head">产品贡献 TOP3</div>
+                            <ul>
+                              <li><span class="template-contribution-name">智能设备</span><div class="template-contribution-bar"><span style="--w:38.5%"></span></div><span class="template-contribution-value">38.5%</span></li>
+                              <li><span class="template-contribution-name">配件类</span><div class="template-contribution-bar"><span style="--w:28.4%"></span></div><span class="template-contribution-value">28.4%</span></li>
+                              <li><span class="template-contribution-name">服务类</span><div class="template-contribution-bar"><span style="--w:16.8%"></span></div><span class="template-contribution-value">16.8%</span></li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="analysis-report-block" data-template-block="4">
+                        <h5>四、风险预警与下月计划</h5>
+                        <div class="template-plan-grid">
+                          <div class="template-plan-card warning">
+                            <div class="template-plan-head"><span class="template-plan-icon">!</span><strong>风险预警</strong></div>
+                            <ul>
+                              <li id="templateRisk1"></li>
+                              <li id="templateRisk2"></li>
+                              <li id="templateRisk3"></li>
+                            </ul>
+                          </div>
+                          <div class="template-plan-card next">
+                            <div class="template-plan-head"><span class="template-plan-icon">→</span><strong>下月计划</strong></div>
+                            <ul>
+                              <li id="templatePlan1"></li>
+                              <li id="templatePlan2"></li>
+                              <li id="templatePlan3"></li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                      <div id="templateFooter" class="analysis-report-foot">
+                        <div class="answer-action-left report-foot-feedback">
+                          <span class="answer-action-title">这个回答准确吗？</span>
+                          <button class="answer-action-btn" type="button" data-tip="喜欢" data-vote="like" onclick="setAnswerVote('like')" aria-label="喜欢">
+                            <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10v12"></path><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88z"></path></svg>
+                          </button>
+                          <button class="answer-action-btn" type="button" data-tip="不喜欢" data-vote="dislike" onclick="setAnswerVote('dislike')" aria-label="不喜欢">
+                            <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 14V2"></path><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88z"></path></svg>
+                          </button>
+                          <button class="answer-action-btn" type="button" data-tip="反馈" onclick="openFeedback()" aria-label="反馈">
+                            <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg>
+                          </button>
+                        </div>
+                        <div class="answer-action-right">
+                          <button class="action-dropdown-btn" type="button" onclick="toggleAddMenu(event)">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+                            <span>添加</span>
+                            <svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
+                          </button>
+                          <button class="action-dropdown-btn" type="button" onclick="toggleExport(event)">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"></path><path d="M8.5 10.5L12 14l3.5-3.5"></path><path d="M5 19h14"></path></svg>
+                            <span>导出</span>
+                            <svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
+                          </button>
+                          <button class="action-dropdown-btn primary" type="button" onclick="toggleAskMenu(event)">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.4 5.6L20 11l-5.6 2.4L12 19l-2.4-5.6L4 11l5.6-2.4Z"></path></svg>
+                            <span>追问</span>
+                            <svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
+                          </button>
+                        </div>
+                      </div>
+                    </section>
                   </div>
                 </article>
               </div>
@@ -632,7 +957,10 @@
               <span class="followup-chip-text">基于"<strong id="followupChipTitle"></strong>"展开追问</span>
               <button type="button" class="followup-chip-remove" onclick="clearFollowupContext()" aria-label="移除追问上下文">×</button>
             </div>
-            <textarea id="questionInput" placeholder="请输入你想了解的业务问题，例如：近6个月华东区销售额趋势如何？"></textarea>
+            <div class="textarea-row">
+              <span id="followupPrefix" class="followup-prefix hidden"></span>
+              <textarea id="questionInput" placeholder="请输入你想了解的业务问题，例如：近6个月华东区销售额趋势如何？"></textarea>
+            </div>
             <div class="input-tools">
               <button type="button" onclick="triggerUpload('image')" title="上传图片">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5C4 5.1 5.1 4 6.5 4h11C18.9 4 20 5.1 20 6.5v11c0 1.4-1.1 2.5-2.5 2.5h-11C5.1 20 4 18.9 4 17.5v-11Z"/><path d="M7 16l3.2-3.3 2.2 2.2 2.5-3.1L18 16H7Z"/><path d="M8.5 8.8h.01"/></svg>
@@ -897,6 +1225,8 @@
     <button onclick="askFollowup('interpret')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.4 5.6L20 11l-5.6 2.4L12 19l-2.4-5.6L4 11l5.6-2.4Z"></path></svg><span>数据解读</span></button>
     <button onclick="askFollowup('attribution')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"></path><path d="M7 16V9"></path><path d="M12 16V6"></path><path d="M17 16v-4"></path></svg><span>归因分析</span></button>
     <button onclick="askFollowup('trend')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17l5-6 4 3 7-8"></path><path d="M14 6h6v6"></path></svg><span>趋势分析</span></button>
+    <button onclick="askFollowup('comparison')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v16"></path><path d="M15 4v16"></path><path d="M4 9l5 0"></path><path d="M15 15l5 0"></path></svg><span>对比分析</span></button>
+    <button onclick="askFollowup('template')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h7l4 4v12H7z"></path><path d="M14 4v4h4"></path><path d="M9 12h6"></path><path d="M9 15h6"></path><path d="M9 18h4"></path></svg><span>模板分析</span></button>
   </div>
   <div id="historyContextMenu" class="context-menu side-context-menu hidden">
     <button onclick="sideMenuAction('置顶')">置顶</button>

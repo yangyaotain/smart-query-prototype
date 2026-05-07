@@ -24,11 +24,11 @@
 }
 
 .admin-menu {
-  padding: 12px;
+  padding: 12px 10px;
   overflow: auto;
 }
 
-.admin-menu a {
+.admin-menu:not(.admin-menu-tree) a {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -40,10 +40,167 @@
   font-weight: 700;
 }
 
-.admin-menu a.active,
-.admin-menu a:hover {
+.admin-menu:not(.admin-menu-tree) a.active,
+.admin-menu:not(.admin-menu-tree) a:hover {
   color: var(--primary);
   background: #f4f8ff;
+}
+
+/* ===========================================================
+ * 一级 + 二级 折叠菜单（admin-menu-tree）
+ * =========================================================== */
+.admin-menu-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.adm-group {
+  border-radius: 12px;
+}
+
+.adm-group-head {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #374151;
+  background: transparent;
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.adm-group-head:hover {
+  color: var(--primary);
+  background: #f4f8ff;
+}
+
+.adm-group.is-active > .adm-group-head {
+  color: var(--primary);
+}
+
+.adm-group-ico {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  color: #6b7280;
+}
+
+.adm-group:hover .adm-group-ico,
+.adm-group.is-active > .adm-group-head .adm-group-ico,
+.adm-group-head:hover .adm-group-ico {
+  color: var(--primary);
+}
+
+.adm-group-ico svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.adm-group-title {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.adm-chevron {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  color: #9ca3af;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.adm-chevron svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.adm-group.is-open .adm-chevron {
+  color: var(--primary);
+  transform: rotate(180deg);
+}
+
+.adm-children {
+  display: none;
+  padding: 2px 0 6px 0;
+}
+
+.adm-group.is-open .adm-children {
+  display: block;
+}
+
+.adm-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px 0 50px;
+  color: #4b5563;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.16s ease, color 0.16s ease;
+}
+
+.adm-item::before {
+  content: "";
+  position: absolute;
+  left: 34px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 5px;
+  height: 5px;
+  background: #cbd5e1;
+  border-radius: 50%;
+  transition: background-color 0.16s ease, transform 0.16s ease;
+}
+
+.adm-item:hover {
+  color: var(--primary);
+  background: #f4f8ff;
+}
+
+.adm-item:hover::before {
+  background: #93b8f0;
+}
+
+.adm-item.active {
+  color: var(--primary);
+  background: linear-gradient(90deg, #eaf3ff, #f8fbff);
+  font-weight: 700;
+}
+
+.adm-item.active::before {
+  background: var(--primary);
+  transform: translateY(-50%) scale(1.25);
 }
 
 .admin-main {
@@ -66,7 +223,7 @@
   backdrop-filter: blur(10px);
 }
 
-.admin-topbar strong {
+.admin-topbar > strong {
   color: #102a48;
   font-size: 16px;
 }
@@ -436,4 +593,350 @@
   .admin-two-col {
     grid-template-columns: 1fr;
   }
+}
+
+/* ===========================================================
+ * 顶部"智能问数"快捷入口（带图标）
+ * =========================================================== */
+.admin-topbar .secondary-btn.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+}
+
+.admin-topbar .secondary-btn.icon-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ===========================================================
+ * 顶部用户信息触发器 + 下拉菜单 + 弹窗（与业务端统一）
+ * =========================================================== */
+.admin-topbar .toolbar {
+  position: relative;
+}
+
+.user-trigger {
+  height: 38px;
+  padding: 3px 10px 3px 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+.user-trigger:hover {
+  background: #f7faff;
+  border-color: #c7daf2;
+  box-shadow: 0 4px 12px rgba(22, 119, 255, 0.08);
+}
+
+.user-trigger.is-open {
+  background: #eff5ff;
+  border-color: #93b8f0;
+  box-shadow: 0 4px 14px rgba(22, 119, 255, 0.16);
+}
+
+.user-trigger > .avatar {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), #60a5fa);
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.user-trigger > strong {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.dropdown-arrow {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 1px;
+  color: #94a3b8;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.dropdown-arrow svg {
+  width: 12px;
+  height: 12px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.user-trigger.is-open .dropdown-arrow {
+  color: var(--primary);
+  transform: rotate(180deg);
+}
+
+.user-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 40;
+  width: 252px;
+  padding: 6px 0 8px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 22px 48px rgba(17, 24, 39, 0.16);
+  transform-origin: top right;
+  animation: userMenuIn 0.16s ease both;
+}
+
+@keyframes userMenuIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.user-menu-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  margin: 0 0 6px;
+  background: linear-gradient(120deg, #eaf2ff 0%, #f8fbff 100%);
+  border-bottom: 1px solid var(--line);
+}
+
+.user-menu-head .avatar {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), #60a5fa);
+  border-radius: 50%;
+  font-size: 15px;
+  font-weight: 800;
+  box-shadow: 0 4px 10px rgba(22, 119, 255, 0.22);
+}
+
+.user-menu-head strong {
+  display: block;
+  color: #1f2937;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.user-menu-head span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.user-menu-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  font-size: 12.5px;
+}
+
+.user-menu-row span {
+  color: var(--muted);
+}
+
+.user-menu-row strong {
+  color: #1f2937;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.user-menu-divider {
+  height: 1px;
+  margin: 6px 0;
+  background: var(--line);
+}
+
+.user-menu-item {
+  width: 100%;
+  height: 40px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #374151;
+  background: #fff;
+  border: 0;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.16s ease, color 0.16s ease;
+}
+
+.user-menu-item:hover {
+  color: var(--primary);
+  background: #eef5ff;
+}
+
+.user-menu-item .um-ico,
+.user-menu-action .um-ico {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  color: #6b7280;
+}
+
+.user-menu-item:hover .um-ico {
+  color: var(--primary);
+}
+
+.user-menu-action .um-ico {
+  color: #ef4444;
+}
+
+.user-menu-item .um-ico svg,
+.user-menu-action .um-ico svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.user-menu-action {
+  width: 100%;
+  height: 40px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #ef4444;
+  background: #fff;
+  border: 0;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.16s ease;
+}
+
+.user-menu-action:hover {
+  background: #fef2f2;
+}
+
+/* ===========================================================
+ * 用户信息修改 / 密码修改 弹窗（admin 后台需要的最小弹窗集）
+ * =========================================================== */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(15, 23, 42, 0.28);
+}
+
+.modal {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 60;
+  width: 680px;
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 30px 70px rgba(15, 23, 42, 0.22);
+  transform: translate(-50%, -50%);
+}
+
+.modal.small {
+  width: 460px;
+}
+
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.modal-head h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.modal-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.close {
+  width: 32px;
+  height: 32px;
+  color: var(--muted);
+  background: #f3f4f6;
+  border: 0;
+  border-radius: 10px;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.modal-body {
+  overflow: auto;
+  padding: 20px 22px;
+}
+
+.modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 22px;
+  background: #fff;
+  border-top: 1px solid var(--line);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.form-grid .field {
+  margin-bottom: 0;
+}
+
+.form-grid .field.full {
+  grid-column: 1 / -1;
 }
