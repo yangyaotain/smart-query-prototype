@@ -1,3 +1,154 @@
 <!DOCTYPE html>
-<html lang="zh-CN"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>反馈处理详情</title><link rel="stylesheet" href="../../assets/css/theme.css"/><link rel="stylesheet" href="../../assets/css/admin.css"/></head>
-<body><div class="admin-shell"><aside class="admin-sidebar"><div class="admin-brand"><div class="logo">管</div><span>智能问数管理后台</span></div><nav class="admin-menu"><a href="data-source.html">数据源管理</a><a href="data-model.html">数据模型管理</a><a href="knowledge.html">知识库管理</a><a class="active" href="operation.html">运营管理</a><a href="theme.html">分析主题</a><a href="users.html">用户管理</a><a href="roles.html">角色管理</a></nav></aside><main class="admin-main"><header class="admin-topbar"><strong>反馈处理详情</strong><div class="toolbar"><button class="secondary-btn" onclick="goTo('operation.html')">返回运营管理</button><button class="primary-btn" onclick="goTo('operation.html')">提交修正</button></div></header><section class="admin-content"><div class="admin-two-col"><div class="admin-card"><div class="admin-card-head"><h2>原始问答</h2></div><div class="admin-card-body"><p><strong>用户问题：</strong>华东区销售额趋势如何？</p><p><strong>反馈类型：</strong>结论不合理</p><p><strong>用户说明：</strong>4月增长原因需要解释。</p><p><strong>原始结论：</strong>华东区销售额稳步增长。</p></div></div><div class="admin-card"><div class="admin-card-head"><h2>运营修正</h2></div><div class="admin-card-body"><div class="field"><label>修正结论</label><textarea>4月销售额增长显著，主要由线上渠道促销和重点客户订单释放驱动。</textarea></div><div class="field"><label>修正 SQL / 规则</label><textarea>补充按渠道和客户类型的归因拆解逻辑。</textarea></div><label><input type="checkbox" checked/> 同步到高频提问并沉淀到知识库</label></div></div></div></section></main></div><script src="../../assets/js/common.js"></script></body></html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>反馈管理 - 智能问数管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/admin.css" />
+  <link rel="stylesheet" href="../../assets/css/knowledge-indicator.css" />
+  <link rel="stylesheet" href="../../assets/css/knowledge-example.css" />
+  <link rel="stylesheet" href="../../assets/css/operation-feedback.css" />
+</head>
+<body>
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
+      <div class="admin-brand"><div class="logo">管</div><span>智能问数管理后台</span></div>
+      <nav class="admin-menu"></nav>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <strong>反馈管理</strong>
+        <div class="toolbar">
+          <button class="secondary-btn icon-btn" onclick="goTo('../business/smart-query.html')">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/>
+              <path d="M5.6 5.6l2.1 2.1"/><path d="M16.3 16.3l2.1 2.1"/>
+              <path d="M5.6 18.4l2.1-2.1"/><path d="M16.3 7.7l2.1-2.1"/>
+              <circle cx="12" cy="12" r="3.4"/>
+            </svg>
+            智能问数
+          </button>
+          <button class="user-trigger" type="button">
+            <div class="avatar">张</div><strong>张三</strong><span class="dropdown-arrow"></span>
+          </button>
+        </div>
+      </header>
+
+      <section class="admin-content of-page">
+        <div class="of-head">
+          <div>
+            <h1>反馈管理</h1>
+            <p>集中处理智能问数产生的问题反馈，支持修正 SQL、沉淀指标与回复用户。</p>
+          </div>
+          <div class="of-head-meta">
+            <span><strong id="ofPendingCount">0</strong> 待处理</span>
+            <span><strong id="ofProcessedCount">0</strong> 已处理</span>
+          </div>
+        </div>
+
+        <div class="of-panel">
+          <div class="of-tabs" role="tablist" aria-label="反馈状态">
+            <button type="button" class="of-tab is-active" data-tab="pending" role="tab" aria-selected="true">
+              待处理 <span id="ofPendingBadge">0</span>
+            </button>
+            <button type="button" class="of-tab" data-tab="processed" role="tab" aria-selected="false">
+              已处理 <span id="ofProcessedBadge">0</span>
+            </button>
+          </div>
+
+          <div class="of-filter" id="ofPendingFilter">
+            <div class="of-field">
+              <label>用户问题</label>
+              <input id="ofPendingQuestion" type="text" placeholder="输入用户问题关键词" />
+            </div>
+            <div class="of-field">
+              <label>反馈类型</label>
+              <select id="ofPendingType">
+                <option value="">全部类型</option>
+                <option value="数据不准确">数据不准确</option>
+                <option value="SQL 执行失败">SQL 执行失败</option>
+                <option value="结论不合理">结论不合理</option>
+                <option value="指标缺失">指标缺失</option>
+                <option value="图表不合适">图表不合适</option>
+              </select>
+            </div>
+            <div class="of-field">
+              <label>提出人</label>
+              <input id="ofPendingReporter" type="text" placeholder="输入姓名或部门" />
+            </div>
+            <div class="of-filter-actions">
+              <button type="button" class="ghost-btn" data-act="reset-filter">重置</button>
+              <button type="button" class="primary-btn" data-act="search">查询</button>
+            </div>
+          </div>
+
+          <div class="of-filter hidden" id="ofProcessedFilter">
+            <div class="of-field">
+              <label>用户问题</label>
+              <input id="ofProcessedQuestion" type="text" placeholder="输入用户问题关键词" />
+            </div>
+            <div class="of-field">
+              <label>反馈类型</label>
+              <select id="ofProcessedType">
+                <option value="">全部类型</option>
+                <option value="数据不准确">数据不准确</option>
+                <option value="SQL 执行失败">SQL 执行失败</option>
+                <option value="结论不合理">结论不合理</option>
+                <option value="指标缺失">指标缺失</option>
+                <option value="图表不合适">图表不合适</option>
+              </select>
+            </div>
+            <div class="of-field">
+              <label>处理结果</label>
+              <select id="ofProcessedResult">
+                <option value="">全部结果</option>
+                <option value="sql">修正 SQL</option>
+                <option value="metric">沉淀指标</option>
+                <option value="reply">回复用户</option>
+              </select>
+            </div>
+            <div class="of-field">
+              <label>提出人</label>
+              <input id="ofProcessedReporter" type="text" placeholder="输入姓名或部门" />
+            </div>
+            <div class="of-filter-actions">
+              <button type="button" class="ghost-btn" data-act="reset-filter">重置</button>
+              <button type="button" class="primary-btn" data-act="search">查询</button>
+            </div>
+          </div>
+
+          <div class="of-table-wrap">
+            <table class="of-table" id="ofTable">
+              <thead id="ofThead"></thead>
+              <tbody id="ofTbody"></tbody>
+            </table>
+          </div>
+          <div class="ki-pager of-pager" id="ofPager"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="ki-drawer-mask hidden" id="ofDrawerMask"></div>
+  <aside class="ki-drawer of-drawer hidden" id="ofDrawer" aria-hidden="true">
+    <div class="ki-drawer-resize" id="ofDrawerResize" title="拖动调整宽度"></div>
+    <header class="ki-drawer-head">
+      <div class="ki-drawer-title">
+        <h3 id="ofDrawerTitle">反馈处理</h3>
+        <p id="ofDrawerSubtitle">处理用户反馈并沉淀运营动作</p>
+      </div>
+      <div class="ki-drawer-head-actions">
+        <span class="ki-mode-chip" id="ofDrawerChip">处理模式</span>
+        <button type="button" class="ki-drawer-close" data-act="close-drawer" aria-label="关闭">×</button>
+      </div>
+    </header>
+    <div class="ki-drawer-body" id="ofDrawerBody"></div>
+    <footer class="ki-drawer-foot" id="ofDrawerFoot"></footer>
+  </aside>
+
+  <script src="../../assets/js/common.js"></script>
+  <script src="../../assets/js/operation-feedback.js"></script>
+</body>
+</html>

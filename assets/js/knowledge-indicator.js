@@ -8,12 +8,38 @@
   'use strict';
 
   // ---------- 1) Mock 字典 ----------
-  var DATA_SOURCES = [
-    { id: 'ds_metric',   name: '守正指标库',   type: 'MySQL' },
-    { id: 'ds_sales',    name: '销售业务库',   type: 'MySQL' },
-    { id: 'ds_cdw',      name: '客户数据仓库', type: 'TiDB' },
-    { id: 'ds_finance',  name: '财务核算库',   type: 'Oracle' }
+  var DATA_SOURCE_TREE = [
+    {
+      id: 'd_sales', name: '销售域', children: [
+        { id: 'ds_sales', name: '销售业务库', type: 'MySQL' },
+        { id: 'ds_order_svc', name: '订单服务库', type: 'MySQL' }
+      ]
+    },
+    {
+      id: 'd_customer', name: '客户域', children: [
+        { id: 'ds_cdw', name: '客户数据仓库', type: 'PostgreSQL' },
+        { id: 'ds_crm', name: 'CRM 业务库', type: 'PostgreSQL' }
+      ]
+    },
+    {
+      id: 'd_inventory', name: '库存域', children: [
+        { id: 'ds_inventory', name: '库存分析库', type: 'Oracle' }
+      ]
+    },
+    {
+      id: 'd_finance', name: '财务域', children: [
+        { id: 'ds_finance', name: '财务核算库', type: 'SQLServer' }
+      ]
+    },
+    {
+      id: 'd_ops', name: '运营域', children: [
+        { id: 'ds_realtime', name: '实时分析库', type: 'ClickHouse' },
+        { id: 'ds_metric', name: '运营指标库', type: 'ClickHouse' }
+      ]
+    }
   ];
+
+  var DATA_SOURCES = flattenSourceTree();
 
   // 物理表（按数据源分组）
   var TABLES_BY_SRC = {
@@ -26,8 +52,12 @@
       'ecommerce_trade_detail'
     ],
     ds_sales: ['sales_order', 'sales_order_item', 'customer', 'product', 'channel'],
+    ds_order_svc: ['order_pay', 'order_refund', 'pay_channel_dim'],
     ds_cdw: ['customer_master', 'customer_tag', 'customer_segment'],
-    ds_finance: ['ar_master', 'ap_master', 'gl_detail']
+    ds_crm: ['crm_lead', 'crm_account', 'crm_activity'],
+    ds_inventory: ['inventory_log', 'inventory_snapshot', 'warehouse_dim', 'sku_dim'],
+    ds_finance: ['ar_master', 'ap_master', 'gl_detail'],
+    ds_realtime: ['event_track', 'page_view_daily', 'campaign_dim']
   };
 
   // 物理字段（按表）
@@ -60,7 +90,20 @@
     customer_segment: ['customer_id', 'segment'],
     ar_master: ['ar_id', 'amount', 'due_date'],
     ap_master: ['ap_id', 'amount', 'due_date'],
-    gl_detail: ['account_id', 'amount', 'period']
+    gl_detail: ['account_id', 'amount', 'period'],
+    order_pay: ['pay_id', 'order_id', 'pay_amount', 'pay_time', 'pay_channel'],
+    order_refund: ['refund_id', 'order_id', 'refund_amount', 'refund_time'],
+    pay_channel_dim: ['channel_id', 'channel_name', 'channel_type'],
+    crm_lead: ['lead_id', 'source', 'owner_id', 'created_at'],
+    crm_account: ['account_id', 'account_name', 'industry', 'region'],
+    crm_activity: ['activity_id', 'account_id', 'activity_type', 'activity_time'],
+    inventory_log: ['log_id', 'sku_id', 'warehouse_id', 'qty', 'created_time'],
+    inventory_snapshot: ['sku_id', 'warehouse_id', 'stock_qty', 'snapshot_date'],
+    warehouse_dim: ['warehouse_id', 'warehouse_name', 'city'],
+    sku_dim: ['sku_id', 'sku_name', 'category'],
+    event_track: ['event_id', 'user_id', 'event_name', 'event_time'],
+    page_view_daily: ['page_id', 'visit_count', 'biz_date'],
+    campaign_dim: ['campaign_id', 'campaign_name', 'start_date']
   };
 
   var AGG_OPTIONS = ['SUM', 'COUNT', 'COUNT_DISTINCT', 'AVG', 'MAX', 'MIN'];
@@ -250,6 +293,33 @@
   }
   function uid(p) { return p + '_' + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-3); }
 
+  function flattenSourceTree() {
+    var arr = [];
+    DATA_SOURCE_TREE.forEach(function (domain) {
+      (domain.children || []).forEach(function (source) {
+        arr.push({
+          id: source.id,
+          name: source.name,
+          type: source.type,
+          domainId: domain.id,
+          domainName: domain.name
+        });
+      });
+    });
+    return arr;
+  }
+
+  function findSourceInTree(id) {
+    for (var i = 0; i < DATA_SOURCE_TREE.length; i++) {
+      var domain = DATA_SOURCE_TREE[i];
+      var sources = domain.children || [];
+      for (var j = 0; j < sources.length; j++) {
+        if (sources[j].id === id) return { domain: domain, source: sources[j] };
+      }
+    }
+    return null;
+  }
+
   function findGroupById(id) {
     for (var i = 0; i < TREE.length; i++) {
       if (TREE[i].id === id) return { parent: null, group: TREE[i], path: [TREE[i]] };
@@ -269,6 +339,10 @@
   function dsName(id) {
     for (var i = 0; i < DATA_SOURCES.length; i++) if (DATA_SOURCES[i].id === id) return DATA_SOURCES[i].name;
     return '';
+  }
+  function dsPathName(id) {
+    var found = findSourceInTree(id);
+    return found ? (found.domain.name + ' / ' + found.source.name) : dsName(id);
   }
   function typeLabel(t) { return t === 'atom' ? '原子指标' : t === 'derived' ? '衍生指标' : '维度'; }
   function typeAbbr(t)  { return t === 'atom' ? '原' : t === 'derived' ? '衍' : '维'; }
@@ -425,7 +499,7 @@
         +     '<div class="ki-name">'
         +       '<span class="ki-name-ico is-' + typeKey + '">' + typeAbbr(typeKey) + '</span>'
         +       '<div class="ki-name-text">'
-        +         '<strong>' + escapeHTML(it.name) + '</strong>'
+        +         '<button type="button" class="ki-name-title" data-act="view" title="查看指标详情">' + escapeHTML(it.name) + '</button>'
         +         '<span>' + escapeHTML(dsName(it.srcId)) + '</span>'
         +       '</div>'
         +     '</div>'
@@ -682,10 +756,49 @@
   }
 
   // ---------- 8b) 抽屉 - 表单模式 HTML ----------
-  function srcOptions(selectedId) {
-    return DATA_SOURCES.map(function (s) {
-      return '<option value="' + escapeHTML(s.id) + '"' + (s.id === selectedId ? ' selected' : '') + '>' + escapeHTML(s.name) + '</option>';
+  function sourceTreeHTML(selectedId) {
+    return DATA_SOURCE_TREE.map(function (domain) {
+      var sources = domain.children || [];
+      var hasSelected = sources.some(function (s) { return s.id === selectedId; });
+      var sourceHTML = sources.map(function (s) {
+        var active = s.id === selectedId ? ' is-active' : '';
+        return ''
+          + '<div class="ki-source-tree-node is-leaf">'
+          +   '<button type="button" class="ki-source-tree-row' + active + '" data-src-id="' + escapeHTML(s.id) + '">'
+          +     '<span class="ki-source-tree-toggle is-empty"></span>'
+          +     '<span class="ki-source-tree-icon is-source">'
+          +       '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5V12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V5.5"/><path d="M5 12v6.5c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V12"/></svg>'
+          +     '</span>'
+          +     '<span class="ki-source-tree-name">' + escapeHTML(s.name) + '</span>'
+          +     '<span class="ki-source-tree-meta">' + escapeHTML(s.type || '') + '</span>'
+          +   '</button>'
+          + '</div>';
+      }).join('');
+      return ''
+        + '<div class="ki-source-tree-node' + (hasSelected ? '' : ' is-collapsed') + '" data-domain-id="' + escapeHTML(domain.id) + '">'
+        +   '<button type="button" class="ki-source-tree-row is-domain" data-domain-id="' + escapeHTML(domain.id) + '">'
+        +     '<span class="ki-source-tree-toggle"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>'
+        +     '<span class="ki-source-tree-icon">'
+        +       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7l8-4 8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4"/><path d="M4 17l8 4 8-4"/></svg>'
+        +     '</span>'
+        +     '<span class="ki-source-tree-name">' + escapeHTML(domain.name) + '</span>'
+        +     '<span class="ki-source-tree-meta">' + sources.length + '</span>'
+        +   '</button>'
+        +   '<div class="ki-source-tree-children">' + sourceHTML + '</div>'
+        + '</div>';
     }).join('');
+  }
+
+  function sourcePickerHTML(selectedId) {
+    var label = dsPathName(selectedId);
+    return ''
+      + '<div class="ki-source-picker" data-role="source-picker">'
+      +   '<button type="button" class="ki-source-picker-btn" data-act="toggle-source-tree" aria-haspopup="tree" aria-expanded="false">'
+      +     '<span class="ki-source-picker-text' + (label ? '' : ' is-placeholder') + '">' + escapeHTML(label || '请选择数据源') + '</span>'
+      +     '<span class="ki-source-picker-arrow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>'
+      +   '</button>'
+      +   '<div class="ki-source-tree-pop" role="tree">' + sourceTreeHTML(selectedId) + '</div>'
+      + '</div>';
   }
 
   function tableOptions(srcId, selected) {
@@ -726,7 +839,7 @@
     var common = ''
       + '<div class="ki-form-row">'
       +   '<label class="ki-form-label">数据源</label>'
-      +   '<select class="ki-select-form" data-bind="srcId">' + srcOptions(d.srcId) + '</select>'
+      +   sourcePickerHTML(d.srcId)
       + '</div>'
       + '<div class="ki-form-grid">'
       +   '<div class="ki-form-row">'
@@ -886,6 +999,52 @@
     });
 
     drawer.addEventListener('click', function (e) {
+      var sourceBtn = e.target.closest && e.target.closest('[data-act="toggle-source-tree"]');
+      if (sourceBtn) {
+        e.stopPropagation();
+        var sourceWrap = sourceBtn.closest('.ki-source-picker');
+        $$('.ki-source-picker.is-open', drawer).forEach(function (el) {
+          if (el !== sourceWrap) el.classList.remove('is-open');
+        });
+        if (sourceWrap) {
+          var isOpen = !sourceWrap.classList.contains('is-open');
+          sourceWrap.classList.toggle('is-open', isOpen);
+          sourceBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        }
+        return;
+      }
+
+      var sourceToggle = e.target.closest && e.target.closest('.ki-source-tree-row.is-domain, .ki-source-tree-toggle');
+      if (sourceToggle) {
+        var domainRow = e.target.closest('.ki-source-tree-row.is-domain');
+        if (domainRow) {
+          e.stopPropagation();
+          var domainNode = domainRow.closest('.ki-source-tree-node');
+          if (domainNode) domainNode.classList.toggle('is-collapsed');
+          return;
+        }
+      }
+
+      var sourceRow = e.target.closest && e.target.closest('.ki-source-tree-row[data-src-id]');
+      if (sourceRow && state.drawer.draft) {
+        e.stopPropagation();
+        var nextSrcId = sourceRow.getAttribute('data-src-id');
+        var dft = state.drawer.draft;
+        if (dft.srcId !== nextSrcId) {
+          dft.srcId = nextSrcId;
+          dft.table = '';
+          dft.field = '';
+          dft.timeField = '';
+          dft.mappings = (dft.mappings || []).map(function () { return { table: '', field: '' }; });
+        }
+        renderDrawer();
+        return;
+      }
+
+      if (!(e.target.closest && e.target.closest('.ki-source-picker'))) {
+        $$('.ki-source-picker.is-open', drawer).forEach(function (el) { el.classList.remove('is-open'); });
+      }
+
       var act = e.target.closest && e.target.closest('[data-act]');
       if (act) {
         var role = act.getAttribute('data-act');
@@ -1157,49 +1316,47 @@
     });
   }
 
-  // ---------- 10) 名称输入弹窗（新增/重命名目录） ----------
-  var nameCb = null;
-  function showNameModal(opts) {
-    opts = opts || {};
-    $('#kiNameTitle').textContent = opts.title || '新增目录';
-    $('#kiNameSubtitle').textContent = opts.subtitle || '目录名称用于在指标库中分组管理。';
-    $('#kiNameInput').value = opts.value || '';
-    $('#kiNameHint').textContent = opts.hint || '不超过 30 字';
-    $('#kiNameMask').classList.remove('hidden');
-    $('#kiNameModal').classList.remove('hidden');
-    nameCb = opts.onOk || null;
-    setTimeout(function () { var i = $('#kiNameInput'); if (i) { i.focus(); i.select(); } }, 60);
+  // ---------- 10) 目录行内编辑（新增/重命名目录） ----------
+  function getTreeRow(gid) {
+    var tree = $('#kiTree');
+    if (!tree) return null;
+    var rows = $$('.ki-tree-row', tree);
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].getAttribute('data-gid') === gid) return rows[i];
+    }
+    return null;
   }
-  function closeNameModal() {
-    $('#kiNameMask').classList.add('hidden');
-    $('#kiNameModal').classList.add('hidden');
-    nameCb = null;
-  }
-  function bindNameModal() {
-    var modal = $('#kiNameModal');
-    var mask = $('#kiNameMask');
-    if (!modal) return;
-    if (mask) mask.addEventListener('click', closeNameModal);
-    modal.addEventListener('click', function (e) {
-      var act = e.target.closest && e.target.closest('[data-act]');
-      if (!act) return;
-      if (act.getAttribute('data-act') === 'cancel') closeNameModal();
-      else {
-        var v = ($('#kiNameInput').value || '').trim();
-        if (!v) { if (typeof showToast === 'function') showToast('请输入目录名称'); return; }
-        if (v.length > 30) { if (typeof showToast === 'function') showToast('目录名称不超过 30 字'); return; }
-        var cb = nameCb; closeNameModal();
-        if (typeof cb === 'function') cb(v);
-      }
+
+  function enterTreeEdit(labelEl, initial, onCommit) {
+    if (!labelEl) return;
+    var original = labelEl.textContent;
+    var input = document.createElement('input');
+    input.className = 'ki-tree-edit-input';
+    input.value = initial || original || '';
+    input.maxLength = 30;
+    labelEl.textContent = '';
+    labelEl.appendChild(input);
+    setTimeout(function () { input.focus(); input.select(); }, 0);
+
+    var finished = false;
+    function finish(commit) {
+      if (finished) return;
+      finished = true;
+      var v = (input.value || '').trim();
+      var ok = commit && !!v;
+      var next = ok ? v : original;
+      if (input.parentElement) input.parentElement.removeChild(input);
+      labelEl.textContent = next;
+      if (typeof onCommit === 'function') onCommit(next, ok);
+    }
+
+    input.addEventListener('blur', function () { finish(true); });
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+      else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
     });
-    $('#kiNameInput').addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') {
-        var v = ($('#kiNameInput').value || '').trim();
-        if (!v) { if (typeof showToast === 'function') showToast('请输入目录名称'); return; }
-        var cb = nameCb; closeNameModal();
-        if (typeof cb === 'function') cb(v);
-      }
-    });
+    input.addEventListener('click', function (e) { e.stopPropagation(); });
+    input.addEventListener('contextmenu', function (e) { e.stopPropagation(); });
   }
 
   // ---------- 11) 右键菜单 ----------
@@ -1222,7 +1379,10 @@
       } else {
         state.ctx = { type: row.getAttribute('data-parent') ? 'child' : 'parent', groupId: gid };
         selectGroup(gid);
+        row = getTreeRow(gid) || row;
       }
+      $$('.ki-tree-row.context-active', tree).forEach(function (el) { el.classList.remove('context-active'); });
+      row.classList.add('context-active');
       var x = e.clientX, y = e.clientY;
       menu.classList.remove('hidden');
       var vw = window.innerWidth, vh = window.innerHeight;
@@ -1232,30 +1392,37 @@
       // 调整菜单可用项
       var allowDelete = state.ctx.type !== 'root';
       var allowRename = state.ctx.type !== 'root';
+      var allowNew = state.ctx.type !== 'child';
       $$('.ki-ctx-item', menu).forEach(function (b) {
         var act = b.getAttribute('data-act');
         var enabled = true;
         if (act === 'delete') enabled = allowDelete;
         else if (act === 'rename') enabled = allowRename;
+        else if (act === 'new') enabled = allowNew;
         b.disabled = !enabled;
         b.style.opacity = enabled ? '' : '.45';
         b.style.cursor = enabled ? '' : 'not-allowed';
       });
     });
 
+    function hideMenu() {
+      menu.classList.add('hidden');
+      $$('.ki-tree-row.context-active', tree).forEach(function (el) { el.classList.remove('context-active'); });
+    }
+
     document.addEventListener('click', function (e) {
-      if (!menu.contains(e.target)) menu.classList.add('hidden');
+      if (!menu.contains(e.target)) hideMenu();
     });
-    window.addEventListener('blur', function () { menu.classList.add('hidden'); });
-    window.addEventListener('resize', function () { menu.classList.add('hidden'); });
+    window.addEventListener('blur', hideMenu);
+    window.addEventListener('resize', hideMenu);
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') menu.classList.add('hidden');
+      if (e.key === 'Escape') hideMenu();
     });
 
     menu.addEventListener('click', function (e) {
       var btn = e.target.closest && e.target.closest('.ki-ctx-item');
       if (!btn || btn.disabled) return;
-      menu.classList.add('hidden');
+      hideMenu();
       var act = btn.getAttribute('data-act');
       if (act === 'new') addGroup(state.ctx.type === 'root' ? null : state.ctx.groupId);
       else if (act === 'rename') renameGroup(state.ctx.groupId);
@@ -1264,43 +1431,66 @@
   }
 
   function addGroup(parentId) {
-    var subtitle, isRoot = !parentId;
-    showNameModal({
-      title: isRoot ? '新增一级目录' : '新增子目录',
-      subtitle: isRoot ? '在指标目录顶层新增一级分组。' : '在所选目录下新增子分组。',
-      value: '',
-      onOk: function (name) {
-        if (isRoot) {
-          TREE.push({ id: uid('g'), name: name, expanded: true, children: [] });
-        } else {
-          var info = findGroupById(parentId);
-          if (!info || info.parent) {
-            // 二级不能再加子级
-            if (typeof showToast === 'function') showToast('当前目录不允许新增子级');
-            return;
-          }
-          info.group.children = info.group.children || [];
-          info.group.children.push({ id: uid('g'), name: name });
-          info.group.expanded = true;
-        }
-        renderTree();
-        if (typeof showToast === 'function') showToast('已新增：' + name);
+    var isRoot = !parentId;
+    var id = uid('g');
+    var draftName = isRoot ? '新建目录' : '新建子目录';
+
+    if (isRoot) {
+      TREE.push({ id: id, name: draftName, expanded: true, children: [] });
+    } else {
+      var info = findGroupById(parentId);
+      if (!info || info.parent) {
+        if (typeof showToast === 'function') showToast('当前目录不允许新增子级');
+        return;
       }
+      info.group.children = info.group.children || [];
+      info.group.children.push({ id: id, name: draftName });
+      info.group.expanded = true;
+    }
+
+    state.activeGroupId = id;
+    renderTree();
+    renderBread();
+    renderList();
+
+    var row = getTreeRow(id);
+    var label = row ? row.querySelector('.ki-tr-name') : null;
+    enterTreeEdit(label, draftName, function (name, ok) {
+      if (!ok || !name) {
+        if (isRoot) {
+          TREE = TREE.filter(function (g) { return g.id !== id; });
+        } else {
+          var p = findGroupById(parentId);
+          if (p) p.group.children = (p.group.children || []).filter(function (c) { return c.id !== id; });
+        }
+        state.activeGroupId = isRoot ? '__all__' : parentId;
+        renderTree();
+        renderBread();
+        renderList();
+        return;
+      }
+      var created = findGroupById(id);
+      if (created) created.group.name = name;
+      renderTree();
+      renderBread();
+      renderList();
+      if (typeof showToast === 'function') showToast('已新增：' + name);
     });
   }
 
   function renameGroup(gid) {
     var info = findGroupById(gid); if (!info) return;
-    showNameModal({
-      title: '重命名目录',
-      subtitle: '修改目录名称（不影响其下指标的归属）。',
-      value: info.group.name,
-      onOk: function (name) {
-        info.group.name = name;
+    var row = getTreeRow(gid);
+    var label = row ? row.querySelector('.ki-tr-name') : null;
+    enterTreeEdit(label, info.group.name, function (name, ok) {
+      if (!ok || !name) {
         renderTree();
-        renderBread();
-        if (typeof showToast === 'function') showToast('已重命名为：' + name);
+        return;
       }
+      info.group.name = name;
+      renderTree();
+      renderBread();
+      if (typeof showToast === 'function') showToast('已重命名为：' + name);
     });
   }
 
@@ -1311,7 +1501,7 @@
       if (it.groupId === gid) return true;
       // 一级：检查所有子级
       if (!info.parent) {
-        return (info.group.children || []).some(function (c) { return c.groupId === it.groupId; });
+        return (info.group.children || []).some(function (c) { return c.id === it.groupId; });
       }
       return false;
     }).length;
@@ -1470,7 +1660,6 @@
     bindContextMenu();
     bindDrawer();
     bindConfirm();
-    bindNameModal();
   });
 
   // 控制台调试

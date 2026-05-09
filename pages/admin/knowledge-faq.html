@@ -1,3 +1,1510 @@
 <!DOCTYPE html>
-<html lang="zh-CN"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>高频提问管理</title><link rel="stylesheet" href="../../assets/css/theme.css"/><link rel="stylesheet" href="../../assets/css/admin.css"/></head>
-<body><div class="admin-shell"><aside class="admin-sidebar"><div class="admin-brand"><div class="logo">管</div><span>智能问数管理后台</span></div><nav class="admin-menu"><a href="data-source.html">数据源管理</a><a href="data-model.html">数据模型管理</a><a class="active" href="knowledge.html">知识库管理</a><a href="operation.html">运营管理</a><a href="theme.html">分析主题</a><a href="users.html">用户管理</a><a href="roles.html">角色管理</a></nav></aside><main class="admin-main"><header class="admin-topbar"><strong>高频提问</strong><div class="toolbar"><button class="secondary-btn" onclick="goTo('knowledge.html')">返回知识库</button></div></header><section class="admin-content"><div class="admin-card"><div class="admin-card-head"><h2>高频问题清单</h2><button class="primary-btn" onclick="goTo('knowledge-indicator.html')">转为指标</button></div><div class="admin-card-body"><table class="data-table"><thead><tr><th>问题</th><th>频次</th><th>命中率</th><th>建议动作</th></tr></thead><tbody><tr><td>销售目标完成率怎么看？</td><td>128</td><td>95%</td><td><a href="knowledge-indicator.html">转衍生指标</a></td></tr><tr><td>库存周转天数是什么？</td><td>72</td><td>91%</td><td><a href="knowledge-sql.html">转标准问答</a></td></tr><tr><td>客户复购率下降原因？</td><td>58</td><td>86%</td><td><a href="theme-edit.html">转归因模板</a></td></tr></tbody></table></div></div></section></main></div><script src="../../assets/js/common.js"></script></body></html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>行业知识 - 智能问数管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/admin.css" />
+  <style>
+    .ik-page {
+      height: 100%;
+      padding: 0 !important;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    .ik-layout {
+      height: 100%;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 272px 1fr;
+      gap: 16px;
+      padding: 16px;
+    }
+
+    .ik-sidebar,
+    .ik-card,
+    .ik-topbar {
+      background: #fff;
+      border: 1px solid #eef2f7;
+      border-radius: 14px;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .ik-sidebar {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .ik-side-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 14px 8px;
+    }
+
+    .ik-side-head h3 {
+      margin: 0;
+      color: #0f172a;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .ik-side-head h3::before {
+      content: "";
+      display: inline-block;
+      width: 3px;
+      height: 14px;
+      margin-right: 7px;
+      vertical-align: -2px;
+      background: var(--primary);
+      border-radius: 2px;
+    }
+
+    .ik-icon-add {
+      width: 28px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      background: var(--primary);
+      border: 0;
+      border-radius: 8px;
+      box-shadow: 0 6px 14px rgba(22, 119, 255, .24);
+    }
+
+    .ik-icon-add svg,
+    .ik-btn svg,
+    .ik-action svg,
+    .ik-search svg,
+    .ik-bread-ico svg,
+    .ik-ctx-item svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .ik-search {
+      position: relative;
+      margin: 4px 14px 8px;
+    }
+
+    .ik-search svg {
+      position: absolute;
+      left: 9px;
+      top: 50%;
+      color: #9aa3b2;
+      transform: translateY(-50%);
+    }
+
+    .ik-search input {
+      width: 100%;
+      height: 32px;
+      padding: 0 10px 0 30px;
+      color: #334155;
+      background: #f4f6fb;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      outline: none;
+      font-size: 12.5px;
+    }
+
+    .ik-search input:focus,
+    .ik-field input:focus,
+    .ik-field textarea:focus,
+    .ik-select:focus {
+      background: #fff;
+      border-color: #bfdbfe;
+      box-shadow: 0 0 0 3px rgba(22, 119, 255, .08);
+    }
+
+    .ik-tree {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 4px 8px 8px;
+    }
+
+    .ik-tree-group {
+      margin-bottom: 2px;
+    }
+
+    .ik-tree-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      height: 34px;
+      padding: 0 8px;
+      color: #334155;
+      border-radius: 8px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 13px;
+      transition: background-color .14s, color .14s;
+    }
+
+    .ik-tree-row:hover {
+      color: var(--primary);
+      background: #f4f8ff;
+    }
+
+    .ik-tree-row.is-active {
+      color: var(--primary);
+      background: linear-gradient(90deg, #eaf3ff 0%, #f8fbff 100%);
+      font-weight: 800;
+    }
+
+    .ik-tree-row.is-context {
+      color: var(--primary);
+      background: #eaf3ff;
+      box-shadow: inset 0 0 0 1px #bfdbfe;
+    }
+
+    .ik-tree-toggle {
+      width: 14px;
+      height: 14px;
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      transition: transform .18s;
+    }
+
+    .ik-tree-toggle svg {
+      width: 10px;
+      height: 10px;
+      fill: currentColor;
+    }
+
+    .ik-tree-group.is-collapsed > .ik-tree-row .ik-tree-toggle {
+      transform: rotate(-90deg);
+    }
+
+    .ik-tree-toggle.is-empty {
+      visibility: hidden;
+    }
+
+    .ik-tree-name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .ik-tree-count {
+      flex: 0 0 auto;
+      height: 18px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 7px;
+      color: #6b7280;
+      background: #f1f5f9;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .ik-tree-row.is-active .ik-tree-count {
+      color: var(--primary);
+      background: #dbeafe;
+    }
+
+    .ik-tree-children {
+      margin: 2px 0 6px 12px;
+      padding-left: 10px;
+      border-left: 1px dashed #d6dde6;
+    }
+
+    .ik-tree-group.is-collapsed > .ik-tree-children {
+      display: none;
+    }
+
+    .ik-tree-children .ik-tree-row {
+      position: relative;
+      height: 32px;
+      padding-left: 16px;
+      font-size: 12.5px;
+      font-weight: 500;
+    }
+
+    .ik-tree-children .ik-tree-row::before {
+      content: "";
+      position: absolute;
+      left: 5px;
+      top: 50%;
+      width: 6px;
+      height: 6px;
+      margin-top: -3px;
+      background: #cbd5e1;
+      border-radius: 50%;
+    }
+
+    .ik-tree-children .ik-tree-row.is-active::before,
+    .ik-tree-children .ik-tree-row:hover::before {
+      background: var(--primary);
+    }
+
+    .ik-side-tip {
+      padding: 10px 14px 12px;
+      color: #94a3b8;
+      border-top: 1px solid #f1f5f9;
+      font-size: 11.5px;
+    }
+
+    .ik-main {
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .ik-topbar {
+      flex: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 18px;
+    }
+
+    .ik-bread {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      color: #0f172a;
+      font-size: 14px;
+    }
+
+    .ik-bread-ico {
+      width: 28px;
+      height: 28px;
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      background: #eef4ff;
+      border-radius: 8px;
+    }
+
+    .ik-bread strong {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 800;
+    }
+
+    .ik-count {
+      height: 20px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 8px;
+      color: var(--primary);
+      background: #eaf3ff;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 800;
+    }
+
+    .ik-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .ik-card {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .ik-filter {
+      display: grid;
+      grid-template-columns: minmax(180px, 1.1fr) minmax(160px, .9fr) 150px auto auto;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid #eef2f7;
+    }
+
+    .ik-filter .ik-search {
+      margin: 0;
+    }
+
+    .ik-select,
+    .ik-field input,
+    .ik-field textarea {
+      width: 100%;
+      color: #334155;
+      background: #f4f6fb;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      outline: none;
+      font-size: 13px;
+    }
+
+    .ik-select {
+      height: 34px;
+      padding: 0 30px 0 12px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      background-size: 14px 14px;
+      appearance: none;
+    }
+
+    .ik-tablewrap {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+    }
+
+    .ik-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 13px;
+    }
+
+    .ik-table th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      padding: 10px 14px;
+      color: #475569;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: left;
+      font-size: 12.5px;
+      font-weight: 800;
+    }
+
+    .ik-table td {
+      padding: 12px 14px;
+      color: #334155;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+    }
+
+    .ik-table tbody tr:hover td {
+      background: #f8fbff;
+    }
+
+    .ik-title {
+      display: block;
+      max-width: 100%;
+      color: #0f172a;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 800;
+    }
+
+    .ik-muted {
+      display: block;
+      max-width: 100%;
+      color: #64748b;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 12.5px;
+    }
+
+    .ik-desc {
+      display: -webkit-box;
+      max-height: 40px;
+      color: #64748b;
+      overflow: hidden;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      line-height: 1.55;
+      font-size: 12.5px;
+    }
+
+    .ik-switch {
+      position: relative;
+      width: 42px;
+      height: 22px;
+      display: inline-flex;
+      align-items: center;
+      background: #cbd5e1;
+      border: 0;
+      border-radius: 999px;
+      vertical-align: middle;
+      transition: background-color .18s;
+    }
+
+    .ik-switch::before {
+      content: "";
+      position: absolute;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      background: #fff;
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, .18);
+      transition: transform .18s;
+    }
+
+    .ik-switch.is-on {
+      background: #22c55e;
+    }
+
+    .ik-switch.is-on::before {
+      transform: translateX(20px);
+    }
+
+    .ik-status-text {
+      margin-left: 8px;
+      color: #64748b;
+      font-size: 12px;
+      vertical-align: middle;
+    }
+
+    .ik-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .ik-action {
+      width: 28px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      background: transparent;
+      border: 0;
+      border-radius: 6px;
+      transition: background-color .14s, color .14s;
+    }
+
+    .ik-action:hover {
+      color: var(--primary);
+      background: #f4f8ff;
+    }
+
+    .ik-action.is-danger:hover {
+      color: #ef4444;
+      background: #fef2f2;
+    }
+
+    .ik-empty {
+      padding: 44px 16px;
+      color: #94a3b8;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    .ik-pager {
+      flex: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 16px;
+      color: #64748b;
+      border-top: 1px solid #eef2f7;
+      font-size: 12.5px;
+    }
+
+    .ik-pager strong {
+      color: #0f172a;
+    }
+
+    .ik-pg-buttons {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .ik-pg-buttons button {
+      min-width: 28px;
+      height: 28px;
+      padding: 0 9px;
+      color: #475569;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 12.5px;
+    }
+
+    .ik-pg-buttons button:hover:not(:disabled) {
+      color: var(--primary);
+      background: #f4f8ff;
+      border-color: #bfdbfe;
+    }
+
+    .ik-pg-buttons button.is-current {
+      color: #fff;
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .ik-pg-buttons button:disabled {
+      cursor: not-allowed;
+      opacity: .52;
+    }
+
+    .ik-ctx {
+      position: fixed;
+      z-index: 80;
+      min-width: 156px;
+      padding: 4px;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, .18);
+    }
+
+    .ik-ctx-item {
+      width: 100%;
+      height: 32px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      color: #334155;
+      background: transparent;
+      border: 0;
+      border-radius: 6px;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    .ik-ctx-item:hover {
+      color: var(--primary);
+      background: #f4f8ff;
+    }
+
+    .ik-ctx-item.is-danger {
+      color: #ef4444;
+    }
+
+    .ik-ctx-item.is-danger:hover {
+      background: #fef2f2;
+    }
+
+    .ik-ctx-sep {
+      height: 1px;
+      margin: 4px 6px;
+      background: #f1f5f9;
+    }
+
+    .ik-modal {
+      width: 640px;
+      border-radius: 16px;
+    }
+
+    .ik-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .ik-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .ik-field.is-full {
+      grid-column: 1 / -1;
+    }
+
+    .ik-field label {
+      color: #334155;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .ik-field input {
+      height: 36px;
+      padding: 0 11px;
+    }
+
+    .ik-field textarea {
+      min-height: 92px;
+      padding: 9px 11px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    .ik-form-switch {
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    #ikEditModal .ik-field input,
+    #ikEditModal .ik-field textarea {
+      background: #fff;
+      border-color: #cbd5e1;
+    }
+
+    .ik-view {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 10px 14px;
+      margin: 0;
+      color: #334155;
+      line-height: 1.7;
+      font-size: 13px;
+    }
+
+    .ik-view dt {
+      color: #64748b;
+      font-weight: 800;
+    }
+
+    .ik-view dd {
+      margin: 0;
+    }
+
+    @media (max-width: 1100px) {
+      .ik-layout {
+        grid-template-columns: 240px 1fr;
+        padding: 12px;
+      }
+
+      .ik-filter {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
+      <div class="admin-brand"><div class="logo">管</div><span>智能问数管理后台</span></div>
+      <nav class="admin-menu"></nav>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <strong>行业知识</strong>
+        <div class="toolbar">
+          <button class="secondary-btn icon-btn" onclick="goTo('../business/smart-query.html')">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/>
+              <path d="M5.6 5.6l2.1 2.1"/><path d="M16.3 16.3l2.1 2.1"/>
+              <path d="M5.6 18.4l2.1-2.1"/><path d="M16.3 7.7l2.1-2.1"/>
+              <circle cx="12" cy="12" r="3.4"/>
+            </svg>
+            智能问数
+          </button>
+          <button class="user-trigger" type="button">
+            <div class="avatar">张</div><strong>张三</strong><span class="dropdown-arrow"></span>
+          </button>
+        </div>
+      </header>
+
+      <section class="admin-content ik-page">
+        <div class="ik-layout">
+          <aside class="ik-sidebar">
+            <div class="ik-side-head">
+              <h3>行业目录</h3>
+              <button type="button" class="ik-icon-add" id="ikBtnNewRoot" title="新增一级目录">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+              </button>
+            </div>
+            <div class="ik-search">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+              <input type="text" id="ikTreeSearch" placeholder="搜索目录" />
+            </div>
+            <div class="ik-tree" id="ikTree"></div>
+            <div class="ik-side-tip">右键目录可新增、重命名、删除子目录。</div>
+          </aside>
+
+          <div class="ik-main">
+            <div class="ik-topbar">
+              <div class="ik-bread">
+                <span class="ik-bread-ico">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h11v16H6a2 2 0 0 0-2 2V5z"/><path d="M8 8h6"/><path d="M8 12h5"/></svg>
+                </span>
+                <strong id="ikBreadText">全部行业知识</strong>
+                <span class="ik-count" id="ikBreadCount">0</span>
+              </div>
+              <button type="button" class="primary-btn ik-btn" id="ikBtnNew">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                新增知识
+              </button>
+            </div>
+
+            <div class="ik-card">
+              <div class="ik-filter">
+                <div class="ik-search">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                  <input type="text" id="ikBusinessQuery" placeholder="业务定义" />
+                </div>
+                <div class="ik-search">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                  <input type="text" id="ikSynonymQuery" placeholder="同义词" />
+                </div>
+                <select class="ik-select" id="ikStatusQuery">
+                  <option value="">全部状态</option>
+                  <option value="enabled">启用</option>
+                  <option value="disabled">禁用</option>
+                </select>
+                <button type="button" class="primary-btn ik-btn" id="ikBtnQuery">查询</button>
+                <button type="button" class="ghost-btn ik-btn" id="ikBtnReset">重置</button>
+              </div>
+
+              <div class="ik-tablewrap">
+                <table class="ik-table">
+                  <thead>
+                    <tr>
+                      <th style="width:20%;">业务定义</th>
+                      <th style="width:19%;">同义词</th>
+                      <th>数据解释</th>
+                      <th style="width:13%;">状态</th>
+                      <th style="width:13%;">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ikTbody"></tbody>
+                </table>
+                <div class="ik-empty hidden" id="ikEmpty">暂无匹配的行业知识</div>
+              </div>
+
+              <div class="ik-pager">
+                <div>显示第 <strong id="ikPageFrom">0</strong> 到第 <strong id="ikPageTo">0</strong> 条记录，总共 <strong id="ikPageTotal">0</strong> 条记录</div>
+                <div class="ik-pg-buttons" id="ikPager"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="ik-ctx hidden" id="ikCtxMenu" role="menu">
+    <button type="button" class="ik-ctx-item" data-act="add">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+      新增子目录
+    </button>
+    <button type="button" class="ik-ctx-item" data-act="rename">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+      重命名
+    </button>
+    <div class="ik-ctx-sep"></div>
+    <button type="button" class="ik-ctx-item is-danger" data-act="delete">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
+      删除目录
+    </button>
+  </div>
+
+  <div class="modal-mask hidden" id="ikNameMask"></div>
+  <div class="modal small hidden" id="ikNameModal" role="dialog" aria-modal="true" aria-labelledby="ikNameTitle">
+    <div class="modal-head">
+      <div>
+        <h3 id="ikNameTitle">新增目录</h3>
+        <p id="ikNameSubtitle">用于按行业场景组织知识条目。</p>
+      </div>
+      <button type="button" class="close" data-act="cancel" aria-label="关闭">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="ik-field">
+        <label for="ikNameInput">目录名称</label>
+        <input type="text" id="ikNameInput" maxlength="30" placeholder="例如：用户经营" />
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="ghost-btn" data-act="cancel">取消</button>
+      <button type="button" class="primary-btn" data-act="save">保存</button>
+    </div>
+  </div>
+
+  <div class="modal-mask hidden" id="ikEditMask"></div>
+  <div class="modal ik-modal hidden" id="ikEditModal" role="dialog" aria-modal="true" aria-labelledby="ikEditTitle">
+    <div class="modal-head">
+      <div>
+        <h3 id="ikEditTitle">新增行业知识</h3>
+        <p>维护业务定义、同义词和数据解释，用于问数理解与口径补充。</p>
+      </div>
+      <button type="button" class="close" data-act="cancel" aria-label="关闭">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="ik-form">
+        <div class="ik-field is-full">
+          <label for="ikFormBusiness">业务定义</label>
+          <input type="text" id="ikFormBusiness" maxlength="40" placeholder="例如：复购率" />
+        </div>
+        <div class="ik-field is-full">
+          <label for="ikFormSynonym">同义词</label>
+          <input type="text" id="ikFormSynonym" maxlength="80" placeholder="多个同义词用顿号或逗号分隔" />
+        </div>
+        <div class="ik-field is-full">
+          <label>状态</label>
+          <div class="ik-form-switch">
+            <button type="button" class="ik-switch is-on" id="ikFormStatus" aria-label="状态开关"></button>
+            <span id="ikFormStatusText">启用</span>
+          </div>
+        </div>
+        <div class="ik-field is-full">
+          <label for="ikFormExplain">数据解释</label>
+          <textarea id="ikFormExplain" maxlength="260" placeholder="说明该业务术语的含义、统计口径或使用边界"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="ghost-btn" data-act="cancel">取消</button>
+      <button type="button" class="primary-btn" data-act="save">保存</button>
+    </div>
+  </div>
+
+  <div class="modal-mask hidden" id="ikViewMask"></div>
+  <div class="modal small hidden" id="ikViewModal" role="dialog" aria-modal="true" aria-labelledby="ikViewTitle">
+    <div class="modal-head">
+      <div>
+        <h3 id="ikViewTitle">查看行业知识</h3>
+        <p id="ikViewSubtitle">业务知识详情</p>
+      </div>
+      <button type="button" class="close" data-act="cancel" aria-label="关闭">×</button>
+    </div>
+    <div class="modal-body">
+      <dl class="ik-view">
+        <dt>业务定义</dt><dd id="ikViewBusiness"></dd>
+        <dt>同义词</dt><dd id="ikViewSynonym"></dd>
+        <dt>数据解释</dt><dd id="ikViewExplain"></dd>
+        <dt>状态</dt><dd id="ikViewStatus"></dd>
+      </dl>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="primary-btn" data-act="cancel">关闭</button>
+    </div>
+  </div>
+
+  <div class="modal-mask hidden" id="ikConfirmMask"></div>
+  <div class="modal small hidden" id="ikConfirmModal" role="dialog" aria-modal="true" aria-labelledby="ikConfirmTitle">
+    <div class="modal-head">
+      <div>
+        <h3 id="ikConfirmTitle">删除确认</h3>
+        <p id="ikConfirmSubtitle">操作不可恢复（原型示例数据）。</p>
+      </div>
+      <button type="button" class="close" data-act="cancel" aria-label="关闭">×</button>
+    </div>
+    <div class="modal-body">
+      <p id="ikConfirmMessage" style="margin:0;color:#334155;line-height:1.7;font-size:14px;">确定要删除吗？</p>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="ghost-btn" data-act="cancel">取消</button>
+      <button type="button" class="primary-btn" data-act="ok" style="background:#ef4444;box-shadow:0 8px 20px rgba(239,68,68,.22);">确认删除</button>
+    </div>
+  </div>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    const IK_ICONS = {
+      chev: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3.5 10 8l-4.5 4.5z"/></svg>',
+      view: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="3"/></svg>',
+      edit: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>',
+      del: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>'
+    };
+
+    let IK_TREE = [
+      {
+        id: 'retail',
+        name: '零售电商',
+        children: [
+          { id: 'retail-user', name: '用户经营' },
+          { id: 'retail-order', name: '交易订单' },
+          { id: 'retail-marketing', name: '营销活动' }
+        ]
+      },
+      {
+        id: 'supply',
+        name: '供应链',
+        children: [
+          { id: 'supply-stock', name: '库存管理' },
+          { id: 'supply-delivery', name: '履约配送' }
+        ]
+      },
+      {
+        id: 'finance',
+        name: '财务经营',
+        children: [
+          { id: 'finance-income', name: '收入利润' },
+          { id: 'finance-risk', name: '成本风控' }
+        ]
+      }
+    ];
+
+    let IK_ROWS = [
+      { id: 'k1', dirId: 'retail-user', business: '复购率', synonym: '重复购买率、回购率、老客复购', explain: '统计周期内产生再次购买行为的客户占已购买客户的比例，用于衡量客户粘性与留存质量。', enabled: true },
+      { id: 'k2', dirId: 'retail-user', business: '新客', synonym: '新增客户、首次购买客户', explain: '在统计周期内首次完成下单或首次完成支付的客户，需按业务口径明确以订单或支付为准。', enabled: true },
+      { id: 'k3', dirId: 'retail-order', business: '客单价', synonym: '平均订单金额、AOV', explain: '销售额除以订单数，通常用于观察用户单次购买价值，可按渠道、品类、活动进行拆分。', enabled: true },
+      { id: 'k4', dirId: 'retail-order', business: '成交转化率', synonym: '支付转化率、购买转化', explain: '完成支付人数与访问人数或点击人数之间的比例，需结合漏斗阶段确认分母。', enabled: false },
+      { id: 'k5', dirId: 'retail-marketing', business: 'ROI', synonym: '投入产出比、营销回报率', explain: '营销活动带来的收益与营销成本之间的比值，用于评估活动投入效率。', enabled: true },
+      { id: 'k6', dirId: 'retail-marketing', business: '优惠券核销率', synonym: '券使用率、券核销占比', explain: '已使用优惠券数量占已发放优惠券数量的比例，用于判断权益触达和促活效果。', enabled: true },
+      { id: 'k7', dirId: 'supply-stock', business: '库存周转天数', synonym: '周转天数、存货周转周期', explain: '平均库存金额或数量与销售消耗速度的比值，反映库存占用效率。', enabled: true },
+      { id: 'k8', dirId: 'supply-stock', business: '滞销品', synonym: '慢动销商品、低动销商品', explain: '在连续多个统计周期内销量低于阈值或无销售记录的商品，通常需要结合品类生命周期判断。', enabled: false },
+      { id: 'k9', dirId: 'supply-delivery', business: '准时履约率', synonym: '按时送达率、准时配送率', explain: '在承诺时间内完成出库、发运或签收的订单占比，用于衡量履约服务质量。', enabled: true },
+      { id: 'k10', dirId: 'finance-income', business: '毛利率', synonym: '销售毛利率、GM', explain: '毛利额除以销售收入，反映商品或业务线的基础盈利能力。', enabled: true },
+      { id: 'k11', dirId: 'finance-income', business: '净利润', synonym: '税后利润、净收益', explain: '收入扣除成本、费用、税费后的利润结果，通常用于经营结果评价。', enabled: true },
+      { id: 'k12', dirId: 'finance-risk', business: '坏账率', synonym: '坏账占比、应收损失率', explain: '坏账金额占应收账款或授信金额的比例，用于评估信用风险和回款质量。', enabled: false }
+    ];
+
+    const IK_STATE = {
+      activeDirId: 'all',
+      collapsedIds: new Set(['finance']),
+      treeKeyword: '',
+      businessQuery: '',
+      synonymQuery: '',
+      statusQuery: '',
+      page: 1,
+      pageSize: 8,
+      editMode: 'add',
+      editId: '',
+      formEnabled: true,
+      ctxTarget: null,
+      nameMode: 'add',
+      nameTargetId: '',
+      confirmHandler: null
+    };
+
+    function escapeHTML(value) {
+      return String(value == null ? '' : value).replace(/[&<>"]/g, function (c) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c];
+      });
+    }
+
+    function flattenTree() {
+      const list = [{ id: 'all', name: '全部行业知识', level: 0 }];
+      IK_TREE.forEach(function (root) {
+        list.push({ id: root.id, name: root.name, level: 1 });
+        (root.children || []).forEach(function (child) {
+          list.push({ id: child.id, name: child.name, level: 2, parentId: root.id });
+        });
+      });
+      return list;
+    }
+
+    function findDir(id) {
+      for (const root of IK_TREE) {
+        if (root.id === id) return { node: root, parent: null, level: 1 };
+        const child = (root.children || []).find(function (item) { return item.id === id; });
+        if (child) return { node: child, parent: root, level: 2 };
+      }
+      return null;
+    }
+
+    function getChildDirIds(id) {
+      if (id === 'all') return flattenTree().filter(function (item) { return item.id !== 'all'; }).map(function (item) { return item.id; });
+      const found = findDir(id);
+      if (!found) return [id];
+      if (!found.node.children) return [id];
+      return [id].concat(found.node.children.map(function (item) { return item.id; }));
+    }
+
+    function getRowsInDir(id) {
+      if (id === 'all') return IK_ROWS.slice();
+      const ids = getChildDirIds(id);
+      return IK_ROWS.filter(function (row) { return ids.includes(row.dirId); });
+    }
+
+    function getFilteredRows() {
+      let list = getRowsInDir(IK_STATE.activeDirId);
+      const business = IK_STATE.businessQuery.trim().toLowerCase();
+      const synonym = IK_STATE.synonymQuery.trim().toLowerCase();
+      if (business) {
+        list = list.filter(function (row) { return row.business.toLowerCase().includes(business); });
+      }
+      if (synonym) {
+        list = list.filter(function (row) { return row.synonym.toLowerCase().includes(synonym); });
+      }
+      if (IK_STATE.statusQuery) {
+        list = list.filter(function (row) { return IK_STATE.statusQuery === 'enabled' ? row.enabled : !row.enabled; });
+      }
+      return list;
+    }
+
+    function renderTree() {
+      const rootEl = document.getElementById('ikTree');
+      const kw = IK_STATE.treeKeyword.trim().toLowerCase();
+      const countByDir = function (id) { return getRowsInDir(id).length; };
+      const matches = function (node) {
+        if (!kw) return true;
+        return node.name.toLowerCase().includes(kw) || (node.children || []).some(function (child) {
+          return child.name.toLowerCase().includes(kw);
+        });
+      };
+      const row = function (node, level, hasChild) {
+        const active = IK_STATE.activeDirId === node.id ? ' is-active' : '';
+        const empty = hasChild ? '' : ' is-empty';
+        const ctx = node.id === (IK_STATE.ctxTarget && IK_STATE.ctxTarget.id) ? ' is-context' : '';
+        return '<div class="ik-tree-row' + active + ctx + '" data-id="' + escapeHTML(node.id) + '" data-level="' + level + '">'
+          + '<span class="ik-tree-toggle' + empty + '">' + IK_ICONS.chev + '</span>'
+          + '<span class="ik-tree-name">' + escapeHTML(node.name) + '</span>'
+          + '<span class="ik-tree-count">' + countByDir(node.id) + '</span>'
+          + '</div>';
+      };
+      const roots = IK_TREE.filter(matches).map(function (node) {
+        const childList = kw ? (node.children || []).filter(function (child) {
+          return child.name.toLowerCase().includes(kw) || node.name.toLowerCase().includes(kw);
+        }) : (node.children || []);
+        const collapsed = !kw && IK_STATE.collapsedIds.has(node.id) ? ' is-collapsed' : '';
+        return '<div class="ik-tree-group' + collapsed + '" data-id="' + escapeHTML(node.id) + '">'
+          + row(node, 1, childList.length > 0)
+          + '<div class="ik-tree-children">'
+          + childList.map(function (child) { return row(child, 2, false); }).join('')
+          + '</div>'
+          + '</div>';
+      }).join('');
+      rootEl.innerHTML = '<div class="ik-tree-group">' + row({ id: 'all', name: '全部行业知识' }, 0, false) + '</div>' + (roots || '<div class="ik-empty">未找到匹配目录</div>');
+    }
+
+    function renderHeader() {
+      const found = findDir(IK_STATE.activeDirId);
+      const name = IK_STATE.activeDirId === 'all' ? '全部行业知识' : found ? found.node.name : '全部行业知识';
+      document.getElementById('ikBreadText').textContent = name;
+      document.getElementById('ikBreadCount').textContent = String(getFilteredRows().length);
+    }
+
+    function renderTable() {
+      const list = getFilteredRows();
+      const total = list.length;
+      const totalPages = Math.max(1, Math.ceil(total / IK_STATE.pageSize));
+      IK_STATE.page = Math.min(Math.max(1, IK_STATE.page), totalPages);
+      const from = total === 0 ? 0 : (IK_STATE.page - 1) * IK_STATE.pageSize;
+      const to = Math.min(total, from + IK_STATE.pageSize);
+      const pageList = list.slice(from, to);
+
+      document.getElementById('ikTbody').innerHTML = pageList.map(function (row) {
+        return '<tr data-id="' + escapeHTML(row.id) + '">'
+          + '<td><span class="ik-title" title="' + escapeHTML(row.business) + '">' + escapeHTML(row.business) + '</span></td>'
+          + '<td><span class="ik-muted" title="' + escapeHTML(row.synonym) + '">' + escapeHTML(row.synonym) + '</span></td>'
+          + '<td><span class="ik-desc" title="' + escapeHTML(row.explain) + '">' + escapeHTML(row.explain) + '</span></td>'
+          + '<td><button type="button" class="ik-switch' + (row.enabled ? ' is-on' : '') + '" data-act="toggle" aria-label="切换状态"></button><span class="ik-status-text">' + (row.enabled ? '启用' : '禁用') + '</span></td>'
+          + '<td><span class="ik-actions">'
+          + '<button type="button" class="ik-action" data-act="view" title="查看">' + IK_ICONS.view + '</button>'
+          + '<button type="button" class="ik-action" data-act="edit" title="编辑">' + IK_ICONS.edit + '</button>'
+          + '<button type="button" class="ik-action is-danger" data-act="delete" title="删除">' + IK_ICONS.del + '</button>'
+          + '</span></td>'
+          + '</tr>';
+      }).join('');
+      document.getElementById('ikEmpty').classList.toggle('hidden', total > 0);
+      document.getElementById('ikPageFrom').textContent = String(total === 0 ? 0 : from + 1);
+      document.getElementById('ikPageTo').textContent = String(to);
+      document.getElementById('ikPageTotal').textContent = String(total);
+      renderPager(totalPages);
+      renderHeader();
+      renderTree();
+    }
+
+    function renderPager(totalPages) {
+      const cur = IK_STATE.page;
+      const pages = [];
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+      document.getElementById('ikPager').innerHTML =
+        '<button type="button" data-page="prev"' + (cur <= 1 ? ' disabled' : '') + '>上一页</button>'
+        + pages.map(function (p) {
+          return '<button type="button" data-page="' + p + '"' + (p === cur ? ' class="is-current"' : '') + '>' + p + '</button>';
+        }).join('')
+        + '<button type="button" data-page="next"' + (cur >= totalPages ? ' disabled' : '') + '>下一页</button>';
+    }
+
+    function selectDir(id) {
+      IK_STATE.activeDirId = id;
+      IK_STATE.page = 1;
+      renderTable();
+    }
+
+    function nextId(prefix) {
+      return prefix + Date.now().toString(36) + Math.floor(Math.random() * 1000).toString(36);
+    }
+
+    function getDefaultDirForNew() {
+      if (IK_STATE.activeDirId !== 'all') {
+        const found = findDir(IK_STATE.activeDirId);
+        if (found && found.level === 2) return found.node.id;
+        if (found && found.node.children && found.node.children[0]) return found.node.children[0].id;
+      }
+      return IK_TREE[0].children[0].id;
+    }
+
+    function setFormStatus(enabled) {
+      IK_STATE.formEnabled = !!enabled;
+      document.getElementById('ikFormStatus').classList.toggle('is-on', IK_STATE.formEnabled);
+      document.getElementById('ikFormStatusText').textContent = IK_STATE.formEnabled ? '启用' : '禁用';
+    }
+
+    function openEdit(mode, row) {
+      IK_STATE.editMode = mode;
+      IK_STATE.editId = row ? row.id : '';
+      document.getElementById('ikEditTitle').textContent = mode === 'add' ? '新增行业知识' : '编辑行业知识';
+      document.getElementById('ikFormBusiness').value = row ? row.business : '';
+      document.getElementById('ikFormSynonym').value = row ? row.synonym : '';
+      document.getElementById('ikFormExplain').value = row ? row.explain : '';
+      setFormStatus(row ? row.enabled : true);
+      document.getElementById('ikEditMask').classList.remove('hidden');
+      document.getElementById('ikEditModal').classList.remove('hidden');
+      setTimeout(function () { document.getElementById('ikFormBusiness').focus(); }, 0);
+    }
+
+    function closeEdit() {
+      document.getElementById('ikEditMask').classList.add('hidden');
+      document.getElementById('ikEditModal').classList.add('hidden');
+    }
+
+    function saveEdit() {
+      const business = document.getElementById('ikFormBusiness').value.trim();
+      const synonym = document.getElementById('ikFormSynonym').value.trim();
+      const explain = document.getElementById('ikFormExplain').value.trim();
+      if (!business) return showToast('请填写业务定义');
+      if (!synonym) return showToast('请填写同义词');
+      if (!explain) return showToast('请填写数据解释');
+      if (IK_STATE.editMode === 'add') {
+        IK_ROWS.unshift({
+          id: nextId('k'),
+          dirId: getDefaultDirForNew(),
+          business,
+          synonym,
+          explain,
+          enabled: IK_STATE.formEnabled
+        });
+        showToast('行业知识已新增');
+      } else {
+        const row = IK_ROWS.find(function (item) { return item.id === IK_STATE.editId; });
+        if (row) {
+          row.business = business;
+          row.synonym = synonym;
+          row.explain = explain;
+          row.enabled = IK_STATE.formEnabled;
+        }
+        showToast('行业知识已保存');
+      }
+      closeEdit();
+      renderTable();
+    }
+
+    function openView(row) {
+      document.getElementById('ikViewSubtitle').textContent = row.business + '详情';
+      document.getElementById('ikViewBusiness').textContent = row.business;
+      document.getElementById('ikViewSynonym').textContent = row.synonym;
+      document.getElementById('ikViewExplain').textContent = row.explain;
+      document.getElementById('ikViewStatus').textContent = row.enabled ? '启用' : '禁用';
+      document.getElementById('ikViewMask').classList.remove('hidden');
+      document.getElementById('ikViewModal').classList.remove('hidden');
+    }
+
+    function closeView() {
+      document.getElementById('ikViewMask').classList.add('hidden');
+      document.getElementById('ikViewModal').classList.add('hidden');
+    }
+
+    function showConfirm(options) {
+      IK_STATE.confirmHandler = options.onOk || null;
+      document.getElementById('ikConfirmTitle').textContent = options.title || '删除确认';
+      document.getElementById('ikConfirmSubtitle').textContent = options.subtitle || '操作不可恢复（原型示例数据）。';
+      document.getElementById('ikConfirmMessage').textContent = options.message || '确定要删除吗？';
+      document.getElementById('ikConfirmMask').classList.remove('hidden');
+      document.getElementById('ikConfirmModal').classList.remove('hidden');
+    }
+
+    function closeConfirm() {
+      document.getElementById('ikConfirmMask').classList.add('hidden');
+      document.getElementById('ikConfirmModal').classList.add('hidden');
+      IK_STATE.confirmHandler = null;
+    }
+
+    function showCtxMenu(x, y) {
+      const menu = document.getElementById('ikCtxMenu');
+      menu.classList.remove('hidden');
+      const w = menu.offsetWidth || 156;
+      const h = menu.offsetHeight || 112;
+      menu.style.left = Math.min(x, window.innerWidth - w - 8) + 'px';
+      menu.style.top = Math.min(y, window.innerHeight - h - 8) + 'px';
+    }
+
+    function hideCtxMenu() {
+      document.getElementById('ikCtxMenu').classList.add('hidden');
+      IK_STATE.ctxTarget = null;
+      renderTree();
+    }
+
+    function openNameModal(mode, targetId) {
+      const found = mode === 'rename' ? findDir(targetId) : null;
+      if (mode === 'rename' && (!found || targetId === 'all')) return;
+      IK_STATE.nameMode = mode;
+      IK_STATE.nameTargetId = targetId || 'all';
+      document.getElementById('ikNameTitle').textContent = mode === 'add' ? '新增目录' : '重命名目录';
+      document.getElementById('ikNameSubtitle').textContent = mode === 'add' ? '新增后可在该目录下维护行业知识。' : '修改目录名称不影响已归类的知识条目。';
+      document.getElementById('ikNameInput').value = found ? found.node.name : '';
+      document.getElementById('ikNameMask').classList.remove('hidden');
+      document.getElementById('ikNameModal').classList.remove('hidden');
+      setTimeout(function () {
+        const input = document.getElementById('ikNameInput');
+        input.focus();
+        input.select();
+      }, 0);
+    }
+
+    function closeNameModal() {
+      document.getElementById('ikNameMask').classList.add('hidden');
+      document.getElementById('ikNameModal').classList.add('hidden');
+    }
+
+    function saveNameModal() {
+      const name = document.getElementById('ikNameInput').value.trim();
+      if (!name) return showToast('请填写目录名称');
+      if (IK_STATE.nameMode === 'rename') {
+        const found = findDir(IK_STATE.nameTargetId);
+        if (!found) return;
+        found.node.name = name;
+        showToast('目录已重命名');
+      } else {
+        addDir(IK_STATE.nameTargetId, name);
+        closeNameModal();
+        return;
+      }
+      closeNameModal();
+      renderTable();
+    }
+
+    function addDir(parentId, name) {
+      if (!parentId || parentId === 'all') {
+        const id = nextId('d');
+        IK_TREE.push({ id, name: name, children: [] });
+        IK_STATE.activeDirId = id;
+      } else {
+        const found = findDir(parentId);
+        if (!found) return;
+        const parent = found.level === 1 ? found.node : found.parent;
+        const id = nextId('d');
+        parent.children = parent.children || [];
+        parent.children.push({ id, name: name });
+        IK_STATE.collapsedIds.delete(parent.id);
+        IK_STATE.activeDirId = id;
+      }
+      showToast('目录已新增');
+      renderTable();
+    }
+
+    function renameDir(id) {
+      openNameModal('rename', id);
+    }
+
+    function deleteDir(id) {
+      if (id === 'all') return;
+      const found = findDir(id);
+      if (!found) return;
+      const affectedIds = getChildDirIds(id);
+      const affectedRows = IK_ROWS.filter(function (row) { return affectedIds.includes(row.dirId); }).length;
+      showConfirm({
+        title: '删除目录',
+        subtitle: '删除后该目录及其子目录将移除。',
+        message: '确定删除“' + found.node.name + '”吗？该目录下 ' + affectedRows + ' 条行业知识也会一并删除。',
+        onOk: function () {
+          if (found.level === 1) {
+            IK_TREE = IK_TREE.filter(function (node) { return node.id !== id; });
+          } else {
+            found.parent.children = (found.parent.children || []).filter(function (node) { return node.id !== id; });
+          }
+          IK_ROWS = IK_ROWS.filter(function (row) { return !affectedIds.includes(row.dirId); });
+          if (IK_STATE.activeDirId === id || affectedIds.includes(IK_STATE.activeDirId)) IK_STATE.activeDirId = 'all';
+          showToast('目录已删除');
+          renderTable();
+        }
+      });
+    }
+
+    function bindEvents() {
+      document.getElementById('ikTree').addEventListener('click', function (e) {
+        const row = e.target.closest('.ik-tree-row[data-id]');
+        if (!row) return;
+        const id = row.dataset.id;
+        const level = Number(row.dataset.level);
+        const group = row.closest('.ik-tree-group');
+        if (level === 1 && e.target.closest('.ik-tree-toggle')) {
+          if (IK_STATE.collapsedIds.has(id)) IK_STATE.collapsedIds.delete(id);
+          else IK_STATE.collapsedIds.add(id);
+          renderTree();
+          return;
+        }
+        if (group && level === 1 && !e.target.closest('.ik-tree-toggle')) {
+          IK_STATE.collapsedIds.delete(id);
+        }
+        selectDir(id);
+      });
+
+      document.getElementById('ikTree').addEventListener('contextmenu', function (e) {
+        const row = e.target.closest('.ik-tree-row[data-id]');
+        if (!row) return;
+        e.preventDefault();
+        IK_STATE.ctxTarget = { id: row.dataset.id };
+        renderTree();
+        showCtxMenu(e.clientX, e.clientY);
+      });
+
+      document.getElementById('ikCtxMenu').addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-act]');
+        if (!btn || !IK_STATE.ctxTarget) return;
+        const id = IK_STATE.ctxTarget.id;
+        const act = btn.dataset.act;
+        hideCtxMenu();
+        if (act === 'add') openNameModal('add', id);
+        if (act === 'rename') renameDir(id);
+        if (act === 'delete') deleteDir(id);
+      });
+
+      document.addEventListener('click', function (e) {
+        if (!e.target.closest('#ikCtxMenu')) {
+          const menu = document.getElementById('ikCtxMenu');
+          if (!menu.classList.contains('hidden')) hideCtxMenu();
+        }
+      });
+
+      document.getElementById('ikBtnNewRoot').addEventListener('click', function () { openNameModal('add', 'all'); });
+      document.getElementById('ikTreeSearch').addEventListener('input', function (e) {
+        IK_STATE.treeKeyword = e.target.value || '';
+        renderTree();
+      });
+      document.getElementById('ikBtnNew').addEventListener('click', function () { openEdit('add'); });
+      document.getElementById('ikBtnQuery').addEventListener('click', function () {
+        IK_STATE.businessQuery = document.getElementById('ikBusinessQuery').value || '';
+        IK_STATE.synonymQuery = document.getElementById('ikSynonymQuery').value || '';
+        IK_STATE.statusQuery = document.getElementById('ikStatusQuery').value || '';
+        IK_STATE.page = 1;
+        renderTable();
+      });
+      document.getElementById('ikBtnReset').addEventListener('click', function () {
+        document.getElementById('ikBusinessQuery').value = '';
+        document.getElementById('ikSynonymQuery').value = '';
+        document.getElementById('ikStatusQuery').value = '';
+        IK_STATE.businessQuery = '';
+        IK_STATE.synonymQuery = '';
+        IK_STATE.statusQuery = '';
+        IK_STATE.page = 1;
+        renderTable();
+      });
+      ['ikBusinessQuery', 'ikSynonymQuery'].forEach(function (id) {
+        document.getElementById(id).addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') document.getElementById('ikBtnQuery').click();
+        });
+      });
+
+      document.getElementById('ikTbody').addEventListener('click', function (e) {
+        const tr = e.target.closest('tr[data-id]');
+        const btn = e.target.closest('[data-act]');
+        if (!tr || !btn) return;
+        const row = IK_ROWS.find(function (item) { return item.id === tr.dataset.id; });
+        if (!row) return;
+        const act = btn.dataset.act;
+        if (act === 'toggle') {
+          row.enabled = !row.enabled;
+          showToast(row.enabled ? '已启用' : '已禁用');
+          renderTable();
+        }
+        if (act === 'view') openView(row);
+        if (act === 'edit') openEdit('edit', row);
+        if (act === 'delete') {
+          showConfirm({
+            title: '删除行业知识',
+            subtitle: '删除后该知识条目将移除。',
+            message: '确定删除“' + row.business + '”吗？',
+            onOk: function () {
+              IK_ROWS = IK_ROWS.filter(function (item) { return item.id !== row.id; });
+              showToast('行业知识已删除');
+              renderTable();
+            }
+          });
+        }
+      });
+
+      document.getElementById('ikPager').addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-page]');
+        if (!btn || btn.disabled) return;
+        const value = btn.dataset.page;
+        const totalPages = Math.max(1, Math.ceil(getFilteredRows().length / IK_STATE.pageSize));
+        if (value === 'prev') IK_STATE.page = Math.max(1, IK_STATE.page - 1);
+        else if (value === 'next') IK_STATE.page = Math.min(totalPages, IK_STATE.page + 1);
+        else IK_STATE.page = Number(value) || 1;
+        renderTable();
+      });
+
+      document.getElementById('ikFormStatus').addEventListener('click', function () {
+        setFormStatus(!IK_STATE.formEnabled);
+      });
+      document.getElementById('ikNameModal').addEventListener('click', function (e) {
+        const act = e.target.closest('[data-act]') && e.target.closest('[data-act]').dataset.act;
+        if (act === 'cancel') closeNameModal();
+        if (act === 'save') saveNameModal();
+      });
+      document.getElementById('ikNameInput').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') saveNameModal();
+      });
+      document.getElementById('ikEditModal').addEventListener('click', function (e) {
+        const act = e.target.closest('[data-act]') && e.target.closest('[data-act]').dataset.act;
+        if (act === 'cancel') closeEdit();
+        if (act === 'save') saveEdit();
+      });
+      document.getElementById('ikViewModal').addEventListener('click', function (e) {
+        if (e.target.closest('[data-act="cancel"]')) closeView();
+      });
+      document.getElementById('ikConfirmModal').addEventListener('click', function (e) {
+        const act = e.target.closest('[data-act]') && e.target.closest('[data-act]').dataset.act;
+        if (act === 'cancel') closeConfirm();
+        if (act === 'ok') {
+          const handler = IK_STATE.confirmHandler;
+          closeConfirm();
+          if (handler) handler();
+        }
+      });
+      document.getElementById('ikEditMask').addEventListener('click', closeEdit);
+      document.getElementById('ikNameMask').addEventListener('click', closeNameModal);
+      document.getElementById('ikViewMask').addEventListener('click', closeView);
+      document.getElementById('ikConfirmMask').addEventListener('click', closeConfirm);
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+          closeNameModal();
+          closeEdit();
+          closeView();
+          closeConfirm();
+          hideCtxMenu();
+        }
+      });
+    }
+
+    function patchKnowledgeMenuActive() {
+      const current = document.querySelector('.adm-item[href="data-source.html"]');
+      const industry = document.querySelector('.adm-item[href="knowledge-faq.html"]');
+      if (current) {
+        current.classList.remove('active');
+        const currentGroup = current.closest('.adm-group');
+        if (currentGroup) currentGroup.classList.remove('is-active');
+      }
+      if (industry) {
+        industry.classList.add('active');
+        const group = industry.closest('.adm-group');
+        if (group) group.classList.add('is-open', 'is-active');
+      }
+    }
+
+    bindEvents();
+    renderTable();
+    document.addEventListener('DOMContentLoaded', patchKnowledgeMenuActive);
+    setTimeout(patchKnowledgeMenuActive, 0);
+  </script>
+</body>
+</html>

@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>指标体系 - 智能问数管理后台</title>
+  <title>示例库 - 智能问数管理后台</title>
   <link rel="stylesheet" href="../../assets/css/theme.css" />
   <link rel="stylesheet" href="../../assets/css/admin.css" />
   <link rel="stylesheet" href="../../assets/css/knowledge-indicator.css" />
+  <link rel="stylesheet" href="../../assets/css/knowledge-example.css" />
 </head>
 <body>
   <div class="admin-shell">
@@ -17,7 +18,7 @@
 
     <main class="admin-main">
       <header class="admin-topbar">
-        <strong>指标体系</strong>
+        <strong>示例库</strong>
         <div class="toolbar">
           <button class="secondary-btn icon-btn" onclick="goTo('../business/smart-query.html')">
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -34,13 +35,12 @@
         </div>
       </header>
 
-      <section class="admin-content ki-page">
+      <section class="admin-content ki-page ke-page">
         <div class="ki-layout">
-          <!-- 左侧：指标目录树 -->
           <aside class="ki-sidebar">
             <div class="ki-side-head">
-              <h3>指标目录</h3>
-              <button type="button" class="ki-side-add" id="kiBtnNewGroup" title="新增一级目录">
+              <h3>示例目录</h3>
+              <button type="button" class="ki-side-add" id="keBtnNewGroup" title="新增一级目录">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
               </button>
             </div>
@@ -48,70 +48,82 @@
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
               </svg>
-              <input type="text" id="kiTreeSearch" placeholder="搜索目录" />
+              <input type="text" id="keTreeSearch" placeholder="搜索目录" />
             </div>
-            <div class="ki-tree" id="kiTree"></div>
-            <div class="ki-side-tip">右键目录可新增 / 重命名 / 删除子节点。</div>
+            <div class="ki-tree" id="keTree"></div>
+            <div class="ki-side-tip">右键目录可新增、重命名、删除子节点。</div>
           </aside>
 
-          <!-- 右侧：主内容 -->
           <div class="ki-main">
-            <!-- 顶部信息条 -->
             <div class="ki-top-bar">
               <div class="ki-bread">
                 <span class="ki-bread-ico">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18"/><path d="M3 12h18"/><path d="M3 17h12"/></svg>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>
                 </span>
-                <strong id="kiBreadText">全部指标</strong>
-                <span class="ki-bread-cnt" id="kiBreadCount">0</span>
+                <strong id="keBreadText">全部示例</strong>
+                <span class="ki-bread-cnt" id="keBreadCount">0</span>
               </div>
               <div class="ki-top-actions">
-                <button type="button" class="primary-btn" id="kiBtnNewIndicator">
+                <button type="button" class="primary-btn" id="keBtnNewExample">
                   <svg viewBox="0 0 24 24" aria-hidden="true" class="btn-ico"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-                  新增指标
+                  新增示例
                 </button>
               </div>
             </div>
 
-            <!-- 查询条件 + 列表 -->
             <div class="ki-list-card">
-              <div class="ki-filter">
+              <div class="ki-filter ke-filter">
                 <div class="ki-search-wrap">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
                   </svg>
-                  <input type="text" id="kiKwInput" placeholder="按名称 / 同义词搜索" />
+                  <input type="text" id="keNameInput" placeholder="名称" />
                 </div>
-                <select id="kiTypeFilter" class="ki-select" title="按类型筛选">
+                <div class="ki-search-wrap">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 5h16"/><path d="M4 12h10"/><path d="M4 19h16"/>
+                  </svg>
+                  <input type="text" id="keDescInput" placeholder="描述" />
+                </div>
+                <div class="ki-search-wrap">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M20 12H4"/><path d="M14 6l6 6-6 6"/>
+                  </svg>
+                  <input type="text" id="keKeywordInput" placeholder="关键词" />
+                </div>
+                <select id="keTypeFilter" class="ki-select" title="按类型筛选">
                   <option value="">全部类型</option>
-                  <option value="atom">原子指标</option>
-                  <option value="derived">衍生指标</option>
-                  <option value="dim">维度</option>
+                  <option value="single">单表查询</option>
+                  <option value="stat">统计查询</option>
+                  <option value="join">联表查询</option>
+                  <option value="schema">表结构</option>
                 </select>
-                <button type="button" class="ghost-btn" id="kiBtnReset">重置</button>
+                <button type="button" class="ghost-btn" id="keBtnReset">重置</button>
               </div>
               <div class="ki-tablewrap">
-                <table class="ki-table">
+                <table class="ki-table ke-table">
                   <thead>
                     <tr>
-                      <th style="width:18%;">名称</th>
-                      <th style="width:10%;">类型</th>
-                      <th style="width:22%;">计算公式 / 字段</th>
-                      <th style="width:14%;">同义词</th>
-                      <th style="width:22%;">描述</th>
-                      <th style="width:14%;">操作</th>
+                      <th style="width:12%;">名称</th>
+                      <th style="width:9%;">类型</th>
+                      <th style="width:11%;">描述</th>
+                      <th style="width:10%;">关键词</th>
+                      <th style="width:14%;">示例问题</th>
+                      <th style="width:10%;">数据源</th>
+                      <th style="width:10%;">相关表</th>
+                      <th style="width:16%;">对应SQL</th>
+                      <th style="width:8%;">操作</th>
                     </tr>
                   </thead>
-                  <tbody id="kiTbody"></tbody>
+                  <tbody id="keTbody"></tbody>
                 </table>
               </div>
-              <div class="ki-pager" id="kiPager"></div>
+              <div class="ki-pager" id="kePager"></div>
             </div>
           </div>
         </div>
 
-        <!-- 右键菜单（目录） -->
-        <div class="ki-ctxmenu hidden" id="kiCtxMenu" role="menu">
+        <div class="ki-ctxmenu hidden" id="keCtxMenu" role="menu">
           <button type="button" class="ki-ctx-item" data-act="new">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
             新增子目录
@@ -130,44 +142,42 @@
     </main>
   </div>
 
-  <!-- 右侧抽屉：查看 / 编辑 / 新增 -->
-  <div class="ki-drawer-mask hidden" id="kiDrawerMask"></div>
-  <aside class="ki-drawer hidden" id="kiDrawer" aria-hidden="true">
-    <div class="ki-drawer-resize" id="kiDrawerResize" title="拖动调整宽度"></div>
+  <div class="ki-drawer-mask hidden" id="keDrawerMask"></div>
+  <aside class="ki-drawer hidden" id="keDrawer" aria-hidden="true">
+    <div class="ki-drawer-resize" id="keDrawerResize" title="拖动调整宽度"></div>
     <header class="ki-drawer-head">
       <div class="ki-drawer-title">
-        <h3 id="kiDrawerTitle">指标详情</h3>
-        <p id="kiDrawerSubtitle">查看与编辑指标的详细配置</p>
+        <h3 id="keDrawerTitle">示例详情</h3>
+        <p id="keDrawerSubtitle">查看与编辑问数示例配置</p>
       </div>
       <div class="ki-drawer-head-actions">
-        <span class="ki-mode-chip hidden" id="kiModeChip">查看模式</span>
+        <span class="ki-mode-chip hidden" id="keModeChip">查看模式</span>
         <button type="button" class="ki-drawer-close" data-act="close" aria-label="关闭">×</button>
       </div>
     </header>
-    <div class="ki-drawer-body" id="kiDrawerBody"></div>
-    <footer class="ki-drawer-foot" id="kiDrawerFoot"></footer>
+    <div class="ki-drawer-body" id="keDrawerBody"></div>
+    <footer class="ki-drawer-foot" id="keDrawerFoot"></footer>
   </aside>
 
-  <!-- 通用确认弹窗 -->
-  <div class="modal-mask hidden" id="kiConfirmMask"></div>
-  <div class="modal small hidden" id="kiConfirmModal" role="dialog" aria-modal="true" aria-labelledby="kiConfirmTitle">
+  <div class="modal-mask hidden" id="keConfirmMask"></div>
+  <div class="modal small hidden" id="keConfirmModal" role="dialog" aria-modal="true" aria-labelledby="keConfirmTitle">
     <div class="modal-head">
       <div>
-        <h3 id="kiConfirmTitle">删除确认</h3>
-        <p id="kiConfirmSubtitle">操作不可恢复（仅原型示例数据）。</p>
+        <h3 id="keConfirmTitle">删除确认</h3>
+        <p id="keConfirmSubtitle">操作不可恢复，仅作用于当前原型数据。</p>
       </div>
       <button type="button" class="close" data-act="cancel" aria-label="关闭">×</button>
     </div>
     <div class="modal-body">
-      <p id="kiConfirmMessage" style="margin:0;font-size:14px;color:#374151;line-height:1.7;">确定要删除该项吗？</p>
+      <p id="keConfirmMessage" style="margin:0;font-size:14px;color:#374151;line-height:1.7;">确定要删除该项吗？</p>
     </div>
     <div class="modal-foot">
       <button type="button" class="ghost-btn" data-act="cancel">取消</button>
-      <button type="button" class="primary-btn" data-act="ok" id="kiConfirmOk" style="background:#ef4444;box-shadow:0 8px 20px rgba(239,68,68,.22);">确认删除</button>
+      <button type="button" class="primary-btn" data-act="ok" id="keConfirmOk" style="background:#ef4444;box-shadow:0 8px 20px rgba(239,68,68,.22);">确认删除</button>
     </div>
   </div>
 
   <script src="../../assets/js/common.js"></script>
-  <script src="../../assets/js/knowledge-indicator.js"></script>
+  <script src="../../assets/js/knowledge-example.js"></script>
 </body>
 </html>

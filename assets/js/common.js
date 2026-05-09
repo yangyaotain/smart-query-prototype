@@ -391,7 +391,8 @@ function goTo(path) {
       title: "知识库管理",
       icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h11v16H6a2 2 0 0 0-2 2V5z"/><path d="M17 3l3 1.6V21l-3-1.6"/><path d="M8 8h6"/><path d="M8 12h6"/></svg>',
       children: [
-        { name: "指标体系", href: "knowledge-indicator.html", match: ["knowledge.html", "knowledge-indicator", "knowledge-indicator-create", "knowledge-sql", "knowledge-sql-create"] },
+        { name: "指标体系", href: "knowledge-indicator.html", match: ["knowledge.html", "knowledge-indicator", "knowledge-indicator-create"] },
+        { name: "示例库", href: "knowledge-example.html", match: ["knowledge-example"] },
         { name: "行业知识", href: "knowledge-faq.html", match: ["knowledge-faq"] }
       ]
     },
@@ -400,7 +401,7 @@ function goTo(path) {
       title: "运营管理",
       icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v17a1 1 0 0 0 1 1h17"/><path d="M7 15l4-4 3 3 5-6"/><path d="M16 8h3v3"/></svg>',
       children: [
-        { name: "反馈管理", href: "operation.html", match: ["operation.html", "operation-feedback"] },
+        { name: "反馈管理", href: "operation-feedback.html", match: ["operation.html", "operation-feedback"] },
         { name: "指标沉淀", href: "operation-indicator.html", match: ["operation-indicator"] }
       ]
     },

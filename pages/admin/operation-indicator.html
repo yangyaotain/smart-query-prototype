@@ -1,59 +1,137 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>指标沉淀 - 运营管理</title><link rel="stylesheet" href="../../assets/css/theme.css" /><link rel="stylesheet" href="../../assets/css/admin.css" /></head>
-<body><div class="admin-shell"><aside class="admin-sidebar"><div class="admin-brand"><div class="logo">管</div><span>智能问数管理后台</span></div><nav class="admin-menu"></nav></aside><main class="admin-main"><header class="admin-topbar"><strong>指标沉淀</strong><div class="toolbar"><button class="secondary-btn icon-btn" onclick="goTo('../business/smart-query.html')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M5.6 5.6l2.1 2.1"/><path d="M16.3 16.3l2.1 2.1"/><path d="M5.6 18.4l2.1-2.1"/><path d="M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3.4"/></svg>智能问数</button><button class="user-trigger" type="button"><div class="avatar">张</div><strong>张三</strong><span class="dropdown-arrow"></span></button></div></header><section class="admin-content">
-  <div class="admin-page-head"><div><h1>指标沉淀</h1><p>把高频问题、异常问答与人工纠正后的逻辑沉淀为新的指标 / 模板，进入知识库供问数复用。</p></div><div class="toolbar"><button class="secondary-btn">导出沉淀报告</button><button class="primary-btn" onclick="goTo('knowledge-indicator-create.html')">新增沉淀指标</button></div></div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>指标沉淀 - 智能问数管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/admin.css" />
+  <link rel="stylesheet" href="../../assets/css/knowledge-indicator.css" />
+  <link rel="stylesheet" href="../../assets/css/knowledge-example.css" />
+  <link rel="stylesheet" href="../../assets/css/operation-indicator.css" />
+</head>
+<body>
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
+      <div class="admin-brand"><div class="logo">管</div><span>智能问数管理后台</span></div>
+      <nav class="admin-menu"></nav>
+    </aside>
 
-  <div class="admin-two-col">
-    <div class="admin-card"><div class="admin-card-head"><h2>本月沉淀总览</h2><span class="status-blue">候选池 32</span></div><div class="admin-card-body">
-      <div class="admin-two-col" style="gap:12px;">
-        <div class="topic-card"><h3>已转化为衍生指标</h3><p style="font-size:22px;font-weight:800;color:var(--primary);margin:6px 0;">14</p><p>较上月 +6，覆盖销售、库存、客户三条主线。</p></div>
-        <div class="topic-card"><h3>已转化为标准问答</h3><p style="font-size:22px;font-weight:800;color:var(--primary);margin:6px 0;">9</p><p>归口主题：销售分析 5 / 客户分析 3 / 财务分析 1。</p></div>
-      </div>
-      <div class="admin-two-col" style="gap:12px;margin-top:12px;">
-        <div class="topic-card"><h3>待评审候选</h3><p style="font-size:22px;font-weight:800;color:#f59e0b;margin:6px 0;">12</p><p>需指标负责人确认口径与可重用性。</p></div>
-        <div class="topic-card"><h3>已驳回 / 重复</h3><p style="font-size:22px;font-weight:800;color:var(--weak);margin:6px 0;">7</p><p>避免与既有指标语义冲突，已合并到既有指标说明。</p></div>
-      </div>
-    </div></div>
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <strong>指标沉淀</strong>
+        <div class="toolbar">
+          <button class="secondary-btn icon-btn" onclick="goTo('../business/smart-query.html')">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/>
+              <path d="M5.6 5.6l2.1 2.1"/><path d="M16.3 16.3l2.1 2.1"/>
+              <path d="M5.6 18.4l2.1-2.1"/><path d="M16.3 7.7l2.1-2.1"/>
+              <circle cx="12" cy="12" r="3.4"/>
+            </svg>
+            智能问数
+          </button>
+          <button class="user-trigger" type="button">
+            <div class="avatar">张</div><strong>张三</strong><span class="dropdown-arrow"></span>
+          </button>
+        </div>
+      </header>
 
-    <div class="admin-card"><div class="admin-card-head"><h2>沉淀来源分布</h2><span class="status-ok">最近 30 天</span></div><div class="admin-card-body">
-      <table class="data-table">
-        <thead><tr><th>来源</th><th>问题数</th><th>沉淀转化率</th><th>沉淀类型</th></tr></thead>
-        <tbody>
-          <tr><td>问题反馈</td><td>54</td><td>46%</td><td>衍生指标 / 归因模板</td></tr>
-          <tr><td>问答记录命中失败</td><td>38</td><td>34%</td><td>标准问答 / 同义词</td></tr>
-          <tr><td>主题分析高频追问</td><td>22</td><td>18%</td><td>口径补充 / 维度扩展</td></tr>
-          <tr><td>用户主动建议</td><td>9</td><td>11%</td><td>新指标候选</td></tr>
-        </tbody>
-      </table>
-    </div></div>
+      <section class="admin-content oi-page">
+        <div class="oi-head">
+          <div>
+            <h1>指标沉淀</h1>
+            <p>从高频问数记录中识别可复用指标，沉淀后进入指标体系供智能问数复用。</p>
+          </div>
+          <div class="oi-head-meta">
+            <span><strong id="oiPendingCount">0</strong> 问题列表</span>
+            <span><strong id="oiProcessedCount">0</strong> 已沉淀指标</span>
+          </div>
+        </div>
+
+        <div class="oi-panel">
+          <div class="oi-tabs" role="tablist" aria-label="指标沉淀状态">
+            <button type="button" class="oi-tab is-active" data-tab="pending" role="tab" aria-selected="true">
+              问题列表 <span id="oiPendingBadge">0</span>
+            </button>
+            <button type="button" class="oi-tab" data-tab="processed" role="tab" aria-selected="false">
+              已沉淀指标 <span id="oiProcessedBadge">0</span>
+            </button>
+          </div>
+
+          <div class="oi-filter" id="oiPendingFilter">
+            <div class="oi-field">
+              <label>用户问题</label>
+              <input id="oiPendingQuestion" type="text" placeholder="输入用户问题关键词" />
+            </div>
+            <div class="oi-field">
+              <label>分析主题</label>
+              <select id="oiPendingTheme">
+                <option value="">全部主题</option>
+                <option value="销售分析">销售分析</option>
+                <option value="客户分析">客户分析</option>
+                <option value="库存分析">库存分析</option>
+                <option value="财务分析">财务分析</option>
+                <option value="经营概览">经营概览</option>
+              </select>
+            </div>
+            <div class="oi-filter-actions">
+              <button type="button" class="ghost-btn" data-act="reset-filter">重置</button>
+              <button type="button" class="primary-btn" data-act="search">查询</button>
+            </div>
+          </div>
+
+          <div class="oi-filter hidden" id="oiProcessedFilter">
+            <div class="oi-field">
+              <label>用户问题</label>
+              <input id="oiProcessedQuestion" type="text" placeholder="输入用户问题关键词" />
+            </div>
+            <div class="oi-field">
+              <label>分析主题</label>
+              <select id="oiProcessedTheme">
+                <option value="">全部主题</option>
+                <option value="销售分析">销售分析</option>
+                <option value="客户分析">客户分析</option>
+                <option value="库存分析">库存分析</option>
+                <option value="财务分析">财务分析</option>
+                <option value="经营概览">经营概览</option>
+              </select>
+            </div>
+            <div class="oi-filter-actions">
+              <button type="button" class="ghost-btn" data-act="reset-filter">重置</button>
+              <button type="button" class="primary-btn" data-act="search">查询</button>
+            </div>
+          </div>
+
+          <div class="oi-table-wrap">
+            <table class="oi-table" id="oiTable">
+              <thead id="oiThead"></thead>
+              <tbody id="oiTbody"></tbody>
+            </table>
+          </div>
+          <div class="ki-pager oi-pager" id="oiPager"></div>
+        </div>
+      </section>
+    </main>
   </div>
 
-  <div class="admin-card stack-card"><div class="admin-card-head"><h2>候选指标 / 候选问答</h2><div class="toolbar"><input placeholder="搜索候选问题 / 指标名" /><select><option>全部主题</option><option>销售分析</option><option>客户分析</option><option>库存分析</option><option>财务分析</option></select><select><option>全部状态</option><option>待评审</option><option>已转化</option><option>已驳回</option></select></div></div>
-  <div class="admin-card-body"><table class="data-table">
-    <thead><tr><th>候选问题</th><th>关联主题</th><th>频次</th><th>命中模型</th><th>建议沉淀方式</th><th>状态</th><th>操作</th></tr></thead>
-    <tbody>
-      <tr><td>销售目标完成率怎么算？</td><td>销售分析</td><td>128</td><td>销售订单表 / 销售目标表</td><td>衍生指标</td><td><span class="status-ok">已转化</span></td><td><a href="knowledge-indicator.html">查看指标</a></td></tr>
-      <tr><td>客户复购率下降原因</td><td>客户分析</td><td>88</td><td>客户行为表</td><td>归因模板</td><td><span class="status-warn">待评审</span></td><td><a href="theme-edit.html">编辑模板</a> / <a href="knowledge-indicator-create.html">转指标</a></td></tr>
-      <tr><td>库存积压风险</td><td>库存分析</td><td>64</td><td>库存日志表</td><td>标准问答</td><td><span class="status-warn">待评审</span></td><td><a href="knowledge-faq.html">转标准问答</a></td></tr>
-      <tr><td>渠道转化率周环比</td><td>销售分析</td><td>57</td><td>渠道转化表</td><td>衍生指标</td><td><span class="status-ok">已转化</span></td><td><a href="knowledge-indicator.html">查看指标</a></td></tr>
-      <tr><td>季度毛利率波动原因</td><td>财务分析</td><td>41</td><td>财务月度表</td><td>归因模板</td><td><span class="status-warn">待评审</span></td><td><a href="theme-edit.html">编辑模板</a></td></tr>
-      <tr><td>区域客单价排行</td><td>客户分析</td><td>35</td><td>客户订单表</td><td>同义词扩展</td><td><span class="status-blue">已合并</span></td><td><a href="knowledge.html">查看说明</a></td></tr>
-      <tr><td>仓库周转天数偏长</td><td>库存分析</td><td>28</td><td>库存日志表</td><td>口径补充</td><td><span class="status-warn">待评审</span></td><td><a href="knowledge-indicator.html">补充口径</a></td></tr>
-      <tr><td>新客户首单转化时长</td><td>客户分析</td><td>22</td><td>客户表 / 订单表</td><td>新指标候选</td><td><span class="status-warn">待评审</span></td><td><a href="knowledge-indicator-create.html">新增指标</a></td></tr>
-    </tbody>
-  </table></div></div>
+  <div class="ki-drawer-mask hidden" id="oiDrawerMask"></div>
+  <aside class="ki-drawer oi-drawer hidden" id="oiDrawer" aria-hidden="true">
+    <div class="ki-drawer-resize" id="oiDrawerResize" title="拖动调整宽度"></div>
+    <header class="ki-drawer-head">
+      <div class="ki-drawer-title">
+        <h3 id="oiDrawerTitle">指标沉淀处理</h3>
+        <p id="oiDrawerSubtitle">将高频问题沉淀为可复用指标</p>
+      </div>
+      <div class="ki-drawer-head-actions">
+        <span class="ki-mode-chip" id="oiDrawerChip">处理模式</span>
+        <button type="button" class="ki-drawer-close" data-act="close-drawer" aria-label="关闭">×</button>
+      </div>
+    </header>
+    <div class="ki-drawer-body" id="oiDrawerBody"></div>
+    <footer class="ki-drawer-foot" id="oiDrawerFoot"></footer>
+  </aside>
 
-  <div class="admin-card stack-card"><div class="admin-card-head"><h2>沉淀流程跟踪</h2><span class="status-ok">本周新增 4 项</span></div><div class="admin-card-body">
-    <table class="data-table">
-      <thead><tr><th>沉淀项</th><th>提交人</th><th>评审人</th><th>类型</th><th>状态</th><th>更新时间</th></tr></thead>
-      <tbody>
-        <tr><td>销售目标完成率（衍生指标）</td><td>李四</td><td>王五</td><td>衍生指标</td><td><span class="status-ok">已上线</span></td><td>05-04 14:20</td></tr>
-        <tr><td>渠道转化率周环比</td><td>张三</td><td>王五</td><td>衍生指标</td><td><span class="status-ok">已上线</span></td><td>05-03 09:42</td></tr>
-        <tr><td>客户复购率归因模板</td><td>李四</td><td>王五</td><td>归因模板</td><td><span class="status-warn">评审中</span></td><td>05-02 17:08</td></tr>
-        <tr><td>库存积压风险标准问答</td><td>张三</td><td>—</td><td>标准问答</td><td><span class="status-warn">待评审</span></td><td>05-01 11:35</td></tr>
-        <tr><td>财务季度毛利率波动模板</td><td>李四</td><td>—</td><td>归因模板</td><td><span class="status-warn">待评审</span></td><td>04-29 16:12</td></tr>
-      </tbody>
-    </table>
-  </div></div>
-</section></main></div><script src="../../assets/js/common.js"></script></body></html>
+  <script src="../../assets/js/common.js"></script>
+  <script src="../../assets/js/operation-indicator.js"></script>
+</body>
+</html>

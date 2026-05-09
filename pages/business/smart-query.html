@@ -33,66 +33,76 @@
     <aside class="side-panel">
       <div class="side-header">
         <button class="primary-btn new-chat" onclick="resetChat()">+ 新建问数</button>
-        <input class="search-box" placeholder="搜索历史对话 / 收藏" />
+        <input class="search-box" placeholder="搜索历史对话 / 反馈" />
       </div>
       <div class="tabs">
         <button id="historyTab" class="tab active" onclick="switchSideTab('history')">历史对话</button>
-        <button id="favoriteTab" class="tab" onclick="switchSideTab('favorite')">我的收藏</button>
+        <button id="favoriteTab" class="tab" onclick="switchSideTab('favorite')">我的反馈</button>
       </div>
       <div id="historyList" class="history-list">
         <div class="group-title">今天</div>
         <div class="history-item active pinned" onclick="runQuestion()" oncontextmenu="openSideMenu(event, 'history')">
-          <strong>近6个月华东区销售额趋势如何？</strong>
+          <strong title="近6个月华东区销售额趋势如何？">近6个月华东区销售额趋势如何？</strong>
           <span><em>销售分析</em><em>置顶 · 08:40</em></span>
         </div>
         <div class="history-item" oncontextmenu="openSideMenu(event, 'history')">
-          <strong>本月各渠道订单转化率对比</strong>
+          <strong title="本月各渠道订单转化率对比">本月各渠道订单转化率对比</strong>
           <span><em>销售分析</em><em>昨天</em></span>
         </div>
         <div class="history-item" oncontextmenu="openSideMenu(event, 'history')">
-          <strong>哪些产品库存周转偏慢？</strong>
+          <strong title="哪些产品库存周转偏慢？">哪些产品库存周转偏慢？</strong>
           <span><em>库存分析</em><em>昨天</em></span>
         </div>
         <div class="history-item hidden" data-more-group="today" oncontextmenu="openSideMenu(event, 'history')">
-          <strong>今日大客户订单异常波动是什么原因？</strong>
+          <strong title="今日大客户订单异常波动是什么原因？">今日大客户订单异常波动是什么原因？</strong>
           <span><em>销售分析</em><em>09:12</em></span>
         </div>
         <div class="history-item hidden" data-more-group="today" oncontextmenu="openSideMenu(event, 'history')">
-          <strong>本周新客成交率是否达标？</strong>
+          <strong title="本周新客成交率是否达标？">本周新客成交率是否达标？</strong>
           <span><em>客户分析</em><em>08:16</em></span>
         </div>
         <button class="more-link-btn" type="button" data-group="today" onclick="toggleHistoryMore(event)">更多...</button>
         <div class="group-title">近 7 天</div>
         <div class="history-item" oncontextmenu="openSideMenu(event, 'history')">
-          <strong>华南区客户复购率下降原因</strong>
+          <strong title="华南区客户复购率下降原因">华南区客户复购率下降原因</strong>
           <span><em>客户分析</em><em>04-25</em></span>
         </div>
         <div class="history-item hidden" data-more-group="week" oncontextmenu="openSideMenu(event, 'history')">
-          <strong>4月各区域销售目标完成率对比</strong>
+          <strong title="4月各区域销售目标完成率对比">4月各区域销售目标完成率对比</strong>
           <span><em>销售分析</em><em>04-24</em></span>
         </div>
         <div class="history-item hidden" data-more-group="week" oncontextmenu="openSideMenu(event, 'history')">
-          <strong>库存预警商品近7天变化趋势</strong>
+          <strong title="库存预警商品近7天变化趋势">库存预警商品近7天变化趋势</strong>
           <span><em>库存分析</em><em>04-23</em></span>
         </div>
         <button class="more-link-btn" type="button" data-group="week" onclick="toggleHistoryMore(event)">更多...</button>
       </div>
-      <div id="favoriteList" class="history-list hidden">
-        <div class="history-item pinned" onclick="runQuestion()" oncontextmenu="openSideMenu(event, 'favorite')">
-          <strong>华东区销售额趋势分析</strong>
-          <span><em>折线图 · 销售分析</em><em>置顶</em></span>
+      <div id="favoriteList" class="history-list feedback-list hidden">
+        <div class="group-title">已处理</div>
+        <div class="history-item feedback-item pinned" onclick="showFeedbackDetail('sql')">
+          <strong title="华东区销售额趋势为什么和看板不一致？">华东区销售额趋势为什么和看板不一致？</strong>
+          <span><em>数据不准确 · 05-09</em><em class="feedback-status done">已处理</em></span>
         </div>
-        <div class="history-item" oncontextmenu="openSideMenu(event, 'favorite')">
-          <strong>本月渠道转化率对比</strong>
-          <span><em>柱状图 · 销售分析</em><em>04-26</em></span>
+        <div class="history-item feedback-item" onclick="showFeedbackDetail('metric')">
+          <strong title="客户复购率下降原因能不能直接看到？">客户复购率下降原因能不能直接看到？</strong>
+          <span><em>指标缺失 · 05-08</em><em class="feedback-status done">已处理</em></span>
         </div>
-        <div class="history-item" oncontextmenu="openSideMenu(event, 'favorite')">
-          <strong>库存周转异常产品分析</strong>
-          <span><em>表格 · 库存分析</em><em>04-24</em></span>
+        <div class="history-item feedback-item" onclick="showFeedbackDetail('reply')">
+          <strong title="为什么没有展示同比？">为什么没有展示同比？</strong>
+          <span><em>结论不合理 · 05-07</em><em class="feedback-status done">已处理</em></span>
         </div>
-        <div class="history-item" oncontextmenu="openSideMenu(event, 'favorite')">
-          <strong>华南区客户复购率下降原因</strong>
-          <span><em>归因分析 · 客户分析</em><em>04-22</em></span>
+        <div class="group-title">待处理</div>
+        <div class="history-item feedback-item" onclick="showFeedbackDetail('pendingSql')">
+          <strong title="SQL 执行失败，提示 amount 字段不存在">SQL 执行失败，提示 amount 字段不存在</strong>
+          <span><em>SQL 执行失败 · 05-09</em><em class="feedback-status pending">待处理</em></span>
+        </div>
+        <div class="history-item feedback-item" onclick="showFeedbackDetail('pendingChart')">
+          <strong title="渠道转化率对比的图表不适合展示趋势">渠道转化率对比的图表不适合展示趋势</strong>
+          <span><em>图表不合适 · 05-08</em><em class="feedback-status pending">待处理</em></span>
+        </div>
+        <div class="history-item feedback-item" onclick="showFeedbackDetail('pendingReason')">
+          <strong title="库存周转偏慢产品没有说明判断阈值">库存周转偏慢产品没有说明判断阈值</strong>
+          <span><em>结论不合理 · 05-08</em><em class="feedback-status pending">待处理</em></span>
         </div>
       </div>
     </aside>
@@ -205,6 +215,7 @@
                         </button>
                       </div>
                     </div>
+                    <section id="feedbackDetailPanel" class="feedback-detail-panel hidden"></section>
                     <section id="trendResult" class="analysis-section trend-report-section hidden">
                       <h4 id="trendReportTitle">趋势分析报告</h4>
                       <div class="analysis-report-block" data-trend-block="0">
@@ -1231,13 +1242,13 @@
   <div id="historyContextMenu" class="context-menu side-context-menu hidden">
     <button onclick="sideMenuAction('置顶')">置顶</button>
     <button onclick="sideMenuAction('编辑标题')">编辑标题</button>
-    <button onclick="sideMenuAction('添加收藏')">添加收藏</button>
+    <button onclick="openFeedback()">提交反馈</button>
     <button onclick="sideMenuAction('删除')">删除</button>
   </div>
   <div id="favoriteContextMenu" class="context-menu side-context-menu hidden">
     <button onclick="sideMenuAction('置顶')">置顶</button>
     <button onclick="sideMenuAction('编辑标题')">编辑标题</button>
-    <button onclick="sideMenuAction('取消收藏')">取消收藏</button>
+    <button onclick="sideMenuAction('查看反馈')">查看反馈</button>
   </div>
   <div id="toast" class="toast hidden">操作成功</div>
 

@@ -23,6 +23,7 @@ const analysisReportTitle = document.getElementById("analysisReportTitle");
 const resultViewToolbar = document.getElementById("resultViewToolbar");
 const chartResult = document.getElementById("chartResult");
 const tableResult = document.getElementById("tableResult");
+const feedbackDetailPanel = document.getElementById("feedbackDetailPanel");
 const chartArea = document.getElementById("chartArea");
 const modalMask = document.getElementById("modalMask");
 const saveModal = document.getElementById("saveModal");
@@ -86,6 +87,73 @@ const resultChartData = [
 ];
 
 const resultChartPalette = ["#1677ff", "#3b82f6", "#60a5fa", "#93c5fd", "#bfdbfe", "#dbeafe"];
+
+const feedbackRecords = {
+  sql: {
+    status: "已处理",
+    resultType: "修正SQL",
+    question: "华东区销售额趋势为什么和看板不一致？",
+    answerTitle: "华东区近6个月销售额趋势分析",
+    type: "数据不准确",
+    desc: "问数结果里 4 月销售额明显偏低，看板中同口径数据没有下降。",
+    submittedAt: "2026-05-09 09:32",
+    processedAt: "2026-05-09 16:30",
+    originalSql: "SELECT DATE_FORMAT(order_date, '%Y-%m') AS month,\n       SUM(amount) AS sales_amount\nFROM sales_order\nWHERE region = '华东'\nGROUP BY DATE_FORMAT(order_date, '%Y-%m')\nORDER BY month;",
+    correctedSql: "SELECT DATE_FORMAT(order_date, '%Y-%m') AS month,\n       SUM(pay_amount) AS sales_amount\nFROM sales_order\nWHERE region = '华东'\n  AND order_status = 'paid'\nGROUP BY DATE_FORMAT(order_date, '%Y-%m')\nORDER BY month;"
+  },
+  metric: {
+    status: "已处理",
+    resultType: "沉淀指标",
+    question: "客户复购率下降原因能不能直接看到？",
+    answerTitle: "客户复购率趋势分析",
+    type: "指标缺失",
+    desc: "当前只能查订单数，复购率没有标准指标，业务需要按区域和客户等级拆分。",
+    submittedAt: "2026-05-08 15:18",
+    processedAt: "2026-05-08 18:42",
+    metric: {
+      name: "客户复购率",
+      type: "衍生指标",
+      source: "客户数据仓库 / PostgreSQL",
+      formula: "复购客户数 / 成交客户数",
+      desc: "统计周期内发生 2 次及以上成交的客户占全部成交客户的比例。"
+    }
+  },
+  reply: {
+    status: "已处理",
+    resultType: "回复用户",
+    question: "为什么没有展示同比？",
+    answerTitle: "华东区销售额趋势分析",
+    type: "结论不合理",
+    desc: "用户问题未明确要求同比，但希望知道本次结果缺少同比的原因。",
+    submittedAt: "2026-05-07 11:06",
+    processedAt: "2026-05-07 14:20",
+    reply: "本次问题未包含同比维度，系统默认返回近周期趋势。后续可直接提问“销售额趋势及同比变化”，系统会同时返回同比指标。"
+  },
+  pendingSql: {
+    status: "待处理",
+    question: "SQL 执行失败，提示 amount 字段不存在",
+    answerTitle: "本周 GMV 汇总分析",
+    type: "SQL 执行失败",
+    desc: "用户问题是“本周 GMV”，后台生成 SQL 使用了旧字段 amount。",
+    submittedAt: "2026-05-09 10:52"
+  },
+  pendingChart: {
+    status: "待处理",
+    question: "渠道转化率对比的图表不适合展示趋势",
+    answerTitle: "渠道转化率趋势分析",
+    type: "图表不合适",
+    desc: "结果用了饼图，想看各渠道近 8 周转化率变化。",
+    submittedAt: "2026-05-08 15:21"
+  },
+  pendingReason: {
+    status: "待处理",
+    question: "库存周转偏慢产品没有说明判断阈值",
+    answerTitle: "库存周转偏慢产品分析",
+    type: "结论不合理",
+    desc: "系统回答只给了 SKU 列表，没有说明偏慢阈值，业务看不出判断依据。",
+    submittedAt: "2026-05-08 11:40"
+  }
+};
 
 const trendForecastData = [
   { name: "7月", value: 3380, upper: 3540, lower: 3220, mom: 4.1, yoy: 30.5 },
@@ -823,6 +891,7 @@ function resetAnswerSimulation() {
   thinkingElapsedSeconds = 0;
   updateThinkingElapsed();
   thinkingTitle.textContent = "思考过程";
+  thinkingBox.classList.remove("hidden");
   thinkingBox.classList.remove("collapsed");
   resultCard.classList.add("hidden");
   aiConclusion.textContent = "";
@@ -837,6 +906,8 @@ function resetAnswerSimulation() {
   trendResult?.classList.add("hidden");
   comparisonResult?.classList.add("hidden");
   templateResult?.classList.add("hidden");
+  feedbackDetailPanel?.classList.add("hidden");
+  if (feedbackDetailPanel) feedbackDetailPanel.innerHTML = "";
   answerActionBar?.classList.add("hidden");
   hideInlineAnalysisExportMenu();
   resetAnalysisReportTyping();
@@ -1012,6 +1083,176 @@ function startTypewriterConclusion() {
       }, 1420);
     }
   }, 34);
+}
+
+function showFeedbackDetail(key) {
+  const record = feedbackRecords[key];
+  if (!record) return;
+  if (isAnswering) {
+    isAnswering = false;
+    if (conclusionTypingTimer) {
+      clearInterval(conclusionTypingTimer);
+      conclusionTypingTimer = null;
+    }
+    if (reportTypingTimer) {
+      clearInterval(reportTypingTimer);
+      reportTypingTimer = null;
+    }
+    stopThinkingElapsedTimer();
+    updateSendButton();
+  }
+  hideSideMenus();
+  closeModal();
+  closeDrawer();
+  clearFollowupContext();
+  document.querySelectorAll("#favoriteList .history-item").forEach((item) => {
+    item.classList.remove("active");
+  });
+  const activeItem = document.querySelector(`#favoriteList .history-item[onclick="showFeedbackDetail('${key}')"]`);
+  if (activeItem) activeItem.classList.add("active");
+
+  currentAnswerMode = "qa";
+  currentQuestionText = record.question;
+  currentAnswerTitle = record.answerTitle || generateAnswerTitle(record.question, "qa");
+  userQuestionBubble.textContent = currentQuestionText;
+  if (resultTitle) resultTitle.textContent = currentAnswerTitle;
+  if (resultTitle && resultTitle.nextElementSibling) {
+    resultTitle.nextElementSibling.textContent = "分析主题：销售分析 · 查询时间：2026-05-09 08:43 · 数据更新时间：2026-05-09 08:00";
+  }
+
+  welcomeBlock.classList.add("hidden");
+  answerBlock.classList.remove("hidden");
+  mainPanel.classList.remove("initial-state");
+  if (conversationHistory) conversationHistory.innerHTML = "";
+  resetAnswerSimulation();
+  answerBlock.classList.remove("hidden");
+  thinkingBox.classList.add("hidden");
+  resultCard.classList.remove("hidden");
+  aiConclusion.textContent = "近6个月华东区销售额整体呈持续上升趋势，6月销售额达到3248万元，较1月增长约49.0%。其中4月至6月增长明显，主要受渠道促销活动和重点客户订单增长影响。";
+  aiConclusion.classList.remove("typing-cursor");
+  conclusionTags.classList.remove("hidden");
+  tableResult.classList.remove("hidden");
+  resultViewToolbar.classList.remove("hidden");
+  chartResult.classList.remove("hidden");
+  answerActionBar?.classList.remove("hidden");
+  renderFeedbackDetail(record);
+  currentResultView = "line";
+  setResultView(currentResultView || "line", false);
+  requestAnimationFrame(() => scrollToAnswerBottom());
+  setTimeout(scrollToAnswerBottom, 180);
+}
+
+function renderFeedbackDetail(record) {
+  if (!feedbackDetailPanel) return;
+  feedbackDetailPanel.innerHTML = feedbackDetailHTML(record);
+  feedbackDetailPanel.classList.remove("hidden");
+}
+
+function feedbackDetailHTML(record) {
+  const statusClass = record.status === "已处理" ? "done" : "pending";
+  const resultHTML = record.status === "已处理"
+    ? feedbackProcessedHTML(record)
+    : '<div class="feedback-result-card"><h4>处理结果</h4><div class="feedback-pending-box">该反馈已提交至运营管理后台，当前处于待处理状态。处理完成后会在这里展示处理结果。</div></div>';
+  return ''
+    + '<section class="feedback-detail-card">'
+    +   '<div class="feedback-detail-head"><h4>反馈内容</h4><em class="feedback-status ' + statusClass + '">' + record.status + '</em></div>'
+    +   '<div class="feedback-detail-grid">'
+    +     feedbackCell("反馈类型", record.type)
+    +     feedbackCell("提交时间", record.submittedAt)
+    +     feedbackCell("用户问题", record.question, true)
+    +     feedbackCell("反馈说明", record.desc, true)
+    +   '</div>'
+    + '</section>'
+    + resultHTML;
+}
+
+function feedbackCell(label, value, full) {
+  return '<div class="feedback-detail-cell' + (full ? " full" : "") + '">'
+    + '<div class="feedback-detail-label">' + escapeHTML(label) + '</div>'
+    + '<div class="feedback-detail-value">' + escapeHTML(value || "—") + '</div>'
+    + '</div>';
+}
+
+function feedbackProcessedHTML(record) {
+  if (record.resultType === "修正SQL") {
+    return '<div class="feedback-result-card"><div class="feedback-detail-head"><h4>处理结果</h4><em class="feedback-status done">修正SQL</em></div>'
+      + '<div class="feedback-sql-grid">'
+      + '<div class="feedback-sql-block"><strong>原执行 SQL</strong>' + feedbackSqlEditor(record.originalSql || "") + '</div>'
+      + '<div class="feedback-sql-block"><strong>修正后 SQL</strong>' + feedbackSqlEditor(record.correctedSql || "") + '</div>'
+      + '</div></div>';
+  }
+  if (record.resultType === "沉淀指标") {
+    const m = record.metric || {};
+    return '<div class="feedback-result-card"><div class="feedback-detail-head"><h4>处理结果</h4><em class="feedback-status done">沉淀指标</em></div>'
+      + '<div class="feedback-metric-list">'
+      + metricCell("指标名称", m.name)
+      + metricCell("指标类型", m.type)
+      + metricCell("数据源", m.source)
+      + metricCell("计算公式", m.formula)
+      + metricCell("指标说明", m.desc, true)
+      + '</div></div>';
+  }
+  return '<div class="feedback-result-card"><div class="feedback-detail-head"><h4>处理结果</h4><em class="feedback-status done">回复用户</em></div>'
+    + '<p class="feedback-reply-box">' + escapeHTML(record.reply || "—") + '</p></div>';
+}
+
+function metricCell(label, value, full) {
+  return '<div class="' + (full ? "full" : "") + '"><strong>' + escapeHTML(label) + '</strong><div class="feedback-detail-value">' + escapeHTML(value || "—") + '</div></div>';
+}
+
+function feedbackSqlEditor(sql) {
+  const formatted = formatFeedbackSQL(sql || "");
+  const lines = Math.max(8, formatted.split("\n").length);
+  return '<div class="feedback-sql-editor ke-sql-editor is-light is-readonly" data-role="sql-editor">'
+    + '<div class="ke-sql-toolbar">'
+    + '<span class="ke-sql-dot"></span><span class="ke-sql-dot"></span><span class="ke-sql-dot"></span>'
+    + '<strong>SQL Editor</strong>'
+    + '</div>'
+    + '<div class="ke-sql-body">'
+    + '<div class="ke-sql-lines" aria-hidden="true">' + feedbackLineNumbers(lines) + '</div>'
+    + '<div class="ke-sql-code">'
+    + '<pre class="ke-sql-highlight" aria-hidden="true">' + highlightFeedbackSQL(formatted) + '</pre>'
+    + '<textarea class="ke-sql-input" readonly spellcheck="false" rows="' + lines + '">' + escapeHTML(formatted) + '</textarea>'
+    + '</div></div></div>';
+}
+
+function feedbackLineNumbers(count) {
+  let html = "";
+  for (let i = 1; i <= count; i += 1) html += "<span>" + i + "</span>";
+  return html;
+}
+
+function highlightFeedbackSQL(sql) {
+  let html = escapeHTML(sql || "");
+  html = html.replace(/('(?:''|[^'])*')/g, '<span class="ke-sql-str">$1</span>');
+  html = html.replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="ke-sql-num">$1</span>');
+  html = html.replace(/\b(SELECT|FROM|WHERE|AND|OR|GROUP BY|ORDER BY|LIMIT|JOIN|LEFT JOIN|RIGHT JOIN|INNER JOIN|ON|AS|SUM|COUNT|AVG|MIN|MAX|DISTINCT|DATE_FORMAT|DATE_SUB|CURDATE|INTERVAL|CASE|WHEN|THEN|ELSE|END|IN|NOT|NULL|IS|LIKE)\b/gi, (match) => {
+    const upper = match.toUpperCase();
+    const cls = /^(SUM|COUNT|AVG|MIN|MAX|DATE_FORMAT|DATE_SUB|CURDATE)$/.test(upper) ? "ke-sql-fn" : "ke-sql-kw";
+    return '<span class="' + cls + '">' + match + "</span>";
+  });
+  return html;
+}
+
+function formatFeedbackSQL(sql) {
+  let value = String(sql || "").trim();
+  if (!value) return "";
+  value = value.replace(/\s+/g, " ");
+  value = value.replace(/\s+(FROM|WHERE|GROUP BY|ORDER BY|LIMIT|HAVING)\b/gi, "\n$1");
+  value = value.replace(/\s+(LEFT JOIN|RIGHT JOIN|INNER JOIN|JOIN)\b/gi, "\n$1");
+  value = value.replace(/\s+(AND|OR)\b/gi, "\n  $1");
+  value = value.replace(/,\s*/g, ",\n       ");
+  value = value.replace(/\n\s*(FROM|WHERE|GROUP BY|ORDER BY|LIMIT|HAVING|LEFT JOIN|RIGHT JOIN|INNER JOIN|JOIN)\b/gi, (_, keyword) => "\n" + keyword.toUpperCase());
+  return value;
+}
+
+function escapeHTML(value) {
+  return String(value == null ? "" : value).replace(/[&<>"]/g, (c) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;"
+  }[c]));
 }
 
 function resetAnalysisReportTyping() {

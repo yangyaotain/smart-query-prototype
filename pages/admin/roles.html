@@ -1,10 +1,130 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>角色管理</title><link rel="stylesheet" href="../../assets/css/theme.css" /><link rel="stylesheet" href="../../assets/css/admin.css" /></head>
-<body><div class="admin-shell"><aside class="admin-sidebar"><div class="admin-brand"><div class="logo">管</div><span>智能问数管理后台</span></div><nav class="admin-menu"><a href="data-source.html">数据源管理</a><a href="data-model.html">数据模型管理</a><a href="knowledge.html">知识库管理</a><a href="operation.html">运营管理</a><a href="theme.html">分析主题</a><a href="users.html">用户管理</a><a class="active" href="roles.html">角色管理</a></nav></aside><main class="admin-main"><header class="admin-topbar"><strong>角色管理</strong><div class="toolbar"><button class="secondary-btn icon-btn" onclick="goTo('../business/smart-query.html')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M5.6 5.6l2.1 2.1"/><path d="M16.3 16.3l2.1 2.1"/><path d="M5.6 18.4l2.1-2.1"/><path d="M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3.4"/></svg>智能问数</button><button class="user-trigger" type="button"><div class="avatar">张</div><strong>张三</strong><span class="dropdown-arrow"></span></button></div></header><section class="admin-content">
-  <div class="admin-page-head"><div><h1>角色管理</h1><p>配置功能权限、主题权限、模型字段权限和维度数据权限。</p></div><button class="primary-btn" onclick="goTo('role-edit.html')">新增角色</button></div>
-  <div class="admin-two-col">
-    <div class="admin-card"><div class="admin-card-head"><h2>角色列表</h2></div><div class="admin-card-body"><div class="tree-item active">业务分析师 <span class="tree-count">18人</span> <a href="role-edit.html" style="margin-left:8px;">编辑</a></div><div class="tree-item">业务管理者 <span class="tree-count">6人</span> <a href="role-edit.html" style="margin-left:8px;">编辑</a></div><div class="tree-item">运营管理员 <span class="tree-count">4人</span> <a href="role-edit.html" style="margin-left:8px;">编辑</a></div><div class="tree-item">系统管理员 <span class="tree-count">2人</span> <a href="role-edit.html" style="margin-left:8px;">编辑</a></div></div></div>
-    <div class="admin-card"><div class="admin-card-head"><h2>业务分析师权限</h2><button class="secondary-btn" onclick="goTo('role-edit.html')">保存权限</button></div><div class="admin-card-body"><div class="admin-grid" style="grid-template-columns:1fr 1fr;"><div class="permission-card"><h3>功能权限</h3><p>智能问数、我的仪表盘、我的看板、我的报告、导出</p></div><div class="permission-card"><h3>主题权限</h3><p>销售分析、客户分析、库存分析</p></div><div class="permission-card"><h3>模型/字段权限</h3><p>销售订单表：销售金额、订单日期、销售区域；客户信息表：客户类型</p></div><div class="permission-card"><h3>维度权限</h3><p>区域 = 华东区；部门 = 销售运营部</p></div></div></div></div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>角色管理 - 智能问数管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/admin.css" />
+  <link rel="stylesheet" href="../../assets/css/roles.css" />
+</head>
+<body>
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
+      <div class="admin-brand"><div class="logo">管</div><span>智能问数管理后台</span></div>
+      <nav class="admin-menu"></nav>
+    </aside>
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <strong>角色管理</strong>
+        <div class="toolbar">
+          <button class="secondary-btn icon-btn" onclick="goTo('../business/smart-query.html')">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M5.6 5.6l2.1 2.1"/><path d="M16.3 16.3l2.1 2.1"/><path d="M5.6 18.4l2.1-2.1"/><path d="M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3.4"/></svg>
+            智能问数
+          </button>
+          <button class="user-trigger" type="button"><div class="avatar">张</div><strong>张三</strong><span class="dropdown-arrow"></span></button>
+        </div>
+      </header>
+
+      <section class="admin-content role-page">
+        <div class="admin-page-head">
+          <div>
+            <h1>角色管理</h1>
+            <p>维护角色，并配置功能、主题、模型字段和维度权限。</p>
+          </div>
+          <button class="primary-btn" type="button" id="roleAddBtn">新增角色</button>
+        </div>
+
+        <div class="role-layout">
+          <section class="role-panel role-list-panel" aria-label="角色列表">
+            <div class="role-panel-head">
+              <div>
+                <h2>角色列表</h2>
+                <p>右键角色可新增、重命名、删除</p>
+              </div>
+            </div>
+            <div class="role-list" id="roleList"></div>
+          </section>
+
+          <section class="role-panel permission-panel" aria-label="权限配置">
+            <div class="permission-head">
+              <div>
+                <span class="eyebrow">权限配置</span>
+                <h2 id="selectedRoleName">业务分析师</h2>
+              </div>
+              <button class="primary-btn" type="button" id="savePermissionBtn">保存权限</button>
+            </div>
+
+            <div class="permission-tabs" role="tablist" aria-label="权限类型">
+              <button type="button" class="permission-tab is-active" data-tab="function" role="tab" aria-selected="true">功能权限</button>
+              <button type="button" class="permission-tab" data-tab="theme" role="tab" aria-selected="false">主题权限</button>
+              <button type="button" class="permission-tab" data-tab="model" role="tab" aria-selected="false">模型权限</button>
+              <button type="button" class="permission-tab" data-tab="dimension" role="tab" aria-selected="false">维度权限</button>
+            </div>
+
+            <div class="permission-body" id="rolePermBody"></div>
+          </section>
+        </div>
+      </section>
+    </main>
   </div>
-</section></main></div><script src="../../assets/js/common.js"></script></body></html>
+
+  <div class="role-ctx hidden" id="roleCtxMenu" role="menu">
+    <button type="button" data-action="add">新增角色</button>
+    <button type="button" data-action="rename">重命名</button>
+    <button type="button" data-action="delete">删除角色</button>
+  </div>
+
+  <div class="modal small hidden" id="roleDeleteModal" role="dialog" aria-modal="true" aria-labelledby="roleDeleteTitle">
+    <div class="modal-content">
+      <div class="modal-head">
+        <h3 id="roleDeleteTitle">删除角色</h3>
+        <button class="modal-close" type="button" id="roleDeleteClose">×</button>
+      </div>
+      <div class="modal-body">
+        <p id="roleDeleteText">确定删除该角色吗？删除后，该角色的权限配置将一并移除。</p>
+      </div>
+      <div class="modal-foot">
+        <button class="secondary-btn" type="button" id="roleDeleteCancel">取消</button>
+        <button class="danger-btn" type="button" id="roleDeleteConfirm">删除</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="roleDimAddModal" role="dialog" aria-modal="true" aria-labelledby="roleDimAddTitle">
+    <div class="modal-content">
+      <div class="modal-head">
+        <h3 id="roleDimAddTitle">新增维度</h3>
+        <button class="modal-close" type="button" id="roleDimAddClose">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-tip">从指标体系中选择类型为“维度”的数据，加入当前角色的维度权限配置。</p>
+        <div class="dimension-pick-list" id="roleDimAddList"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="secondary-btn" type="button" id="roleDimAddCancel">取消</button>
+        <button class="primary-btn" type="button" id="roleDimAddConfirm">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal small hidden" id="roleDimDeleteModal" role="dialog" aria-modal="true" aria-labelledby="roleDimDeleteTitle">
+    <div class="modal-content">
+      <div class="modal-head">
+        <h3 id="roleDimDeleteTitle">删除维度</h3>
+        <button class="modal-close" type="button" id="roleDimDeleteClose">×</button>
+      </div>
+      <div class="modal-body">
+        <p id="roleDimDeleteText">确定删除该维度吗？</p>
+      </div>
+      <div class="modal-foot">
+        <button class="secondary-btn" type="button" id="roleDimDeleteCancel">取消</button>
+        <button class="danger-btn" type="button" id="roleDimDeleteConfirm">删除</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/common.js"></script>
+  <script src="../../assets/js/roles.js"></script>
+</body>
+</html>
