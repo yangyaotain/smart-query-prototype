@@ -3,9 +3,6 @@ setlocal EnableExtensions EnableDelayedExpansion
 
 chcp 65001 >nul 2>nul
 
-set "BRANCH=main"
-set "REMOTE_URL=https://github.com/yangyaotain/smart-query-prototype.git"
-
 set "SOURCE_DIR=%~dp0"
 for %%I in ("%SOURCE_DIR%.") do set "SOURCE_DIR=%%~fI"
 
@@ -25,15 +22,22 @@ if /I "%~1"=="--ci" (
 )
 
 echo ==========================================
-echo Smart Query Prototype - one-click deploy
+echo Codex one-click Git deploy
 echo ==========================================
 echo.
 echo Source: %SOURCE_DIR%
-echo Branch: %BRANCH%
 echo.
 
 call :REQUIRE_TOOL git "Git was not found. Please install Git from https://git-scm.com/"
 if errorlevel 1 goto FAIL
+
+call :DETECT_REPO
+if errorlevel 1 goto FAIL
+
+echo Remote: %REMOTE_URL%
+echo Branch: %BRANCH%
+echo Deploy URL: %DEPLOY_URL%
+echo.
 
 if not exist "%WORK_ROOT%" mkdir "%WORK_ROOT%" >nul 2>nul
 if errorlevel 1 (
@@ -86,23 +90,23 @@ echo.
 echo Preparing deploy workspace...
 if exist "%DEPLOY_DIR%\.git" (
   git config --global --add safe.directory "%DEPLOY_DIR_GIT%" >nul 2>nul
-  git -C "%DEPLOY_DIR%" remote set-url origin "%REMOTE_URL%"
-  git -C "%DEPLOY_DIR%" -c http.sslBackend=openssl fetch origin "%BRANCH%"
+  git -c safe.directory="%DEPLOY_DIR_GIT%" -C "%DEPLOY_DIR%" remote set-url origin "%DEPLOY_URL%"
+  git -c safe.directory="%DEPLOY_DIR_GIT%" -C "%DEPLOY_DIR%" -c http.sslBackend=openssl fetch origin "%BRANCH%"
   if errorlevel 1 goto GIT_FAIL
-  git -C "%DEPLOY_DIR%" checkout "%BRANCH%"
+  git -c safe.directory="%DEPLOY_DIR_GIT%" -C "%DEPLOY_DIR%" checkout "%BRANCH%"
   if errorlevel 1 goto GIT_FAIL
-  git -C "%DEPLOY_DIR%" reset --hard "origin/%BRANCH%"
+  git -c safe.directory="%DEPLOY_DIR_GIT%" -C "%DEPLOY_DIR%" reset --hard "origin/%BRANCH%"
   if errorlevel 1 goto GIT_FAIL
 ) else (
   if exist "%DEPLOY_DIR%" rmdir /s /q "%DEPLOY_DIR%"
-  git -c http.sslBackend=openssl clone --branch "%BRANCH%" "%REMOTE_URL%" "%DEPLOY_DIR%"
+  git -c http.sslBackend=openssl clone --branch "%BRANCH%" "%DEPLOY_URL%" "%DEPLOY_DIR%"
   if errorlevel 1 goto GIT_FAIL
   git config --global --add safe.directory "%DEPLOY_DIR_GIT%" >nul 2>nul
 )
 
-git -C "%DEPLOY_DIR%" config user.name "yangyaotain"
-git -C "%DEPLOY_DIR%" config user.email "261332632+yangyaotain@users.noreply.github.com"
-git -C "%DEPLOY_DIR%" config core.autocrlf false
+git -c safe.directory="%DEPLOY_DIR_GIT%" -C "%DEPLOY_DIR%" config user.name "codex-deploy"
+git -c safe.directory="%DEPLOY_DIR_GIT%" -C "%DEPLOY_DIR%" config user.email "codex-deploy@users.noreply.github.com"
+git -c safe.directory="%DEPLOY_DIR_GIT%" -C "%DEPLOY_DIR%" config core.autocrlf false
 
 echo.
 echo Syncing current project files...
@@ -115,10 +119,10 @@ if %ROBOCOPY_CODE% GEQ 8 (
 
 echo.
 echo Creating commit if files changed...
-git -C "%DEPLOY_DIR%" add -A
+git -c safe.directory="%DEPLOY_DIR_GIT%" -C "%DEPLOY_DIR%" add -A
 if errorlevel 1 goto GIT_FAIL
 
-git -C "%DEPLOY_DIR%" diff --cached --quiet
+git -c safe.directory="%DEPLOY_DIR_GIT%" -C "%DEPLOY_DIR%" diff --cached --quiet
 set "DIFF_CODE=%ERRORLEVEL%"
 
 if "%DIFF_CODE%"=="0" (
@@ -126,7 +130,7 @@ if "%DIFF_CODE%"=="0" (
 ) else if "%DIFF_CODE%"=="1" (
   for /f %%T in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HH-mm"') do set "STAMP=%%T"
   if not defined STAMP set "STAMP=%DATE%_%TIME%"
-  git -C "%DEPLOY_DIR%" commit -m "chore: deploy prototype update !STAMP!"
+  git -c safe.directory="%DEPLOY_DIR_GIT%" -C "%DEPLOY_DIR%" commit -m "chore: deploy prototype update !STAMP!"
   if errorlevel 1 goto GIT_FAIL
 ) else (
   echo [ERROR] Could not inspect staged changes.
@@ -135,29 +139,29 @@ if "%DIFF_CODE%"=="0" (
 
 echo.
 echo Latest local commit:
-git -C "%DEPLOY_DIR%" log -1 --oneline
+git -c safe.directory="%DEPLOY_DIR_GIT%" -C "%DEPLOY_DIR%" log -1 --oneline
 
 echo.
 echo Pushing to GitHub...
-git -C "%DEPLOY_DIR%" -c http.sslBackend=openssl push origin "%BRANCH%"
+git -c safe.directory="%DEPLOY_DIR_GIT%" -C "%DEPLOY_DIR%" -c http.sslBackend=openssl push origin "%BRANCH%"
 if errorlevel 1 (
   echo.
   echo Push failed once. Trying to rebase on latest origin/%BRANCH% and push again...
-  git -C "%DEPLOY_DIR%" -c http.sslBackend=openssl fetch origin "%BRANCH%"
+  git -c safe.directory="%DEPLOY_DIR_GIT%" -C "%DEPLOY_DIR%" -c http.sslBackend=openssl fetch origin "%BRANCH%"
   if errorlevel 1 goto GIT_FAIL
-  git -C "%DEPLOY_DIR%" rebase "origin/%BRANCH%"
+  git -c safe.directory="%DEPLOY_DIR_GIT%" -C "%DEPLOY_DIR%" rebase "origin/%BRANCH%"
   if errorlevel 1 (
     echo.
     echo [ERROR] Rebase failed. Keep this window open and send the text to Codex.
     goto FAIL
   )
-  git -C "%DEPLOY_DIR%" -c http.sslBackend=openssl push origin "%BRANCH%"
+  git -c safe.directory="%DEPLOY_DIR_GIT%" -C "%DEPLOY_DIR%" -c http.sslBackend=openssl push origin "%BRANCH%"
   if errorlevel 1 goto GIT_FAIL
 )
 
 echo.
 echo Verifying remote branch...
-git -C "%DEPLOY_DIR%" -c http.sslBackend=openssl ls-remote origin "refs/heads/%BRANCH%"
+git -c safe.directory="%DEPLOY_DIR_GIT%" -C "%DEPLOY_DIR%" -c http.sslBackend=openssl ls-remote origin "refs/heads/%BRANCH%"
 if errorlevel 1 goto GIT_FAIL
 
 echo.
@@ -173,6 +177,35 @@ echo Work root: %WORK_ROOT%
 echo Deploy dir: %DEPLOY_DIR%
 where git >nul 2>nul && echo Git: OK || echo Git: missing
 where gh >nul 2>nul && echo GitHub CLI: OK || echo GitHub CLI: missing
+call :DETECT_REPO
+if not errorlevel 1 (
+  echo Remote: %REMOTE_URL%
+  echo Branch: %BRANCH%
+  echo Deploy URL: %DEPLOY_URL%
+)
+exit /b 0
+
+:DETECT_REPO
+if defined CODEX_DEPLOY_REMOTE (
+  set "REMOTE_URL=%CODEX_DEPLOY_REMOTE%"
+) else (
+  for /f "usebackq delims=" %%R in (`git -C "%SOURCE_DIR%" remote get-url origin 2^>nul`) do set "REMOTE_URL=%%R"
+)
+if not defined REMOTE_URL (
+  echo [ERROR] Could not detect Git remote origin. Set CODEX_DEPLOY_REMOTE or add an origin remote.
+  exit /b 1
+)
+
+if defined CODEX_DEPLOY_BRANCH (
+  set "BRANCH=%CODEX_DEPLOY_BRANCH%"
+) else (
+  for /f "usebackq delims=" %%B in (`git -C "%SOURCE_DIR%" branch --show-current 2^>nul`) do set "BRANCH=%%B"
+)
+if not defined BRANCH set "BRANCH=main"
+
+set "CODEX_REMOTE_RAW=%REMOTE_URL%"
+for /f "usebackq delims=" %%U in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "$u=$env:CODEX_REMOTE_RAW; if ($u -match 'github\.com[:/](?<slug>[^/]+/[^/.]+)(?:\.git)?/?$') { 'https://github.com/' + $Matches.slug + '.git' } else { $u }"`) do set "DEPLOY_URL=%%U"
+if not defined DEPLOY_URL set "DEPLOY_URL=%REMOTE_URL%"
 exit /b 0
 
 :REQUIRE_TOOL
