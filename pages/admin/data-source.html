@@ -459,7 +459,8 @@
 
     .dse-field label .req { color: #ef4444; margin-left: 4px; }
 
-    .dse-field input {
+    .dse-field input,
+    .dse-field select {
       width: 100%;
       height: 36px;
       padding: 0 12px;
@@ -474,9 +475,18 @@
     }
 
     .dse-field input:focus,
+    .dse-field select:focus,
     .dse-tree-btn:focus {
       border-color: #93c5fd;
       box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+    }
+
+    .dse-field input[readonly],
+    .dse-tree-btn:disabled {
+      color: #6b7280;
+      background: #f8fafc;
+      border-color: #d9e2ef;
+      cursor: not-allowed;
     }
 
     .dse-field .hint {
@@ -535,6 +545,40 @@
     }
 
     .dse-tree-wrap.open .dse-tree-btn .arrow { transform: rotate(180deg); }
+
+    .dse-tree-search {
+      position: sticky;
+      top: -6px;
+      z-index: 1;
+      padding: 4px 4px 6px;
+      background: #fff;
+    }
+
+    .dse-tree-search input {
+      width: 100%;
+      height: 32px;
+      padding: 0 10px;
+      color: #374151;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12.5px;
+      outline: none;
+      box-sizing: border-box;
+    }
+
+    .dse-tree-search input:focus {
+      background: #fff;
+      border-color: #93c5fd;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+    }
+
+    .dse-tree-empty {
+      padding: 14px 8px 12px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 12.5px;
+    }
 
     .dse-tree-pop {
       position: absolute;
@@ -1394,6 +1438,28 @@
     </div>
     <div class="modal-body">
       <div class="dse-grid">
+        <!-- 数据来源 -->
+        <div class="dse-field full">
+          <label>数据来源<span class="req">*</span></label>
+          <select id="dseSourceKind">
+            <option value="custom" selected>自定义</option>
+            <option value="platform">数据中台</option>
+          </select>
+        </div>
+
+        <!-- 中台数据源选择 -->
+        <div class="dse-field full hidden" id="dseMidField">
+          <label>中台数据源选择<span class="req">*</span></label>
+          <div class="dse-tree-wrap" id="dseMidWrap">
+            <button type="button" class="dse-tree-btn" id="dseMidBtn">
+              <span class="dse-tree-text placeholder">请选择中台数据源</span>
+              <span class="arrow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>
+            </button>
+            <div class="dse-tree-pop" id="dseMidPop"></div>
+          </div>
+          <p class="hint">选择后自动回显中台维护的连接信息，除所属分类外不可修改。</p>
+        </div>
+
         <!-- 数据库类型 -->
         <div class="dse-field">
           <label>数据库类型<span class="req">*</span></label>
@@ -1406,12 +1472,12 @@
           </div>
         </div>
 
-        <!-- 所属目录 -->
+        <!-- 所属分类 -->
         <div class="dse-field">
-          <label>所属目录<span class="req">*</span></label>
+          <label>所属分类<span class="req">*</span></label>
           <div class="dse-tree-wrap" id="dseDomainWrap">
             <button type="button" class="dse-tree-btn" id="dseDomainBtn">
-              <span class="dse-tree-text placeholder">请选择所属目录</span>
+              <span class="dse-tree-text placeholder">请选择所属分类</span>
               <span class="arrow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>
             </button>
             <div class="dse-tree-pop" id="dseDomainPop"></div>
@@ -1452,7 +1518,7 @@
         </div>
 
         <!-- 测试连接 -->
-        <div class="dse-test-row">
+        <div class="dse-test-row" id="dseTestRow">
           <button class="secondary-btn" type="button" id="dseBtnTest">测试连接</button>
           <div class="dse-result" id="dseResult">尚未测试，请填写连接信息后点击「测试连接」。</div>
         </div>
@@ -2107,6 +2173,23 @@
       ]}
     ];
 
+    const MID_SOURCE_TREE = [
+      { name: '数据中台', children: [
+        { name: '销售域', children: [
+          { id: 'mid_sales_dw', name: '销售统一数据源', type: 'Doris', dbName: 'dwd_sales_unified', dbAlias: '销售统一数据源', url: 'jdbc:mysql://mid-doris.internal:9030/dwd_sales', user: 'mid_readonly', pwd: '******' },
+          { id: 'mid_order_mart', name: '订单主题数据源', type: 'MySQL', dbName: 'ads_order_subject', dbAlias: '订单主题数据源', url: 'jdbc:mysql://mid-mysql.internal:3306/ads_order', user: 'mid_order_reader', pwd: '******' }
+        ]},
+        { name: '客户域', children: [
+          { id: 'mid_customer_dw', name: '客户画像数据源', type: 'PostgreSQL', dbName: 'dws_customer_profile', dbAlias: '客户画像数据源', url: 'jdbc:postgresql://mid-pg.internal:5432/customer_profile', user: 'mid_customer_ro', pwd: '******' },
+          { id: 'mid_member_tag', name: '会员标签数据源', type: 'Hive', dbName: 'dwd_member_tag', dbAlias: '会员标签数据源', url: 'jdbc:hive2://mid-hive.internal:10000/dwd_member_tag', user: 'mid_hive_reader', pwd: '******' }
+        ]},
+        { name: '运营域', children: [
+          { id: 'mid_event_track', name: '埋点事件数据源', type: 'ClickHouse', dbName: 'ods_event_track', dbAlias: '埋点事件数据源', url: 'jdbc:clickhouse://mid-clickhouse.internal:8123/ods_event', user: 'mid_event_ro', pwd: '******' },
+          { id: 'mid_metric_daily', name: '运营指标数据源', type: 'ClickHouse', dbName: 'ads_metric_daily', dbAlias: '运营指标数据源', url: 'jdbc:clickhouse://mid-clickhouse.internal:8123/ads_metric', user: 'mid_metric_ro', pwd: '******' }
+        ]}
+      ]}
+    ];
+
     function getDomainTreeForEdit() {
       return DS_DATA.map((d) => ({
         name: d.name,
@@ -2117,12 +2200,27 @@
     function buildDseTree(popEl, btnEl, data, options) {
       const opts = options || {};
       const onlyLeafSelect = !!opts.onlyLeafSelect;
+      let keyword = '';
+
+      const filterNodes = (nodes) => nodes.reduce((arr, n) => {
+        const children = n.children ? filterNodes(n.children) : [];
+        const matched = !keyword || n.name.toLowerCase().includes(keyword);
+        if (matched) {
+          arr.push(Object.assign({}, n, n.children ? { children: children.length ? children : n.children } : {}));
+        } else if (children.length) {
+          arr.push(Object.assign({}, n, { children }));
+        }
+        return arr;
+      }, []);
+
       const renderNodes = (nodes) => nodes.map((n) => {
         const hasChild = !!(n.children && n.children.length);
+        const active = (opts.selectedId && n.id === opts.selectedId) || (!opts.selectedId && opts.selectedName && n.name === opts.selectedName);
         return (
           '<div class="dse-tree-node' + (hasChild ? '' : ' leaf') + '">'
-            + '<div class="dse-tree-row' + (hasChild ? '' : ' empty-toggle') + '"'
+            + '<div class="dse-tree-row' + (hasChild ? '' : ' empty-toggle') + (active ? ' active' : '') + '"'
               + ' data-name="' + escapeHTML(n.name) + '"'
+              + ' data-id="' + escapeHTML(n.id || '') + '"'
               + ' data-leaf="' + (hasChild ? '0' : '1') + '">'
               + '<span class="toggle">' + (hasChild ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>' : '') + '</span>'
               + '<span class="text">' + escapeHTML(n.name) + '</span>'
@@ -2131,9 +2229,23 @@
           + '</div>'
         );
       }).join('');
-      popEl.innerHTML = renderNodes(data);
+
+      const render = () => {
+        const list = filterNodes(data);
+        const searchHTML = opts.searchable
+          ? '<div class="dse-tree-search"><input type="text" value="' + escapeHTML(keyword) + '" placeholder="搜索中台目录 / 数据源" /></div>'
+          : '';
+        popEl.innerHTML = searchHTML + (list.length ? renderNodes(list) : '<div class="dse-tree-empty">没有匹配的数据源</div>');
+      };
+
+      render();
 
       popEl.onclick = (e) => {
+        const search = e.target.closest('.dse-tree-search');
+        if (search) {
+          e.stopPropagation();
+          return;
+        }
         const row = e.target.closest('.dse-tree-row');
         if (!row) return;
         e.stopPropagation();
@@ -2148,6 +2260,21 @@
         txt.textContent = row.dataset.name;
         txt.classList.remove('placeholder');
         btnEl.parentElement.classList.remove('open');
+        if (typeof opts.onSelect === 'function') {
+          opts.onSelect({ id: row.dataset.id, name: row.dataset.name, isLeaf });
+        }
+      };
+
+      popEl.oninput = (e) => {
+        const input = e.target.closest('.dse-tree-search input');
+        if (!input) return;
+        keyword = input.value.trim().toLowerCase();
+        render();
+        const nextInput = popEl.querySelector('.dse-tree-search input');
+        if (nextInput) {
+          nextInput.focus();
+          nextInput.setSelectionRange(nextInput.value.length, nextInput.value.length);
+        }
       };
 
       btnEl.onclick = (e) => {
@@ -2179,15 +2306,86 @@
     const dseEditMask = document.getElementById('dseEditMask');
     const dseEditModal = document.getElementById('dseEditModal');
     let dseCurrentMode = 'add';
+    let dseSelectedMidSourceId = '';
+
+    function findMidSourceById(id, nodes) {
+      if (!id) return null;
+      const list = nodes || MID_SOURCE_TREE;
+      for (const n of list) {
+        if (n.id === id) return n;
+        if (n.children) {
+          const found = findMidSourceById(id, n.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    }
+
+    function getTreeBtnValue(btnEl) {
+      const txt = btnEl.querySelector('.dse-tree-text');
+      return txt && !txt.classList.contains('placeholder') ? txt.textContent.trim() : '';
+    }
+
+    function setDseConnectionReadonly(readonly) {
+      document.getElementById('dseTypeBtn').disabled = readonly;
+      ['dseDbName', 'dseDbAlias', 'dseUrl', 'dseUser', 'dsePwd'].forEach((id) => {
+        document.getElementById(id).readOnly = readonly;
+      });
+      document.getElementById('dseTestRow').classList.toggle('hidden', readonly);
+    }
+
+    function clearDseConnectionFields() {
+      setTreeBtnValue(document.getElementById('dseTypeBtn'), '', '请选择数据库类型');
+      document.getElementById('dseDbName').value = '';
+      document.getElementById('dseDbAlias').value = '';
+      document.getElementById('dseUrl').value = '';
+      document.getElementById('dseUser').value = '';
+      document.getElementById('dsePwd').value = '';
+    }
+
+    function fillDseFromMidSource(source) {
+      if (!source) {
+        clearDseConnectionFields();
+        return;
+      }
+      setTreeBtnValue(document.getElementById('dseTypeBtn'), source.type || '', '请选择数据库类型');
+      document.getElementById('dseDbName').value = source.dbName || '';
+      document.getElementById('dseDbAlias').value = source.dbAlias || source.name || '';
+      document.getElementById('dseUrl').value = source.url || '';
+      document.getElementById('dseUser').value = source.user || '';
+      document.getElementById('dsePwd').value = source.pwd || '******';
+    }
+
+    function applyDseSourceKind() {
+      const kind = document.getElementById('dseSourceKind').value;
+      const isPlatform = kind === 'platform';
+      document.getElementById('dseMidField').classList.toggle('hidden', !isPlatform);
+      setDseConnectionReadonly(isPlatform);
+      document.getElementById('dseEditSubtitle').textContent = isPlatform
+        ? '选择数据中台已有数据源后回显连接信息，仅允许调整所属分类。'
+        : (dseCurrentMode === 'edit'
+          ? '修改数据源连接信息，建议先「测试连接」再保存。'
+          : '请填写数据源连接信息，建议先「测试连接」再保存。');
+
+      if (isPlatform) {
+        fillDseFromMidSource(findMidSourceById(dseSelectedMidSourceId));
+      } else {
+        dseSelectedMidSourceId = '';
+        setTreeBtnValue(document.getElementById('dseMidBtn'), '', '请选择中台数据源');
+        resetDseResult();
+      }
+    }
 
     function openDseEdit(mode, presets) {
       dseCurrentMode = mode === 'edit' ? 'edit' : 'add';
       document.getElementById('dseEditTitle').textContent = dseCurrentMode === 'edit' ? '编辑数据源' : '新增数据源';
-      document.getElementById('dseEditSubtitle').textContent = dseCurrentMode === 'edit'
-        ? '修改数据源连接信息，建议先「测试连接」再保存。'
-        : '请填写数据源连接信息，建议先「测试连接」再保存。';
 
-      // 重新构建两棵下拉树（域目录可能因新增/重命名而变化）
+      const data = presets || {};
+      const sourceKind = data.sourceKind === 'platform' ? 'platform' : 'custom';
+      dseSelectedMidSourceId = sourceKind === 'platform' ? (data.midSourceId || '') : '';
+      document.getElementById('dseSourceKind').value = sourceKind;
+
+      // 重新构建下拉树（域目录可能因新增/重命名而变化）
       buildDseTree(
         document.getElementById('dseTypePop'),
         document.getElementById('dseTypeBtn'),
@@ -2200,16 +2398,32 @@
         getDomainTreeForEdit(),
         { onlyLeafSelect: false }
       );
+      buildDseTree(
+        document.getElementById('dseMidPop'),
+        document.getElementById('dseMidBtn'),
+        MID_SOURCE_TREE,
+        {
+          onlyLeafSelect: true,
+          searchable: true,
+          selectedId: dseSelectedMidSourceId,
+          onSelect: (item) => {
+            dseSelectedMidSourceId = item.id || '';
+            fillDseFromMidSource(findMidSourceById(dseSelectedMidSourceId));
+          }
+        }
+      );
 
-      const data = presets || {};
       setTreeBtnValue(document.getElementById('dseTypeBtn'), data.type || '', '请选择数据库类型');
-      setTreeBtnValue(document.getElementById('dseDomainBtn'), data.domain || '', '请选择所属目录');
+      setTreeBtnValue(document.getElementById('dseDomainBtn'), data.domain || '', '请选择所属分类');
+      const midSource = findMidSourceById(dseSelectedMidSourceId);
+      setTreeBtnValue(document.getElementById('dseMidBtn'), midSource ? midSource.name : '', '请选择中台数据源');
       document.getElementById('dseDbName').value = data.dbName || '';
       document.getElementById('dseDbAlias').value = data.dbAlias || '';
       document.getElementById('dseUrl').value = data.url || '';
       document.getElementById('dseUser').value = data.user || '';
       document.getElementById('dsePwd').value = data.pwd || '';
       resetDseResult();
+      applyDseSourceKind();
 
       dseEditMask.classList.remove('hidden');
       dseEditModal.classList.remove('hidden');
@@ -2226,6 +2440,8 @@
     document.getElementById('dsBtnEdit').addEventListener('click', () => {
       const found = findSource(activeSourceId);
       const presets = found ? {
+        sourceKind: found.source.sourceKind || 'custom',
+        midSourceId: found.source.midSourceId || '',
         type: found.source.type,
         domain: found.domain.name,
         dbName: found.source.name,
@@ -2235,6 +2451,18 @@
         pwd: '******'
       } : {};
       openDseEdit('edit', presets);
+    });
+
+    document.getElementById('dseSourceKind').addEventListener('change', () => {
+      if (document.getElementById('dseSourceKind').value === 'platform') {
+        dseSelectedMidSourceId = '';
+        setTreeBtnValue(document.getElementById('dseMidBtn'), '', '请选择中台数据源');
+        clearDseConnectionFields();
+      } else {
+        clearDseConnectionFields();
+        resetDseResult();
+      }
+      applyDseSourceKind();
     });
 
     dseEditMask.addEventListener('click', closeDseEdit);
@@ -2285,13 +2513,25 @@
 
     // 保存
     document.getElementById('dseBtnSave').addEventListener('click', () => {
+      const sourceKind = document.getElementById('dseSourceKind').value;
+      const domain = getTreeBtnValue(document.getElementById('dseDomainBtn'));
+      if (!domain) {
+        showToast && showToast('请选择所属分类');
+        return;
+      }
+      if (sourceKind === 'platform' && !dseSelectedMidSourceId) {
+        showToast && showToast('请选择中台数据源');
+        return;
+      }
       const dbName = (document.getElementById('dseDbName').value || '').trim();
       if (!dbName) {
         showToast && showToast('请填写数据库名称');
         return;
       }
       closeDseEdit();
-      showToast && showToast(dseCurrentMode === 'edit' ? '已保存修改' : '已新增数据源');
+      showToast && showToast(sourceKind === 'platform'
+        ? (dseCurrentMode === 'edit' ? '已保存中台数据源分类' : '已引用中台数据源')
+        : (dseCurrentMode === 'edit' ? '已保存修改' : '已新增数据源'));
     });
 
     // ----------------------------------------------------------------

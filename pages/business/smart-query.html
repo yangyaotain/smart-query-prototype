@@ -1170,6 +1170,75 @@
           <div class="field full"><label>说明文字</label><textarea id="saveDesc">近6个月华东区销售额持续增长，6月达到3248万元。</textarea></div>
         </div>
       </div>
+
+      <!-- 报告模式（新版） -->
+      <div class="save-mode-report hidden" id="saveModeReport">
+        <div class="field full">
+          <label>报告选择</label>
+          <div class="report-save-switch" id="reportSaveSwitch">
+            <button type="button" class="active" data-report-mode="new" onclick="switchReportSaveMode('new')">新建报告</button>
+            <button type="button" data-report-mode="existing" onclick="switchReportSaveMode('existing')">已有报告</button>
+          </div>
+        </div>
+
+        <div class="form-grid report-save-form" id="reportSaveNewForm">
+          <div class="field full">
+            <label>报告名称</label>
+            <input id="reportNewName" value="华东区近6个月销售额趋势分析" />
+          </div>
+          <div class="field full">
+            <label>所属分类</label>
+            <div class="dir-picker report-picker" id="reportCategoryPicker">
+              <button type="button" class="dir-picker-trigger" id="reportCategoryTrigger" onclick="toggleReportPicker(event, 'category')">
+                <span class="dir-picker-text" id="reportCategoryText">销售经营</span>
+                <svg class="dir-picker-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"></path></svg>
+              </button>
+              <div class="dir-picker-panel hidden" id="reportCategoryPanel">
+                <div class="dir-picker-search">
+                  <span class="dir-search-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
+                  <input id="reportCategorySearch" placeholder="搜索分类" oninput="filterReportPicker('category', this.value)" />
+                </div>
+                <div class="dir-picker-tree" id="reportCategoryTree"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-grid report-save-form hidden" id="reportSaveExistingForm">
+          <div class="field full">
+            <label>选择报告</label>
+            <div class="dir-picker report-picker" id="reportExistingPicker">
+              <button type="button" class="dir-picker-trigger" id="reportExistingTrigger" onclick="toggleReportPicker(event, 'existing')">
+                <span class="dir-picker-text" id="reportExistingText">销售经营 / 二季度销售复盘报告</span>
+                <svg class="dir-picker-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"></path></svg>
+              </button>
+              <div class="dir-picker-panel hidden" id="reportExistingPanel">
+                <div class="dir-picker-search">
+                  <span class="dir-search-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
+                  <input id="reportExistingSearch" placeholder="搜索目录 / 报告" oninput="filterReportPicker('existing', this.value)" />
+                </div>
+                <div class="dir-picker-tree" id="reportExistingTree"></div>
+              </div>
+            </div>
+          </div>
+          <div class="field full">
+            <label>报告目录</label>
+            <div class="dir-picker report-picker" id="reportSectionPicker">
+              <button type="button" class="dir-picker-trigger" id="reportSectionTrigger" onclick="toggleReportPicker(event, 'section')">
+                <span class="dir-picker-text" id="reportSectionText">区域销售表现</span>
+                <svg class="dir-picker-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"></path></svg>
+              </button>
+              <div class="dir-picker-panel hidden" id="reportSectionPanel">
+                <div class="dir-picker-search">
+                  <span class="dir-search-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
+                  <input id="reportSectionSearch" placeholder="搜索报告目录" oninput="filterReportPicker('section', this.value)" />
+                </div>
+                <div class="dir-picker-tree" id="reportSectionTree"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="modal-foot"><button class="ghost-btn" onclick="closeModal()">取消</button><button class="primary-btn" onclick="saveSuccess()">确认添加</button></div>
   </section>

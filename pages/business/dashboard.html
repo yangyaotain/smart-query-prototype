@@ -236,6 +236,12 @@
           </div>
         </div>
       </div>
+      <div class="dash-query-bar">
+        <label for="dashNameQuery">名称</label>
+        <input id="dashNameQuery" type="text" placeholder="请输入仪表盘名称" />
+        <button type="button" class="primary-btn" id="btnDashQuery">查询</button>
+        <button type="button" class="ghost-btn" id="btnDashReset">重置</button>
+      </div>
       <div class="module-scroll">
         <!-- 平铺视图 -->
         <div class="dash-tile-wrap" id="tileView">
@@ -335,7 +341,6 @@
       <button class="ghost-btn" data-act="close">关闭</button>
       <button class="secondary-btn">加入看板</button>
       <button class="secondary-btn">加入报告</button>
-      <button class="primary-btn">追问</button>
     </div>
   </aside>
 
@@ -382,6 +387,11 @@
         { id: 'd11', name: '产品线销售占比',       thumb: 'pie',   modifier: '王五', time: '2026-04-14 19:42:18' },
         { id: 'd12', name: '关键经营指标KPI总览', thumb: 'table', modifier: '张三', time: '2026-04-13 18:18:28' },
       ];
+
+      const DASH_STATE = {
+        keyword: '',
+        deletedIds: new Set(),
+      };
 
       const ICON_PREVIEW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
       const ICON_DELETE  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
@@ -657,9 +667,23 @@
         if (e.key === 'Escape' && !previewDrawer.classList.contains('hidden')) closePreview();
       });
 
-      function renderTiles() {
+      function getVisibleDashboards() {
+        const kw = DASH_STATE.keyword.trim().toLowerCase();
+        return DASHBOARDS.filter((d) => {
+          if (DASH_STATE.deletedIds.has(d.id)) return false;
+          return !kw || d.name.toLowerCase().includes(kw);
+        });
+      }
+
+      function renderTiles(list) {
         const grid = document.getElementById('tileGrid');
-        grid.innerHTML = DASHBOARDS.map((d) => (
+        const data = list || getVisibleDashboards();
+        if (!data.length) {
+          grid.innerHTML = '<div class="dash-empty">暂无匹配的仪表盘</div>';
+          document.getElementById('tileTotal').textContent = '0';
+          return;
+        }
+        grid.innerHTML = data.map((d) => (
           '<article class="dash-card" data-id="' + d.id + '" data-name="' + d.name + '">' +
             thumbHTML(d.thumb) +
             '<div class="dash-overlay">' +
@@ -672,9 +696,15 @@
         document.getElementById('tileTotal').textContent = grid.children.length;
       }
 
-      function renderTable() {
+      function renderTable(list) {
         const body = document.getElementById('dashTableBody');
-        body.innerHTML = DASHBOARDS.map((d) => (
+        const data = list || getVisibleDashboards();
+        if (!data.length) {
+          body.innerHTML = '<tr class="dash-empty-row"><td colspan="5">暂无匹配的仪表盘</td></tr>';
+          document.getElementById('rowTotal').textContent = '0';
+          return;
+        }
+        body.innerHTML = data.map((d) => (
           '<tr data-id="' + d.id + '">' +
             '<td class="col-check"><label class="cb"><input type="checkbox" class="row-check" /><span class="cb-box"></span></label></td>' +
             '<td class="cell-name">' + d.name + '</td>' +
@@ -689,8 +719,13 @@
         document.getElementById('rowTotal').textContent = body.children.length;
       }
 
-      renderTiles();
-      renderTable();
+      function renderDashboards() {
+        const list = getVisibleDashboards();
+        renderTiles(list);
+        renderTable(list);
+      }
+
+      renderDashboards();
 
       // ---- info-tip 顶层 tooltip（避免被侧栏 overflow 截断） ----
       (function setupTip() {
@@ -1110,7 +1145,29 @@
       const dashTable = document.getElementById('dashTable');
       const btnBatchDelete = document.getElementById('btnBatchDelete');
       const batchCount = document.getElementById('batchCount');
-      const rowTotal = document.getElementById('rowTotal');
+      const dashNameQuery = document.getElementById('dashNameQuery');
+      const btnDashQuery = document.getElementById('btnDashQuery');
+      const btnDashReset = document.getElementById('btnDashReset');
+
+      function applyDashboardQuery() {
+        DASH_STATE.keyword = dashNameQuery.value.trim();
+        renderDashboards();
+        refreshBatchState();
+      }
+
+      btnDashQuery.addEventListener('click', applyDashboardQuery);
+      dashNameQuery.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          applyDashboardQuery();
+        }
+      });
+      btnDashReset.addEventListener('click', function () {
+        dashNameQuery.value = '';
+        DASH_STATE.keyword = '';
+        renderDashboards();
+        refreshBatchState();
+      });
 
       function refreshBatchState() {
         const checks = dashTable.querySelectorAll('tbody .row-check');
@@ -1157,8 +1214,8 @@
             subtitle: '删除后，该仪表盘将不再展示。',
             message: '确定要删除「<span style="color:#17375e;font-weight:700;">' + name + '</span>」吗？',
             onConfirm: function () {
-              tr.remove();
-              rowTotal.textContent = String(dashTable.querySelectorAll('tbody tr').length);
+              DASH_STATE.deletedIds.add(tr.dataset.id);
+              renderDashboards();
               refreshBatchState();
               showToast('已删除：' + name);
             },
@@ -1178,8 +1235,11 @@
           message: '确定要批量删除选中的 <span style="color:#17375e;font-weight:700;">' + checked.length + '</span> 个仪表盘吗？',
           okText: '批量删除',
           onConfirm: function () {
-            checked.forEach((cb) => cb.closest('tr').remove());
-            rowTotal.textContent = String(dashTable.querySelectorAll('tbody tr').length);
+            checked.forEach((cb) => {
+              const tr = cb.closest('tr');
+              if (tr && tr.dataset.id) DASH_STATE.deletedIds.add(tr.dataset.id);
+            });
+            renderDashboards();
             refreshBatchState();
             showToast('已批量删除');
           },
@@ -1199,7 +1259,9 @@
             subtitle: '删除后，该仪表盘将不再展示。',
             message: '确定要删除「<span style="color:#17375e;font-weight:700;">' + name + '</span>」吗？',
             onConfirm: function () {
-              card.remove();
+              DASH_STATE.deletedIds.add(card.dataset.id);
+              renderDashboards();
+              refreshBatchState();
               showToast('已删除：' + name);
             },
           });

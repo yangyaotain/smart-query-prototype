@@ -76,6 +76,9 @@ let trendChart = null;
 let comparisonChart = null;
 let currentResultView = "line";
 let lastWordExportScope = null;
+let currentSaveType = "";
+let currentReportSaveMode = "new";
+let activeReportPicker = "";
 
 const resultChartData = [
   { name: "1月", value: 2180 },
@@ -3104,6 +3107,38 @@ const DASHBOARD_DIR_TREE = [
   { id: 'n4', name: '财务分析' },
 ];
 
+const REPORT_SAVE_DIR_TREE = [
+  { id: 'c1', name: '销售经营', children: [
+    { id: 'r1', name: '二季度销售复盘报告', kind: 'report' },
+    { id: 'r2', name: '4月经营分析报告', kind: 'report' },
+    { id: 'r3', name: '华东区销售专题分析', kind: 'report' },
+  ]},
+  { id: 'c2', name: '渠道与产品', children: [
+    { id: 'r4', name: '渠道转化专项报告', kind: 'report' },
+    { id: 'r5', name: '产品线毛利分析报告', kind: 'report' },
+  ]},
+  { id: 'c3', name: '客户运营', children: [
+    { id: 'r6', name: '重点客户复购报告', kind: 'report' },
+    { id: 'r7', name: '客户分层运营报告', kind: 'report' },
+  ]},
+  { id: 'c4', name: '管理层汇报', children: [
+    { id: 'r8', name: '月度经营汇报', kind: 'report' },
+  ]},
+];
+
+const REPORT_SECTION_TREE = [
+  { id: 's1', name: '报告摘要', kind: 'section' },
+  { id: 's2', name: '核心指标表现', kind: 'section', children: [
+    { id: 's2-1', name: '销售额趋势', kind: 'section' },
+    { id: 's2-2', name: '目标完成情况', kind: 'section' },
+  ]},
+  { id: 's3', name: '区域销售表现', kind: 'section', children: [
+    { id: 's3-1', name: '华东区表现', kind: 'section' },
+    { id: 's3-2', name: '重点区域对比', kind: 'section' },
+  ]},
+  { id: 's4', name: '经营建议', kind: 'section' },
+];
+
 function renderDirTree() {
   const root = document.getElementById('saveDirTree');
   if (!root) return;
@@ -3241,6 +3276,257 @@ function filterDirTree(kw) {
   });
 }
 
+function getReportPickerConfig(kind) {
+  const map = {
+    category: {
+      pickerId: 'reportCategoryPicker',
+      triggerId: 'reportCategoryTrigger',
+      panelId: 'reportCategoryPanel',
+      treeId: 'reportCategoryTree',
+      textId: 'reportCategoryText',
+      searchId: 'reportCategorySearch',
+      data: REPORT_SAVE_DIR_TREE.map((c) => ({ id: c.id, name: c.name, kind: 'category' })),
+      selectable: ['category'],
+      empty: '没有匹配的分类',
+    },
+    existing: {
+      pickerId: 'reportExistingPicker',
+      triggerId: 'reportExistingTrigger',
+      panelId: 'reportExistingPanel',
+      treeId: 'reportExistingTree',
+      textId: 'reportExistingText',
+      searchId: 'reportExistingSearch',
+      data: REPORT_SAVE_DIR_TREE.map((c) => ({
+        id: c.id,
+        name: c.name,
+        kind: 'category',
+        children: (c.children || []).map((r) => Object.assign({}, r, { kind: 'report' })),
+      })),
+      selectable: ['report'],
+      empty: '没有匹配的报告',
+    },
+    section: {
+      pickerId: 'reportSectionPicker',
+      triggerId: 'reportSectionTrigger',
+      panelId: 'reportSectionPanel',
+      treeId: 'reportSectionTree',
+      textId: 'reportSectionText',
+      searchId: 'reportSectionSearch',
+      data: REPORT_SECTION_TREE,
+      selectable: ['section'],
+      empty: '没有匹配的报告目录',
+    },
+  };
+  return map[kind];
+}
+
+function renderReportPicker(kind) {
+  const cfg = getReportPickerConfig(kind);
+  if (!cfg) return;
+  const tree = document.getElementById(cfg.treeId);
+  if (!tree) return;
+
+  function walk(items, level, parentPath) {
+    return items.map((it) => {
+      const itemKind = it.kind || 'category';
+      const path = parentPath.concat(it.name);
+      const hasChildren = !!(it.children && it.children.length);
+      const selectable = cfg.selectable.includes(itemKind);
+      const stateCls = hasChildren ? 'expanded' : 'leaf';
+      let html = '<div class="dir-tree-node ' + stateCls + '" data-id="' + escapeHTML(it.id) + '" data-kind="' + escapeHTML(itemKind) + '">';
+      html += '<div class="dir-tree-row" data-selectable="' + (selectable ? '1' : '0') + '" data-path="' + escapeHTML(path.join(' / ')) + '" style="padding-left:' + (10 + (level - 1) * 18) + 'px">';
+      html += hasChildren ? '<span class="dir-tree-toggle">▾</span>' : '<span class="dir-tree-toggle empty"></span>';
+      html += '<span class="dir-tree-icon"></span>';
+      html += '<span class="dir-tree-label">' + escapeHTML(it.name) + '</span>';
+      html += '</div>';
+      if (hasChildren) {
+        html += '<div class="dir-tree-children">' + walk(it.children, level + 1, path) + '</div>';
+      }
+      html += '</div>';
+      return html;
+    }).join('');
+  }
+
+  tree.innerHTML = walk(cfg.data, 1, []);
+
+  tree.onclick = function (e) {
+    const toggle = e.target.closest('.dir-tree-toggle');
+    const row = e.target.closest('.dir-tree-row');
+    if (!row) return;
+    const node = row.parentElement;
+    const hasToggle = toggle && !toggle.classList.contains('empty');
+    const selectable = row.dataset.selectable === '1';
+    if (hasToggle && (toggle === e.target || !selectable)) {
+      e.stopPropagation();
+      toggleReportTreeNode(node, toggle);
+      return;
+    }
+    if (!selectable) {
+      const t = node.querySelector(':scope > .dir-tree-row > .dir-tree-toggle');
+      if (t && !t.classList.contains('empty')) toggleReportTreeNode(node, t);
+      return;
+    }
+    tree.querySelectorAll('.dir-tree-row.active').forEach((el) => el.classList.remove('active'));
+    row.classList.add('active');
+    document.getElementById(cfg.textId).textContent = row.dataset.path;
+    closeReportPickers();
+  };
+}
+
+function toggleReportTreeNode(node, toggle) {
+  if (!node || !toggle) return;
+  if (node.classList.contains('expanded')) {
+    node.classList.remove('expanded');
+    node.classList.add('collapsed');
+    toggle.textContent = '▸';
+  } else {
+    node.classList.remove('collapsed');
+    node.classList.add('expanded');
+    toggle.textContent = '▾';
+  }
+}
+
+function filterReportPicker(kind, kw) {
+  const cfg = getReportPickerConfig(kind);
+  if (!cfg) return;
+  const tree = document.getElementById(cfg.treeId);
+  if (!tree) return;
+  const q = (kw || '').trim().toLowerCase();
+  const nodes = tree.querySelectorAll('.dir-tree-node');
+  if (!q) {
+    nodes.forEach((n) => (n.style.display = ''));
+    const empty = tree.querySelector('.dir-tree-empty');
+    if (empty) empty.remove();
+    return;
+  }
+  nodes.forEach((n) => (n.style.display = 'none'));
+  nodes.forEach((n) => {
+    const label = n.querySelector(':scope > .dir-tree-row .dir-tree-label').textContent.toLowerCase();
+    if (label.includes(q)) {
+      let cur = n;
+      while (cur && cur !== tree) {
+        if (cur.classList && cur.classList.contains('dir-tree-node')) {
+          cur.style.display = '';
+          cur.classList.remove('collapsed');
+          cur.classList.add('expanded');
+          const t = cur.querySelector(':scope > .dir-tree-row > .dir-tree-toggle');
+          if (t && !t.classList.contains('empty')) t.textContent = '▾';
+        }
+        cur = cur.parentElement;
+      }
+    }
+  });
+  const hasVisible = Array.from(nodes).some((n) => n.style.display !== 'none');
+  let empty = tree.querySelector('.dir-tree-empty');
+  if (!hasVisible) {
+    if (!empty) {
+      empty = document.createElement('div');
+      empty.className = 'dir-tree-empty';
+      tree.appendChild(empty);
+    }
+    empty.textContent = cfg.empty;
+  } else if (empty) {
+    empty.remove();
+  }
+}
+
+function positionReportPicker(kind) {
+  const cfg = getReportPickerConfig(kind);
+  if (!cfg) return;
+  const panel = document.getElementById(cfg.panelId);
+  const trigger = document.getElementById(cfg.triggerId);
+  if (!panel || !trigger) return;
+  if (panel.parentElement !== document.body) {
+    document.body.appendChild(panel);
+  }
+  const rect = trigger.getBoundingClientRect();
+  panel.style.left = rect.left + 'px';
+  panel.style.width = rect.width + 'px';
+  const panelMax = 320;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  if (spaceBelow < panelMax + 16 && rect.top > panelMax + 16) {
+    panel.style.top = (rect.top - panelMax - 6) + 'px';
+  } else {
+    panel.style.top = (rect.bottom + 6) + 'px';
+  }
+}
+
+function toggleReportPicker(e, kind) {
+  e.stopPropagation();
+  const cfg = getReportPickerConfig(kind);
+  if (!cfg) return;
+  const panel = document.getElementById(cfg.panelId);
+  const trigger = document.getElementById(cfg.triggerId);
+  if (!panel || !trigger) return;
+  const willOpen = panel.classList.contains('hidden');
+  closeDirPicker();
+  closeReportPickers();
+  if (!willOpen) return;
+  activeReportPicker = kind;
+  panel.classList.remove('hidden');
+  trigger.classList.add('open');
+  positionReportPicker(kind);
+  window.addEventListener('resize', onReportPickerReposition);
+  window.addEventListener('scroll', onReportPickerReposition, true);
+  setTimeout(() => document.addEventListener('click', onDocClickCloseReportPicker), 0);
+}
+
+function onReportPickerReposition() {
+  if (activeReportPicker) positionReportPicker(activeReportPicker);
+}
+
+function closeReportPickers() {
+  ['category', 'existing', 'section'].forEach((kind) => {
+    const cfg = getReportPickerConfig(kind);
+    if (!cfg) return;
+    const panel = document.getElementById(cfg.panelId);
+    const trigger = document.getElementById(cfg.triggerId);
+    if (panel) panel.classList.add('hidden');
+    if (trigger) trigger.classList.remove('open');
+  });
+  activeReportPicker = '';
+  document.removeEventListener('click', onDocClickCloseReportPicker);
+  window.removeEventListener('resize', onReportPickerReposition);
+  window.removeEventListener('scroll', onReportPickerReposition, true);
+}
+
+function onDocClickCloseReportPicker(e) {
+  const cfg = getReportPickerConfig(activeReportPicker);
+  if (!cfg) return;
+  const picker = document.getElementById(cfg.pickerId);
+  const panel = document.getElementById(cfg.panelId);
+  if (picker && picker.contains(e.target)) return;
+  if (panel && panel.contains(e.target)) return;
+  closeReportPickers();
+}
+
+function renderReportSavePickers() {
+  ['category', 'existing', 'section'].forEach((kind) => {
+    const cfg = getReportPickerConfig(kind);
+    const search = cfg ? document.getElementById(cfg.searchId) : null;
+    if (search) search.value = '';
+    renderReportPicker(kind);
+  });
+  document.getElementById('reportCategoryText').textContent = '销售经营';
+  document.getElementById('reportExistingText').textContent = '销售经营 / 二季度销售复盘报告';
+  document.getElementById('reportSectionText').textContent = '区域销售表现';
+}
+
+function switchReportSaveMode(mode) {
+  currentReportSaveMode = mode === 'existing' ? 'existing' : 'new';
+  document.querySelectorAll('#reportSaveSwitch [data-report-mode]').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.reportMode === currentReportSaveMode);
+  });
+  document.getElementById('reportSaveNewForm').classList.toggle('hidden', currentReportSaveMode !== 'new');
+  document.getElementById('reportSaveExistingForm').classList.toggle('hidden', currentReportSaveMode !== 'existing');
+  closeReportPickers();
+}
+
+function getCurrentResultTitle() {
+  const visibleTitle = resultTitle && !resultCard.classList.contains('hidden') ? resultTitle.textContent.trim() : '';
+  return visibleTitle || currentAnswerTitle || currentQuestionText || '智能问数分析报告';
+}
+
 function setupContentPicker() {
   const picker = document.getElementById('saveContentPicker');
   if (!picker) return;
@@ -3254,6 +3540,7 @@ function setupContentPicker() {
 function openSave(type) {
   closeDrawer();
   closeModal();
+  currentSaveType = type || "";
   modalMask.classList.remove("hidden");
   saveModal.classList.remove("hidden");
 
@@ -3261,12 +3548,14 @@ function openSave(type) {
   const sub = document.getElementById("saveSub");
   const dashMode = document.getElementById("saveModeDashboard");
   const otherMode = document.getElementById("saveModeOther");
+  const reportMode = document.getElementById("saveModeReport");
 
   if (type === "dashboard") {
     title.textContent = "添加到我的仪表盘";
     sub.textContent = "AI 已为你推荐保存目录";
     dashMode.classList.remove("hidden");
     otherMode.classList.add("hidden");
+    if (reportMode) reportMode.classList.add("hidden");
     document.getElementById("saveInputName").value = "华东区近6个月销售额趋势";
     document.getElementById("saveDirText").textContent = "销售分析 / 区域销售";
     document.querySelectorAll('#saveContentPicker input[type="checkbox"]').forEach((cb) => {
@@ -3280,7 +3569,8 @@ function openSave(type) {
 
   // 其他类型保留原有结构
   dashMode.classList.add("hidden");
-  otherMode.classList.remove("hidden");
+  otherMode.classList.toggle("hidden", type === "report");
+  if (reportMode) reportMode.classList.toggle("hidden", type !== "report");
   const tip = document.getElementById("saveTip");
   const field1 = document.getElementById("saveField1");
   const field2 = document.getElementById("saveField2");
@@ -3302,13 +3592,10 @@ function openSave(type) {
 
   if (type === "report") {
     title.textContent = "添加到我的报告";
-    sub.textContent = "AI 已推荐报告和章节位置";
-    tip.textContent = "AI 建议将该图表添加到「二季度销售复盘报告」的「区域销售表现」章节，并自动生成配套说明文字。";
-    field1.textContent = "选择报告";
-    field2.textContent = "添加章节";
-    input1.value = "二季度销售复盘报告";
-    input2.value = "区域销售表现";
-    desc.value = "华东区近6个月销售额持续增长，6月销售额达到3248万元，较1月增长49.0%。其中4月至6月增长明显，说明华东区域销售动能增强。";
+    sub.textContent = "请选择添加方式和报告位置";
+    document.getElementById("reportNewName").value = getCurrentResultTitle();
+    renderReportSavePickers();
+    switchReportSaveMode("new");
   }
 }
 
@@ -3319,9 +3606,35 @@ function closeModal() {
   deleteModal.classList.add("hidden");
   uploadModal.classList.add("hidden");
   if (typeof closeDirPicker === "function") closeDirPicker();
+  if (typeof closeReportPickers === "function") closeReportPickers();
 }
 
 function saveSuccess() {
+  if (currentSaveType === "report") {
+    if (currentReportSaveMode === "new") {
+      const name = (document.getElementById("reportNewName").value || "").trim();
+      const category = (document.getElementById("reportCategoryText").textContent || "").trim();
+      if (!name) {
+        showToast("请填写报告名称");
+        return;
+      }
+      if (!category) {
+        showToast("请选择所属分类");
+        return;
+      }
+    } else {
+      const report = (document.getElementById("reportExistingText").textContent || "").trim();
+      const section = (document.getElementById("reportSectionText").textContent || "").trim();
+      if (!report) {
+        showToast("请选择报告");
+        return;
+      }
+      if (!section) {
+        showToast("请选择报告目录");
+        return;
+      }
+    }
+  }
   closeModal();
   showToast("已添加成功，内容保留来源标识");
 }
