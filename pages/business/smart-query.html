@@ -112,7 +112,7 @@
         <div id="welcomeBlock" class="welcome">
           <div class="ai-orb">AI</div>
           <h1>想了解什么业务数据？</h1>
-          <p>当前主题为 <strong style="color:var(--primary);">销售分析</strong>，可以直接输入经营、销售、客户、库存等相关问题。</p>
+          <p>当前主题为 <strong style="color:#1677ff;">销售分析</strong>，可以直接输入经营、销售、客户、库存等相关问题。</p>
         </div>
 
         <div id="answerBlock" class="hidden">
@@ -1008,52 +1008,67 @@
         <div class="context-card">
           <h4><span id="themeName">销售分析</span> <span class="small-badge">当前主题</span></h4>
           <p id="themeDesc">覆盖销售额、订单量、渠道转化、区域业绩、产品销售等核心经营指标。</p>
-          <div class="tag-row"><span id="themeIndicatorCount">关联指标 11 个</span></div>
+          <div class="tag-row"><span>关联模型 4 个</span><span>关联指标 18 个</span></div>
         </div>
-        <div id="themeIndicatorList" class="theme-indicator-list">
-          <div class="theme-indicator-item">
-            <div class="theme-indicator-main"><strong>销售额</strong><span>同义词：销售收入、GMV、成交金额</span></div>
-            <p>统计指定时间范围内的销售收入表现，用于分析销售规模和趋势。</p>
+        <div class="model-item active expanded">
+          <div class="model-top" onclick="toggleModelItem(this.parentElement)">
+            <strong>销售订单表</strong>
+            <span class="model-top-meta">
+              <span class="small-badge">主模型</span>
+              <svg class="model-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+            </span>
           </div>
-          <div class="theme-indicator-item">
-            <div class="theme-indicator-main"><strong>订单量</strong><span>同义词：订单数、成交单量、交易笔数</span></div>
-            <p>统计订单成交数量，用于判断业务活跃度和销售规模。</p>
+          <p style="margin-top:8px;">记录销售订单、销售金额、渠道、区域、客户、产品等信息。</p>
+          <div class="field-list">
+            <div class="field-row"><strong>订单编号</strong><span>order_id · String</span></div>
+            <div class="field-row highlight"><strong>订单日期</strong><span>order_date · Date</span></div>
+            <div class="field-row highlight"><strong>销售金额</strong><span>sales_amount · Decimal</span></div>
+            <div class="field-row highlight"><strong>销售区域</strong><span>region · String</span></div>
+            <div class="field-row"><strong>销售渠道</strong><span>channel · String</span></div>
           </div>
-          <div class="theme-indicator-item">
-            <div class="theme-indicator-main"><strong>成交客户数</strong><span>同义词：购买客户、下单客户、成交人数</span></div>
-            <p>统计产生实际成交的客户数量，用于衡量客户转化效果。</p>
+        </div>
+        <div class="model-item">
+          <div class="model-top" onclick="toggleModelItem(this.parentElement)">
+            <strong>客户信息表</strong>
+            <span class="model-top-meta">
+              <span class="small-badge">字段 9 个</span>
+              <svg class="model-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+            </span>
           </div>
-          <div class="theme-indicator-item">
-            <div class="theme-indicator-main"><strong>客单价</strong><span>同义词：平均订单金额、人均消费</span></div>
-            <p>衡量单笔订单的平均价值，用于分析价格带和客户消费能力。</p>
+          <p style="margin-top:8px;">客户基础信息、客户类型、行业、等级及归属区域。</p>
+          <div class="field-list">
+            <div class="field-row"><strong>客户编号</strong><span>customer_id · String</span></div>
+            <div class="field-row"><strong>客户名称</strong><span>customer_name · String</span></div>
+            <div class="field-row"><strong>客户类型</strong><span>customer_type · String</span></div>
+            <div class="field-row"><strong>所属行业</strong><span>industry · String</span></div>
+            <div class="field-row"><strong>客户等级</strong><span>level · String</span></div>
+            <div class="field-row"><strong>归属区域</strong><span>region · String</span></div>
+            <div class="field-row"><strong>所在城市</strong><span>city · String</span></div>
+            <div class="field-row"><strong>建档日期</strong><span>create_date · Date</span></div>
+            <div class="field-row"><strong>客户状态</strong><span>status · String</span></div>
           </div>
-          <div class="theme-indicator-item">
-            <div class="theme-indicator-main"><strong>渠道转化率</strong><span>同义词：转化率、渠道成交率</span></div>
-            <p>统计各销售渠道从访问到成交的转化表现，用于评估渠道效率。</p>
+        </div>
+        <div class="model-item">
+          <div class="model-top" onclick="toggleModelItem(this.parentElement)">
+            <strong>产品信息表</strong>
+            <span class="model-top-meta">
+              <span class="small-badge">字段 11 个</span>
+              <svg class="model-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+            </span>
           </div>
-          <div class="theme-indicator-item">
-            <div class="theme-indicator-main"><strong>区域销售额</strong><span>同义词：区域收入、地区GMV</span></div>
-            <p>按区域统计销售收入，用于对比不同区域的业绩贡献。</p>
-          </div>
-          <div class="theme-indicator-item">
-            <div class="theme-indicator-main"><strong>商品销售额</strong><span>同义词：商品收入、产品销售额</span></div>
-            <p>统计商品维度的销售收入，用于识别重点商品和热销品类。</p>
-          </div>
-          <div class="theme-indicator-item">
-            <div class="theme-indicator-main"><strong>销售件数</strong><span>同义词：销量、销售数量、售出件数</span></div>
-            <p>统计商品售出数量，用于判断商品动销情况和需求变化。</p>
-          </div>
-          <div class="theme-indicator-item">
-            <div class="theme-indicator-main"><strong>毛利额</strong><span>同义词：毛利、销售毛利、利润贡献</span></div>
-            <p>统计销售产生的毛利贡献，用于分析经营质量和利润空间。</p>
-          </div>
-          <div class="theme-indicator-item">
-            <div class="theme-indicator-main"><strong>新增客户数</strong><span>同义词：新客数、首次成交客户</span></div>
-            <p>统计首次产生交易的客户数量，用于观察拉新效果。</p>
-          </div>
-          <div class="theme-indicator-item">
-            <div class="theme-indicator-main"><strong>复购率</strong><span>同义词：重复购买率、回购率</span></div>
-            <p>衡量客户重复购买情况，用于评估客户留存和忠诚度。</p>
+          <p style="margin-top:8px;">产品编码、品类、品牌、产品线及价格区间。</p>
+          <div class="field-list">
+            <div class="field-row"><strong>产品编码</strong><span>product_id · String</span></div>
+            <div class="field-row"><strong>产品名称</strong><span>product_name · String</span></div>
+            <div class="field-row"><strong>品类</strong><span>category · String</span></div>
+            <div class="field-row"><strong>品牌</strong><span>brand · String</span></div>
+            <div class="field-row"><strong>产品线</strong><span>product_line · String</span></div>
+            <div class="field-row"><strong>规格</strong><span>spec · String</span></div>
+            <div class="field-row"><strong>单位</strong><span>unit · String</span></div>
+            <div class="field-row"><strong>单价</strong><span>price · Decimal</span></div>
+            <div class="field-row"><strong>成本价</strong><span>cost · Decimal</span></div>
+            <div class="field-row"><strong>上市日期</strong><span>launch_date · Date</span></div>
+            <div class="field-row"><strong>产品状态</strong><span>status · String</span></div>
           </div>
         </div>
       </div>
@@ -1155,75 +1170,6 @@
           <div class="field full"><label>说明文字</label><textarea id="saveDesc">近6个月华东区销售额持续增长，6月达到3248万元。</textarea></div>
         </div>
       </div>
-
-      <!-- 报告模式（新版） -->
-      <div class="save-mode-report hidden" id="saveModeReport">
-        <div class="field full">
-          <label>报告选择</label>
-          <div class="report-save-switch" id="reportSaveSwitch">
-            <button type="button" class="active" data-report-mode="new" onclick="switchReportSaveMode('new')">新建报告</button>
-            <button type="button" data-report-mode="existing" onclick="switchReportSaveMode('existing')">已有报告</button>
-          </div>
-        </div>
-
-        <div class="form-grid report-save-form" id="reportSaveNewForm">
-          <div class="field full">
-            <label>报告名称</label>
-            <input id="reportNewName" value="华东区近6个月销售额趋势分析" />
-          </div>
-          <div class="field full">
-            <label>所属分类</label>
-            <div class="dir-picker report-picker" id="reportCategoryPicker">
-              <button type="button" class="dir-picker-trigger" id="reportCategoryTrigger" onclick="toggleReportPicker(event, 'category')">
-                <span class="dir-picker-text" id="reportCategoryText">销售经营</span>
-                <svg class="dir-picker-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"></path></svg>
-              </button>
-              <div class="dir-picker-panel hidden" id="reportCategoryPanel">
-                <div class="dir-picker-search">
-                  <span class="dir-search-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
-                  <input id="reportCategorySearch" placeholder="搜索分类" oninput="filterReportPicker('category', this.value)" />
-                </div>
-                <div class="dir-picker-tree" id="reportCategoryTree"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-grid report-save-form hidden" id="reportSaveExistingForm">
-          <div class="field full">
-            <label>选择报告</label>
-            <div class="dir-picker report-picker" id="reportExistingPicker">
-              <button type="button" class="dir-picker-trigger" id="reportExistingTrigger" onclick="toggleReportPicker(event, 'existing')">
-                <span class="dir-picker-text" id="reportExistingText">销售经营 / 二季度销售复盘报告</span>
-                <svg class="dir-picker-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"></path></svg>
-              </button>
-              <div class="dir-picker-panel hidden" id="reportExistingPanel">
-                <div class="dir-picker-search">
-                  <span class="dir-search-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
-                  <input id="reportExistingSearch" placeholder="搜索目录 / 报告" oninput="filterReportPicker('existing', this.value)" />
-                </div>
-                <div class="dir-picker-tree" id="reportExistingTree"></div>
-              </div>
-            </div>
-          </div>
-          <div class="field full">
-            <label>报告目录</label>
-            <div class="dir-picker report-picker" id="reportSectionPicker">
-              <button type="button" class="dir-picker-trigger" id="reportSectionTrigger" onclick="toggleReportPicker(event, 'section')">
-                <span class="dir-picker-text" id="reportSectionText">区域销售表现</span>
-                <svg class="dir-picker-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"></path></svg>
-              </button>
-              <div class="dir-picker-panel hidden" id="reportSectionPanel">
-                <div class="dir-picker-search">
-                  <span class="dir-search-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
-                  <input id="reportSectionSearch" placeholder="搜索报告目录" oninput="filterReportPicker('section', this.value)" />
-                </div>
-                <div class="dir-picker-tree" id="reportSectionTree"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
     <div class="modal-foot"><button class="ghost-btn" onclick="closeModal()">取消</button><button class="primary-btn" onclick="saveSuccess()">确认添加</button></div>
   </section>
@@ -1296,6 +1242,7 @@
   <div id="historyContextMenu" class="context-menu side-context-menu hidden">
     <button onclick="sideMenuAction('置顶')">置顶</button>
     <button onclick="sideMenuAction('编辑标题')">编辑标题</button>
+    <button onclick="openFeedback()">提交反馈</button>
     <button onclick="sideMenuAction('删除')">删除</button>
   </div>
   <div id="favoriteContextMenu" class="context-menu side-context-menu hidden">

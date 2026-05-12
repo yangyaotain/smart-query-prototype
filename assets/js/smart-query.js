@@ -50,8 +50,6 @@ const fileUploadInput = document.getElementById("fileUploadInput");
 const attachmentPreviewList = document.getElementById("attachmentPreviewList");
 const themeName = document.getElementById("themeName");
 const themeDesc = document.getElementById("themeDesc");
-const themeIndicatorCount = document.getElementById("themeIndicatorCount");
-const themeIndicatorList = document.getElementById("themeIndicatorList");
 const followupContextChip = document.getElementById("followupContextChip");
 const followupChipTitle = document.getElementById("followupChipTitle");
 const followupPrefix = document.getElementById("followupPrefix");
@@ -78,9 +76,6 @@ let trendChart = null;
 let comparisonChart = null;
 let currentResultView = "line";
 let lastWordExportScope = null;
-let currentSaveType = "";
-let currentReportSaveMode = "new";
-let activeReportPicker = "";
 
 const resultChartData = [
   { name: "1月", value: 2180 },
@@ -91,22 +86,7 @@ const resultChartData = [
   { name: "6月", value: 3248 }
 ];
 
-function getSmartQueryChartTheme() {
-  return window.getSmartQueryThemeColors();
-}
-
-function getResultChartPalette() {
-  const theme = getSmartQueryChartTheme();
-  return [
-    theme.primary,
-    theme.primaryAccent,
-    theme.focusBorder,
-    theme.primaryBorder,
-    theme.primaryBorderSoft,
-    "#fbbf24",
-    "#f59e0b"
-  ];
-}
+const resultChartPalette = ["#1677ff", "#3b82f6", "#60a5fa", "#93c5fd", "#bfdbfe", "#dbeafe"];
 
 const feedbackRecords = {
   sql: {
@@ -209,65 +189,6 @@ const themeDescMap = {
   "库存分析": "覆盖库存金额、周转天数、滞销品识别、缺货风险和补货建议。",
   "财务分析": "覆盖收入、毛利率、费用结构、预算执行与利润贡献分析。",
   "经营概览": "整合销售、客户、库存和财务指标，形成经营全景与关键风险预警。"
-};
-
-const themeIndicatorMap = {
-  "全部": [
-    { name: "销售额", synonyms: "销售收入、GMV、成交金额", desc: "统计指定时间范围内的销售收入表现，用于分析销售规模和趋势。" },
-    { name: "订单量", synonyms: "订单数、成交单量、交易笔数", desc: "统计订单成交数量，用于判断业务活跃度和销售规模。" },
-    { name: "成交客户数", synonyms: "购买客户、下单客户、成交人数", desc: "统计产生实际成交的客户数量，用于衡量客户转化效果。" },
-    { name: "客单价", synonyms: "平均订单金额、人均消费", desc: "衡量单笔订单的平均价值，用于分析价格带和客户消费能力。" },
-    { name: "新增客户数", synonyms: "新客数、首次成交客户", desc: "统计首次产生交易的客户数量，用于观察拉新效果。" },
-    { name: "复购率", synonyms: "重复购买率、回购率", desc: "衡量客户重复购买情况，用于评估客户留存和忠诚度。" },
-    { name: "库存金额", synonyms: "库存价值、在库金额", desc: "统计当前库存占用金额，用于分析库存资金压力。" },
-    { name: "库存周转天数", synonyms: "周转天数、存货周转周期", desc: "衡量库存从入库到销售的周转效率，用于识别库存积压。" },
-    { name: "收入", synonyms: "营业收入、业务收入", desc: "统计企业经营收入，用于观察整体经营规模。" },
-    { name: "毛利率", synonyms: "销售毛利率、利润率", desc: "衡量销售收入中的毛利占比，用于分析盈利质量。" },
-    { name: "预算完成率", synonyms: "预算达成率、预算执行率", desc: "衡量实际结果与预算目标的完成情况，用于跟踪经营计划。" }
-  ],
-  "销售分析": [
-    { name: "销售额", synonyms: "销售收入、GMV、成交金额", desc: "统计指定时间范围内的销售收入表现，用于分析销售规模和趋势。" },
-    { name: "订单量", synonyms: "订单数、成交单量、交易笔数", desc: "统计订单成交数量，用于判断业务活跃度和销售规模。" },
-    { name: "成交客户数", synonyms: "购买客户、下单客户、成交人数", desc: "统计产生实际成交的客户数量，用于衡量客户转化效果。" },
-    { name: "客单价", synonyms: "平均订单金额、人均消费", desc: "衡量单笔订单的平均价值，用于分析价格带和客户消费能力。" },
-    { name: "渠道转化率", synonyms: "转化率、渠道成交率", desc: "统计各销售渠道从访问到成交的转化表现，用于评估渠道效率。" },
-    { name: "区域销售额", synonyms: "区域收入、地区GMV", desc: "按区域统计销售收入，用于对比不同区域的业绩贡献。" },
-    { name: "商品销售额", synonyms: "商品收入、产品销售额", desc: "统计商品维度的销售收入，用于识别重点商品和热销品类。" },
-    { name: "销售件数", synonyms: "销量、销售数量、售出件数", desc: "统计商品售出数量，用于判断商品动销情况和需求变化。" },
-    { name: "毛利额", synonyms: "毛利、销售毛利、利润贡献", desc: "统计销售产生的毛利贡献，用于分析经营质量和利润空间。" },
-    { name: "新增客户数", synonyms: "新客数、首次成交客户", desc: "统计首次产生交易的客户数量，用于观察拉新效果。" },
-    { name: "复购率", synonyms: "重复购买率、回购率", desc: "衡量客户重复购买情况，用于评估客户留存和忠诚度。" }
-  ],
-  "客户分析": [
-    { name: "新增客户数", synonyms: "新客数、首次成交客户", desc: "统计首次产生交易的客户数量，用于观察拉新效果。" },
-    { name: "成交客户数", synonyms: "购买客户、下单客户、成交人数", desc: "统计产生实际成交的客户数量，用于衡量客户转化效果。" },
-    { name: "复购率", synonyms: "重复购买率、回购率", desc: "衡量客户重复购买情况，用于评估客户留存和忠诚度。" },
-    { name: "客户流失率", synonyms: "流失率、客户减少率", desc: "统计客户流失占比，用于识别客户关系风险。" },
-    { name: "客户生命周期价值", synonyms: "客户价值、LTV", desc: "衡量客户在生命周期内创造的综合价值。" },
-    { name: "高价值客户数", synonyms: "重点客户、核心客户", desc: "统计达到高价值标准的客户数量，用于支持重点客户运营。" }
-  ],
-  "库存分析": [
-    { name: "库存金额", synonyms: "库存价值、在库金额", desc: "统计当前库存占用金额，用于分析库存资金压力。" },
-    { name: "库存周转天数", synonyms: "周转天数、存货周转周期", desc: "衡量库存从入库到销售的周转效率，用于识别库存积压。" },
-    { name: "滞销商品数", synonyms: "滞销品、慢动销商品", desc: "统计销售缓慢的商品数量，用于发现清理和促销对象。" },
-    { name: "缺货风险商品数", synonyms: "缺货预警、断货风险", desc: "统计存在缺货风险的商品数量，用于辅助补货决策。" },
-    { name: "安全库存达成率", synonyms: "安全库存率、库存保障率", desc: "衡量库存是否满足安全库存要求，用于判断供应保障能力。" }
-  ],
-  "财务分析": [
-    { name: "收入", synonyms: "营业收入、业务收入", desc: "统计企业经营收入，用于观察整体经营规模。" },
-    { name: "毛利率", synonyms: "销售毛利率、利润率", desc: "衡量销售收入中的毛利占比，用于分析盈利质量。" },
-    { name: "费用率", synonyms: "费用占比、经营费用率", desc: "衡量费用相对收入的占比，用于评估费用控制水平。" },
-    { name: "利润额", synonyms: "利润、净收益", desc: "统计经营利润结果，用于衡量业务盈利贡献。" },
-    { name: "预算完成率", synonyms: "预算达成率、预算执行率", desc: "衡量实际结果与预算目标的完成情况，用于跟踪经营计划。" }
-  ],
-  "经营概览": [
-    { name: "销售额", synonyms: "销售收入、GMV、成交金额", desc: "统计指定时间范围内的销售收入表现，用于分析销售规模和趋势。" },
-    { name: "订单量", synonyms: "订单数、成交单量、交易笔数", desc: "统计订单成交数量，用于判断业务活跃度和销售规模。" },
-    { name: "成交客户数", synonyms: "购买客户、下单客户、成交人数", desc: "统计产生实际成交的客户数量，用于衡量客户转化效果。" },
-    { name: "库存金额", synonyms: "库存价值、在库金额", desc: "统计当前库存占用金额，用于分析库存资金压力。" },
-    { name: "毛利率", synonyms: "销售毛利率、利润率", desc: "衡量销售收入中的毛利占比，用于分析盈利质量。" },
-    { name: "预算完成率", synonyms: "预算达成率、预算执行率", desc: "衡量实际结果与预算目标的完成情况，用于跟踪经营计划。" }
-  ]
 };
 
 const qaThinkingSteps = [
@@ -625,24 +546,6 @@ function handleThemeChange(theme) {
   if (!themeName || !themeDesc) return;
   themeName.textContent = theme;
   themeDesc.textContent = themeDescMap[theme] || themeDescMap["经营概览"];
-  renderThemeIndicators(theme);
-}
-
-function renderThemeIndicators(theme) {
-  if (!themeIndicatorList) return;
-  const indicators = themeIndicatorMap[theme] || themeIndicatorMap["经营概览"] || [];
-  if (themeIndicatorCount) {
-    themeIndicatorCount.textContent = `关联指标 ${indicators.length} 个`;
-  }
-  themeIndicatorList.innerHTML = indicators.map((item) => `
-    <div class="theme-indicator-item">
-      <div class="theme-indicator-main">
-        <strong>${escapeHtml(item.name)}</strong>
-        <span title="同义词：${escapeHtml(item.synonyms)}">同义词：${escapeHtml(item.synonyms)}</span>
-      </div>
-      <p>${escapeHtml(item.desc)}</p>
-    </div>
-  `).join("");
 }
 
 function toggleModelItem(item) {
@@ -650,7 +553,6 @@ function toggleModelItem(item) {
   item.classList.toggle("expanded");
 }
 window.toggleModelItem = toggleModelItem;
-renderThemeIndicators(themeName?.textContent?.trim() || "销售分析");
 
 function renderThinkingTimeline(mode = "qa") {
   const timeline = thinkingBox?.querySelector(".timeline");
@@ -1396,7 +1298,6 @@ function renderReportChart(dom) {
 }
 
 function buildReportChartOption() {
-  const theme = getSmartQueryChartTheme();
   const months = resultChartData.map((d) => d.name);
   const values = resultChartData.map((d) => d.value);
   const anomalyIndex = resultChartData.findIndex((d) => d.anomaly);
@@ -1414,7 +1315,7 @@ function buildReportChartOption() {
       textStyle: { color: "#fff", fontSize: 12 },
       axisPointer: {
         type: "line",
-        lineStyle: { color: theme.primaryBorderSoft, width: 1, type: "dashed" }
+        lineStyle: { color: "#cfe4ff", width: 1, type: "dashed" }
       },
       formatter: (params) => {
         const p = params[0];
@@ -1454,15 +1355,15 @@ function buildReportChartOption() {
       smooth: true,
       symbol: "circle",
       symbolSize: 8,
-      lineStyle: { width: 3, color: theme.primary },
-      itemStyle: { color: theme.primary, borderColor: "#fff", borderWidth: 2 },
+      lineStyle: { width: 3, color: "#1677ff" },
+      itemStyle: { color: "#1677ff", borderColor: "#fff", borderWidth: 2 },
       areaStyle: {
         color: {
           type: "linear",
           x: 0, y: 0, x2: 0, y2: 1,
           colorStops: [
-            { offset: 0, color: theme.primaryRgba(0.32) },
-            { offset: 1, color: theme.primaryRgba(0) }
+            { offset: 0, color: "rgba(22, 119, 255, 0.32)" },
+            { offset: 1, color: "rgba(22, 119, 255, 0)" }
           ]
         }
       },
@@ -1471,7 +1372,7 @@ function buildReportChartOption() {
         itemStyle: {
           borderWidth: 3,
           shadowBlur: 12,
-          shadowColor: theme.primaryRgba(0.45)
+          shadowColor: "rgba(22, 119, 255, 0.45)"
         }
       },
       markPoint: {
@@ -1646,7 +1547,6 @@ function renderAttributionChart(dom) {
 }
 
 function buildAttributionChartOption() {
-  const theme = getSmartQueryChartTheme();
   const months = resultChartData.map((d) => d.name);
   const values = resultChartData.map((d) => d.value);
   const anomalyIndex = resultChartData.findIndex((d) => d.anomaly);
@@ -1710,9 +1610,9 @@ function buildAttributionChartOption() {
       smooth: true,
       symbol: "circle",
       symbolSize: (val, params) => params.dataIndex === anomalyIndex ? 14 : 7,
-      lineStyle: { width: 2.5, color: theme.primary },
+      lineStyle: { width: 2.5, color: "#1677ff" },
       itemStyle: {
-        color: (params) => params.dataIndex === anomalyIndex ? "#f97316" : theme.primary,
+        color: (params) => params.dataIndex === anomalyIndex ? "#f97316" : "#1677ff",
         borderColor: "#fff",
         borderWidth: 2,
         shadowBlur: (params) => params.dataIndex === anomalyIndex ? 14 : 0,
@@ -1723,8 +1623,8 @@ function buildAttributionChartOption() {
           type: "linear",
           x: 0, y: 0, x2: 0, y2: 1,
           colorStops: [
-            { offset: 0, color: theme.primaryRgba(0.22) },
-            { offset: 1, color: theme.primaryRgba(0) }
+            { offset: 0, color: "rgba(22, 119, 255, 0.22)" },
+            { offset: 1, color: "rgba(22, 119, 255, 0)" }
           ]
         }
       },
@@ -1919,7 +1819,6 @@ function renderTrendChart(dom) {
 }
 
 function buildTrendChartOption() {
-  const theme = getSmartQueryChartTheme();
   const months = [...resultChartData.map((d) => d.name), ...trendForecastData.map((d) => d.name)];
   const lastHistoryName = resultChartData[resultChartData.length - 1].name;
 
@@ -1950,7 +1849,7 @@ function buildTrendChartOption() {
       itemHeight: 8,
       textStyle: { color: "#4b5563", fontSize: 11 },
       data: [
-        { name: "实际", itemStyle: { color: theme.primary } },
+        { name: "实际", itemStyle: { color: "#1677ff" } },
         { name: "预测", itemStyle: { color: "#7c3aed" } },
         { name: "置信区间", itemStyle: { color: "#c4b5fd" } }
       ]
@@ -2038,15 +1937,15 @@ function buildTrendChartOption() {
         symbol: "circle",
         symbolSize: 7,
         connectNulls: false,
-        lineStyle: { width: 2.5, color: theme.primary },
-        itemStyle: { color: theme.primary, borderColor: "#fff", borderWidth: 2 },
+        lineStyle: { width: 2.5, color: "#1677ff" },
+        itemStyle: { color: "#1677ff", borderColor: "#fff", borderWidth: 2 },
         areaStyle: {
           color: {
             type: "linear",
             x: 0, y: 0, x2: 0, y2: 1,
             colorStops: [
-              { offset: 0, color: theme.primaryRgba(0.22) },
-              { offset: 1, color: theme.primaryRgba(0) }
+              { offset: 0, color: "rgba(22, 119, 255, 0.22)" },
+              { offset: 1, color: "rgba(22, 119, 255, 0)" }
             ]
           }
         },
@@ -2961,10 +2860,9 @@ function buildResultChartOption(type) {
 }
 
 function buildPieChartOption() {
-  const theme = getSmartQueryChartTheme();
   const total = resultChartData.reduce((sum, item) => sum + item.value, 0);
   return {
-    color: getResultChartPalette(),
+    color: resultChartPalette,
     tooltip: {
       trigger: "item",
       backgroundColor: "rgba(17, 24, 39, 0.92)",
@@ -3007,7 +2905,7 @@ function buildPieChartOption() {
         itemStyle: {
           shadowBlur: 18,
           shadowOffsetY: 4,
-          shadowColor: theme.primaryRgba(0.35)
+          shadowColor: "rgba(22, 119, 255, 0.35)"
         }
       },
       data: resultChartData.map((d) => ({ name: d.name, value: d.value }))
@@ -3016,7 +2914,6 @@ function buildPieChartOption() {
 }
 
 function buildAxisChartOption(type) {
-  const theme = getSmartQueryChartTheme();
   const months = resultChartData.map((d) => d.name);
   const values = resultChartData.map((d) => d.value);
   const isBar = type === "bar";
@@ -3054,14 +2951,14 @@ function buildAxisChartOption(type) {
     symbol: "circle",
     symbolSize: 9,
     showSymbol: true,
-    lineStyle: { width: 3, color: theme.primary },
-    itemStyle: { color: theme.primary, borderColor: "#fff", borderWidth: 2 },
+    lineStyle: { width: 3, color: "#1677ff" },
+    itemStyle: { color: "#1677ff", borderColor: "#fff", borderWidth: 2 },
     emphasis: {
       focus: "series",
       itemStyle: {
         borderWidth: 3,
         shadowBlur: 12,
-        shadowColor: theme.primaryRgba(0.45)
+        shadowColor: "rgba(22, 119, 255, 0.45)"
       }
     },
     markPoint,
@@ -3074,8 +2971,8 @@ function buildAxisChartOption(type) {
         type: "linear",
         x: 0, y: 0, x2: 0, y2: 1,
         colorStops: [
-          { offset: 0, color: theme.primaryRgba(0.32) },
-          { offset: 1, color: theme.primaryRgba(0) }
+          { offset: 0, color: "rgba(22, 119, 255, 0.32)" },
+          { offset: 1, color: "rgba(22, 119, 255, 0)" }
         ]
       }
     };
@@ -3091,8 +2988,8 @@ function buildAxisChartOption(type) {
         type: "linear",
         x: 0, y: 0, x2: 0, y2: 1,
         colorStops: [
-          { offset: 0, color: theme.primary },
-          { offset: 1, color: theme.focusBorder }
+          { offset: 0, color: "#1677ff" },
+          { offset: 1, color: "#9dd7ff" }
         ]
       }
     },
@@ -3100,7 +2997,7 @@ function buildAxisChartOption(type) {
       itemStyle: {
         shadowBlur: 14,
         shadowOffsetY: 6,
-        shadowColor: theme.primaryRgba(0.32)
+        shadowColor: "rgba(22, 119, 255, 0.32)"
       }
     },
     markPoint,
@@ -3117,7 +3014,7 @@ function buildAxisChartOption(type) {
       textStyle: { color: "#fff", fontSize: 12 },
       axisPointer: {
         type: "line",
-        lineStyle: { color: theme.primaryBorderSoft, width: 1, type: "dashed" }
+        lineStyle: { color: "#cfe4ff", width: 1, type: "dashed" }
       },
       formatter: (params) => {
         const p = params[0];
@@ -3205,38 +3102,6 @@ const DASHBOARD_DIR_TREE = [
     ]},
   ]},
   { id: 'n4', name: '财务分析' },
-];
-
-const REPORT_SAVE_DIR_TREE = [
-  { id: 'c1', name: '销售经营', children: [
-    { id: 'r1', name: '二季度销售复盘报告', kind: 'report' },
-    { id: 'r2', name: '4月经营分析报告', kind: 'report' },
-    { id: 'r3', name: '华东区销售专题分析', kind: 'report' },
-  ]},
-  { id: 'c2', name: '渠道与产品', children: [
-    { id: 'r4', name: '渠道转化专项报告', kind: 'report' },
-    { id: 'r5', name: '产品线毛利分析报告', kind: 'report' },
-  ]},
-  { id: 'c3', name: '客户运营', children: [
-    { id: 'r6', name: '重点客户复购报告', kind: 'report' },
-    { id: 'r7', name: '客户分层运营报告', kind: 'report' },
-  ]},
-  { id: 'c4', name: '管理层汇报', children: [
-    { id: 'r8', name: '月度经营汇报', kind: 'report' },
-  ]},
-];
-
-const REPORT_SECTION_TREE = [
-  { id: 's1', name: '报告摘要', kind: 'section' },
-  { id: 's2', name: '核心指标表现', kind: 'section', children: [
-    { id: 's2-1', name: '销售额趋势', kind: 'section' },
-    { id: 's2-2', name: '目标完成情况', kind: 'section' },
-  ]},
-  { id: 's3', name: '区域销售表现', kind: 'section', children: [
-    { id: 's3-1', name: '华东区表现', kind: 'section' },
-    { id: 's3-2', name: '重点区域对比', kind: 'section' },
-  ]},
-  { id: 's4', name: '经营建议', kind: 'section' },
 ];
 
 function renderDirTree() {
@@ -3376,257 +3241,6 @@ function filterDirTree(kw) {
   });
 }
 
-function getReportPickerConfig(kind) {
-  const map = {
-    category: {
-      pickerId: 'reportCategoryPicker',
-      triggerId: 'reportCategoryTrigger',
-      panelId: 'reportCategoryPanel',
-      treeId: 'reportCategoryTree',
-      textId: 'reportCategoryText',
-      searchId: 'reportCategorySearch',
-      data: REPORT_SAVE_DIR_TREE.map((c) => ({ id: c.id, name: c.name, kind: 'category' })),
-      selectable: ['category'],
-      empty: '没有匹配的分类',
-    },
-    existing: {
-      pickerId: 'reportExistingPicker',
-      triggerId: 'reportExistingTrigger',
-      panelId: 'reportExistingPanel',
-      treeId: 'reportExistingTree',
-      textId: 'reportExistingText',
-      searchId: 'reportExistingSearch',
-      data: REPORT_SAVE_DIR_TREE.map((c) => ({
-        id: c.id,
-        name: c.name,
-        kind: 'category',
-        children: (c.children || []).map((r) => Object.assign({}, r, { kind: 'report' })),
-      })),
-      selectable: ['report'],
-      empty: '没有匹配的报告',
-    },
-    section: {
-      pickerId: 'reportSectionPicker',
-      triggerId: 'reportSectionTrigger',
-      panelId: 'reportSectionPanel',
-      treeId: 'reportSectionTree',
-      textId: 'reportSectionText',
-      searchId: 'reportSectionSearch',
-      data: REPORT_SECTION_TREE,
-      selectable: ['section'],
-      empty: '没有匹配的报告目录',
-    },
-  };
-  return map[kind];
-}
-
-function renderReportPicker(kind) {
-  const cfg = getReportPickerConfig(kind);
-  if (!cfg) return;
-  const tree = document.getElementById(cfg.treeId);
-  if (!tree) return;
-
-  function walk(items, level, parentPath) {
-    return items.map((it) => {
-      const itemKind = it.kind || 'category';
-      const path = parentPath.concat(it.name);
-      const hasChildren = !!(it.children && it.children.length);
-      const selectable = cfg.selectable.includes(itemKind);
-      const stateCls = hasChildren ? 'expanded' : 'leaf';
-      let html = '<div class="dir-tree-node ' + stateCls + '" data-id="' + escapeHTML(it.id) + '" data-kind="' + escapeHTML(itemKind) + '">';
-      html += '<div class="dir-tree-row" data-selectable="' + (selectable ? '1' : '0') + '" data-path="' + escapeHTML(path.join(' / ')) + '" style="padding-left:' + (10 + (level - 1) * 18) + 'px">';
-      html += hasChildren ? '<span class="dir-tree-toggle">▾</span>' : '<span class="dir-tree-toggle empty"></span>';
-      html += '<span class="dir-tree-icon"></span>';
-      html += '<span class="dir-tree-label">' + escapeHTML(it.name) + '</span>';
-      html += '</div>';
-      if (hasChildren) {
-        html += '<div class="dir-tree-children">' + walk(it.children, level + 1, path) + '</div>';
-      }
-      html += '</div>';
-      return html;
-    }).join('');
-  }
-
-  tree.innerHTML = walk(cfg.data, 1, []);
-
-  tree.onclick = function (e) {
-    const toggle = e.target.closest('.dir-tree-toggle');
-    const row = e.target.closest('.dir-tree-row');
-    if (!row) return;
-    const node = row.parentElement;
-    const hasToggle = toggle && !toggle.classList.contains('empty');
-    const selectable = row.dataset.selectable === '1';
-    if (hasToggle && (toggle === e.target || !selectable)) {
-      e.stopPropagation();
-      toggleReportTreeNode(node, toggle);
-      return;
-    }
-    if (!selectable) {
-      const t = node.querySelector(':scope > .dir-tree-row > .dir-tree-toggle');
-      if (t && !t.classList.contains('empty')) toggleReportTreeNode(node, t);
-      return;
-    }
-    tree.querySelectorAll('.dir-tree-row.active').forEach((el) => el.classList.remove('active'));
-    row.classList.add('active');
-    document.getElementById(cfg.textId).textContent = row.dataset.path;
-    closeReportPickers();
-  };
-}
-
-function toggleReportTreeNode(node, toggle) {
-  if (!node || !toggle) return;
-  if (node.classList.contains('expanded')) {
-    node.classList.remove('expanded');
-    node.classList.add('collapsed');
-    toggle.textContent = '▸';
-  } else {
-    node.classList.remove('collapsed');
-    node.classList.add('expanded');
-    toggle.textContent = '▾';
-  }
-}
-
-function filterReportPicker(kind, kw) {
-  const cfg = getReportPickerConfig(kind);
-  if (!cfg) return;
-  const tree = document.getElementById(cfg.treeId);
-  if (!tree) return;
-  const q = (kw || '').trim().toLowerCase();
-  const nodes = tree.querySelectorAll('.dir-tree-node');
-  if (!q) {
-    nodes.forEach((n) => (n.style.display = ''));
-    const empty = tree.querySelector('.dir-tree-empty');
-    if (empty) empty.remove();
-    return;
-  }
-  nodes.forEach((n) => (n.style.display = 'none'));
-  nodes.forEach((n) => {
-    const label = n.querySelector(':scope > .dir-tree-row .dir-tree-label').textContent.toLowerCase();
-    if (label.includes(q)) {
-      let cur = n;
-      while (cur && cur !== tree) {
-        if (cur.classList && cur.classList.contains('dir-tree-node')) {
-          cur.style.display = '';
-          cur.classList.remove('collapsed');
-          cur.classList.add('expanded');
-          const t = cur.querySelector(':scope > .dir-tree-row > .dir-tree-toggle');
-          if (t && !t.classList.contains('empty')) t.textContent = '▾';
-        }
-        cur = cur.parentElement;
-      }
-    }
-  });
-  const hasVisible = Array.from(nodes).some((n) => n.style.display !== 'none');
-  let empty = tree.querySelector('.dir-tree-empty');
-  if (!hasVisible) {
-    if (!empty) {
-      empty = document.createElement('div');
-      empty.className = 'dir-tree-empty';
-      tree.appendChild(empty);
-    }
-    empty.textContent = cfg.empty;
-  } else if (empty) {
-    empty.remove();
-  }
-}
-
-function positionReportPicker(kind) {
-  const cfg = getReportPickerConfig(kind);
-  if (!cfg) return;
-  const panel = document.getElementById(cfg.panelId);
-  const trigger = document.getElementById(cfg.triggerId);
-  if (!panel || !trigger) return;
-  if (panel.parentElement !== document.body) {
-    document.body.appendChild(panel);
-  }
-  const rect = trigger.getBoundingClientRect();
-  panel.style.left = rect.left + 'px';
-  panel.style.width = rect.width + 'px';
-  const panelMax = 320;
-  const spaceBelow = window.innerHeight - rect.bottom;
-  if (spaceBelow < panelMax + 16 && rect.top > panelMax + 16) {
-    panel.style.top = (rect.top - panelMax - 6) + 'px';
-  } else {
-    panel.style.top = (rect.bottom + 6) + 'px';
-  }
-}
-
-function toggleReportPicker(e, kind) {
-  e.stopPropagation();
-  const cfg = getReportPickerConfig(kind);
-  if (!cfg) return;
-  const panel = document.getElementById(cfg.panelId);
-  const trigger = document.getElementById(cfg.triggerId);
-  if (!panel || !trigger) return;
-  const willOpen = panel.classList.contains('hidden');
-  closeDirPicker();
-  closeReportPickers();
-  if (!willOpen) return;
-  activeReportPicker = kind;
-  panel.classList.remove('hidden');
-  trigger.classList.add('open');
-  positionReportPicker(kind);
-  window.addEventListener('resize', onReportPickerReposition);
-  window.addEventListener('scroll', onReportPickerReposition, true);
-  setTimeout(() => document.addEventListener('click', onDocClickCloseReportPicker), 0);
-}
-
-function onReportPickerReposition() {
-  if (activeReportPicker) positionReportPicker(activeReportPicker);
-}
-
-function closeReportPickers() {
-  ['category', 'existing', 'section'].forEach((kind) => {
-    const cfg = getReportPickerConfig(kind);
-    if (!cfg) return;
-    const panel = document.getElementById(cfg.panelId);
-    const trigger = document.getElementById(cfg.triggerId);
-    if (panel) panel.classList.add('hidden');
-    if (trigger) trigger.classList.remove('open');
-  });
-  activeReportPicker = '';
-  document.removeEventListener('click', onDocClickCloseReportPicker);
-  window.removeEventListener('resize', onReportPickerReposition);
-  window.removeEventListener('scroll', onReportPickerReposition, true);
-}
-
-function onDocClickCloseReportPicker(e) {
-  const cfg = getReportPickerConfig(activeReportPicker);
-  if (!cfg) return;
-  const picker = document.getElementById(cfg.pickerId);
-  const panel = document.getElementById(cfg.panelId);
-  if (picker && picker.contains(e.target)) return;
-  if (panel && panel.contains(e.target)) return;
-  closeReportPickers();
-}
-
-function renderReportSavePickers() {
-  ['category', 'existing', 'section'].forEach((kind) => {
-    const cfg = getReportPickerConfig(kind);
-    const search = cfg ? document.getElementById(cfg.searchId) : null;
-    if (search) search.value = '';
-    renderReportPicker(kind);
-  });
-  document.getElementById('reportCategoryText').textContent = '销售经营';
-  document.getElementById('reportExistingText').textContent = '销售经营 / 二季度销售复盘报告';
-  document.getElementById('reportSectionText').textContent = '区域销售表现';
-}
-
-function switchReportSaveMode(mode) {
-  currentReportSaveMode = mode === 'existing' ? 'existing' : 'new';
-  document.querySelectorAll('#reportSaveSwitch [data-report-mode]').forEach((btn) => {
-    btn.classList.toggle('active', btn.dataset.reportMode === currentReportSaveMode);
-  });
-  document.getElementById('reportSaveNewForm').classList.toggle('hidden', currentReportSaveMode !== 'new');
-  document.getElementById('reportSaveExistingForm').classList.toggle('hidden', currentReportSaveMode !== 'existing');
-  closeReportPickers();
-}
-
-function getCurrentResultTitle() {
-  const visibleTitle = resultTitle && !resultCard.classList.contains('hidden') ? resultTitle.textContent.trim() : '';
-  return visibleTitle || currentAnswerTitle || currentQuestionText || '智能问数分析报告';
-}
-
 function setupContentPicker() {
   const picker = document.getElementById('saveContentPicker');
   if (!picker) return;
@@ -3640,7 +3254,6 @@ function setupContentPicker() {
 function openSave(type) {
   closeDrawer();
   closeModal();
-  currentSaveType = type || "";
   modalMask.classList.remove("hidden");
   saveModal.classList.remove("hidden");
 
@@ -3648,14 +3261,12 @@ function openSave(type) {
   const sub = document.getElementById("saveSub");
   const dashMode = document.getElementById("saveModeDashboard");
   const otherMode = document.getElementById("saveModeOther");
-  const reportMode = document.getElementById("saveModeReport");
 
   if (type === "dashboard") {
     title.textContent = "添加到我的仪表盘";
     sub.textContent = "AI 已为你推荐保存目录";
     dashMode.classList.remove("hidden");
     otherMode.classList.add("hidden");
-    if (reportMode) reportMode.classList.add("hidden");
     document.getElementById("saveInputName").value = "华东区近6个月销售额趋势";
     document.getElementById("saveDirText").textContent = "销售分析 / 区域销售";
     document.querySelectorAll('#saveContentPicker input[type="checkbox"]').forEach((cb) => {
@@ -3669,8 +3280,7 @@ function openSave(type) {
 
   // 其他类型保留原有结构
   dashMode.classList.add("hidden");
-  otherMode.classList.toggle("hidden", type === "report");
-  if (reportMode) reportMode.classList.toggle("hidden", type !== "report");
+  otherMode.classList.remove("hidden");
   const tip = document.getElementById("saveTip");
   const field1 = document.getElementById("saveField1");
   const field2 = document.getElementById("saveField2");
@@ -3692,10 +3302,13 @@ function openSave(type) {
 
   if (type === "report") {
     title.textContent = "添加到我的报告";
-    sub.textContent = "请选择添加方式和报告位置";
-    document.getElementById("reportNewName").value = getCurrentResultTitle();
-    renderReportSavePickers();
-    switchReportSaveMode("new");
+    sub.textContent = "AI 已推荐报告和章节位置";
+    tip.textContent = "AI 建议将该图表添加到「二季度销售复盘报告」的「区域销售表现」章节，并自动生成配套说明文字。";
+    field1.textContent = "选择报告";
+    field2.textContent = "添加章节";
+    input1.value = "二季度销售复盘报告";
+    input2.value = "区域销售表现";
+    desc.value = "华东区近6个月销售额持续增长，6月销售额达到3248万元，较1月增长49.0%。其中4月至6月增长明显，说明华东区域销售动能增强。";
   }
 }
 
@@ -3706,35 +3319,9 @@ function closeModal() {
   deleteModal.classList.add("hidden");
   uploadModal.classList.add("hidden");
   if (typeof closeDirPicker === "function") closeDirPicker();
-  if (typeof closeReportPickers === "function") closeReportPickers();
 }
 
 function saveSuccess() {
-  if (currentSaveType === "report") {
-    if (currentReportSaveMode === "new") {
-      const name = (document.getElementById("reportNewName").value || "").trim();
-      const category = (document.getElementById("reportCategoryText").textContent || "").trim();
-      if (!name) {
-        showToast("请填写报告名称");
-        return;
-      }
-      if (!category) {
-        showToast("请选择所属分类");
-        return;
-      }
-    } else {
-      const report = (document.getElementById("reportExistingText").textContent || "").trim();
-      const section = (document.getElementById("reportSectionText").textContent || "").trim();
-      if (!report) {
-        showToast("请选择报告");
-        return;
-      }
-      if (!section) {
-        showToast("请选择报告目录");
-        return;
-      }
-    }
-  }
   closeModal();
   showToast("已添加成功，内容保留来源标识");
 }
@@ -4316,9 +3903,8 @@ function wordParagraph(text) {
 
 function wordTagsRow(tags) {
   if (!tags || !tags.length) return "";
-  const theme = getSmartQueryChartTheme();
   const items = tags.map((t) =>
-    `<span style="display:inline-block;padding:2pt 8pt;margin:0 4pt 4pt 0;background:${theme.primarySoft};color:${theme.primary};font-size:9.5pt;border-radius:10pt;">${wordEsc(t)}</span>`
+    `<span style="display:inline-block;padding:2pt 8pt;margin:0 4pt 4pt 0;background:#e6f4ff;color:#1677ff;font-size:9.5pt;border-radius:10pt;">${wordEsc(t)}</span>`
   ).join("");
   return `<p style="margin:6pt 0;">${items}</p>`;
 }
@@ -4650,7 +4236,7 @@ function wordRenderTemplateReport(root, counter) {
       html += wordList(riskItems);
     }
     if (planItems.length) {
-      html += `<p style="font-size:10.5pt;color:${getSmartQueryChartTheme().primary};font-weight:600;margin:6pt 0 2pt;">→ 下月计划</p>`;
+      html += `<p style="font-size:10.5pt;color:#1677ff;font-weight:600;margin:6pt 0 2pt;">→ 下月计划</p>`;
       html += wordList(planItems);
     }
   }
@@ -4665,7 +4251,7 @@ function wordBuildReportHTML(root, mode, title) {
 
   let body = "";
   body += `<h1 style="text-align:center;font-size:18pt;color:#0f172a;margin:0 0 6pt;">${wordEsc(title)}</h1>`;
-  body += `<p style="text-align:center;font-size:11pt;color:${getSmartQueryChartTheme().primary};margin:0 0 4pt;font-weight:600;">${wordEsc(reportLabel)}</p>`;
+  body += `<p style="text-align:center;font-size:11pt;color:#1677ff;margin:0 0 4pt;font-weight:600;">${wordEsc(reportLabel)}</p>`;
   if (meta) body += `<p style="text-align:center;font-size:9pt;color:#64748b;margin:0 0 4pt;">${wordEsc(meta)}</p>`;
   body += `<p style="text-align:center;font-size:9pt;color:#94a3b8;margin:0 0 14pt;">导出时间：${wordEsc(exportTime)}</p>`;
   body += `<hr style="border:none;border-top:0.75pt solid #e2e8f0;margin:0 0 12pt;"/>`;

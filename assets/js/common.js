@@ -17,137 +17,6 @@ function goTo(path) {
 }
 
 /* ============================================================
- * 全局主题样式切换（静态原型）
- * - 系统配置页保存 smart-query-theme 后，所有引入 common.js 的页面自动应用
- * - 主题变量定义在 assets/css/theme.css
- * ============================================================ */
-(function setupGlobalTheme() {
-  const THEME_KEY = "smart-query-theme";
-  const THEMES = {
-    blue: {
-      name: "蓝色科技风格",
-      primary: "#1677ff",
-      accent: "#55c7ff",
-      soft: "#eaf3ff",
-      bg: "#f3f8ff"
-    },
-    green: {
-      name: "绿色清新风格",
-      primary: "#20a565",
-      accent: "#2eb872",
-      soft: "#e8f5e9",
-      bg: "#f0fdf6"
-    }
-  };
-
-  function normalizeTheme(theme) {
-    return Object.prototype.hasOwnProperty.call(THEMES, theme) ? theme : "blue";
-  }
-
-  function readTheme() {
-    try {
-      return normalizeTheme(localStorage.getItem(THEME_KEY) || "blue");
-    } catch (e) {
-      return "blue";
-    }
-  }
-
-  function applyTheme(theme) {
-    const nextTheme = normalizeTheme(theme);
-    document.documentElement.setAttribute("data-theme", nextTheme);
-    if (document.body) {
-      document.body.setAttribute("data-theme", nextTheme);
-    }
-    return nextTheme;
-  }
-
-  function saveTheme(theme) {
-    const nextTheme = applyTheme(theme);
-    try {
-      localStorage.setItem(THEME_KEY, nextTheme);
-    } catch (e) {}
-    return nextTheme;
-  }
-
-  function hexToRgbCsv(hex) {
-    const value = String(hex || "").trim().replace(/^#/, "");
-    if (!/^[0-9a-f]{3}([0-9a-f]{3})?$/i.test(value)) return "22, 119, 255";
-    const full = value.length === 3
-      ? value.split("").map((c) => c + c).join("")
-      : value;
-    const intValue = parseInt(full, 16);
-    return [
-      (intValue >> 16) & 255,
-      (intValue >> 8) & 255,
-      intValue & 255
-    ].join(", ");
-  }
-
-  function readCssVar(styles, name, fallback) {
-    if (!styles || typeof styles.getPropertyValue !== "function") return fallback;
-    return styles.getPropertyValue(name).trim() || fallback;
-  }
-
-  function getThemeColors() {
-    const activeTheme = normalizeTheme(document.documentElement.getAttribute("data-theme") || readTheme());
-    const fallback = THEMES[activeTheme] || THEMES.blue;
-    const styles = typeof window.getComputedStyle === "function"
-      ? window.getComputedStyle(document.documentElement)
-      : null;
-    const primary = readCssVar(styles, "--primary", fallback.primary);
-    const primaryRgb = readCssVar(styles, "--primary-rgb", hexToRgbCsv(primary));
-    const colors = {
-      theme: activeTheme,
-      primary,
-      primaryDark: readCssVar(styles, "--primary-dark", primary),
-      primarySoft: readCssVar(styles, "--primary-soft", fallback.soft),
-      primaryBg: readCssVar(styles, "--primary-bg", fallback.bg),
-      primaryRgb,
-      primaryAccent: readCssVar(styles, "--primary-accent", fallback.accent),
-      primaryAccentStrong: readCssVar(styles, "--primary-accent-strong", fallback.accent),
-      primaryBorder: readCssVar(styles, "--primary-border", fallback.soft),
-      primaryBorderSoft: readCssVar(styles, "--primary-border-soft", fallback.soft),
-      primaryHoverBg: readCssVar(styles, "--primary-hover-bg", fallback.bg),
-      primaryPanelBg: readCssVar(styles, "--primary-panel-bg", fallback.bg),
-      focusBorder: readCssVar(styles, "--focus-border", fallback.accent),
-      focusRing: readCssVar(styles, "--focus-ring", "rgba(" + primaryRgb + ", 0.12)"),
-      heading: readCssVar(styles, "--heading", "#102a48"),
-      headingStrong: readCssVar(styles, "--heading-strong", "#0f2f57"),
-      border: readCssVar(styles, "--border", "#e5e7eb"),
-      line: readCssVar(styles, "--line", "#eef2f7")
-    };
-    colors.primaryRgba = function (alpha) {
-      return "rgba(" + colors.primaryRgb + ", " + alpha + ")";
-    };
-    colors.rgba = colors.primaryRgba;
-    colors.chartPalette = [
-      colors.primary,
-      colors.primaryAccent,
-      colors.focusBorder,
-      colors.primaryBorder,
-      colors.primaryBorderSoft,
-      "#fbbf24",
-      "#f59e0b"
-    ];
-    colors.heatmapPalette = [colors.primarySoft, colors.primary, colors.primaryDark];
-    return colors;
-  }
-
-  window.SMART_QUERY_THEMES = THEMES;
-  window.getSmartQueryTheme = readTheme;
-  window.getSmartQueryThemeColors = getThemeColors;
-  window.applySmartQueryTheme = applyTheme;
-  window.saveSmartQueryTheme = saveTheme;
-
-  applyTheme(readTheme());
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", function () {
-      applyTheme(readTheme());
-    });
-  }
-})();
-
-/* ============================================================
  * 用户下拉菜单 + 个人信息修改 / 密码修改 弹窗（全局公共能力）
  * - 适用所有引入了 common.js 且 topbar 中含 .user-trigger 的页面
  * - 自动接管旧版 .user-trigger 的 click 行为（如 onclick="goTo('profile.html')"）
@@ -524,8 +393,7 @@ function goTo(path) {
       children: [
         { name: "指标体系", href: "knowledge-indicator.html", match: ["knowledge.html", "knowledge-indicator", "knowledge-indicator-create"] },
         { name: "示例库", href: "knowledge-example.html", match: ["knowledge-example"] },
-        { name: "行业知识", href: "knowledge-faq.html", match: ["knowledge-faq"] },
-        { name: "自定义指令", href: "knowledge-instructions.html", match: ["knowledge-instructions"] }
+        { name: "行业知识", href: "knowledge-faq.html", match: ["knowledge-faq"] }
       ]
     },
     {
@@ -543,8 +411,7 @@ function goTo(path) {
       icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="18" cy="6" r="1.5"/></svg>',
       children: [
         { name: "用户管理", href: "users.html", match: ["users", "user-edit", "user-disable"] },
-        { name: "角色管理", href: "roles.html", match: ["roles", "role-edit"] },
-        { name: "系统配置", href: "system-config.html", match: ["system-config"] }
+        { name: "角色管理", href: "roles.html", match: ["roles", "role-edit"] }
       ]
     }
   ];

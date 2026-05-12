@@ -17,7 +17,7 @@
 
 .of-head h1 {
   margin: 0;
-  color: var(--heading);
+  color: #102a48;
   font-size: 22px;
   line-height: 1.25;
 }
@@ -89,7 +89,7 @@
 
 .of-tab:hover {
   color: var(--primary);
-  background: var(--primary-hover-bg);
+  background: #f4f8ff;
 }
 
 .of-tab.is-active {
@@ -169,8 +169,8 @@
 
 .of-field input:focus,
 .of-field select:focus {
-  border-color: var(--focus-border);
-  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), .12);
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
 }
 
 .of-filter-actions {
@@ -209,7 +209,7 @@
 
 .of-table th {
   color: #526173;
-  background: var(--primary-panel-bg);
+  background: #f8fbff;
   font-size: 12px;
   font-weight: 800;
 }
@@ -253,13 +253,13 @@
   line-height: 1.35;
 }
 
-.of-tag.is-data { color: var(--primary-dark); background: var(--primary-soft); }
+.of-tag.is-data { color: #1d4ed8; background: #eef4ff; }
 .of-tag.is-sql { color: #b45309; background: #fef3c7; }
 .of-tag.is-reason { color: #047857; background: #ecfdf5; }
 .of-tag.is-metric { color: #6d28d9; background: #f3eaff; }
 .of-tag.is-chart { color: #be123c; background: #fff1f2; }
 
-.of-result.is-sql { color: var(--primary-dark); background: var(--primary-soft); }
+.of-result.is-sql { color: #1d4ed8; background: #eef4ff; }
 .of-result.is-metric { color: #047857; background: #ecfdf5; }
 .of-result.is-reply { color: #7c2d12; background: #fff7ed; }
 
@@ -267,8 +267,8 @@
   height: 30px;
   padding: 0 10px;
   color: var(--primary);
-  background: var(--primary-hover-bg);
-  border: 1px solid var(--primary-border);
+  background: #f4f8ff;
+  border: 1px solid #bfdbfe;
   border-radius: 6px;
   font-size: 12.5px;
   font-weight: 800;
@@ -345,7 +345,7 @@
 
 .of-section-title h4 {
   margin: 0;
-  color: var(--heading);
+  color: #102a48;
   font-size: 14px;
 }
 
@@ -431,7 +431,7 @@
 .of-select:focus,
 .of-textarea:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), .12);
+  box-shadow: 0 0 0 3px rgba(22, 119, 255, .12);
 }
 
 .of-readonly-sql {
@@ -469,7 +469,7 @@
 
 .of-view-result h4 {
   margin: 0 0 10px;
-  color: var(--heading);
+  color: #102a48;
   font-size: 14px;
 }
 

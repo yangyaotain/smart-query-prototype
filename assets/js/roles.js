@@ -453,32 +453,6 @@
     db.id,
     ...db.tables.flatMap((table) => [table.id, ...table.fields.map((field) => field.id)])
   ]);
-  const dataPermissionTypes = [
-    {
-      key: "theme",
-      label: "主题权限",
-      title: "启用主题权限",
-      desc: "作为数据访问的基础范围，默认开启。角色只能访问已授权主题下的数据。",
-      offTitle: "主题权限未启用",
-      offDesc: "开启后，可按分析主题配置该角色可访问的数据范围。"
-    },
-    {
-      key: "model",
-      label: "模型权限",
-      title: "启用模型权限",
-      desc: "开启后，在已授权主题范围内继续按数据源、表和字段收窄。",
-      offTitle: "模型权限未启用",
-      offDesc: "开启后，需同时满足主题授权和模型字段授权才可访问。"
-    },
-    {
-      key: "dimension",
-      label: "维度权限",
-      title: "启用维度权限",
-      desc: "开启后，在主题和模型范围内继续按维度值过滤数据。",
-      offTitle: "维度权限未启用",
-      offDesc: "开启后，需同时满足已开启权限条件，并按所选维度值过滤。"
-    }
-  ];
 
   function functionGroupIds(group) {
     return [
@@ -525,12 +499,7 @@
       functions: new Set(functions),
       topics: new Set(topicPerms),
       models: new Set(models),
-      dimensions: buildDimensionConfigs(dimensionIds || []),
-      dataPermissions: {
-        theme: true,
-        model: false,
-        dimension: false
-      }
+      dimensions: buildDimensionConfigs(dimensionIds || [])
     };
   }
 
@@ -597,87 +566,9 @@
       return;
     }
     if (activeTab === "function") body.innerHTML = renderFunction(role);
-    if (activeTab === "theme") body.innerHTML = renderDataPermissionPanel(role, "theme", renderTopics(role));
-    if (activeTab === "model") body.innerHTML = renderDataPermissionPanel(role, "model", renderModels(role));
-    if (activeTab === "dimension") body.innerHTML = renderDataPermissionPanel(role, "dimension", renderDimension());
-  }
-
-  function renderDataPermissionPanel(role, kind, contentHTML) {
-    return [
-      renderDataPermissionNotice(role),
-      renderPermissionSwitch(role, kind),
-      isDataPermissionEnabled(role, kind) ? contentHTML : renderPermissionOffState(kind)
-    ].join("");
-  }
-
-  function renderDataPermissionNotice(role) {
-    const enabled = dataPermissionTypes.filter((item) => isDataPermissionEnabled(role, item.key));
-    const enabledText = enabled.length ? enabled.map((item) => item.label).join("、") : "未开启";
-    return [
-      '<div class="permission-rule-tip">',
-      '<div>',
-      '<strong>权限叠加说明</strong>',
-      '<p>当前角色的数据可见范围由已开启的权限共同控制。多个权限开启时会叠加限制，需同时满足已开启的权限条件才可访问。</p>',
-      '</div>',
-      '<span>已开启：' + escapeHTML(enabledText) + '</span>',
-      '</div>'
-    ].join("");
-  }
-
-  function renderPermissionSwitch(role, kind) {
-    const meta = dataPermissionTypes.find((item) => item.key === kind);
-    if (!meta) return "";
-    const checked = isDataPermissionEnabled(role, kind);
-    return [
-      '<section class="permission-enable-card">',
-      '<div>',
-      '<h3>' + escapeHTML(meta.title) + '</h3>',
-      '<p>' + escapeHTML(meta.desc) + '</p>',
-      '</div>',
-      '<label class="permission-switch' + (checked ? " is-on" : "") + '">',
-      '<input type="checkbox" data-perm-kind="permission-switch" data-perm-id="' + kind + '"' + (checked ? " checked" : "") + ' />',
-      '<span></span>',
-      '<em>' + (checked ? "已开启" : "未开启") + '</em>',
-      '</label>',
-      '</section>'
-    ].join("");
-  }
-
-  function renderPermissionOffState(kind) {
-    const meta = dataPermissionTypes.find((item) => item.key === kind);
-    if (!meta) return "";
-    return [
-      '<div class="permission-off-state">',
-      '<div class="permission-off-icon">' + switchIconHTML() + '</div>',
-      '<h3>' + escapeHTML(meta.offTitle) + '</h3>',
-      '<p>' + escapeHTML(meta.offDesc) + '</p>',
-      '<button type="button" class="primary-btn permission-enable-btn" data-act="enable-permission" data-permission-type="' + kind + '">',
-      switchIconHTML(),
-      '<span>开启' + escapeHTML(meta.label) + '</span>',
-      '</button>',
-      '</div>'
-    ].join("");
-  }
-
-  function isDataPermissionEnabled(role, kind) {
-    role.dataPermissions = role.dataPermissions || { theme: true, model: false, dimension: false };
-    return !!role.dataPermissions[kind];
-  }
-
-  function updateDataPermissionEnabled(role, kind, enabled) {
-    role.dataPermissions = role.dataPermissions || { theme: true, model: false, dimension: false };
-    if (!enabled && enabledDataPermissionLabels(role).length <= 1 && role.dataPermissions[kind]) {
-      showToast("至少需要开启一种数据权限");
-      return false;
-    }
-    role.dataPermissions[kind] = enabled;
-    return true;
-  }
-
-  function enabledDataPermissionLabels(role) {
-    return dataPermissionTypes
-      .filter((item) => isDataPermissionEnabled(role, item.key))
-      .map((item) => item.label);
+    if (activeTab === "theme") body.innerHTML = renderTopics(role);
+    if (activeTab === "model") body.innerHTML = renderModels(role);
+    if (activeTab === "dimension") body.innerHTML = renderDimension();
   }
 
   function renderFunction(role) {
@@ -877,10 +768,6 @@
 
   function tableIconHTML() {
     return '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>';
-  }
-
-  function switchIconHTML() {
-    return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10a5 5 0 0 1 0 10H7A5 5 0 0 1 7 7z"/><circle cx="8" cy="12" r="2"/></svg>';
   }
 
   function emptyModelList(text) {
@@ -1160,11 +1047,6 @@
   function togglePermission(kind, id, checked) {
     const role = currentRole();
     if (!role) return;
-    if (kind === "permission-switch") {
-      updateDataPermissionEnabled(role, id, checked);
-      renderPermission();
-      return;
-    }
     if (kind === "function") {
       updateFunctionPermission(role, id, checked);
       renderPermission();
@@ -1320,13 +1202,6 @@
     if (body) {
       body.addEventListener("click", (event) => {
         if (event.target.closest("input[type='checkbox']")) return;
-        const permissionEnable = event.target.closest('[data-act="enable-permission"]');
-        if (permissionEnable) {
-          const role = currentRole();
-          if (role) updateDataPermissionEnabled(role, permissionEnable.getAttribute("data-permission-type"), true);
-          renderPermission();
-          return;
-        }
         const dimAdd = event.target.closest('[data-act="open-dim-add"]');
         if (dimAdd) { openDimensionAddModal(); return; }
         const dimDelete = event.target.closest('[data-act="delete-dim"]');
@@ -1444,10 +1319,7 @@
     const saveBtn = $("savePermissionBtn");
     if (saveBtn) {
       saveBtn.addEventListener("click", () => {
-        const role = currentRole();
-        const enabled = role ? enabledDataPermissionLabels(role).join("、") : "";
         saveBtn.textContent = "已保存";
-        showToast("已保存。当前按" + (enabled || "已开启权限") + "叠加收窄生效");
         window.setTimeout(() => {
           saveBtn.textContent = "保存权限";
         }, 1200);

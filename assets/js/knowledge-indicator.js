@@ -2,16 +2,10 @@
  * 知识库 / 指标体系（admin/knowledge-indicator.html）
  *  - 左：指标目录树（一级 / 二级，右键新增/重命名/删除）
  *  - 右：查询条件 + 指标列表 + 分页
- *  - 抽屉：查看 / 编辑 / 新增（原子 / 衍生 / 派生 三种表单动态切换）
+ *  - 抽屉：查看 / 编辑 / 新增（原子 / 衍生 / 维度 三种表单动态切换）
  * ====================================================================== */
 (function () {
   'use strict';
-
-  function getThemeColors() {
-    return typeof window.getSmartQueryThemeColors === 'function'
-      ? window.getSmartQueryThemeColors()
-      : { primary: 'var(--primary)' };
-  }
 
   // ---------- 1) Mock 字典 ----------
   var DATA_SOURCE_TREE = [
@@ -66,39 +60,6 @@
     ds_realtime: ['event_track', 'page_view_daily', 'campaign_dim']
   };
 
-  var TABLE_LABELS = {
-    non_bidding_project_info: '非招项目信息',
-    non_bidding_fee_detail: '非招服务费明细',
-    bidding_project_info: '招标项目信息',
-    platform_service_fee_detail: '平台服务费明细',
-    ca_fee_detail: 'CA 费用明细',
-    ecommerce_trade_detail: '电商交易明细',
-    sales_order: '销售订单',
-    sales_order_item: '订单明细',
-    customer: '客户',
-    product: '产品',
-    channel: '渠道',
-    order_pay: '订单支付',
-    order_refund: '订单退款',
-    pay_channel_dim: '支付渠道',
-    customer_master: '客户主数据',
-    customer_tag: '客户标签',
-    customer_segment: '客户分群',
-    crm_lead: 'CRM 线索',
-    crm_account: 'CRM 客户',
-    crm_activity: 'CRM 跟进活动',
-    inventory_log: '库存流水',
-    inventory_snapshot: '库存快照',
-    warehouse_dim: '仓库维度',
-    sku_dim: 'SKU 维度',
-    ar_master: '应收主表',
-    ap_master: '应付主表',
-    gl_detail: '总账明细',
-    event_track: '事件埋点',
-    page_view_daily: '页面访问日表',
-    campaign_dim: '活动维度'
-  };
-
   // 物理字段（按表）
   var FIELDS_BY_TABLE = {
     non_bidding_project_info: [
@@ -145,95 +106,7 @@
     campaign_dim: ['campaign_id', 'campaign_name', 'start_date']
   };
 
-  var FIELD_LABELS = {
-    deal_amount_10k_yuan: '成交金额',
-    deal_notice_sent_date: '成交通知发出日期',
-    procurement_method: '采购方式',
-    project_name: '项目名称',
-    project_code: '项目编码',
-    service_fee_amount: '服务费金额',
-    service_fee_payment_time: '服务费支付时间',
-    project_id: '项目ID',
-    bidding_amount: '招标成交金额',
-    bidding_method: '招标方式',
-    service_fee_collection_time: '服务费收取时间',
-    ca_fee_amount: 'CA费用金额',
-    payment_time: '支付时间',
-    cert_type: '证书类型',
-    trade_amount: '交易金额',
-    acceptance_time: '受理时间',
-    category: '品类',
-    order_id: '订单ID',
-    sales_amount: '销售额',
-    order_date: '下单日期',
-    customer_id: '客户ID',
-    channel_id: '渠道ID',
-    product_id: '产品ID',
-    quantity: '数量',
-    price: '单价',
-    customer_name: '客户名称',
-    register_date: '注册日期',
-    product_name: '产品名称',
-    channel_name: '渠道名称',
-    level: '客户等级',
-    tag: '标签',
-    segment: '分群',
-    ar_id: '应收ID',
-    ap_id: '应付ID',
-    amount: '金额',
-    due_date: '到期日期',
-    account_id: '账户ID',
-    period: '会计期间',
-    pay_id: '支付ID',
-    pay_amount: '支付金额',
-    pay_time: '支付时间',
-    pay_channel: '支付渠道',
-    refund_id: '退款ID',
-    refund_amount: '退款金额',
-    refund_time: '退款时间',
-    channel_type: '渠道类型',
-    lead_id: '线索ID',
-    source: '线索来源',
-    owner_id: '负责人ID',
-    created_at: '创建时间',
-    account_name: '客户名称',
-    industry: '行业',
-    region: '区域',
-    activity_id: '活动ID',
-    activity_type: '活动类型',
-    activity_time: '活动时间',
-    log_id: '流水ID',
-    sku_id: 'SKU ID',
-    warehouse_id: '仓库ID',
-    qty: '数量',
-    created_time: '创建时间',
-    stock_qty: '库存数量',
-    snapshot_date: '快照日期',
-    warehouse_name: '仓库名称',
-    city: '城市',
-    sku_name: 'SKU名称',
-    event_id: '事件ID',
-    user_id: '用户ID',
-    event_name: '事件名称',
-    event_time: '事件时间',
-    page_id: '页面ID',
-    visit_count: '访问次数',
-    biz_date: '业务日期',
-    campaign_id: '活动ID',
-    campaign_name: '活动名称',
-    start_date: '开始日期'
-  };
-
-  var CUSTOM_AGG_KEY = 'CUSTOM';
-  var AGG_OPTIONS = [
-    { key: 'SUM', label: 'SUM（求和）' },
-    { key: 'COUNT', label: 'COUNT（计数）' },
-    { key: 'COUNT_DISTINCT', label: 'COUNT_DISTINCT（去重计数）' },
-    { key: 'AVG', label: 'AVG（平均值）' },
-    { key: 'MAX', label: 'MAX（最大值）' },
-    { key: 'MIN', label: 'MIN（最小值）' },
-    { key: CUSTOM_AGG_KEY, label: '自定义' }
-  ];
+  var AGG_OPTIONS = ['SUM', 'COUNT', 'COUNT_DISTINCT', 'AVG', 'MAX', 'MIN'];
   var UNIT_PRESETS = ['元', '万元', '亿元', '%', '件', '次', '人', '天'];
   var TIME_TPL_PRESETS = [
     { key: '按月',   formula: "DATE_FORMAT(?, '%Y-%m')" },
@@ -265,6 +138,13 @@
       children: [
         { id: 'g_eff_conv', name: '转化率' },
         { id: 'g_eff_cycle', name: '周期/时长' }
+      ]
+    },
+    {
+      id: 'g_dim', name: '维度', expanded: true,
+      children: [
+        { id: 'g_dim_time', name: '时间维度' },
+        { id: 'g_dim_biz', name: '业务维度' }
       ]
     }
   ];
@@ -348,6 +228,58 @@
       formula: '总收入 / 成交客户数',
       unit: '元',
       updatedAt: '2026-04-22'
+    },
+    {
+      id: 'd_proc_method', groupId: 'g_dim_biz', type: 'dim',
+      name: '采购方式', synonyms: '采购方式',
+      desc: '描述项目的采购方式（招标 / 询价 / 直采等）。',
+      srcId: 'ds_metric',
+      isTimeDim: false,
+      mappings: [
+        { table: 'non_bidding_fee_detail', field: 'procurement_method' },
+        { table: 'non_bidding_project_info', field: 'procurement_method' },
+        { table: 'bidding_project_info', field: 'bidding_method' }
+      ],
+      filterValues: [
+        { alias: '招标', value: 'BIDDING' },
+        { alias: '询价', value: 'INQUIRY' },
+        { alias: '直采', value: 'DIRECT' }
+      ],
+      updatedAt: '2026-04-30'
+    },
+    {
+      id: 'd_time_quarter', groupId: 'g_dim_time', type: 'dim',
+      name: '统计时间-按季度', synonyms: '同环比, 趋势',
+      desc: '按季度聚合的时间维度。',
+      srcId: 'ds_metric',
+      isTimeDim: true,
+      timeTplKey: '按季度',
+      timeFormula: "CONCAT(YEAR(?), '-Q', QUARTER(?))",
+      mappings: [
+        { table: 'platform_service_fee_detail', field: 'service_fee_collection_time' },
+        { table: 'non_bidding_fee_detail', field: 'service_fee_payment_time' },
+        { table: 'ca_fee_detail', field: 'payment_time' },
+        { table: 'bidding_project_info', field: 'service_fee_collection_time' },
+        { table: 'ecommerce_trade_detail', field: 'acceptance_time' },
+        { table: 'non_bidding_project_info', field: 'deal_notice_sent_date' }
+      ],
+      filterValues: [],
+      updatedAt: '2026-05-01'
+    },
+    {
+      id: 'd_time_month', groupId: 'g_dim_time', type: 'dim',
+      name: '统计时间-按月', synonyms: '月度, 月份',
+      desc: '按月聚合的时间维度。',
+      srcId: 'ds_metric',
+      isTimeDim: true,
+      timeTplKey: '按月',
+      timeFormula: "DATE_FORMAT(?, '%Y-%m')",
+      mappings: [
+        { table: 'platform_service_fee_detail', field: 'service_fee_collection_time' },
+        { table: 'non_bidding_project_info', field: 'deal_notice_sent_date' }
+      ],
+      filterValues: [],
+      updatedAt: '2026-04-26'
     }
   ];
 
@@ -412,96 +344,8 @@
     var found = findSourceInTree(id);
     return found ? (found.domain.name + ' / ' + found.source.name) : dsName(id);
   }
-  function tableLabel(name) {
-    return TABLE_LABELS[name] || name || '';
-  }
-  function fieldLabel(name) {
-    return FIELD_LABELS[name] || name || '';
-  }
-  function fieldTag(name, atom) {
-    var f = String(name || '').toLowerCase();
-    if (atom && atom.timeField === name) return '统计时间';
-    if (/(_date|_time|time$|date$|period|month|year|day|created_at|created_time|snapshot_date|biz_date)/.test(f)) return '时间';
-    if (/(amount|fee|price|qty|quantity|count|stock|income|revenue|sales)/.test(f)) return '度量';
-    return '维度';
-  }
-  function fieldTagClass(tag) {
-    return tag === '度量' ? 'measure' : tag === '统计时间' ? 'stat-time' : tag === '时间' ? 'time' : 'dimension';
-  }
-  function makeModelRef(srcId, table) {
-    return (srcId && table) ? (srcId + '::' + table) : '';
-  }
-  function splitModelRef(ref) {
-    var parts = String(ref || '').split('::');
-    return { srcId: parts[0] || '', table: parts[1] || '' };
-  }
-  function effectiveModelRef(d) {
-    return d ? (d.modelRef || makeModelRef(d.srcId, d.table)) : '';
-  }
-  function findModelInfo(ref) {
-    var p = splitModelRef(ref);
-    var tables = TABLES_BY_SRC[p.srcId] || [];
-    if (!p.srcId || !p.table || tables.indexOf(p.table) < 0) return null;
-    return { ref: makeModelRef(p.srcId, p.table), srcId: p.srcId, table: p.table, label: tableLabel(p.table) };
-  }
-  function modelPathName(ref) {
-    var info = findModelInfo(ref);
-    return info ? (dsPathName(info.srcId) + ' / ' + info.label) : '';
-  }
-  function aggLabel(key) {
-    for (var i = 0; i < AGG_OPTIONS.length; i++) {
-      if (AGG_OPTIONS[i].key === key) return AGG_OPTIONS[i].label;
-    }
-    return key || '';
-  }
-  function aggExpression(agg, field) {
-    var f = field || '字段';
-    if (agg === 'COUNT_DISTINCT') return 'COUNT(DISTINCT ' + f + ')';
-    if (agg === CUSTOM_AGG_KEY) return '';
-    return (agg || 'SUM') + '(' + f + ')';
-  }
-  function atomFunctionExpr(d) {
-    if (!d) return '';
-    return d.agg === CUSTOM_AGG_KEY ? (d.functionExpr || '') : aggExpression(d.agg || 'SUM', d.field);
-  }
-  function syncAtomFunctionExpr(d) {
-    if (d && d.agg !== CUSTOM_AGG_KEY) d.functionExpr = atomFunctionExpr(d);
-  }
-  function typeLabel(t) {
-    return t === 'atom' ? '原子指标' : t === 'derived' ? '衍生指标' : '';
-  }
-  function typeAbbr(t)  {
-    return t === 'atom' ? '原' : t === 'derived' ? '衍' : '';
-  }
-  function isFormulaMetricType(t) {
-    return t === 'derived';
-  }
-  function findAtomIndicatorById(id) {
-    var it = findIndicatorById(id);
-    return it && it.type === 'atom' ? it : null;
-  }
-  function atomMetricLabel(id) {
-    var it = findAtomIndicatorById(id);
-    return it ? it.name : '';
-  }
-  function atomMetricPathName(id) {
-    var it = findAtomIndicatorById(id);
-    if (!it) return '';
-    var info = findGroupById(it.groupId);
-    var path = info ? info.path.map(function (g) { return g.name; }).join(' / ') : '';
-    return (path ? path + ' / ' : '') + it.name;
-  }
-  function derivativeModifierText(d) {
-    return d ? (d.modifier || d.formula || '') : '';
-  }
-  function modifierSummaryText(text) {
-    return String(text || '').replace(/\s*[\r\n]+\s*/g, '；').replace(/\s*；\s*/g, '；').replace(/；{2,}/g, '；');
-  }
-  function derivativeDisplayText(d) {
-    var modifier = modifierSummaryText(derivativeModifierText(d));
-    var atomName = atomMetricLabel(d && d.relatedAtomId);
-    return [modifier, atomName].filter(Boolean).join(' · ');
-  }
+  function typeLabel(t) { return t === 'atom' ? '原子指标' : t === 'derived' ? '衍生指标' : '维度'; }
+  function typeAbbr(t)  { return t === 'atom' ? '原' : t === 'derived' ? '衍' : '维'; }
 
   // 计算所有节点（含全部）每个的指标数（含子分组聚合）
   function countByGroup() {
@@ -642,9 +486,8 @@
     tbody.innerHTML = rows.map(function (it) {
       var formula = '';
       if (it.type === 'atom') {
-        var modelName = modelPathName(effectiveModelRef(it)) || tableLabel(it.table);
-        formula = atomFunctionExpr(it) + (modelName ? ' · ' + modelName : '');
-      } else if (isFormulaMetricType(it.type)) {
+        formula = (it.agg || 'SUM') + '(' + (it.field || '') + ')';
+      } else if (it.type === 'derived') {
         formula = it.formula || '';
       } else {
         formula = (it.mappings || []).length + ' 个表字段映射';
@@ -767,16 +610,12 @@
       synonyms: '',
       desc: '',
       srcId: DATA_SOURCES[0].id,
-      modelRef: '',
       table: '',
       field: '',
       agg: 'SUM',
-      functionExpr: '',
       timeField: '',
       unit: '万元',
       formula: '',
-      modifier: '',
-      relatedAtomId: '',
       isTimeDim: false,
       timeTplKey: '',
       timeFormula: '',
@@ -812,7 +651,7 @@
       chip.textContent = '编辑模式';
     } else {
       titleEl.textContent = '新增指标';
-      subEl.textContent = '根据类型选择"原子指标 / 衍生指标"配置不同字段';
+      subEl.textContent = '根据类型选择"原子指标 / 衍生指标 / 维度"配置不同字段';
       chip.classList.remove('hidden', 'is-edit');
       chip.classList.add('is-create');
       chip.textContent = '新增模式';
@@ -858,16 +697,16 @@
     if (d.type === 'atom') {
       html += ''
         + '<div class="ki-view-section">'
-        +   '<h4>指标配置</h4>'
+        +   '<h4>物理映射</h4>'
         +   '<div class="ki-view-grid">'
-        +     '<div class="ki-view-cell full"><div class="ki-view-label">数据模型</div>' + v(modelPathName(effectiveModelRef(d)) || tableLabel(d.table)) + '</div>'
-        +     '<div class="ki-view-cell"><div class="ki-view-label">字段选择</div>' + v(d.field) + '</div>'
-        +     '<div class="ki-view-cell"><div class="ki-view-label">聚合方式</div>' + v(aggLabel(d.agg)) + '</div>'
-        +     '<div class="ki-view-cell full"><div class="ki-view-label">函数表达式</div>' + v(atomFunctionExpr(d)) + '</div>'
+        +     '<div class="ki-view-cell"><div class="ki-view-label">物理表名</div>' + v(d.table) + '</div>'
+        +     '<div class="ki-view-cell"><div class="ki-view-label">物理字段名</div>' + v(d.field) + '</div>'
+        +     '<div class="ki-view-cell"><div class="ki-view-label">聚合方式</div>' + v(d.agg) + '</div>'
+        +     '<div class="ki-view-cell"><div class="ki-view-label">时间字段（兜底）</div>' + v(d.timeField) + '</div>'
         +     '<div class="ki-view-cell"><div class="ki-view-label">单位</div>' + v(d.unit) + '</div>'
         +   '</div>'
         + '</div>';
-    } else if (isFormulaMetricType(d.type)) {
+    } else if (d.type === 'derived') {
       html += ''
         + '<div class="ki-view-section">'
         +   '<h4>计算公式</h4>'
@@ -879,6 +718,39 @@
       if (d.unit) {
         html += '<div class="ki-view-section"><h4>单位</h4>' + v(d.unit) + '</div>';
       }
+    } else {
+      html += ''
+        + '<div class="ki-view-section">'
+        +   '<h4>是否时间维度</h4>'
+        +   v(d.isTimeDim ? '是' : '否')
+        + '</div>';
+      if (d.isTimeDim) {
+        html += ''
+          + '<div class="ki-view-section">'
+          +   '<h4>时间函数模板</h4>'
+          +   '<div class="ki-view-value" style="font-family:ui-monospace,Consolas,monospace;background:#f8fafc;padding:10px 12px;border-radius:8px;">'
+          +     escapeHTML(d.timeFormula || '—')
+          +   '</div>'
+          + '</div>';
+      }
+      // 关联表字段
+      var ml = (d.mappings || []).map(function (m) {
+        return '<div class="ki-view-row"><strong>' + escapeHTML(m.table) + '</strong>·<span>' + escapeHTML(m.field) + '</span></div>';
+      }).join('');
+      html += ''
+        + '<div class="ki-view-section">'
+        +   '<h4>关联表字段</h4>'
+        +   (ml ? '<div class="ki-view-list">' + ml + '</div>' : v(''))
+        + '</div>';
+      // 过滤值映射
+      var fv = (d.filterValues || []).map(function (m) {
+        return '<div class="ki-view-row"><strong>' + escapeHTML(m.alias) + '</strong> → <span>' + escapeHTML(m.value) + '</span></div>';
+      }).join('');
+      html += ''
+        + '<div class="ki-view-section">'
+        +   '<h4>过滤值映射</h4>'
+        +   (fv ? '<div class="ki-view-list">' + fv + '</div>' : v(''))
+        + '</div>';
     }
     return html;
   }
@@ -929,182 +801,6 @@
       + '</div>';
   }
 
-  function modelTreeHTML(selectedRef) {
-    var selectedInfo = findModelInfo(selectedRef);
-    return DATA_SOURCE_TREE.map(function (domain) {
-      var sources = domain.children || [];
-      var hasSelected = !!(selectedInfo && sources.some(function (s) { return s.id === selectedInfo.srcId; }));
-      var sourceHTML = sources.map(function (s) {
-        var tables = TABLES_BY_SRC[s.id] || [];
-        var sourceSelected = !!(selectedInfo && selectedInfo.srcId === s.id);
-        var tableHTML = tables.map(function (t) {
-          var ref = makeModelRef(s.id, t);
-          var active = selectedInfo && selectedInfo.ref === ref ? ' is-active' : '';
-          var searchText = [domain.name, s.name, s.type || '', tableLabel(t), t].join(' ');
-          return ''
-            + '<div class="ki-source-tree-node is-leaf">'
-            +   '<button type="button" class="ki-source-tree-row is-table' + active + '" data-model-ref="' + escapeHTML(ref) + '" data-search="' + escapeHTML(searchText) + '" title="' + escapeHTML(tableLabel(t) + ' / ' + t) + '">'
-            +     '<span class="ki-source-tree-toggle is-empty"></span>'
-            +     '<span class="ki-source-tree-icon is-table">'
-            +       '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16"/><path d="M10 4v16"/></svg>'
-            +     '</span>'
-            +     '<span class="ki-source-tree-name">'
-            +       '<span class="ki-source-tree-title">' + escapeHTML(tableLabel(t)) + '</span>'
-            +       '<span class="ki-source-tree-code">' + escapeHTML(t) + '</span>'
-            +     '</span>'
-            +     '<span class="ki-source-tree-meta">表</span>'
-            +   '</button>'
-            + '</div>';
-        }).join('');
-        return ''
-          + '<div class="ki-source-tree-node' + (sourceSelected ? '' : ' is-collapsed') + '" data-model-source-id="' + escapeHTML(s.id) + '">'
-          +   '<button type="button" class="ki-source-tree-row is-domain is-source-domain" data-model-source-id="' + escapeHTML(s.id) + '">'
-          +     '<span class="ki-source-tree-toggle"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>'
-          +     '<span class="ki-source-tree-icon is-source">'
-          +       '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5V12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V5.5"/><path d="M5 12v6.5c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V12"/></svg>'
-          +     '</span>'
-          +     '<span class="ki-source-tree-name">' + escapeHTML(s.name) + '</span>'
-          +     '<span class="ki-source-tree-meta">' + tables.length + '</span>'
-          +   '</button>'
-          +   '<div class="ki-source-tree-children">' + tableHTML + '</div>'
-          + '</div>';
-      }).join('');
-      return ''
-        + '<div class="ki-source-tree-node' + (hasSelected ? '' : ' is-collapsed') + '" data-domain-id="' + escapeHTML(domain.id) + '">'
-        +   '<button type="button" class="ki-source-tree-row is-domain" data-domain-id="' + escapeHTML(domain.id) + '">'
-        +     '<span class="ki-source-tree-toggle"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>'
-        +     '<span class="ki-source-tree-icon">'
-        +       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7l8-4 8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4"/><path d="M4 17l8 4 8-4"/></svg>'
-        +     '</span>'
-        +     '<span class="ki-source-tree-name">' + escapeHTML(domain.name) + '</span>'
-        +     '<span class="ki-source-tree-meta">' + sources.length + '</span>'
-        +   '</button>'
-        +   '<div class="ki-source-tree-children">' + sourceHTML + '</div>'
-        + '</div>';
-    }).join('');
-  }
-
-  function modelPickerHTML(d) {
-    var ref = effectiveModelRef(d);
-    var label = modelPathName(ref);
-    return ''
-      + '<div class="ki-source-picker ki-model-picker" data-role="model-picker">'
-      +   '<button type="button" class="ki-source-picker-btn" data-act="toggle-model-tree" aria-haspopup="tree" aria-expanded="false">'
-      +     '<span class="ki-source-picker-text' + (label ? '' : ' is-placeholder') + '">' + escapeHTML(label || '请选择数据模型') + '</span>'
-      +     '<span class="ki-source-picker-arrow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>'
-      +   '</button>'
-      +   '<div class="ki-source-tree-pop" role="tree">'
-      +     '<div class="ki-picker-search"><input class="ki-input ki-picker-search-input" data-role="model-search" placeholder="搜索领域 / 数据源 / 表名" /></div>'
-      +     '<div class="ki-source-tree-list">' + modelTreeHTML(ref) + '</div>'
-      +     '<div class="ki-picker-empty hidden">暂无匹配数据模型</div>'
-      +   '</div>'
-      + '</div>';
-  }
-
-  function fieldPickerHTML(d) {
-    var table = (findModelInfo(effectiveModelRef(d)) || {}).table || d.table;
-    var fields = FIELDS_BY_TABLE[table] || [];
-    var label = d.field || '';
-    var list = '';
-    if (!table) {
-      list = '<div class="ki-empty-line">请先选择数据模型</div>';
-    } else if (!fields.length) {
-      list = '<div class="ki-empty-line">当前模型暂无字段</div>';
-    } else {
-      list = fields.map(function (f) {
-        var active = f === d.field ? ' is-active' : '';
-        return ''
-          + '<button type="button" class="ki-field-option' + active + '" data-field="' + escapeHTML(f) + '" data-search="' + escapeHTML(f) + '">'
-          +   '<span class="ki-field-option-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h10"/></svg></span>'
-          +   '<span class="ki-field-option-name">' + escapeHTML(f) + '</span>'
-          + '</button>';
-      }).join('');
-    }
-    return ''
-      + '<div class="ki-source-picker ki-field-picker" data-role="field-picker">'
-      +   '<button type="button" class="ki-source-picker-btn" data-act="toggle-field-picker" aria-haspopup="listbox" aria-expanded="false"' + (!table ? ' disabled' : '') + '>'
-      +     '<span class="ki-source-picker-text' + (label ? '' : ' is-placeholder') + '">' + escapeHTML(label || (table ? '请选择字段' : '请先选择数据模型')) + '</span>'
-      +     '<span class="ki-source-picker-arrow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>'
-      +   '</button>'
-      +   '<div class="ki-source-tree-pop" role="listbox">'
-      +     '<div class="ki-picker-search"><input class="ki-input ki-picker-search-input" data-role="field-search" placeholder="搜索字段" ' + (!table || !fields.length ? 'disabled' : '') + ' /></div>'
-      +     '<div class="ki-field-list">' + list + '</div>'
-      +     '<div class="ki-picker-empty hidden">暂无匹配字段</div>'
-      +   '</div>'
-      + '</div>';
-  }
-
-  function atomMetricTreeHTML(selectedId) {
-    function atomRows(groupId) {
-      return INDICATORS.filter(function (it) {
-        return it.type === 'atom' && it.groupId === groupId;
-      }).map(function (it) {
-        var active = it.id === selectedId ? ' is-active' : '';
-        var searchText = [it.name, it.synonyms || '', it.desc || '', groupPathName(it.groupId)].join(' ');
-        return ''
-          + '<div class="ki-source-tree-node is-leaf">'
-          +   '<button type="button" class="ki-source-tree-row is-atom-metric' + active + '" data-atom-id="' + escapeHTML(it.id) + '" data-search="' + escapeHTML(searchText) + '" title="' + escapeHTML(atomMetricPathName(it.id)) + '">'
-          +     '<span class="ki-source-tree-toggle is-empty"></span>'
-          +     '<span class="ki-source-tree-icon is-atom-metric"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"/><path d="M7 16V9"/><path d="M12 16V5"/><path d="M17 16v-4"/></svg></span>'
-          +     '<span class="ki-source-tree-name">'
-          +       '<span class="ki-source-tree-title">' + escapeHTML(it.name) + '</span>'
-          +       '<span class="ki-source-tree-code">' + escapeHTML(it.synonyms || '原子指标') + '</span>'
-          +     '</span>'
-          +     '<span class="ki-source-tree-meta">原</span>'
-          +   '</button>'
-          + '</div>';
-      }).join('');
-    }
-
-    return TREE.map(function (group) {
-      var childHTML = (group.children || []).map(function (child) {
-        var rows = atomRows(child.id);
-        if (!rows) return '';
-        var hasSelectedChild = !!(selectedId && rows.indexOf('data-atom-id="' + escapeHTML(selectedId) + '"') >= 0);
-        return ''
-          + '<div class="ki-source-tree-node' + (hasSelectedChild ? '' : ' is-collapsed') + '" data-atom-group-id="' + escapeHTML(child.id) + '">'
-          +   '<button type="button" class="ki-source-tree-row is-domain" data-atom-group-id="' + escapeHTML(child.id) + '">'
-          +     '<span class="ki-source-tree-toggle"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>'
-          +     '<span class="ki-source-tree-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h7l2 2h9v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>'
-          +     '<span class="ki-source-tree-name">' + escapeHTML(child.name) + '</span>'
-          +     '<span class="ki-source-tree-meta">' + (INDICATORS.filter(function (it) { return it.type === 'atom' && it.groupId === child.id; }).length) + '</span>'
-          +   '</button>'
-          +   '<div class="ki-source-tree-children">' + rows + '</div>'
-          + '</div>';
-      }).join('');
-      var directRows = atomRows(group.id);
-      var selectedInGroup = !!(selectedId && (childHTML + directRows).indexOf('data-atom-id="' + escapeHTML(selectedId) + '"') >= 0);
-      var count = indicatorsInGroup(group.id).filter(function (it) { return it.type === 'atom'; }).length;
-      if (!count) return '';
-      return ''
-        + '<div class="ki-source-tree-node' + (selectedInGroup ? '' : ' is-collapsed') + '" data-atom-group-id="' + escapeHTML(group.id) + '">'
-        +   '<button type="button" class="ki-source-tree-row is-domain" data-atom-group-id="' + escapeHTML(group.id) + '">'
-        +     '<span class="ki-source-tree-toggle"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>'
-        +     '<span class="ki-source-tree-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7l8-4 8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4"/><path d="M4 17l8 4 8-4"/></svg></span>'
-        +     '<span class="ki-source-tree-name">' + escapeHTML(group.name) + '</span>'
-        +     '<span class="ki-source-tree-meta">' + count + '</span>'
-        +   '</button>'
-        +   '<div class="ki-source-tree-children">' + directRows + childHTML + '</div>'
-        + '</div>';
-    }).join('');
-  }
-
-  function atomMetricPickerHTML(d) {
-    var label = atomMetricPathName(d.relatedAtomId);
-    return ''
-      + '<div class="ki-source-picker ki-atom-picker" data-role="atom-picker">'
-      +   '<button type="button" class="ki-source-picker-btn" data-act="toggle-atom-picker" aria-haspopup="tree" aria-expanded="false">'
-      +     '<span class="ki-source-picker-text' + (label ? '' : ' is-placeholder') + '">' + escapeHTML(label || '请选择关联原子指标') + '</span>'
-      +     '<span class="ki-source-picker-arrow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>'
-      +   '</button>'
-      +   '<div class="ki-source-tree-pop" role="tree">'
-      +     '<div class="ki-picker-search"><input class="ki-input ki-picker-search-input" data-role="atom-search" placeholder="搜索目录 / 原子指标" /></div>'
-      +     '<div class="ki-source-tree-list">' + atomMetricTreeHTML(d.relatedAtomId) + '</div>'
-      +     '<div class="ki-picker-empty hidden">暂无匹配原子指标</div>'
-      +   '</div>'
-      + '</div>';
-  }
-
   function tableOptions(srcId, selected) {
     var arr = TABLES_BY_SRC[srcId] || [];
     return ['<option value="">请选择</option>'].concat(arr.map(function (t) {
@@ -1122,7 +818,7 @@
 
   function aggOptions(selected) {
     return AGG_OPTIONS.map(function (a) {
-      return '<option value="' + escapeHTML(a.key) + '"' + (a.key === selected ? ' selected' : '') + '>' + escapeHTML(a.label) + '</option>';
+      return '<option value="' + escapeHTML(a) + '"' + (a === selected ? ' selected' : '') + '>' + escapeHTML(a) + '</option>';
     }).join('');
   }
 
@@ -1138,139 +834,13 @@
     }).join('');
   }
 
-  var FORMULA_OPERATOR_TOOLS = [
-    { label: '+', value: '+' },
-    { label: '-', value: '-' },
-    { label: '*', value: '*' },
-    { label: '/', value: '/' },
-    { label: '()', value: '()' },
-    { label: '[]', value: '[]' }
-  ];
-  var FORMULA_OPERATORS = ['+', '-', '*', '/', '(', ')', '[', ']'];
-  var FORMULA_NUMERIC_FUNCTIONS = ['ROUND()', 'ABS()', 'CEIL()', 'FLOOR()'];
-  var FORMULA_LOGIC_FUNCTIONS = ['IF()', 'COALESCE()'];
-  var FORMULA_FUNCTIONS = FORMULA_NUMERIC_FUNCTIONS.concat(FORMULA_LOGIC_FUNCTIONS);
-
-  function formulaAtomOptions() {
-    return INDICATORS.filter(function (it) { return it.type === 'atom'; });
-  }
-
-  function formulaAtomByName(name) {
-    return formulaAtomOptions().find(function (it) { return it.name === name; });
-  }
-
-  function isFormulaFunctionToken(value) {
-    var upper = String(value || '').toUpperCase();
-    return FORMULA_FUNCTIONS.some(function (fn) { return fn.toUpperCase() === upper; });
-  }
-
-  function isFormulaNumberToken(value) {
-    return /^-?\d+(\.\d+)?%?$/.test(String(value || '').trim());
-  }
-
-  function isFormulaMetricToken(value) {
-    var text = String(value || '').trim();
-    return !!text && !isFormulaNumberToken(text) && !isFormulaFunctionToken(text) && FORMULA_OPERATORS.indexOf(text) < 0
-      && /[\u4e00-\u9fa5]/.test(text);
-  }
-
-  function formulaParts(formula) {
-    var functionPattern = FORMULA_FUNCTIONS.map(function (fn) {
-      return fn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    }).join('|');
-    var re = new RegExp('(?:' + functionPattern + ')|[+\\-*/()\\[\\]]|[^\\s+\\-*/()\\[\\]]+', 'gi');
-    return (String(formula || '').match(re) || [])
-      .map(function (p) { return p.trim(); })
-      .filter(Boolean);
-  }
-
-  function joinFormulaParts(parts) {
-    return parts.filter(Boolean).join(' ')
-      .replace(/\(\s+/g, '(')
-      .replace(/\s+\)/g, ')')
-      .replace(/\[\s+/g, '[')
-      .replace(/\s+\]/g, ']')
-      .replace(/\s+,/g, ',');
-  }
-
-  function formulaEditorHTML(formula) {
-    var parts = formulaParts(formula);
-    if (!parts.length) {
-      return '<span class="ki-formula-placeholder">输入 @ 搜索指标，或直接输入公式 / 点击上方符号</span>';
-    }
-    return parts.map(function (part, idx) {
-      var atom = formulaAtomByName(part);
-      if (atom || isFormulaMetricToken(part)) {
-        return ''
-          + '<span class="ki-formula-token" contenteditable="false" data-formula-part-index="' + idx + '" data-formula-token="' + escapeHTML(part) + '">'
-          +   escapeHTML(part)
-          +   '<button type="button" class="ki-formula-token-remove" data-act="remove-formula-part" data-formula-part-index="' + idx + '" aria-label="删除' + escapeHTML(part) + '">x</button>'
-          + '</span>';
-      }
-      if (FORMULA_OPERATORS.indexOf(part) >= 0) {
-        return '<span class="ki-formula-op" data-formula-token="' + escapeHTML(part) + '">' + escapeHTML(part) + '</span>';
-      }
-      if (isFormulaFunctionToken(part)) {
-        return '<span class="ki-formula-fn" data-formula-token="' + escapeHTML(part) + '">' + escapeHTML(part.replace('()', '')) + '</span>';
-      }
-      return '<span class="ki-formula-text" data-formula-token="' + escapeHTML(part) + '">' + escapeHTML(part) + '</span>';
-    }).join('');
-  }
-
-  function formulaAtomListHTML() {
-    return formulaAtomOptions().map(function (it) {
-      var code = it.synonyms || it.field || '原子指标';
-      var searchText = [it.name, it.synonyms || '', it.desc || '', groupPathName(it.groupId)].join(' ');
-      return ''
-        + '<button type="button" class="ki-formula-atom-option" data-formula-atom-id="' + escapeHTML(it.id) + '" data-search="' + escapeHTML(searchText) + '">'
-        +   '<span>' + escapeHTML(it.name) + '</span>'
-        +   '<em>' + escapeHTML(code) + '</em>'
-        + '</button>';
-    }).join('');
-  }
-
-  function formulaBuilderHTML(d) {
-    return ''
-      + '<div class="ki-formula-builder">'
-      +   '<div class="ki-formula-toolbar">'
-      +     '<div class="ki-formula-tool-group" aria-label="运算符">'
-      +       FORMULA_OPERATOR_TOOLS.map(function (op) {
-                return '<button type="button" class="ki-formula-tool" data-act="insert-formula-op" data-formula-value="' + escapeHTML(op.value) + '">' + escapeHTML(op.label) + '</button>';
-              }).join('')
-      +     '</div>'
-      +     '<div class="ki-formula-tool-group" aria-label="数值函数">'
-      +       FORMULA_NUMERIC_FUNCTIONS.map(function (fn) {
-                return '<button type="button" class="ki-formula-tool" data-act="insert-formula-fn" data-formula-value="' + escapeHTML(fn) + '">' + escapeHTML(fn.replace('()', '')) + '</button>';
-              }).join('')
-      +     '</div>'
-      +     '<div class="ki-formula-tool-group" aria-label="逻辑函数">'
-      +       FORMULA_LOGIC_FUNCTIONS.map(function (fn) {
-                return '<button type="button" class="ki-formula-tool" data-act="insert-formula-fn" data-formula-value="' + escapeHTML(fn) + '">' + escapeHTML(fn.replace('()', '')) + '</button>';
-              }).join('')
-      +     '</div>'
-      +     '<button type="button" class="ki-formula-clear" data-act="clear-formula">清空</button>'
-      +   '</div>'
-      +   '<div class="ki-formula-editor-wrap">'
-      +     '<div class="ki-formula-editor" data-role="formula-editor" contenteditable="true" spellcheck="false">'
-      +       formulaEditorHTML(d.formula)
-      +     '</div>'
-      +     '<div class="ki-formula-suggest hidden" data-role="formula-suggest">'
-      +       formulaAtomListHTML()
-      +       '<div class="ki-formula-empty hidden">暂无匹配原子指标</div>'
-      +     '</div>'
-      +   '</div>'
-      +   '<input type="hidden" data-bind="formula" value="' + escapeHTML(d.formula || '') + '" />'
-      +   '<div class="ki-formula-help">'
-      +     '<span>输入 @ 可搜索并插入指标</span>'
-      +     '<span>点击上方符号 / 函数会插入到当前光标位置</span>'
-      +     '<span>工具栏没有的运算符号，可以自定义输入</span>'
-      +   '</div>'
-      + '</div>';
-  }
-
   function renderFormBody(d) {
-    // 通用：名称、类型、同义词、描述
+    // 通用：数据源、名称、类型、同义词、描述
     var common = ''
+      + '<div class="ki-form-row">'
+      +   '<label class="ki-form-label">数据源</label>'
+      +   sourcePickerHTML(d.srcId)
+      + '</div>'
       + '<div class="ki-form-grid">'
       +   '<div class="ki-form-row">'
       +     '<label class="ki-form-label">名称</label>'
@@ -1281,6 +851,7 @@
       +     '<select class="ki-select-form" data-bind="type">'
       +       '<option value="atom"' + (d.type === 'atom' ? ' selected' : '') + '>原子指标</option>'
       +       '<option value="derived"' + (d.type === 'derived' ? ' selected' : '') + '>衍生指标</option>'
+      +       '<option value="dim"' + (d.type === 'dim' ? ' selected' : '') + '>维度</option>'
       +     '</select>'
       +   '</div>'
       + '</div>'
@@ -1295,29 +866,33 @@
 
     var typeBlock = '';
     if (d.type === 'atom') typeBlock = renderAtomBlock(d);
-    else typeBlock = renderDerivedBlock(d);
+    else if (d.type === 'derived') typeBlock = renderDerivedBlock(d);
+    else typeBlock = renderDimBlock(d);
 
     return common + typeBlock;
   }
 
   function renderAtomBlock(d) {
     return ''
-      + '<div class="ki-form-row">'
-      +   '<label class="ki-form-label">数据模型</label>'
-      +   modelPickerHTML(d)
+      + '<div class="ki-form-grid">'
+      +   '<div class="ki-form-row">'
+      +     '<label class="ki-form-label">物理表名</label>'
+      +     '<select class="ki-select-form" data-bind="table">' + tableOptions(d.srcId, d.table) + '</select>'
+      +   '</div>'
+      +   '<div class="ki-form-row">'
+      +     '<label class="ki-form-label">物理字段名</label>'
+      +     '<select class="ki-select-form" data-bind="field">' + fieldOptions(d.table, d.field, true) + '</select>'
+      +   '</div>'
       + '</div>'
-      + '<div class="ki-form-row">'
-      +   '<label class="ki-form-label">字段选择</label>'
-      +   fieldPickerHTML(d)
-      + '</div>'
-      + '<div class="ki-form-row">'
-      +   '<label class="ki-form-label">聚合方式</label>'
-      +   '<select class="ki-select-form" data-bind="agg">' + aggOptions(d.agg) + '</select>'
-      + '</div>'
-      + '<div class="ki-form-row">'
-      +   '<label class="ki-form-label">函数表达式</label>'
-      +   '<input class="ki-input" data-bind="functionExpr" value="' + escapeHTML(atomFunctionExpr(d)) + '" placeholder="' + (d.agg === CUSTOM_AGG_KEY ? '请输入自定义函数表达式' : '选择字段后自动生成') + '"' + (d.agg === CUSTOM_AGG_KEY ? '' : ' readonly') + ' />'
-      +   '<div class="ki-form-hint">' + (d.agg === CUSTOM_AGG_KEY ? '自定义时可填写完整聚合函数或 SQL 片段。' : '随聚合方式和字段自动生成，不支持手动修改。') + '</div>'
+      + '<div class="ki-form-grid">'
+      +   '<div class="ki-form-row">'
+      +     '<label class="ki-form-label">聚合方式</label>'
+      +     '<select class="ki-select-form" data-bind="agg">' + aggOptions(d.agg) + '</select>'
+      +   '</div>'
+      +   '<div class="ki-form-row">'
+      +     '<label class="ki-form-label">时间字段（兜底）<span class="ki-form-tip" title="该字段用于在没有显式时间维度时兜底过滤">?</span></label>'
+      +     '<select class="ki-select-form" data-bind="timeField">' + fieldOptions(d.table, d.timeField, true) + '</select>'
+      +   '</div>'
       + '</div>'
       + '<div class="ki-form-row">'
       +   '<label class="ki-form-label">单位<span class="ki-form-tip" title="可点选预设，也可在下方文本框自定义">?</span></label>'
@@ -1330,7 +905,8 @@
     return ''
       + '<div class="ki-form-row">'
       +   '<label class="ki-form-label">计算公式</label>'
-      +   formulaBuilderHTML(d)
+      +   '<textarea class="ki-textarea" data-bind="formula" rows="3" placeholder="例：销售额 / 订单量">' + escapeHTML(d.formula || '') + '</textarea>'
+      +   '<div class="ki-form-hint">公式中的标识符必须是系统中已定义的原子指标名</div>'
       + '</div>'
       + '<div class="ki-form-row">'
       +   '<label class="ki-form-label">单位</label>'
@@ -1339,99 +915,47 @@
       + '</div>';
   }
 
-  function derivativeFieldRowsHTML(d) {
-    var atom = findAtomIndicatorById(d.relatedAtomId);
-    if (!atom) {
-      return '<div class="ki-empty-line">请先选择关联原子指标，系统会带出该原子指标所在事实表字段。</div>';
-    }
-    var fields = FIELDS_BY_TABLE[atom.table] || [];
-    if (!fields.length) {
-      return '<div class="ki-empty-line">当前事实表暂无可配置字段。</div>';
-    }
-    return fields.map(function (field) {
-      var label = fieldLabel(field);
-      var tag = fieldTag(field, atom);
-      return ''
-        + '<button type="button" class="ki-derivative-field" data-mod-field="' + escapeHTML(label) + '" data-mod-code="' + escapeHTML(field) + '">'
-        +   '<span class="ki-derivative-field-main">'
-        +     '<span class="ki-derivative-field-code">' + escapeHTML(field) + '</span>'
-        +     '<span class="ki-derivative-field-name">' + escapeHTML(label) + '</span>'
-        +   '</span>'
-        +   '<span class="ki-field-tag is-' + fieldTagClass(tag) + '">' + escapeHTML(tag) + '</span>'
-        + '</button>';
-    }).join('');
-  }
-
-  function modifierExamplesHTML(d) {
-    var atom = findAtomIndicatorById(d.relatedAtomId);
-    var examples = [
-      { title: '直营门店-电子产品-销售额', text: '渠道名称=直营门店；\n产品名称=电子产品' },
-      { title: '华东区域-重点客户-收入', text: '区域=华东；\n客户等级=重点客户' },
-      { title: '企业证书-上月收入', text: '证书类型=企业证书；\n支付时间=上月' }
-    ];
-    if (atom && atom.table === 'non_bidding_project_info') {
-      examples = [
-        { title: '询比采购-智慧园区-成交金额', text: '采购方式=询比采购；\n项目名称=智慧园区改造' },
-        { title: '直营门店-电子产品-销售额', text: '渠道名称=直营门店；\n产品名称=电子产品' },
-        { title: '本月-重点项目-成交金额', text: '成交通知发出日期=本月；\n项目编码=PJ-2026-042' }
-      ];
-    } else if (atom && atom.table === 'platform_service_fee_detail') {
-      examples = [
-        { title: '本月重点项目-服务费', text: '项目ID=PJ-2026-042；\n服务费收取时间=本月' },
-        { title: '直营门店-电子产品-销售额', text: '渠道名称=直营门店；\n产品名称=电子产品' },
-        { title: '上周到账-平台服务费', text: '服务费收取时间=上周；\n项目ID=PJ-2026-018' }
-      ];
-    } else if (atom && atom.table === 'ca_fee_detail') {
-      examples = [
-        { title: '企业证书-上月收入', text: '证书类型=企业证书；\n支付时间=上月' },
-        { title: '个人证书-本月收入', text: '证书类型=个人证书；\n支付时间=本月' },
-        { title: '直营门店-电子产品-销售额', text: '渠道名称=直营门店；\n产品名称=电子产品' }
-      ];
-    }
-    return examples.map(function (item) {
-      return '<button type="button" class="ki-modifier-example" data-mod-example="' + escapeHTML(item.text).replace(/\n/g, '&#10;') + '">' + escapeHTML(item.title) + '</button>';
-    }).join('');
-  }
-
-  function derivativeModifierConfigHTML(d) {
-    var atom = findAtomIndicatorById(d.relatedAtomId);
-    var title = atom ? ('待配置字段 · ' + tableLabel(atom.table)) : '待配置字段';
-    var desc = atom ? (atom.name + ' 的事实表字段') : '选择关联原子指标后显示';
-    return ''
-      + '<div class="ki-modifier-config">'
-      +   '<div class="ki-modifier-panel">'
-      +     '<div class="ki-modifier-panel-head">'
-      +       '<span>' + escapeHTML(title) + '</span>'
-      +       '<em>' + escapeHTML(desc) + '</em>'
-      +     '</div>'
-      +     '<div class="ki-modifier-field-list">' + derivativeFieldRowsHTML(d) + '</div>'
-      +   '</div>'
-      +   '<div class="ki-modifier-panel">'
-      +     '<div class="ki-modifier-panel-head">'
-      +       '<span>修饰词</span>'
-      +       '<em>字段=限定值</em>'
-      +     '</div>'
-      +     '<textarea class="ki-textarea ki-modifier-textarea" data-bind="modifier" maxlength="240" rows="8" placeholder="例：渠道名称=直营门店；&#10;产品名称=电子产品">' + escapeHTML(derivativeModifierText(d)) + '</textarea>'
-      +     '<div class="ki-modifier-examples">' + modifierExamplesHTML(d) + '</div>'
-      +   '</div>'
+  function renderDimBlock(d) {
+    var html = ''
+      + '<div class="ki-form-row">'
+      +   '<label class="ki-checkbox">'
+      +     '<input type="checkbox" data-bind="isTimeDim"' + (d.isTimeDim ? ' checked' : '') + ' /> 是否时间维度'
+      +     '<span class="ki-form-tip" title="勾选后将出现"时间函数模板"配置">?</span>'
+      +   '</label>'
       + '</div>';
-  }
 
-  function renderDerivativeBlock(d) {
-    return ''
+    if (d.isTimeDim) {
+      html += ''
+        + '<div class="ki-form-row">'
+        +   '<label class="ki-form-label">时间函数模板<span class="ki-form-tip" title="选择预设可填充公式模板">?</span></label>'
+        +   '<div class="ki-tpl-chips" data-role="tpl-chips">' + tplChipsHTML(d.timeTplKey) + '</div>'
+        +   '<input class="ki-input" data-bind="timeFormula" placeholder="时间函数公式" value="' + escapeHTML(d.timeFormula || '') + '" />'
+        + '</div>';
+    }
+
+    // 关联表字段
+    html += ''
       + '<div class="ki-form-row">'
-      +   '<label class="ki-form-label">关联原子指标</label>'
-      +   atomMetricPickerHTML(d)
-      + '</div>'
-      + '<div class="ki-form-row">'
-      +   '<label class="ki-form-label">修饰词配置</label>'
-      +   derivativeModifierConfigHTML(d)
-      + '</div>'
-      + '<div class="ki-form-row">'
-      +   '<label class="ki-form-label">单位</label>'
-      +   '<div class="ki-unit-chips" data-role="unit-chips">' + unitChipsHTML(d.unit) + '</div>'
-      +   '<input class="ki-input" data-bind="unit" maxlength="20" value="' + escapeHTML(d.unit || '') + '" placeholder="自定义单位" />'
+      +   '<label class="ki-form-label">关联表字段<span class="ki-form-tip" title="一个维度可以关联多张表的同一含义字段">?</span></label>'
+      +   '<div class="ki-rows" data-role="mapping-rows">' + mappingRowsHTML(d) + '</div>'
+      +   '<button type="button" class="ki-add-row" data-act="add-mapping" style="margin-top:8px;">'
+      +     '<svg viewBox="0 0 24 24" width="12" height="12" style="fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 5v14"/><path d="M5 12h14"/></svg>'
+      +     '添加关联'
+      +   '</button>'
       + '</div>';
+
+    // 过滤值映射
+    html += ''
+      + '<div class="ki-form-row">'
+      +   '<label class="ki-form-label">过滤值映射</label>'
+      +   '<div class="ki-rows" data-role="filter-rows">' + filterRowsHTML(d) + '</div>'
+      +   '<button type="button" class="ki-add-row" data-act="add-filter" style="margin-top:8px;">'
+      +     '<svg viewBox="0 0 24 24" width="12" height="12" style="fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 5v14"/><path d="M5 12h14"/></svg>'
+      +     '添加映射'
+      +   '</button>'
+      + '</div>';
+
+    return html;
   }
 
   function mappingRowsHTML(d) {
@@ -1461,428 +985,6 @@
     }).join('');
   }
 
-  function normalizePickerKw(value) {
-    return String(value || '').trim().toLowerCase();
-  }
-
-  function filterModelPicker(input) {
-    var picker = input && input.closest ? input.closest('.ki-model-picker') : null;
-    if (!picker) return;
-    var kw = normalizePickerKw(input.value);
-    var any = false;
-    $$('.ki-source-tree-row[data-model-ref]', picker).forEach(function (row) {
-      var leaf = row.closest('.ki-source-tree-node');
-      var hay = normalizePickerKw(row.getAttribute('data-search') || row.textContent);
-      var show = !kw || hay.indexOf(kw) >= 0;
-      if (leaf) leaf.classList.toggle('is-filter-hidden', !show);
-      if (show) any = true;
-    });
-    $$('.ki-source-tree-node[data-model-source-id]', picker).forEach(function (node) {
-      var hasVisibleTable = $$('.ki-source-tree-row[data-model-ref]', node).some(function (row) {
-        var leaf = row.closest('.ki-source-tree-node');
-        return !leaf || !leaf.classList.contains('is-filter-hidden');
-      });
-      node.classList.toggle('is-filter-hidden', !!kw && !hasVisibleTable);
-      if (kw && hasVisibleTable) node.classList.remove('is-collapsed');
-    });
-    $$('.ki-source-tree-node[data-domain-id]', picker).forEach(function (node) {
-      var hasVisibleSource = $$('.ki-source-tree-node[data-model-source-id]', node).some(function (sourceNode) {
-        return !sourceNode.classList.contains('is-filter-hidden');
-      });
-      node.classList.toggle('is-filter-hidden', !!kw && !hasVisibleSource);
-      if (kw && hasVisibleSource) node.classList.remove('is-collapsed');
-    });
-    var empty = $('.ki-picker-empty', picker);
-    if (empty) empty.classList.toggle('hidden', !kw || any);
-  }
-
-  function filterFieldPicker(input) {
-    var picker = input && input.closest ? input.closest('.ki-field-picker') : null;
-    if (!picker) return;
-    var kw = normalizePickerKw(input.value);
-    var any = false;
-    $$('.ki-field-option', picker).forEach(function (row) {
-      var hay = normalizePickerKw(row.getAttribute('data-search') || row.textContent);
-      var show = !kw || hay.indexOf(kw) >= 0;
-      row.classList.toggle('hidden', !show);
-      if (show) any = true;
-    });
-    var empty = $('.ki-picker-empty', picker);
-    if (empty) empty.classList.toggle('hidden', !kw || any);
-  }
-
-  function filterAtomPicker(input) {
-    var picker = input && input.closest ? input.closest('.ki-atom-picker') : null;
-    if (!picker) return;
-    var kw = normalizePickerKw(input.value);
-    var any = false;
-    $$('.ki-source-tree-row[data-atom-id]', picker).forEach(function (row) {
-      var leaf = row.closest('.ki-source-tree-node');
-      var hay = normalizePickerKw(row.getAttribute('data-search') || row.textContent);
-      var show = !kw || hay.indexOf(kw) >= 0;
-      if (leaf) leaf.classList.toggle('is-filter-hidden', !show);
-      if (show) any = true;
-    });
-    $$('.ki-source-tree-node[data-atom-group-id]', picker).forEach(function (node) {
-      var hasVisibleAtom = $$('.ki-source-tree-row[data-atom-id]', node).some(function (row) {
-        var leaf = row.closest('.ki-source-tree-node');
-        return !leaf || !leaf.classList.contains('is-filter-hidden');
-      });
-      node.classList.toggle('is-filter-hidden', !!kw && !hasVisibleAtom);
-      if (kw && hasVisibleAtom) node.classList.remove('is-collapsed');
-    });
-    var empty = $('.ki-picker-empty', picker);
-    if (empty) empty.classList.toggle('hidden', !kw || any);
-  }
-
-  function syncFormulaHiddenInput() {
-    var input = $('#kiDrawer input[data-bind="formula"]');
-    if (input && state.drawer.draft) input.value = state.drawer.draft.formula || '';
-  }
-
-  function refreshFormulaBuilder() {
-    var editor = $('#kiDrawer .ki-formula-editor');
-    if (!editor || !state.drawer.draft) return;
-    editor.innerHTML = formulaEditorHTML(state.drawer.draft.formula);
-    syncFormulaHiddenInput();
-  }
-
-  function selectionInsideFormulaEditor(editor) {
-    var sel = window.getSelection && window.getSelection();
-    return !!(sel && sel.rangeCount && editor && editor.contains(sel.anchorNode));
-  }
-
-  function setCaretAfterNode(node) {
-    if (!node || !window.getSelection) return;
-    var range = document.createRange();
-    range.setStartAfter(node);
-    range.collapse(true);
-    var sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }
-
-  function setFormulaCaretToEnd(editor) {
-    if (!editor || !window.getSelection) return;
-    editor.focus();
-    var range = document.createRange();
-    range.selectNodeContents(editor);
-    range.collapse(false);
-    var sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }
-
-  function setFormulaCaretToStart(editor) {
-    if (!editor || !window.getSelection) return;
-    editor.focus();
-    var range = document.createRange();
-    range.setStart(editor, 0);
-    range.collapse(true);
-    var sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }
-
-  function formulaContentNodes(editor) {
-    return Array.prototype.slice.call(editor.childNodes || []).filter(function (node) {
-      if (node.nodeType === 3) return String(node.textContent || '').trim();
-      return !(node.classList && node.classList.contains('ki-formula-placeholder'));
-    });
-  }
-
-  function setFormulaCaretFromPoint(editor, event) {
-    if (!editor || !event || !window.getSelection) return;
-    editor.focus();
-    var contentNodes = formulaContentNodes(editor);
-    if (contentNodes.length) {
-      var firstRect = contentNodes[0].getBoundingClientRect && contentNodes[0].getBoundingClientRect();
-      var lastNode = contentNodes[contentNodes.length - 1];
-      var lastRect = lastNode.getBoundingClientRect && lastNode.getBoundingClientRect();
-      if (firstRect && event.clientX <= firstRect.left) {
-        setFormulaCaretToStart(editor);
-        return;
-      }
-      if (lastRect && (event.clientX >= lastRect.right || event.clientY > lastRect.bottom)) {
-        setFormulaCaretToEnd(editor);
-        return;
-      }
-    }
-    var range = null;
-    if (document.caretPositionFromPoint) {
-      var pos = document.caretPositionFromPoint(event.clientX, event.clientY);
-      if (pos && editor.contains(pos.offsetNode)) {
-        range = document.createRange();
-        range.setStart(pos.offsetNode, pos.offset);
-      }
-    } else if (document.caretRangeFromPoint) {
-      var pointRange = document.caretRangeFromPoint(event.clientX, event.clientY);
-      if (pointRange && editor.contains(pointRange.startContainer)) {
-        range = pointRange;
-      }
-    }
-    if (!range) {
-      setFormulaCaretToEnd(editor);
-      return;
-    }
-    range.collapse(true);
-    var sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }
-
-  function createFormulaNode(value, isAtom) {
-    var span = document.createElement('span');
-    span.setAttribute('data-formula-token', value);
-    if (isAtom || isFormulaMetricToken(value)) {
-      span.className = 'ki-formula-token';
-      span.contentEditable = 'false';
-      span.appendChild(document.createTextNode(value));
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'ki-formula-token-remove';
-      btn.setAttribute('data-act', 'remove-formula-part');
-      btn.setAttribute('aria-label', '删除' + value);
-      btn.textContent = 'x';
-      span.appendChild(btn);
-    } else if (FORMULA_OPERATORS.indexOf(value) >= 0 || value === '()' || value === '[]') {
-      span.className = 'ki-formula-op';
-      span.textContent = value;
-    } else if (isFormulaFunctionToken(value)) {
-      span.className = 'ki-formula-fn';
-      span.textContent = value.replace('()', '');
-    } else {
-      span.className = 'ki-formula-text';
-      span.textContent = value;
-    }
-    return span;
-  }
-
-  function removeFormulaPlaceholder(editor) {
-    var placeholder = editor && editor.querySelector('.ki-formula-placeholder');
-    if (placeholder) placeholder.remove();
-  }
-
-  function syncFormulaFromEditor(editor) {
-    if (!state.drawer.draft || !editor) return;
-    state.drawer.draft.formula = formulaFromEditor(editor);
-    syncFormulaHiddenInput();
-  }
-
-  function formulaTextBeforeCaretFromFragment(editor) {
-    var sel = window.getSelection && window.getSelection();
-    if (!sel || !sel.rangeCount || !selectionInsideFormulaEditor(editor)) return '';
-    var range = sel.getRangeAt(0).cloneRange();
-    var pre = range.cloneRange();
-    pre.selectNodeContents(editor);
-    pre.setEnd(range.endContainer, range.endOffset);
-    return pre.toString().replace(/\u00a0/g, ' ');
-  }
-
-  function setFormulaCaretAfterTokenIndex(editor, index) {
-    var nodes = formulaContentNodes(editor);
-    if (!nodes.length) {
-      setFormulaCaretToEnd(editor);
-      return;
-    }
-    var node = nodes[Math.max(0, Math.min(index, nodes.length - 1))];
-    setCaretAfterNode(node);
-  }
-
-  function normalizeFormulaEditor(editor) {
-    if (!editor || !state.drawer.draft) return;
-    if (currentFormulaTrigger(editor)) return;
-    var beforeText = formulaTextBeforeCaretFromFragment(editor);
-    var formula = formulaFromEditor(editor);
-    state.drawer.draft.formula = formula;
-    editor.innerHTML = formulaEditorHTML(formula);
-    syncFormulaHiddenInput();
-    var beforeCount = formulaParts(beforeText).length;
-    if (beforeCount <= 0) setFormulaCaretToStart(editor);
-    else setFormulaCaretAfterTokenIndex(editor, beforeCount - 1);
-  }
-
-  function insertFormulaPart(value, isAtom) {
-    if (!state.drawer.draft || !value) return;
-    var editor = $('#kiDrawer .ki-formula-editor');
-    if (!editor) {
-      var parts = formulaParts(state.drawer.draft.formula);
-      parts.push(value);
-      state.drawer.draft.formula = joinFormulaParts(parts);
-      return;
-    }
-    editor.focus();
-    removeFormulaPlaceholder(editor);
-    var node = createFormulaNode(value, !!isAtom);
-    var spacer = document.createTextNode(' ');
-    var frag = document.createDocumentFragment();
-    frag.appendChild(node);
-    frag.appendChild(spacer);
-    var sel = window.getSelection && window.getSelection();
-    var range;
-    if (selectionInsideFormulaEditor(editor)) {
-      range = sel.getRangeAt(0);
-    } else {
-      range = document.createRange();
-      range.selectNodeContents(editor);
-      range.collapse(false);
-      sel.removeAllRanges();
-      sel.addRange(range);
-    }
-    range.deleteContents();
-    range.insertNode(frag);
-    setCaretAfterNode(spacer);
-    syncFormulaFromEditor(editor);
-  }
-
-  function appendFormulaPart(value) {
-    insertFormulaPart(value, !!formulaAtomByName(value));
-  }
-
-  function removeFormulaPart(index) {
-    if (!state.drawer.draft) return;
-    var parts = formulaParts(state.drawer.draft.formula);
-    parts.splice(index, 1);
-    state.drawer.draft.formula = joinFormulaParts(parts);
-    refreshFormulaBuilder();
-  }
-
-  function formulaFromEditor(editor) {
-    var parts = [];
-    Array.prototype.slice.call(editor.childNodes || []).forEach(function (node) {
-      if (node.nodeType === 3) {
-        formulaParts(node.textContent || '').forEach(function (part) { parts.push(part); });
-        return;
-      }
-      if (node.nodeType !== 1) return;
-      if (node.classList && node.classList.contains('ki-formula-placeholder')) return;
-      var token = node.getAttribute && node.getAttribute('data-formula-token');
-      if (token) {
-        parts.push(token);
-        return;
-      }
-      formulaParts(node.textContent || '').forEach(function (part) {
-        if (part && part !== 'x') parts.push(part);
-      });
-    });
-    return joinFormulaParts(parts);
-  }
-
-  function formulaTextBeforeCaret(editor) {
-    var sel = window.getSelection && window.getSelection();
-    if (!sel || !sel.rangeCount || !selectionInsideFormulaEditor(editor)) return '';
-    var range = sel.getRangeAt(0).cloneRange();
-    var pre = range.cloneRange();
-    pre.selectNodeContents(editor);
-    pre.setEnd(range.endContainer, range.endOffset);
-    return pre.toString().replace(/\u00a0/g, ' ');
-  }
-
-  function currentFormulaTrigger(editor) {
-    var before = formulaTextBeforeCaret(editor);
-    var explicit = before.match(/@([\u4e00-\u9fa5a-zA-Z0-9_]*)$/);
-    if (explicit) {
-      return { query: explicit[1], length: explicit[0].length, explicit: true };
-    }
-    return null;
-  }
-
-  function formulaCaretRect(editor) {
-    var sel = window.getSelection && window.getSelection();
-    if (!sel || !sel.rangeCount || !selectionInsideFormulaEditor(editor)) return null;
-    var range = sel.getRangeAt(0).cloneRange();
-    range.collapse(true);
-    var rect = range.getClientRects()[0] || range.getBoundingClientRect();
-    if (rect && (rect.width || rect.height)) return rect;
-    var marker = document.createElement('span');
-    marker.textContent = '\u200b';
-    range.insertNode(marker);
-    rect = marker.getBoundingClientRect();
-    marker.remove();
-    return rect;
-  }
-
-  function positionFormulaSuggest(editor, suggest) {
-    if (!editor || !suggest) return;
-    var wrap = editor.closest('.ki-formula-editor-wrap');
-    var wrapRect = wrap ? wrap.getBoundingClientRect() : editor.getBoundingClientRect();
-    var rect = formulaCaretRect(editor) || editor.getBoundingClientRect();
-    var maxLeft = Math.max(8, wrapRect.width - 372);
-    var left = Math.max(8, Math.min(rect.left - wrapRect.left, maxLeft));
-    var top = Math.max(40, rect.bottom - wrapRect.top + 6);
-    suggest.style.left = left + 'px';
-    suggest.style.right = 'auto';
-    suggest.style.top = top + 'px';
-  }
-
-  function visibleFormulaOptions(suggest) {
-    return $$('.ki-formula-atom-option', suggest).filter(function (row) {
-      return !row.classList.contains('hidden');
-    });
-  }
-
-  function setFormulaSuggestActive(suggest, nextIndex) {
-    var rows = visibleFormulaOptions(suggest);
-    rows.forEach(function (row) { row.classList.remove('is-active'); });
-    if (!rows.length) return;
-    var index = ((nextIndex % rows.length) + rows.length) % rows.length;
-    rows[index].classList.add('is-active');
-    rows[index].scrollIntoView({ block: 'nearest' });
-  }
-
-  function activeFormulaOption(suggest) {
-    return $('.ki-formula-atom-option.is-active:not(.hidden)', suggest) || visibleFormulaOptions(suggest)[0] || null;
-  }
-
-  function filterFormulaSuggest(editor) {
-    if (!editor) return;
-    var suggest = editor.parentElement && $('[data-role="formula-suggest"]', editor.parentElement);
-    if (!suggest) return;
-    var trigger = currentFormulaTrigger(editor);
-    if (!trigger || (!trigger.explicit && !trigger.query)) {
-      suggest.classList.add('hidden');
-      return;
-    }
-    suggest.classList.remove('hidden');
-    positionFormulaSuggest(editor, suggest);
-    var kw = normalizePickerKw(trigger.query);
-    var visible = 0;
-    $$('.ki-formula-atom-option', suggest).forEach(function (row) {
-      var hay = normalizePickerKw(row.getAttribute('data-search') || row.textContent);
-      var show = !kw || hay.indexOf(kw) >= 0;
-      row.classList.toggle('hidden', !show);
-      if (show) visible++;
-    });
-    var empty = $('.ki-formula-empty', suggest);
-    if (empty) empty.classList.toggle('hidden', visible > 0);
-    setFormulaSuggestActive(suggest, 0);
-  }
-
-  function removeFormulaTriggerText(editor) {
-    var trigger = currentFormulaTrigger(editor);
-    var sel = window.getSelection && window.getSelection();
-    if (!trigger || !sel || !sel.rangeCount || !selectionInsideFormulaEditor(editor)) return;
-    var node = sel.anchorNode;
-    if (!node || node.nodeType !== 3) return;
-    var offset = sel.anchorOffset;
-    var start = Math.max(0, offset - trigger.length);
-    node.textContent = node.textContent.slice(0, start) + node.textContent.slice(offset);
-    var range = document.createRange();
-    range.setStart(node, start);
-    range.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }
-
-  function insertFormulaAtomFromSuggest(atom) {
-    var editor = $('#kiDrawer .ki-formula-editor');
-    if (!editor || !atom) return;
-    removeFormulaTriggerText(editor);
-    insertFormulaPart(atom.name, true);
-    var suggest = editor.parentElement && $('[data-role="formula-suggest"]', editor.parentElement);
-    if (suggest) suggest.classList.add('hidden');
-  }
-
   // ---------- 8c) 抽屉事件 ----------
   function bindDrawer() {
     var drawer = $('#kiDrawer');
@@ -1897,54 +999,7 @@
     });
 
     drawer.addEventListener('click', function (e) {
-      var formulaRemove = e.target.closest && e.target.closest('[data-act="remove-formula-part"]');
-      if (formulaRemove) {
-        e.preventDefault();
-        e.stopPropagation();
-        var tokenEl = formulaRemove.closest('.ki-formula-token');
-        var editorEl = formulaRemove.closest('.ki-formula-editor');
-        if (tokenEl) tokenEl.remove();
-        syncFormulaFromEditor(editorEl || $('#kiDrawer .ki-formula-editor'));
-        return;
-      }
-
-      var formulaAtom = e.target.closest && e.target.closest('.ki-formula-atom-option[data-formula-atom-id]');
-      if (formulaAtom) {
-        e.preventDefault();
-        var atom = findAtomIndicatorById(formulaAtom.getAttribute('data-formula-atom-id'));
-        if (atom) {
-          insertFormulaAtomFromSuggest(atom);
-        }
-        return;
-      }
-
-      var formulaTool = e.target.closest && e.target.closest('[data-act="insert-formula-op"], [data-act="insert-formula-fn"]');
-      if (formulaTool) {
-        e.preventDefault();
-        appendFormulaPart(formulaTool.getAttribute('data-formula-value') || '');
-        return;
-      }
-
-      var clearFormula = e.target.closest && e.target.closest('[data-act="clear-formula"]');
-      if (clearFormula) {
-        e.preventDefault();
-        if (state.drawer.draft) {
-          state.drawer.draft.formula = '';
-          refreshFormulaBuilder();
-        }
-        return;
-      }
-
-      var formulaEditor = e.target.closest && e.target.closest('[data-role="formula-editor"]');
-      if (formulaEditor) {
-        if (!e.target.closest('.ki-formula-token') && !e.target.closest('.ki-formula-token-remove')) {
-          setFormulaCaretFromPoint(formulaEditor, e);
-        }
-        removeFormulaPlaceholder(formulaEditor);
-        filterFormulaSuggest(formulaEditor);
-      }
-
-      var sourceBtn = e.target.closest && e.target.closest('[data-act="toggle-source-tree"], [data-act="toggle-model-tree"], [data-act="toggle-field-picker"], [data-act="toggle-atom-picker"]');
+      var sourceBtn = e.target.closest && e.target.closest('[data-act="toggle-source-tree"]');
       if (sourceBtn) {
         e.stopPropagation();
         var sourceWrap = sourceBtn.closest('.ki-source-picker');
@@ -1977,88 +1032,17 @@
         var dft = state.drawer.draft;
         if (dft.srcId !== nextSrcId) {
           dft.srcId = nextSrcId;
-          dft.modelRef = '';
           dft.table = '';
           dft.field = '';
           dft.timeField = '';
-          dft.functionExpr = dft.agg === CUSTOM_AGG_KEY ? '' : aggExpression(dft.agg || 'SUM', dft.field);
           dft.mappings = (dft.mappings || []).map(function () { return { table: '', field: '' }; });
         }
         renderDrawer();
         return;
       }
 
-      var modelRow = e.target.closest && e.target.closest('.ki-source-tree-row[data-model-ref]');
-      if (modelRow && state.drawer.draft) {
-        e.stopPropagation();
-        var modelInfo = findModelInfo(modelRow.getAttribute('data-model-ref'));
-        if (modelInfo) {
-          var draft = state.drawer.draft;
-          draft.modelRef = modelInfo.ref;
-          draft.srcId = modelInfo.srcId;
-          draft.table = modelInfo.table;
-          draft.field = '';
-          draft.timeField = '';
-          draft.functionExpr = draft.agg === CUSTOM_AGG_KEY ? '' : aggExpression(draft.agg || 'SUM', draft.field);
-          renderDrawer();
-        }
-        return;
-      }
-
-      var fieldRow = e.target.closest && e.target.closest('.ki-field-option[data-field]');
-      if (fieldRow && state.drawer.draft) {
-        e.stopPropagation();
-        var field = fieldRow.getAttribute('data-field');
-        state.drawer.draft.field = field;
-        syncAtomFunctionExpr(state.drawer.draft);
-        renderDrawer();
-        return;
-      }
-
-      var atomRow = e.target.closest && e.target.closest('.ki-source-tree-row[data-atom-id]');
-      if (atomRow && state.drawer.draft) {
-        e.stopPropagation();
-        var atom = findAtomIndicatorById(atomRow.getAttribute('data-atom-id'));
-        if (atom) {
-          state.drawer.draft.relatedAtomId = atom.id;
-          state.drawer.draft.srcId = atom.srcId || state.drawer.draft.srcId;
-          state.drawer.draft.unit = atom.unit || state.drawer.draft.unit || '';
-          renderDrawer();
-        }
-        return;
-      }
-
-      var modifierField = e.target.closest && e.target.closest('.ki-derivative-field[data-mod-field]');
-      if (modifierField && state.drawer.draft) {
-        e.stopPropagation();
-        var fieldName = modifierField.getAttribute('data-mod-field') || '';
-        if (fieldName) {
-          var current = derivativeModifierText(state.drawer.draft).trim();
-          var nextLine = fieldName + '=';
-          state.drawer.draft.modifier = current ? (current.replace(/[；;]?\s*$/, '；\n') + nextLine) : nextLine;
-          renderDrawer();
-          var modifierInput = drawer.querySelector('textarea[data-bind="modifier"]');
-          if (modifierInput) {
-            modifierInput.focus();
-            modifierInput.setSelectionRange(modifierInput.value.length, modifierInput.value.length);
-          }
-        }
-        return;
-      }
-
-      var modifierExample = e.target.closest && e.target.closest('.ki-modifier-example[data-mod-example]');
-      if (modifierExample && state.drawer.draft) {
-        e.stopPropagation();
-        state.drawer.draft.modifier = modifierExample.getAttribute('data-mod-example') || '';
-        renderDrawer();
-        return;
-      }
-
       if (!(e.target.closest && e.target.closest('.ki-source-picker'))) {
         $$('.ki-source-picker.is-open', drawer).forEach(function (el) { el.classList.remove('is-open'); });
-      }
-      if (!(e.target.closest && e.target.closest('.ki-formula-builder'))) {
-        $$('.ki-formula-suggest', drawer).forEach(function (el) { el.classList.add('hidden'); });
       }
 
       var act = e.target.closest && e.target.closest('[data-act]');
@@ -2103,52 +1087,12 @@
       }
     });
 
-    drawer.addEventListener('mousedown', function (e) {
-      if (e.target.closest && e.target.closest('.ki-formula-toolbar button')) {
-        e.preventDefault();
-      }
-    });
-
-    drawer.addEventListener('keydown', function (e) {
-      var formulaEditor = e.target.closest && e.target.closest('[data-role="formula-editor"]');
-      if (!formulaEditor) return;
-      var suggest = formulaEditor.parentElement && $('[data-role="formula-suggest"]', formulaEditor.parentElement);
-      if (!suggest || suggest.classList.contains('hidden')) return;
-      var rows = visibleFormulaOptions(suggest);
-      if (!rows.length && e.key !== 'Escape') return;
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        var current = rows.findIndex(function (row) { return row.classList.contains('is-active'); });
-        setFormulaSuggestActive(suggest, current + (e.key === 'ArrowDown' ? 1 : -1));
-        return;
-      }
-      if (e.key === 'Enter') {
-        var option = activeFormulaOption(suggest);
-        if (!option) return;
-        e.preventDefault();
-        var atom = findAtomIndicatorById(option.getAttribute('data-formula-atom-id'));
-        if (atom) insertFormulaAtomFromSuggest(atom);
-        return;
-      }
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        suggest.classList.add('hidden');
-      }
-    });
-
     // input/change 双向绑定
     drawer.addEventListener('input', function (e) {
       handleBindInput(e);
     });
     drawer.addEventListener('change', function (e) {
       handleBindInput(e);
-    });
-    drawer.addEventListener('focusout', function (e) {
-      var formulaEditor = e.target.closest && e.target.closest('[data-role="formula-editor"]');
-      if (formulaEditor && state.drawer.draft) {
-        state.drawer.draft.formula = formulaFromEditor(formulaEditor);
-        normalizeFormulaEditor(formulaEditor);
-      }
     });
 
     // 拖动调整宽度
@@ -2166,7 +1110,7 @@
       document.addEventListener('mousemove', function (e) {
         if (!dragging) return;
         var nw = startW - (e.clientX - startX);
-        nw = Math.max(420, Math.min(window.innerWidth * 0.92, nw));
+        nw = Math.max(360, Math.min(window.innerWidth * 0.9, nw));
         drawer.style.width = nw + 'px';
       });
       document.addEventListener('mouseup', function () {
@@ -2181,26 +1125,6 @@
   function handleBindInput(e) {
     var el = e.target;
     if (!el || !state.drawer.draft) return;
-    var role = el.getAttribute && el.getAttribute('data-role');
-    if (role === 'model-search') {
-      filterModelPicker(el);
-      return;
-    }
-    if (role === 'field-search') {
-      filterFieldPicker(el);
-      return;
-    }
-    if (role === 'atom-search') {
-      filterAtomPicker(el);
-      return;
-    }
-    if (role === 'formula-editor') {
-      removeFormulaPlaceholder(el);
-      state.drawer.draft.formula = formulaFromEditor(el);
-      syncFormulaHiddenInput();
-      filterFormulaSuggest(el);
-      return;
-    }
     var d = state.drawer.draft;
     var bind = el.getAttribute && el.getAttribute('data-bind');
     if (bind) {
@@ -2219,35 +1143,17 @@
       }
       if (bind === 'srcId') {
         // 数据源切换：清空表/字段，重新刷新表选项
-        d.modelRef = '';
         d.table = '';
         d.field = '';
         d.timeField = '';
-        d.functionExpr = d.agg === CUSTOM_AGG_KEY ? '' : aggExpression(d.agg || 'SUM', d.field);
         d.mappings = (d.mappings || []).map(function () { return { table: '', field: '' }; });
         renderDrawer();
         return;
       }
       if (bind === 'table') {
-        if (d.type === 'atom') d.modelRef = makeModelRef(d.srcId, d.table);
         d.field = '';
         d.timeField = '';
-        d.functionExpr = d.agg === CUSTOM_AGG_KEY ? '' : aggExpression(d.agg || 'SUM', d.field);
         renderDrawer();
-        return;
-      }
-      if (bind === 'field') {
-        syncAtomFunctionExpr(d);
-        renderDrawer();
-        return;
-      }
-      if (bind === 'agg') {
-        d.functionExpr = val === CUSTOM_AGG_KEY ? '' : aggExpression(val, d.field);
-        renderDrawer();
-        return;
-      }
-      if (bind === 'functionExpr') {
-        if (d.agg !== CUSTOM_AGG_KEY) syncAtomFunctionExpr(d);
         return;
       }
       if (bind === 'unit') {
@@ -2283,24 +1189,16 @@
   function normalizeDraftByType(d) {
     if (d.type === 'atom') {
       d.formula = '';
-      d.modifier = '';
-      d.relatedAtomId = '';
       d.isTimeDim = false;
       d.timeFormula = '';
       d.timeTplKey = '';
       d.mappings = [];
       d.filterValues = [];
       if (!d.agg) d.agg = 'SUM';
-      if (!d.modelRef && d.srcId && d.table) d.modelRef = makeModelRef(d.srcId, d.table);
-      syncAtomFunctionExpr(d);
     } else if (d.type === 'derived') {
-      d.modifier = '';
-      d.relatedAtomId = '';
-      d.modelRef = '';
       d.table = '';
       d.field = '';
       d.agg = '';
-      d.functionExpr = '';
       d.timeField = '';
       d.isTimeDim = false;
       d.timeFormula = '';
@@ -2308,18 +1206,15 @@
       d.mappings = [];
       d.filterValues = [];
     } else {
+      // dim
       d.formula = '';
-      d.modelRef = '';
       d.table = '';
       d.field = '';
       d.agg = '';
-      d.functionExpr = '';
       d.timeField = '';
-      d.isTimeDim = false;
-      d.timeFormula = '';
-      d.timeTplKey = '';
-      d.mappings = [];
-      d.filterValues = [];
+      d.unit = '';
+      if (!d.mappings) d.mappings = [];
+      if (!d.filterValues) d.filterValues = [];
     }
   }
 
@@ -2355,29 +1250,6 @@
       if (typeof showToast === 'function') showToast('请输入指标名称');
       return;
     }
-    if (d.type !== 'atom' && d.type !== 'derived') {
-      d.type = 'derived';
-    }
-    normalizeDraftByType(d);
-    if (d.type === 'atom') {
-      var modelInfo = findModelInfo(effectiveModelRef(d));
-      if (!modelInfo) {
-        if (typeof showToast === 'function') showToast('请选择数据模型');
-        return;
-      }
-      d.modelRef = modelInfo.ref;
-      d.srcId = modelInfo.srcId;
-      d.table = modelInfo.table;
-      if (!d.field) {
-        if (typeof showToast === 'function') showToast('请选择字段');
-        return;
-      }
-      if (d.agg === CUSTOM_AGG_KEY && !(d.functionExpr || '').trim()) {
-        if (typeof showToast === 'function') showToast('请输入函数表达式');
-        return;
-      }
-      syncAtomFunctionExpr(d);
-    }
     if (state.drawer.mode === 'create') {
       d.id = uid('i');
       d.updatedAt = todayStr();
@@ -2401,478 +1273,6 @@
     var d = new Date();
     function pad(n) { return n < 10 ? '0' + n : n; }
     return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-  }
-
-  // ---------- 8b) 导入 / 导出指标体系 (Excel) ----------
-  var KI_IMPORT_MAX_BYTES = 50 * 1024 * 1024;
-  var KI_IMPORT_HEADERS = [
-    '指标名称',
-    '指标类型(atom|derived)',
-    '所属目录',
-    '数据源',
-    '物理表',
-    '物理字段',
-    '聚合方式',
-    '计算公式',
-    '单位',
-    '同义词',
-    '描述',
-    '时间字段',
-    '字段映射',
-    '过滤值映射'
-  ];
-
-  function escapeXmlOrHtml(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  }
-
-  function buildXlsHtml(headers, rows) {
-    var theme = getThemeColors();
-    var head = '<tr>' + headers.map(function (h) {
-      return '<th style="background:' + theme.primary + ';color:#fff;font-weight:bold;">' + escapeXmlOrHtml(h) + '</th>';
-    }).join('') + '</tr>';
-    var body = rows.map(function (r) {
-      return '<tr>' + r.map(function (c) {
-        return '<td>' + escapeXmlOrHtml(c) + '</td>';
-      }).join('') + '</tr>';
-    }).join('');
-    return ''
-      + '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">'
-      + '<head><meta charset="UTF-8"></head>'
-      + '<body><table border="1">' + head + body + '</table></body></html>';
-  }
-
-  function triggerDownload(blob, filename) {
-    var a = document.createElement('a');
-    var url = URL.createObjectURL(blob);
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function () {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 0);
-  }
-
-  function safeFileName(s) {
-    return String(s || '指标体系').replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, '_');
-  }
-
-  function groupPathName(gid) {
-    if (!gid || gid === '__all__') return '全部指标';
-    if (gid === '__uncategorized__') return '未分类';
-    var info = findGroupById(gid);
-    return info ? info.path.map(function (g) { return g.name; }).join(' / ') : gid;
-  }
-
-  function formulaText(it) {
-    if (!it) return '';
-    if (it.type === 'atom') return atomFunctionExpr(it);
-    if (isFormulaMetricType(it.type)) return it.formula || '';
-    return (it.mappings || []).length + ' 个表字段映射';
-  }
-
-  function mappingsText(it) {
-    return (it.mappings || []).map(function (m) {
-      if (!m.table && !m.field) return '';
-      return [m.table || '', m.field || ''].filter(Boolean).join('.');
-    }).filter(Boolean).join('; ');
-  }
-
-  function filterValuesText(it) {
-    return (it.filterValues || []).map(function (m) {
-      return (m.alias || '') + '=' + (m.value || '');
-    }).filter(function (s) { return s !== '='; }).join('; ');
-  }
-
-  function indicatorExportRow(it) {
-    return [
-      it.name || '',
-      it.type || '',
-      groupPathName(it.groupId),
-      dsPathName(it.srcId),
-      it.table || '',
-      it.field || '',
-      it.agg || '',
-      formulaText(it),
-      it.unit || '',
-      it.synonyms || '',
-      it.desc || '',
-      it.timeField || '',
-      mappingsText(it),
-      filterValuesText(it)
-    ];
-  }
-
-  function downloadIndicatorTemplate() {
-    var sample = [
-      [
-        '非招成交金额',
-        'atom',
-        '收入指标 / 销售收入',
-        '运营域 / 运营指标库',
-        'non_bidding_project_info',
-        'deal_amount_10k_yuan',
-        'SUM',
-        '',
-        '万元',
-        '非招成交金额',
-        '非招标项目的成交金额合计。',
-        'deal_notice_sent_date',
-        '',
-        ''
-      ],
-      [
-        '总收入',
-        'derived',
-        '收入指标 / 销售收入',
-        '运营域 / 运营指标库',
-        '',
-        '',
-        '',
-        '招标平台服务费 + 非招服务费 + CA证书收入',
-        '元',
-        '总收入',
-        '核心收入类指标汇总。',
-        '',
-        '',
-        ''
-      ]
-    ];
-    var html = buildXlsHtml(KI_IMPORT_HEADERS, sample);
-    var blob = new Blob(['\ufeff', html], { type: 'application/vnd.ms-excel' });
-    triggerDownload(blob, '指标体系导入模板.xls');
-    if (typeof showToast === 'function') showToast('模板已开始下载');
-  }
-
-  function exportIndicators() {
-    var list = getFilteredList();
-    if (!list.length) {
-      if (typeof showToast === 'function') showToast('没有可导出的指标');
-      return;
-    }
-    var rows = list.map(indicatorExportRow);
-    var html = buildXlsHtml(KI_IMPORT_HEADERS, rows);
-    var blob = new Blob(['\ufeff', html], { type: 'application/vnd.ms-excel' });
-    var bread = $('#kiBreadText');
-    var name = bread ? bread.textContent : '指标体系';
-    triggerDownload(blob, '指标体系_' + safeFileName(name) + '.xls');
-    if (typeof showToast === 'function') showToast('已导出 ' + list.length + ' 条指标');
-  }
-
-  var indicatorImportState = {
-    file: null,
-    importing: false
-  };
-
-  function formatFileSize(bytes) {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(2) + ' MB';
-    return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
-  }
-
-  function isExcelFile(name) {
-    if (!name) return false;
-    var lower = name.toLowerCase();
-    return lower.endsWith('.xlsx') || lower.endsWith('.xls');
-  }
-
-  function refreshIndicatorImportUI() {
-    var emptyEl = $('#kiiDropzoneEmpty');
-    var fileEl = $('#kiiDropzoneFile');
-    var nameEl = $('#kiiFileName');
-    var sizeEl = $('#kiiFileSize');
-    var okBtn = $('#kiiOkBtn');
-    if (indicatorImportState.file) {
-      if (emptyEl) emptyEl.classList.add('hidden');
-      if (fileEl) fileEl.classList.remove('hidden');
-      if (nameEl) nameEl.textContent = indicatorImportState.file.name;
-      if (sizeEl) sizeEl.textContent = formatFileSize(indicatorImportState.file.size);
-      if (okBtn) okBtn.disabled = indicatorImportState.importing;
-    } else {
-      if (emptyEl) emptyEl.classList.remove('hidden');
-      if (fileEl) fileEl.classList.add('hidden');
-      if (okBtn) okBtn.disabled = true;
-    }
-  }
-
-  function setIndicatorImportFile(file) {
-    if (!file) {
-      indicatorImportState.file = null;
-      refreshIndicatorImportUI();
-      return;
-    }
-    if (!isExcelFile(file.name)) {
-      if (typeof showToast === 'function') showToast('仅支持 Excel 格式（.xls / .xlsx）');
-      return;
-    }
-    if (file.size > KI_IMPORT_MAX_BYTES) {
-      if (typeof showToast === 'function') showToast('文件过大，单个文件不能超过 50M');
-      return;
-    }
-    indicatorImportState.file = file;
-    refreshIndicatorImportUI();
-  }
-
-  function resetIndicatorImportProgress() {
-    var prog = $('#kiiProgress');
-    var fill = $('#kiiProgressFill');
-    var pct = $('#kiiProgressPct');
-    var label = $('#kiiProgressLabel');
-    if (prog) {
-      prog.classList.add('hidden');
-      prog.classList.remove('is-success', 'is-error');
-    }
-    if (fill) fill.style.width = '0%';
-    if (pct) pct.textContent = '0%';
-    if (label) label.textContent = '正在导入…';
-  }
-
-  function openIndicatorImportModal() {
-    indicatorImportState.file = null;
-    indicatorImportState.importing = false;
-    var input = $('#kiiFileInput');
-    var okBtn = $('#kiiOkBtn');
-    var cancelBtn = $('#kiiCancelBtn');
-    if (input) input.value = '';
-    if (okBtn) okBtn.textContent = '确定';
-    if (cancelBtn) cancelBtn.disabled = false;
-    resetIndicatorImportProgress();
-    refreshIndicatorImportUI();
-    var mask = $('#kiImportMask');
-    var modal = $('#kiImportModal');
-    if (mask) mask.classList.remove('hidden');
-    if (modal) modal.classList.remove('hidden');
-  }
-
-  function closeIndicatorImportModal() {
-    if (indicatorImportState.importing) return;
-    var mask = $('#kiImportMask');
-    var modal = $('#kiImportModal');
-    if (mask) mask.classList.add('hidden');
-    if (modal) modal.classList.add('hidden');
-  }
-
-  function resolveImportGroupId() {
-    var gid = state.activeGroupId;
-    if (gid && gid !== '__all__') {
-      var info = findGroupById(gid);
-      if (info) {
-        if (info.parent) return info.group.id;
-        if ((info.group.children || []).length) return info.group.children[0].id;
-        return info.group.id;
-      }
-    }
-    for (var i = 0; i < TREE.length; i++) {
-      if ((TREE[i].children || []).length) return TREE[i].children[0].id;
-    }
-    return TREE[0] ? TREE[0].id : '__uncategorized__';
-  }
-
-  function appendImportedIndicators() {
-    var gid = resolveImportGroupId();
-    var now = todayStr();
-    var rows = [
-      {
-        type: 'atom',
-        name: '导入-有效商机数',
-        synonyms: '有效线索, 商机数',
-        desc: 'CRM 中已达到有效状态的商机数量。',
-        srcId: 'ds_crm',
-        table: 'crm_lead',
-        field: 'lead_id',
-        agg: 'COUNT_DISTINCT',
-        timeField: 'created_at',
-        unit: '个',
-        formula: '',
-        isTimeDim: false,
-        timeTplKey: '',
-        timeFormula: '',
-        mappings: [],
-        filterValues: []
-      },
-      {
-        type: 'derived',
-        name: '导入-商机成交转化率',
-        synonyms: '商机转化率, 线索转化',
-        desc: '成交客户数 / 有效商机数，用于观察销售漏斗效率。',
-        srcId: 'ds_metric',
-        table: '',
-        field: '',
-        agg: '',
-        timeField: '',
-        unit: '%',
-        formula: '成交客户数 / 有效商机数',
-        isTimeDim: false,
-        timeTplKey: '',
-        timeFormula: '',
-        mappings: [],
-        filterValues: []
-      }
-    ];
-    rows.forEach(function (row) {
-      row.id = uid('imp');
-      row.groupId = gid;
-      row.updatedAt = now;
-      INDICATORS.unshift(row);
-    });
-    state.activeGroupId = gid;
-    state.page = 1;
-    renderTree();
-    renderBread();
-    renderList();
-    return rows.length;
-  }
-
-  function startIndicatorImport() {
-    if (indicatorImportState.importing || !indicatorImportState.file) return;
-    indicatorImportState.importing = true;
-    var prog = $('#kiiProgress');
-    var fill = $('#kiiProgressFill');
-    var pct = $('#kiiProgressPct');
-    var label = $('#kiiProgressLabel');
-    var okBtn = $('#kiiOkBtn');
-    var cancelBtn = $('#kiiCancelBtn');
-    if (prog) prog.classList.remove('hidden', 'is-success', 'is-error');
-    if (label) label.textContent = '正在解析文件…';
-    if (okBtn) { okBtn.disabled = true; okBtn.textContent = '导入中…'; }
-    if (cancelBtn) cancelBtn.disabled = true;
-
-    var current = 0;
-    function step() {
-      var inc = current < 60 ? (4 + Math.random() * 6)
-        : current < 85 ? (2 + Math.random() * 3)
-        : (0.6 + Math.random() * 1.2);
-      current = Math.min(100, current + inc);
-      if (fill) fill.style.width = current + '%';
-      if (pct) pct.textContent = Math.round(current) + '%';
-      if (current >= 60 && current < 85 && label) label.textContent = '正在校验指标口径…';
-      if (current >= 85 && current < 100 && label) label.textContent = '正在写入指标体系…';
-      if (current < 100) setTimeout(step, 120);
-      else finishIndicatorImport();
-    }
-    step();
-  }
-
-  function finishIndicatorImport() {
-    var prog = $('#kiiProgress');
-    var label = $('#kiiProgressLabel');
-    var okBtn = $('#kiiOkBtn');
-    var cancelBtn = $('#kiiCancelBtn');
-    var fname = indicatorImportState.file ? indicatorImportState.file.name.toLowerCase() : '';
-    var forceFail = fname.indexOf('fail') >= 0 || fname.indexOf('错误') >= 0;
-    var success = !forceFail;
-
-    if (success) {
-      var added = appendImportedIndicators();
-      if (prog) prog.classList.add('is-success');
-      if (label) label.textContent = '导入成功，新增 ' + added + ' 条指标';
-      if (typeof showToast === 'function') showToast('导入成功：新增 ' + added + ' 条指标');
-    } else {
-      if (prog) prog.classList.add('is-error');
-      if (label) label.textContent = '导入失败：字段缺失或模板格式不正确';
-      if (typeof showToast === 'function') showToast('导入失败：请使用模板格式后重试');
-    }
-
-    indicatorImportState.importing = false;
-    if (okBtn) {
-      okBtn.disabled = false;
-      okBtn.textContent = success ? '完成' : '重试';
-    }
-    if (cancelBtn) cancelBtn.disabled = false;
-
-    if (success) {
-      setTimeout(function () {
-        closeIndicatorImportModal();
-      }, 1100);
-    }
-  }
-
-  function bindIndicatorImportModal() {
-    var mask = $('#kiImportMask');
-    var modal = $('#kiImportModal');
-    var input = $('#kiiFileInput');
-    var dropzone = $('#kiiDropzone');
-    var clearBtn = $('#kiiFileClear');
-    var tplBtn = $('#kiiTplBtn');
-    if (!modal) return;
-
-    if (mask) mask.addEventListener('click', closeIndicatorImportModal);
-
-    modal.addEventListener('click', function (e) {
-      var act = e.target.closest && e.target.closest('[data-act]');
-      if (!act) return;
-      var role = act.getAttribute('data-act');
-      if (role === 'cancel') {
-        closeIndicatorImportModal();
-      } else if (role === 'ok') {
-        if (!indicatorImportState.file) {
-          if (typeof showToast === 'function') showToast('请先选择 Excel 文件');
-          return;
-        }
-        if (act.textContent.indexOf('完成') >= 0) {
-          closeIndicatorImportModal();
-          return;
-        }
-        startIndicatorImport();
-      }
-    });
-
-    if (tplBtn) {
-      tplBtn.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        downloadIndicatorTemplate();
-      });
-    }
-
-    if (input) {
-      input.addEventListener('change', function () {
-        var f = input.files && input.files[0];
-        if (f) setIndicatorImportFile(f);
-      });
-    }
-
-    if (clearBtn) {
-      clearBtn.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (indicatorImportState.importing) return;
-        indicatorImportState.file = null;
-        if (input) input.value = '';
-        resetIndicatorImportProgress();
-        refreshIndicatorImportUI();
-      });
-    }
-
-    if (dropzone) {
-      ['dragenter', 'dragover'].forEach(function (ev) {
-        dropzone.addEventListener(ev, function (e) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
-          dropzone.classList.add('is-drag-over');
-        });
-      });
-      ['dragleave', 'dragend'].forEach(function (ev) {
-        dropzone.addEventListener(ev, function (e) {
-          e.preventDefault();
-          e.stopPropagation();
-          dropzone.classList.remove('is-drag-over');
-        });
-      });
-      dropzone.addEventListener('drop', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        dropzone.classList.remove('is-drag-over');
-        var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-        if (f) setIndicatorImportFile(f);
-      });
-    }
   }
 
   // ---------- 9) 通用确认弹窗 ----------
@@ -3183,10 +1583,6 @@
     // 顶部 新增指标
     var addI = $('#kiBtnNewIndicator');
     if (addI) addI.addEventListener('click', function () { openDrawer('create', null, state.activeGroupId); });
-    var importBtn = $('#kiBtnImport');
-    if (importBtn) importBtn.addEventListener('click', openIndicatorImportModal);
-    var exportBtn = $('#kiBtnExport');
-    if (exportBtn) exportBtn.addEventListener('click', exportIndicators);
 
     // 查询框 / 类型筛选 / 重置
     var kw = $('#kiKwInput');
@@ -3264,14 +1660,11 @@
     bindContextMenu();
     bindDrawer();
     bindConfirm();
-    bindIndicatorImportModal();
   });
 
   // 控制台调试
   window.__KI = {
     TREE: TREE, INDICATORS: INDICATORS, state: state,
-    open: openDrawer,
-    openImport: openIndicatorImportModal,
-    exportIndicators: exportIndicators
+    open: openDrawer
   };
 })();

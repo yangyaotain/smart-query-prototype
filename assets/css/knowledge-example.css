@@ -38,7 +38,7 @@
   white-space: nowrap;
 }
 
-.ke-type-tag.is-single { color: var(--primary-dark); background: var(--primary-soft); }
+.ke-type-tag.is-single { color: #1e40af; background: #eef4ff; }
 .ke-type-tag.is-stat { color: #047857; background: #ecfdf5; }
 .ke-type-tag.is-join { color: #6d28d9; background: #f3eaff; }
 .ke-type-tag.is-schema { color: #b45309; background: #fef3c7; }
@@ -59,7 +59,7 @@
 
 .ke-view-sql.is-dark {
   background: #0f172a;
-  color: var(--primary-border-soft);
+  color: #dbeafe;
   border-color: transparent;
 }
 
@@ -79,28 +79,28 @@
   margin-left: 0;
   height: 30px;
   padding: 0 12px;
-  color: var(--primary-dark);
-  background: var(--primary-hover-bg);
-  border: 1px solid var(--focus-border);
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
   border-radius: 8px;
   font-size: 12.5px;
   font-weight: 800;
-  box-shadow: 0 4px 12px rgba(var(--primary-rgb), .12);
+  box-shadow: 0 4px 12px rgba(37,99,235,.12);
 }
 
 .ke-sql-section-head .ke-sql-theme:hover {
   color: #fff;
-  background: var(--primary-dark);
-  border-color: var(--primary-dark);
+  background: #2563eb;
+  border-color: #2563eb;
 }
 
 .ke-sql-section-head .ke-sql-theme:focus-visible {
-  outline: 2px solid rgba(var(--primary-rgb), .32);
+  outline: 2px solid rgba(37,99,235,.32);
   outline-offset: 2px;
 }
 
 .ke-sql-view-section.is-dark .ke-sql-section-head .ke-sql-theme {
-  color: var(--primary-border-soft);
+  color: #dbeafe;
   background: #1e293b;
   border-color: #475569;
   box-shadow: 0 4px 12px rgba(15,23,42,.24);
@@ -108,14 +108,14 @@
 
 .ke-sql-view-section.is-dark .ke-sql-section-head .ke-sql-theme:hover {
   color: #0f172a;
-  background: var(--primary-border);
-  border-color: var(--primary-border);
+  background: #bfdbfe;
+  border-color: #bfdbfe;
 }
 
 .ke-sql .ke-sql-kw,
 .ke-view-sql .ke-sql-kw,
 .ke-sql-highlight .ke-sql-kw {
-  color: var(--primary-dark);
+  color: #2563eb;
   font-weight: 800;
 }
 
@@ -139,7 +139,7 @@
 }
 
 .ke-view-sql.is-dark .ke-sql-kw,
-.ke-sql-editor.is-dark .ke-sql-kw { color: var(--primary-accent); }
+.ke-sql-editor.is-dark .ke-sql-kw { color: #60a5fa; }
 .ke-view-sql.is-dark .ke-sql-fn,
 .ke-sql-editor.is-dark .ke-sql-fn { color: #c084fc; }
 .ke-view-sql.is-dark .ke-sql-str,
@@ -191,10 +191,10 @@
 .ke-sql-theme {
   height: 24px;
   padding: 0 10px;
-  border: 1px solid rgba(var(--primary-rgb), .34);
+  border: 1px solid rgba(147,197,253,.34);
   border-radius: 6px;
-  color: var(--primary-border);
-  background: rgba(var(--primary-rgb), .14);
+  color: #bfdbfe;
+  background: rgba(37,99,235,.14);
   font-size: 12px;
   cursor: pointer;
 }
@@ -202,7 +202,7 @@
 .ke-sql-format:hover,
 .ke-sql-theme:hover {
   color: #fff;
-  background: rgba(var(--primary-rgb), .3);
+  background: rgba(37,99,235,.3);
 }
 
 .ke-sql-body {
@@ -224,7 +224,7 @@
   min-height: 180px;
   margin: 0;
   padding: 12px 14px;
-  color: var(--primary-border-soft);
+  color: #dbeafe;
   white-space: pre-wrap;
   word-break: break-word;
   pointer-events: none;
@@ -261,7 +261,7 @@
   outline: 0;
   resize: vertical;
   color: transparent;
-  caret-color: var(--primary-border-soft);
+  caret-color: #dbeafe;
   background: transparent;
   font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   font-size: 12.5px;
@@ -271,7 +271,7 @@
 
 .ke-sql-input::selection {
   color: #fff;
-  background: rgba(var(--primary-rgb), .42);
+  background: rgba(59,130,246,.42);
 }
 
 .ke-sql-input::placeholder {
@@ -280,7 +280,7 @@
 
 .ke-sql-editor:focus-within {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), .14);
+  box-shadow: 0 0 0 3px rgba(22,119,255,.14);
 }
 
 .ke-sql-editor.is-light {
@@ -319,18 +319,18 @@
 
 .ke-sql-editor.is-light .ke-sql-format,
 .ke-sql-editor.is-light .ke-sql-theme {
-  color: var(--primary-dark);
-  background: var(--primary-hover-bg);
-  border-color: var(--primary-border);
+  color: #2563eb;
+  background: #eff6ff;
+  border-color: #bfdbfe;
 }
 
 .ke-sql-editor.is-light .ke-sql-format:hover,
 .ke-sql-editor.is-light .ke-sql-theme:hover {
-  color: var(--primary-dark);
-  background: var(--primary-border-soft);
+  color: #1d4ed8;
+  background: #dbeafe;
 }
 
-.ke-sql-editor.is-light .ke-sql-kw { color: var(--primary-dark); }
+.ke-sql-editor.is-light .ke-sql-kw { color: #2563eb; }
 .ke-sql-editor.is-light .ke-sql-fn { color: #7c3aed; }
 .ke-sql-editor.is-light .ke-sql-str { color: #047857; }
 .ke-sql-editor.is-light .ke-sql-num { color: #b45309; }
