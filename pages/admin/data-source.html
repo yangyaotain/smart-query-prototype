@@ -1202,11 +1202,6 @@
                     <option value="dim">维度表</option>
                     <option value="bridge">桥接表</option>
                   </select>
-                  <select id="dsTableReg">
-                    <option value="">全部注册状态</option>
-                    <option value="registered">已注册</option>
-                    <option value="unregistered">未注册</option>
-                  </select>
                   <button class="primary-btn" type="button" id="dsBtnQuery">
                     <svg viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
                     查询
@@ -1663,7 +1658,6 @@
     let treeKeyword = '';
     let tableKeyword = '';
     let tableTypeFilter = '';
-    let tableRegFilter = '';
 
     // ----------------------------------------------------------------
     // 渲染 - 目录树
@@ -1764,8 +1758,6 @@
       const list = found.source.tables.filter((t) => {
         if (kw && !(t.name.toLowerCase().includes(kw) || (t.comment || '').toLowerCase().includes(kw))) return false;
         if (tableTypeFilter && t.type !== tableTypeFilter) return false;
-        if (tableRegFilter === 'registered' && !t.registered) return false;
-        if (tableRegFilter === 'unregistered' && t.registered) return false;
         return true;
       });
       if (!list.length) {
@@ -1847,11 +1839,6 @@
 
     document.getElementById('dsTableType').addEventListener('change', (e) => {
       tableTypeFilter = e.target.value || '';
-      renderTableList();
-    });
-
-    document.getElementById('dsTableReg').addEventListener('change', (e) => {
-      tableRegFilter = e.target.value || '';
       renderTableList();
     });
 
