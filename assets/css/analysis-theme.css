@@ -1138,8 +1138,8 @@
 
 .atp-model-card.is-disabled {
   cursor: not-allowed;
-  opacity: 0.62;
   background: #f8fafc;
+  border-color: #dbeafe;
 }
 
 .atp-model-head {
@@ -1168,6 +1168,11 @@
   border-color: var(--primary);
 }
 
+.atp-model-card.is-disabled .atp-model-check {
+  background: #22c55e;
+  border-color: #22c55e;
+}
+
 .atp-model-check svg {
   width: 11px; height: 11px;
   fill: none; stroke: currentColor;
@@ -1177,6 +1182,7 @@
 }
 
 .atp-model-card.is-checked .atp-model-check svg { opacity: 1; }
+.atp-model-card.is-disabled .atp-model-check svg { opacity: 1; }
 
 .atp-model-name {
   flex: 1;
@@ -1205,15 +1211,25 @@
   background: #dbeafe;
 }
 
+.atp-model-code {
+  max-width: 118px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
 .atp-model-tag.is-added {
   color: #16a34a;
   background: #ecfdf5;
+  font-family: inherit;
 }
 
 .atp-model-meta {
   font-size: 11.5px;
   color: #64748b;
   display: flex;
+  align-items: center;
   gap: 10px;
   flex-wrap: wrap;
 }
@@ -1222,6 +1238,10 @@
   display: inline-flex;
   align-items: center;
   gap: 3px;
+}
+
+.atp-model-meta .atp-model-tag.is-added {
+  margin-left: auto;
 }
 
 @media (max-width: 1024px) {

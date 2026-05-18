@@ -1444,6 +1444,7 @@
       var checked = !!state.pickerSelected[m.id];
       var found = findSourceById(m.srcId);
       var srcName = found ? found.source.name : '-';
+      var onlineName = m.code || (m.tables && m.tables[0] ? m.tables[0].name : '');
       var clsList = ['atp-model-card'];
       if (added) clsList.push('is-disabled');
       else if (checked) clsList.push('is-checked');
@@ -1452,14 +1453,12 @@
         +   '<div class="atp-model-head">'
         +     '<span class="atp-model-check"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg></span>'
         +     '<span class="atp-model-name" title="' + escapeHTML(m.code || '') + '">' + escapeHTML(m.name) + '</span>'
-        +     (added
-                ? '<span class="atp-model-tag is-added">已添加</span>'
-                : '<span class="atp-model-tag">' + escapeHTML(m.code || '').slice(0, 12) + '</span>'
-              )
+        +     '<span class="atp-model-tag atp-model-code" title="' + escapeHTML(onlineName || '') + '">' + escapeHTML((onlineName || '-').slice(0, 16)) + '</span>'
         +   '</div>'
         +   '<div class="atp-model-meta">'
         +     '<span>' + escapeHTML(srcName) + '</span>'
         +     '<span>' + (m.fieldCount || 0) + ' 字段</span>'
+        +     (added ? '<span class="atp-model-tag is-added">已添加</span>' : '')
         +   '</div>'
         + '</div>';
     }).join('');
