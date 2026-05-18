@@ -1275,6 +1275,518 @@
     return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
   }
 
+  // ---------- 8b) 导入 / 导出指标体系 (Excel) ----------
+  var KI_IMPORT_MAX_BYTES = 50 * 1024 * 1024;
+  var KI_IMPORT_HEADERS = [
+    '指标名称',
+    '指标类型(atom|derived|dim)',
+    '所属目录',
+    '数据源',
+    '物理表',
+    '物理字段',
+    '聚合方式',
+    '计算公式/时间公式',
+    '单位',
+    '同义词',
+    '描述',
+    '时间字段',
+    '维度映射',
+    '过滤值映射'
+  ];
+
+  function escapeXmlOrHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function buildXlsHtml(headers, rows) {
+    var head = '<tr>' + headers.map(function (h) {
+      return '<th style="background:#1677ff;color:#fff;font-weight:bold;">' + escapeXmlOrHtml(h) + '</th>';
+    }).join('') + '</tr>';
+    var body = rows.map(function (r) {
+      return '<tr>' + r.map(function (c) {
+        return '<td>' + escapeXmlOrHtml(c) + '</td>';
+      }).join('') + '</tr>';
+    }).join('');
+    return ''
+      + '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">'
+      + '<head><meta charset="UTF-8"></head>'
+      + '<body><table border="1">' + head + body + '</table></body></html>';
+  }
+
+  function triggerDownload(blob, filename) {
+    var a = document.createElement('a');
+    var url = URL.createObjectURL(blob);
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 0);
+  }
+
+  function safeFileName(s) {
+    return String(s || '指标体系').replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, '_');
+  }
+
+  function groupPathName(gid) {
+    if (!gid || gid === '__all__') return '全部指标';
+    if (gid === '__uncategorized__') return '未分类';
+    var info = findGroupById(gid);
+    return info ? info.path.map(function (g) { return g.name; }).join(' / ') : gid;
+  }
+
+  function formulaText(it) {
+    if (!it) return '';
+    if (it.type === 'atom') return (it.agg || 'SUM') + '(' + (it.field || '') + ')';
+    if (it.type === 'derived') return it.formula || '';
+    if (it.isTimeDim) return it.timeFormula || '';
+    return (it.mappings || []).length + ' 个表字段映射';
+  }
+
+  function mappingsText(it) {
+    return (it.mappings || []).map(function (m) {
+      if (!m.table && !m.field) return '';
+      return [m.table || '', m.field || ''].filter(Boolean).join('.');
+    }).filter(Boolean).join('; ');
+  }
+
+  function filterValuesText(it) {
+    return (it.filterValues || []).map(function (m) {
+      return (m.alias || '') + '=' + (m.value || '');
+    }).filter(function (s) { return s !== '='; }).join('; ');
+  }
+
+  function indicatorExportRow(it) {
+    return [
+      it.name || '',
+      it.type || '',
+      groupPathName(it.groupId),
+      dsPathName(it.srcId),
+      it.table || '',
+      it.field || '',
+      it.agg || '',
+      formulaText(it),
+      it.unit || '',
+      it.synonyms || '',
+      it.desc || '',
+      it.timeField || '',
+      mappingsText(it),
+      filterValuesText(it)
+    ];
+  }
+
+  function downloadIndicatorTemplate() {
+    var sample = [
+      [
+        '非招成交金额',
+        'atom',
+        '收入指标 / 销售收入',
+        '运营域 / 运营指标库',
+        'non_bidding_project_info',
+        'deal_amount_10k_yuan',
+        'SUM',
+        '',
+        '万元',
+        '非招成交金额',
+        '非招标项目的成交金额合计。',
+        'deal_notice_sent_date',
+        '',
+        ''
+      ],
+      [
+        '总收入',
+        'derived',
+        '收入指标 / 销售收入',
+        '运营域 / 运营指标库',
+        '',
+        '',
+        '',
+        '招标平台服务费 + 非招服务费 + CA证书收入',
+        '元',
+        '总收入',
+        '核心收入类指标汇总。',
+        '',
+        '',
+        ''
+      ],
+      [
+        '采购方式',
+        'dim',
+        '维度 / 业务维度',
+        '运营域 / 运营指标库',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '采购方式',
+        '用于按采购方式筛选与分组。',
+        '',
+        'non_bidding_project_info.procurement_method; bidding_project_info.bidding_method',
+        '招标=BIDDING; 询价=INQUIRY'
+      ]
+    ];
+    var html = buildXlsHtml(KI_IMPORT_HEADERS, sample);
+    var blob = new Blob(['\ufeff', html], { type: 'application/vnd.ms-excel' });
+    triggerDownload(blob, '指标体系导入模板.xls');
+    if (typeof showToast === 'function') showToast('模板已开始下载');
+  }
+
+  function exportIndicators() {
+    var list = getFilteredList();
+    if (!list.length) {
+      if (typeof showToast === 'function') showToast('没有可导出的指标');
+      return;
+    }
+    var rows = list.map(indicatorExportRow);
+    var html = buildXlsHtml(KI_IMPORT_HEADERS, rows);
+    var blob = new Blob(['\ufeff', html], { type: 'application/vnd.ms-excel' });
+    var bread = $('#kiBreadText');
+    var name = bread ? bread.textContent : '指标体系';
+    triggerDownload(blob, '指标体系_' + safeFileName(name) + '.xls');
+    if (typeof showToast === 'function') showToast('已导出 ' + list.length + ' 条指标');
+  }
+
+  var indicatorImportState = {
+    file: null,
+    importing: false
+  };
+
+  function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+    return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+  }
+
+  function isExcelFile(name) {
+    if (!name) return false;
+    var lower = name.toLowerCase();
+    return lower.endsWith('.xlsx') || lower.endsWith('.xls');
+  }
+
+  function refreshIndicatorImportUI() {
+    var emptyEl = $('#kiiDropzoneEmpty');
+    var fileEl = $('#kiiDropzoneFile');
+    var nameEl = $('#kiiFileName');
+    var sizeEl = $('#kiiFileSize');
+    var okBtn = $('#kiiOkBtn');
+    if (indicatorImportState.file) {
+      if (emptyEl) emptyEl.classList.add('hidden');
+      if (fileEl) fileEl.classList.remove('hidden');
+      if (nameEl) nameEl.textContent = indicatorImportState.file.name;
+      if (sizeEl) sizeEl.textContent = formatFileSize(indicatorImportState.file.size);
+      if (okBtn) okBtn.disabled = indicatorImportState.importing;
+    } else {
+      if (emptyEl) emptyEl.classList.remove('hidden');
+      if (fileEl) fileEl.classList.add('hidden');
+      if (okBtn) okBtn.disabled = true;
+    }
+  }
+
+  function setIndicatorImportFile(file) {
+    if (!file) {
+      indicatorImportState.file = null;
+      refreshIndicatorImportUI();
+      return;
+    }
+    if (!isExcelFile(file.name)) {
+      if (typeof showToast === 'function') showToast('仅支持 Excel 格式（.xls / .xlsx）');
+      return;
+    }
+    if (file.size > KI_IMPORT_MAX_BYTES) {
+      if (typeof showToast === 'function') showToast('文件过大，单个文件不能超过 50M');
+      return;
+    }
+    indicatorImportState.file = file;
+    refreshIndicatorImportUI();
+  }
+
+  function resetIndicatorImportProgress() {
+    var prog = $('#kiiProgress');
+    var fill = $('#kiiProgressFill');
+    var pct = $('#kiiProgressPct');
+    var label = $('#kiiProgressLabel');
+    if (prog) {
+      prog.classList.add('hidden');
+      prog.classList.remove('is-success', 'is-error');
+    }
+    if (fill) fill.style.width = '0%';
+    if (pct) pct.textContent = '0%';
+    if (label) label.textContent = '正在导入…';
+  }
+
+  function openIndicatorImportModal() {
+    indicatorImportState.file = null;
+    indicatorImportState.importing = false;
+    var input = $('#kiiFileInput');
+    var okBtn = $('#kiiOkBtn');
+    var cancelBtn = $('#kiiCancelBtn');
+    if (input) input.value = '';
+    if (okBtn) okBtn.textContent = '确定';
+    if (cancelBtn) cancelBtn.disabled = false;
+    resetIndicatorImportProgress();
+    refreshIndicatorImportUI();
+    var mask = $('#kiImportMask');
+    var modal = $('#kiImportModal');
+    if (mask) mask.classList.remove('hidden');
+    if (modal) modal.classList.remove('hidden');
+  }
+
+  function closeIndicatorImportModal() {
+    if (indicatorImportState.importing) return;
+    var mask = $('#kiImportMask');
+    var modal = $('#kiImportModal');
+    if (mask) mask.classList.add('hidden');
+    if (modal) modal.classList.add('hidden');
+  }
+
+  function resolveImportGroupId() {
+    var gid = state.activeGroupId;
+    if (gid && gid !== '__all__') {
+      var info = findGroupById(gid);
+      if (info) {
+        if (info.parent) return info.group.id;
+        if ((info.group.children || []).length) return info.group.children[0].id;
+        return info.group.id;
+      }
+    }
+    for (var i = 0; i < TREE.length; i++) {
+      if ((TREE[i].children || []).length) return TREE[i].children[0].id;
+    }
+    return TREE[0] ? TREE[0].id : '__uncategorized__';
+  }
+
+  function appendImportedIndicators() {
+    var gid = resolveImportGroupId();
+    var now = todayStr();
+    var rows = [
+      {
+        type: 'atom',
+        name: '导入-有效商机数',
+        synonyms: '有效线索, 商机数',
+        desc: 'CRM 中已达到有效状态的商机数量。',
+        srcId: 'ds_crm',
+        table: 'crm_lead',
+        field: 'lead_id',
+        agg: 'COUNT_DISTINCT',
+        timeField: 'created_at',
+        unit: '个',
+        formula: '',
+        isTimeDim: false,
+        timeTplKey: '',
+        timeFormula: '',
+        mappings: [],
+        filterValues: []
+      },
+      {
+        type: 'derived',
+        name: '导入-商机成交转化率',
+        synonyms: '商机转化率, 线索转化',
+        desc: '成交客户数 / 有效商机数，用于观察销售漏斗效率。',
+        srcId: 'ds_metric',
+        table: '',
+        field: '',
+        agg: '',
+        timeField: '',
+        unit: '%',
+        formula: '成交客户数 / 有效商机数',
+        isTimeDim: false,
+        timeTplKey: '',
+        timeFormula: '',
+        mappings: [],
+        filterValues: []
+      },
+      {
+        type: 'dim',
+        name: '导入-客户等级',
+        synonyms: '客户分层, 客户级别',
+        desc: '按照客户经营价值分层，可用于问数筛选和看板分组。',
+        srcId: 'ds_cdw',
+        table: '',
+        field: '',
+        agg: '',
+        timeField: '',
+        unit: '',
+        formula: '',
+        isTimeDim: false,
+        timeTplKey: '',
+        timeFormula: '',
+        mappings: [
+          { table: 'customer_master', field: 'level' },
+          { table: 'customer_segment', field: 'segment' }
+        ],
+        filterValues: [
+          { alias: '高价值', value: 'A' },
+          { alias: '成长型', value: 'B' }
+        ]
+      }
+    ];
+    rows.forEach(function (row) {
+      row.id = uid('imp');
+      row.groupId = gid;
+      row.updatedAt = now;
+      INDICATORS.unshift(row);
+    });
+    state.activeGroupId = gid;
+    state.page = 1;
+    renderTree();
+    renderBread();
+    renderList();
+    return rows.length;
+  }
+
+  function startIndicatorImport() {
+    if (indicatorImportState.importing || !indicatorImportState.file) return;
+    indicatorImportState.importing = true;
+    var prog = $('#kiiProgress');
+    var fill = $('#kiiProgressFill');
+    var pct = $('#kiiProgressPct');
+    var label = $('#kiiProgressLabel');
+    var okBtn = $('#kiiOkBtn');
+    var cancelBtn = $('#kiiCancelBtn');
+    if (prog) prog.classList.remove('hidden', 'is-success', 'is-error');
+    if (label) label.textContent = '正在解析文件…';
+    if (okBtn) { okBtn.disabled = true; okBtn.textContent = '导入中…'; }
+    if (cancelBtn) cancelBtn.disabled = true;
+
+    var current = 0;
+    function step() {
+      var inc = current < 60 ? (4 + Math.random() * 6)
+        : current < 85 ? (2 + Math.random() * 3)
+        : (0.6 + Math.random() * 1.2);
+      current = Math.min(100, current + inc);
+      if (fill) fill.style.width = current + '%';
+      if (pct) pct.textContent = Math.round(current) + '%';
+      if (current >= 60 && current < 85 && label) label.textContent = '正在校验指标口径…';
+      if (current >= 85 && current < 100 && label) label.textContent = '正在写入指标体系…';
+      if (current < 100) setTimeout(step, 120);
+      else finishIndicatorImport();
+    }
+    step();
+  }
+
+  function finishIndicatorImport() {
+    var prog = $('#kiiProgress');
+    var label = $('#kiiProgressLabel');
+    var okBtn = $('#kiiOkBtn');
+    var cancelBtn = $('#kiiCancelBtn');
+    var fname = indicatorImportState.file ? indicatorImportState.file.name.toLowerCase() : '';
+    var forceFail = fname.indexOf('fail') >= 0 || fname.indexOf('错误') >= 0;
+    var success = !forceFail;
+
+    if (success) {
+      var added = appendImportedIndicators();
+      if (prog) prog.classList.add('is-success');
+      if (label) label.textContent = '导入成功，新增 ' + added + ' 条指标';
+      if (typeof showToast === 'function') showToast('导入成功：新增 ' + added + ' 条指标');
+    } else {
+      if (prog) prog.classList.add('is-error');
+      if (label) label.textContent = '导入失败：字段缺失或模板格式不正确';
+      if (typeof showToast === 'function') showToast('导入失败：请使用模板格式后重试');
+    }
+
+    indicatorImportState.importing = false;
+    if (okBtn) {
+      okBtn.disabled = false;
+      okBtn.textContent = success ? '完成' : '重试';
+    }
+    if (cancelBtn) cancelBtn.disabled = false;
+
+    if (success) {
+      setTimeout(function () {
+        closeIndicatorImportModal();
+      }, 1100);
+    }
+  }
+
+  function bindIndicatorImportModal() {
+    var mask = $('#kiImportMask');
+    var modal = $('#kiImportModal');
+    var input = $('#kiiFileInput');
+    var dropzone = $('#kiiDropzone');
+    var clearBtn = $('#kiiFileClear');
+    var tplBtn = $('#kiiTplBtn');
+    if (!modal) return;
+
+    if (mask) mask.addEventListener('click', closeIndicatorImportModal);
+
+    modal.addEventListener('click', function (e) {
+      var act = e.target.closest && e.target.closest('[data-act]');
+      if (!act) return;
+      var role = act.getAttribute('data-act');
+      if (role === 'cancel') {
+        closeIndicatorImportModal();
+      } else if (role === 'ok') {
+        if (!indicatorImportState.file) {
+          if (typeof showToast === 'function') showToast('请先选择 Excel 文件');
+          return;
+        }
+        if (act.textContent.indexOf('完成') >= 0) {
+          closeIndicatorImportModal();
+          return;
+        }
+        startIndicatorImport();
+      }
+    });
+
+    if (tplBtn) {
+      tplBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        downloadIndicatorTemplate();
+      });
+    }
+
+    if (input) {
+      input.addEventListener('change', function () {
+        var f = input.files && input.files[0];
+        if (f) setIndicatorImportFile(f);
+      });
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (indicatorImportState.importing) return;
+        indicatorImportState.file = null;
+        if (input) input.value = '';
+        resetIndicatorImportProgress();
+        refreshIndicatorImportUI();
+      });
+    }
+
+    if (dropzone) {
+      ['dragenter', 'dragover'].forEach(function (ev) {
+        dropzone.addEventListener(ev, function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+          dropzone.classList.add('is-drag-over');
+        });
+      });
+      ['dragleave', 'dragend'].forEach(function (ev) {
+        dropzone.addEventListener(ev, function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.remove('is-drag-over');
+        });
+      });
+      dropzone.addEventListener('drop', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove('is-drag-over');
+        var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (f) setIndicatorImportFile(f);
+      });
+    }
+  }
+
   // ---------- 9) 通用确认弹窗 ----------
   var confirmCb = null;
   function showConfirm(opts) {
@@ -1583,6 +2095,10 @@
     // 顶部 新增指标
     var addI = $('#kiBtnNewIndicator');
     if (addI) addI.addEventListener('click', function () { openDrawer('create', null, state.activeGroupId); });
+    var importBtn = $('#kiBtnImport');
+    if (importBtn) importBtn.addEventListener('click', openIndicatorImportModal);
+    var exportBtn = $('#kiBtnExport');
+    if (exportBtn) exportBtn.addEventListener('click', exportIndicators);
 
     // 查询框 / 类型筛选 / 重置
     var kw = $('#kiKwInput');
@@ -1660,11 +2176,14 @@
     bindContextMenu();
     bindDrawer();
     bindConfirm();
+    bindIndicatorImportModal();
   });
 
   // 控制台调试
   window.__KI = {
     TREE: TREE, INDICATORS: INDICATORS, state: state,
-    open: openDrawer
+    open: openDrawer,
+    openImport: openIndicatorImportModal,
+    exportIndicators: exportIndicators
   };
 })();

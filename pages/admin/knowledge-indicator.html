@@ -70,6 +70,22 @@
                   <svg viewBox="0 0 24 24" aria-hidden="true" class="btn-ico"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
                   新增指标
                 </button>
+                <button type="button" class="ghost-btn" id="kiBtnImport" title="从 Excel 导入指标定义">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" class="btn-ico">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <path d="M7 10l5 5 5-5"/>
+                    <path d="M12 15V3"/>
+                  </svg>
+                  导入
+                </button>
+                <button type="button" class="ghost-btn" id="kiBtnExport" title="导出当前指标列表为 Excel">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" class="btn-ico">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <path d="M17 8l-5-5-5 5"/>
+                    <path d="M12 3v12"/>
+                  </svg>
+                  导出
+                </button>
               </div>
             </div>
 
@@ -164,6 +180,93 @@
     <div class="modal-foot">
       <button type="button" class="ghost-btn" data-act="cancel">取消</button>
       <button type="button" class="primary-btn" data-act="ok" id="kiConfirmOk" style="background:#ef4444;box-shadow:0 8px 20px rgba(239,68,68,.22);">确认删除</button>
+    </div>
+  </div>
+
+  <!-- 导入指标弹窗 -->
+  <div class="modal-mask hidden" id="kiImportMask"></div>
+  <div class="modal hidden ki-import-modal" id="kiImportModal" role="dialog" aria-modal="true" aria-labelledby="kiImportTitle">
+    <div class="modal-head">
+      <div>
+        <h3 id="kiImportTitle">导入指标定义</h3>
+        <p>将 Excel 中的指标口径、物理映射和同义词批量导入指标体系。</p>
+      </div>
+      <button type="button" class="close" data-act="cancel" aria-label="关闭">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="kii-section">
+        <div class="kii-section-title">第 1 步：下载模板</div>
+        <div class="kii-template">
+          <div class="kii-template-info">
+            <div class="kii-template-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <path d="M14 2v6h6"/>
+                <path d="M9 13l2 2 4-4"/>
+              </svg>
+            </div>
+            <div>
+              <div class="kii-template-name">指标体系导入模板.xlsx</div>
+              <div class="kii-template-desc">包含字段：指标名称 / 类型 / 所属目录 / 数据源 / 公式 / 同义词 / 单位</div>
+            </div>
+          </div>
+          <button type="button" class="ghost-btn kii-tpl-btn" id="kiiTplBtn">
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="btn-ico">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <path d="M7 10l5 5 5-5"/>
+              <path d="M12 15V3"/>
+            </svg>
+            下载模板
+          </button>
+        </div>
+      </div>
+
+      <div class="kii-section">
+        <div class="kii-section-title">第 2 步：选择文件</div>
+        <label class="kii-dropzone" id="kiiDropzone" for="kiiFileInput">
+          <input type="file" id="kiiFileInput" class="kii-file-input" accept=".xls,.xlsx" />
+          <div class="kii-dropzone-empty" id="kiiDropzoneEmpty">
+            <div class="kii-dropzone-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <path d="M17 8l-5-5-5 5"/>
+                <path d="M12 3v12"/>
+              </svg>
+            </div>
+            <div class="kii-dropzone-text">
+              <strong>点击选择</strong> 或 <strong>拖拽文件</strong> 到此处
+            </div>
+            <div class="kii-dropzone-hint">仅支持 Excel 格式（.xls / .xlsx），单个文件不超过 50M</div>
+          </div>
+          <div class="kii-dropzone-file hidden" id="kiiDropzoneFile">
+            <div class="kii-file-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <path d="M14 2v6h6"/>
+              </svg>
+            </div>
+            <div class="kii-file-meta">
+              <div class="kii-file-name" id="kiiFileName">--</div>
+              <div class="kii-file-size" id="kiiFileSize">--</div>
+            </div>
+            <button type="button" class="kii-file-clear" id="kiiFileClear" aria-label="移除">×</button>
+          </div>
+        </label>
+      </div>
+
+      <div class="kii-progress hidden" id="kiiProgress">
+        <div class="kii-progress-head">
+          <span id="kiiProgressLabel">正在导入…</span>
+          <span class="kii-progress-pct" id="kiiProgressPct">0%</span>
+        </div>
+        <div class="kii-progress-track">
+          <div class="kii-progress-fill" id="kiiProgressFill"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="ghost-btn" data-act="cancel" id="kiiCancelBtn">取消</button>
+      <button type="button" class="primary-btn" data-act="ok" id="kiiOkBtn" disabled>确定</button>
     </div>
   </div>
 
