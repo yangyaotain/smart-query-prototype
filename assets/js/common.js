@@ -411,7 +411,8 @@ function goTo(path) {
       icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="18" cy="6" r="1.5"/></svg>',
       children: [
         { name: "用户管理", href: "users.html", match: ["users", "user-edit", "user-disable"] },
-        { name: "角色管理", href: "roles.html", match: ["roles", "role-edit"] }
+        { name: "角色管理", href: "roles.html", match: ["roles", "role-edit"] },
+        { name: "系统配置", href: "system-config.html", match: ["system-config"] }
       ]
     }
   ];

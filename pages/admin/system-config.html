@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>系统配置 - 智能问数管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/admin.css" />
+  <style>
+    .sys-page {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .sys-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .sys-section {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(17, 24, 39, 0.05);
+      overflow: hidden;
+    }
+
+    .sys-section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    }
+
+    .sys-section-head h2 {
+      margin: 0;
+      color: #102a48;
+      font-size: 16px;
+    }
+
+    .sys-section-head p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .sys-section-body {
+      padding: 18px;
+    }
+
+    .sys-segment {
+      display: inline-grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 4px;
+      background: #f3f6fb;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+    }
+
+    .sys-segment button {
+      height: 32px;
+      padding: 0 14px;
+      color: #64748b;
+      background: transparent;
+      border: 0;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .sys-segment button.is-active {
+      color: var(--primary);
+      background: #fff;
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+    }
+
+    .sys-logo-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+      gap: 20px;
+      margin-top: 18px;
+    }
+
+    .sys-form-row {
+      margin-bottom: 14px;
+    }
+
+    .sys-form-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .sys-form-row label {
+      display: block;
+      margin-bottom: 8px;
+      color: #374151;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .sys-input {
+      width: 100%;
+      height: 40px;
+      padding: 0 12px;
+      color: #1f2937;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: border-color .16s ease, box-shadow .16s ease;
+    }
+
+    .sys-input:focus {
+      border-color: #93c5fd;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+    }
+
+    .sys-hint {
+      margin-top: 6px;
+      color: #94a3b8;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .sys-standard-panel.hidden,
+    .sys-custom-panel.hidden {
+      display: none;
+    }
+
+    .sys-upload {
+      position: relative;
+      min-height: 168px;
+      display: grid;
+      place-items: center;
+      padding: 22px;
+      text-align: center;
+      background: #f8fafc;
+      border: 1.5px dashed #cbd5e1;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: background .16s ease, border-color .16s ease;
+    }
+
+    .sys-upload.sys-upload-compact {
+      min-height: 132px;
+      padding: 18px;
+    }
+
+    .sys-upload:hover,
+    .sys-upload.is-drag-over {
+      background: #eff6ff;
+      border-color: var(--primary);
+    }
+
+    .sys-upload input {
+      position: absolute;
+      width: 0;
+      height: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .sys-upload-icon {
+      width: 42px;
+      height: 42px;
+      margin: 0 auto 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      background: #eef4ff;
+      border-radius: 12px;
+    }
+
+    .sys-upload-icon svg {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .sys-upload strong {
+      color: var(--primary);
+    }
+
+    .sys-upload p {
+      margin: 4px 0 0;
+      color: #94a3b8;
+      font-size: 12px;
+    }
+
+    .sys-upload-file {
+      width: 100%;
+      display: none;
+      align-items: center;
+      gap: 12px;
+      text-align: left;
+    }
+
+    .sys-upload.has-file .sys-upload-empty {
+      display: none;
+    }
+
+    .sys-upload.has-file .sys-upload-file {
+      display: flex;
+    }
+
+    .sys-upload-thumb {
+      width: 64px;
+      height: 64px;
+      flex: 0 0 64px;
+      object-fit: contain;
+      background: #fff;
+      border: 1px solid #dbeafe;
+      border-radius: 14px;
+    }
+
+    .sys-upload-name {
+      flex: 1;
+      min-width: 0;
+      color: #0f172a;
+      font-size: 13px;
+      font-weight: 800;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .sys-logo-preview {
+      min-height: 188px;
+      display: flex;
+      flex-direction: column;
+      padding: 18px;
+      background: #f8fbff;
+      border: 1px solid #dbeafe;
+      border-radius: 16px;
+    }
+
+    .sys-logo-preview-title {
+      margin-bottom: 14px;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .sys-brand-preview {
+      flex: 1;
+      min-height: 116px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .sys-brand-mark {
+      width: 64px;
+      height: 64px;
+      flex: 0 0 64px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary), #55c7ff);
+      border-radius: 18px;
+      font-size: 24px;
+      font-weight: 800;
+      overflow: hidden;
+    }
+
+    .sys-brand-mark img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #fff;
+    }
+
+    .sys-brand-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .sys-brand-text strong {
+      display: block;
+      color: #102a48;
+      font-size: 20px;
+      line-height: 1.35;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .sys-theme-select-row {
+      display: grid;
+      grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+      gap: 12px;
+      align-items: end;
+      margin-bottom: 14px;
+    }
+
+    .sys-theme-select-row .sys-form-row {
+      margin-bottom: 0;
+    }
+
+    .sys-theme-select {
+      width: 100%;
+      height: 40px;
+      padding: 0 34px 0 12px;
+      color: #1f2937;
+      background-color: #fff;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 14px 14px;
+      border: 1px solid #dbeafe;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      appearance: none;
+      cursor: pointer;
+      transition: border-color .16s ease, box-shadow .16s ease;
+    }
+
+    .sys-theme-select:focus {
+      border-color: #93c5fd;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+    }
+
+    .sys-theme-summary {
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      color: #64748b;
+      background: #f8fbff;
+      border: 1px solid #dbeafe;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .sys-theme-summary strong {
+      color: #102a48;
+    }
+
+    .sys-swatches {
+      display: inline-flex;
+      flex: 0 0 auto;
+      gap: 6px;
+    }
+
+    .sys-swatch {
+      width: 24px;
+      height: 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    .sys-preview {
+      overflow: hidden;
+      background: #fff;
+      border: 1px solid #dbeafe;
+      border-radius: 14px;
+    }
+
+    .sys-preview-top {
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      color: #fff;
+      background: var(--sys-preview-primary, #1677ff);
+    }
+
+    .sys-preview-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .sys-preview-logo {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      color: var(--sys-preview-primary, #1677ff);
+      background: #fff;
+      border-radius: 9px;
+      overflow: hidden;
+    }
+
+    .sys-preview-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .sys-preview-main {
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      min-height: 210px;
+      background: var(--sys-preview-bg, #f3f8ff);
+    }
+
+    .sys-preview-side {
+      padding: 12px 10px;
+      background: rgba(255, 255, 255, 0.78);
+      border-right: 1px solid rgba(15, 23, 42, 0.06);
+    }
+
+    .sys-preview-side span {
+      display: block;
+      height: 24px;
+      margin-bottom: 8px;
+      padding: 0 8px;
+      color: #64748b;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 24px;
+    }
+
+    .sys-preview-side span.is-active {
+      color: var(--sys-preview-primary, #1677ff);
+      background: var(--sys-preview-soft, #eaf3ff);
+      font-weight: 800;
+    }
+
+    .sys-preview-content {
+      padding: 14px;
+    }
+
+    .sys-preview-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .sys-preview-title strong {
+      color: #102a48;
+      font-size: 14px;
+    }
+
+    .sys-preview-title em {
+      color: var(--sys-preview-primary, #1677ff);
+      font-style: normal;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .sys-preview-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .sys-preview-kpi {
+      min-height: 62px;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid rgba(15, 23, 42, 0.06);
+      border-radius: 12px;
+    }
+
+    .sys-preview-kpi span {
+      color: #94a3b8;
+      font-size: 11px;
+    }
+
+    .sys-preview-kpi strong {
+      display: block;
+      margin-top: 6px;
+      color: #102a48;
+      font-size: 18px;
+    }
+
+    .sys-preview-chart {
+      height: 68px;
+      display: flex;
+      align-items: flex-end;
+      gap: 7px;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid rgba(15, 23, 42, 0.06);
+      border-radius: 12px;
+    }
+
+    .sys-preview-chart i {
+      flex: 1;
+      min-width: 0;
+      background: linear-gradient(180deg, var(--sys-preview-accent, #55c7ff), var(--sys-preview-primary, #1677ff));
+      border-radius: 999px 999px 4px 4px;
+    }
+
+    .sys-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    @media (max-width: 1180px) {
+      .sys-logo-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .sys-theme-select-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
+      <div class="admin-brand"><div class="logo">管</div><span>智能问数管理后台</span></div>
+      <nav class="admin-menu"></nav>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <strong>系统配置</strong>
+        <div class="toolbar">
+          <button class="secondary-btn icon-btn" onclick="goTo('../business/smart-query.html')">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/>
+              <path d="M5.6 5.6l2.1 2.1"/><path d="M16.3 16.3l2.1 2.1"/>
+              <path d="M5.6 18.4l2.1-2.1"/><path d="M16.3 7.7l2.1-2.1"/>
+              <circle cx="12" cy="12" r="3.4"/>
+            </svg>
+            智能问数
+          </button>
+          <button class="user-trigger" type="button"><div class="avatar">张</div><strong>张三</strong><span class="dropdown-arrow"></span></button>
+        </div>
+      </header>
+
+      <section class="admin-content sys-page">
+        <div class="admin-page-head">
+          <div>
+            <h1>系统配置</h1>
+            <p>维护产品 Logo、系统名称和全局主题风格，配置结果将在管理后台和业务端保持一致。</p>
+          </div>
+        </div>
+
+        <div class="sys-grid">
+          <section class="sys-section" aria-label="Logo配置">
+            <div class="sys-section-head">
+              <div>
+                <h2>Logo 配置</h2>
+                <p>支持标准 Logo + 名称配置，也可上传完整自定义品牌图片。</p>
+              </div>
+              <div class="sys-segment" role="tablist" aria-label="Logo 配置方式">
+                <button type="button" class="is-active" data-logo-mode="standard" aria-selected="true">标准配置</button>
+                <button type="button" data-logo-mode="custom" aria-selected="false">自定义配置</button>
+              </div>
+            </div>
+            <div class="sys-section-body">
+              <div class="sys-logo-layout">
+                <div>
+                  <div class="sys-standard-panel" id="sysStandardPanel">
+                    <div class="sys-form-row">
+                      <label for="sysStandardLogo">Logo 上传</label>
+                      <label class="sys-upload sys-upload-compact" id="sysStandardUploadBox" for="sysStandardLogo">
+                        <input type="file" id="sysStandardLogo" accept="image/png,image/jpeg,image/svg+xml,image/webp" />
+                        <div class="sys-upload-empty">
+                          <div class="sys-upload-icon">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                              <path d="M17 8l-5-5-5 5"/>
+                              <path d="M12 3v12"/>
+                            </svg>
+                          </div>
+                          <div><strong>点击上传 Logo</strong> 或拖拽图片到此处</div>
+                          <p>支持 PNG / JPG / SVG / WebP，建议透明底方形图片。</p>
+                        </div>
+                        <div class="sys-upload-file">
+                          <img class="sys-upload-thumb" id="sysStandardUploadThumb" alt="Logo 预览" />
+                          <div class="sys-upload-name" id="sysStandardUploadName">logo.png</div>
+                          <button type="button" class="ghost-btn" id="sysRemoveStandardLogo">移除</button>
+                        </div>
+                      </label>
+                      <div class="sys-hint">上传后用于侧边栏、顶部导航和主题预览中的标准 Logo。</div>
+                    </div>
+                    <div class="sys-form-row">
+                      <label for="sysProductName">系统名称</label>
+                      <input class="sys-input" id="sysProductName" maxlength="20" value="智能问数" placeholder="请输入系统名称" />
+                    </div>
+                  </div>
+
+                  <div class="sys-custom-panel hidden" id="sysCustomPanel">
+                    <label class="sys-upload" id="sysUploadBox" for="sysCustomLogo">
+                      <input type="file" id="sysCustomLogo" accept="image/png,image/jpeg,image/svg+xml,image/webp" />
+                      <div class="sys-upload-empty">
+                        <div class="sys-upload-icon">
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <path d="M17 8l-5-5-5 5"/>
+                            <path d="M12 3v12"/>
+                          </svg>
+                        </div>
+                        <div><strong>点击上传</strong> 或拖拽图片到此处</div>
+                        <p>支持 PNG / JPG / SVG / WebP，建议透明底图片。</p>
+                      </div>
+                      <div class="sys-upload-file">
+                        <img class="sys-upload-thumb" id="sysUploadThumb" alt="Logo 预览" />
+                        <div class="sys-upload-name" id="sysUploadName">custom-logo.png</div>
+                        <button type="button" class="ghost-btn" id="sysRemoveLogo">移除</button>
+                      </div>
+                    </label>
+                    <div class="sys-hint">自定义配置会优先使用上传图片；如未上传，预览仍使用标准 Logo。</div>
+                  </div>
+                </div>
+
+                <aside class="sys-logo-preview" aria-label="Logo 预览">
+                  <div class="sys-logo-preview-title">品牌预览</div>
+                  <div class="sys-brand-preview">
+                    <div class="sys-brand-mark" id="sysBrandMark">数</div>
+                    <div class="sys-brand-text">
+                      <strong id="sysBrandName">智能问数</strong>
+                    </div>
+                  </div>
+                </aside>
+              </div>
+
+              <div class="sys-actions">
+                <button type="button" class="ghost-btn" id="sysLogoReset">恢复默认</button>
+                <button type="button" class="primary-btn" id="sysLogoSave">保存 Logo</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="sys-section" aria-label="主题样式配置">
+            <div class="sys-section-head">
+              <div>
+                <h2>主题样式配置</h2>
+                <p>选择全局主题样式并查看实时预览，适配管理后台、业务端导航和核心组件。</p>
+              </div>
+            </div>
+            <div class="sys-section-body">
+              <div class="sys-theme-select-row">
+                <div class="sys-form-row">
+                  <label for="sysThemeSelect">主题样式</label>
+                  <select class="sys-theme-select" id="sysThemeSelect">
+                    <option value="blue">蓝色科技风格</option>
+                    <option value="green">绿色清新风格</option>
+                  </select>
+                </div>
+                <div class="sys-theme-summary" id="sysThemeSummary">
+                  <div class="sys-swatches" id="sysThemeSwatches"></div>
+                  <span><strong>蓝色科技风格</strong>：强调科技感与数据可信度，适合默认后台与业务分析场景。</span>
+                </div>
+              </div>
+
+              <div class="sys-preview" id="sysPreview">
+                <div class="sys-preview-top">
+                  <div class="sys-preview-brand">
+                    <span class="sys-preview-logo" id="sysPreviewLogo">数</span>
+                    <span id="sysPreviewName">智能问数</span>
+                  </div>
+                  <span>张三 · 系统管理员</span>
+                </div>
+                <div class="sys-preview-main">
+                  <div class="sys-preview-side">
+                    <span class="is-active">系统配置</span>
+                    <span>用户管理</span>
+                    <span>角色管理</span>
+                  </div>
+                  <div class="sys-preview-content">
+                    <div class="sys-preview-title"><strong>主题预览</strong><em id="sysThemeName">蓝色科技风格</em></div>
+                    <div class="sys-preview-cards">
+                      <div class="sys-preview-kpi"><span>活跃用户</span><strong>1,286</strong></div>
+                      <div class="sys-preview-kpi"><span>指标数量</span><strong>438</strong></div>
+                      <div class="sys-preview-kpi"><span>问数成功率</span><strong>96%</strong></div>
+                    </div>
+                    <div class="sys-preview-chart" aria-label="图表预览">
+                      <i style="height:44%;"></i>
+                      <i style="height:66%;"></i>
+                      <i style="height:52%;"></i>
+                      <i style="height:82%;"></i>
+                      <i style="height:70%;"></i>
+                      <i style="height:92%;"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="sys-actions">
+                <button type="button" class="ghost-btn" id="sysThemeReset">恢复蓝色科技风格</button>
+                <button type="button" class="primary-btn" id="sysThemeSave">保存主题</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../../assets/js/common.js"></script>
+  <script>
+    (function () {
+      var themeMap = {
+        blue: {
+          name: "蓝色科技风格",
+          desc: "强调科技感与数据可信度，适合默认后台与业务分析场景。",
+          primary: "#1677ff",
+          accent: "#55c7ff",
+          soft: "#eaf3ff",
+          bg: "#f3f8ff"
+        },
+        green: {
+          name: "绿色清新风格",
+          desc: "更轻盈自然，适合运营看板、业务协作和日常管理场景。",
+          primary: "#10b981",
+          accent: "#34d399",
+          soft: "#ecfdf5",
+          bg: "#f0fdf4"
+        }
+      };
+
+      var state = {
+        logoMode: "standard",
+        standardLogo: "",
+        customLogo: "",
+        theme: "blue"
+      };
+
+      function $(selector) {
+        return document.querySelector(selector);
+      }
+
+      function $$(selector) {
+        return Array.prototype.slice.call(document.querySelectorAll(selector));
+      }
+
+      function escapeHTML(value) {
+        return String(value).replace(/[&<>"']/g, function (char) {
+          return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+          }[char];
+        });
+      }
+
+      function setLogoMode(mode) {
+        state.logoMode = mode;
+        $$("[data-logo-mode]").forEach(function (btn) {
+          var active = btn.getAttribute("data-logo-mode") === mode;
+          btn.classList.toggle("is-active", active);
+          btn.setAttribute("aria-selected", active ? "true" : "false");
+        });
+        $("#sysStandardPanel").classList.toggle("hidden", mode !== "standard");
+        $("#sysCustomPanel").classList.toggle("hidden", mode !== "custom");
+        renderBrandPreview();
+      }
+
+      function renderBrandPreview() {
+        var name = ($("#sysProductName").value || "智能问数").trim() || "智能问数";
+        var logoImage = state.logoMode === "custom" && state.customLogo ? state.customLogo : state.standardLogo;
+        var mark = $("#sysBrandMark");
+        var previewLogo = $("#sysPreviewLogo");
+        mark.innerHTML = logoImage ? '<img src="' + logoImage + '" alt="Logo" />' : "数";
+        previewLogo.innerHTML = logoImage ? '<img src="' + logoImage + '" alt="Logo" />' : "数";
+        $("#sysBrandName").textContent = name;
+        $("#sysPreviewName").textContent = name;
+      }
+
+      function setTheme(themeKey) {
+        var theme = themeMap[themeKey] || themeMap.blue;
+        state.theme = themeMap[themeKey] ? themeKey : "blue";
+        $("#sysThemeSelect").value = state.theme;
+        var preview = $("#sysPreview");
+        preview.style.setProperty("--sys-preview-primary", theme.primary);
+        preview.style.setProperty("--sys-preview-accent", theme.accent);
+        preview.style.setProperty("--sys-preview-soft", theme.soft);
+        preview.style.setProperty("--sys-preview-bg", theme.bg);
+        $("#sysThemeName").textContent = theme.name;
+        $("#sysThemeSummary").innerHTML = [
+          '<div class="sys-swatches" aria-hidden="true">',
+          [theme.primary, theme.accent, theme.soft].map(function (color) {
+            return '<i class="sys-swatch" style="background:' + color + ';"></i>';
+          }).join(""),
+          '</div>',
+          '<span><strong>',
+          escapeHTML(theme.name),
+          '</strong>：',
+          escapeHTML(theme.desc),
+          '</span>'
+        ].join("");
+      }
+
+      function setLogoFile(file, config) {
+        if (!file) return;
+        if (!/^image\//.test(file.type || "")) {
+          if (typeof showToast === "function") showToast("请上传图片文件");
+          return;
+        }
+        var reader = new FileReader();
+        reader.onload = function () {
+          state[config.stateKey] = reader.result;
+          $(config.box).classList.add("has-file");
+          $(config.thumb).src = reader.result;
+          $(config.name).textContent = file.name;
+          renderBrandPreview();
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function resetLogo() {
+        state.standardLogo = "";
+        state.customLogo = "";
+        $("#sysProductName").value = "智能问数";
+        $("#sysStandardLogo").value = "";
+        $("#sysCustomLogo").value = "";
+        $("#sysStandardUploadBox").classList.remove("has-file", "is-drag-over");
+        $("#sysUploadBox").classList.remove("has-file", "is-drag-over");
+        setLogoMode("standard");
+        renderBrandPreview();
+        if (typeof showToast === "function") showToast("Logo 配置已恢复默认");
+      }
+
+      function bindEvents() {
+        $$("[data-logo-mode]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            setLogoMode(btn.getAttribute("data-logo-mode"));
+          });
+        });
+
+        $("#sysProductName").addEventListener("input", renderBrandPreview);
+
+        $("#sysStandardLogo").addEventListener("change", function () {
+          setLogoFile(this.files && this.files[0], {
+            stateKey: "standardLogo",
+            box: "#sysStandardUploadBox",
+            thumb: "#sysStandardUploadThumb",
+            name: "#sysStandardUploadName"
+          });
+        });
+
+        $("#sysCustomLogo").addEventListener("change", function () {
+          setLogoFile(this.files && this.files[0], {
+            stateKey: "customLogo",
+            box: "#sysUploadBox",
+            thumb: "#sysUploadThumb",
+            name: "#sysUploadName"
+          });
+        });
+
+        var standardUpload = $("#sysStandardUploadBox");
+        ["dragenter", "dragover"].forEach(function (ev) {
+          standardUpload.addEventListener(ev, function (e) {
+            e.preventDefault();
+            standardUpload.classList.add("is-drag-over");
+          });
+        });
+        ["dragleave", "dragend", "drop"].forEach(function (ev) {
+          standardUpload.addEventListener(ev, function (e) {
+            e.preventDefault();
+            standardUpload.classList.remove("is-drag-over");
+          });
+        });
+        standardUpload.addEventListener("drop", function (e) {
+          setLogoFile(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0], {
+            stateKey: "standardLogo",
+            box: "#sysStandardUploadBox",
+            thumb: "#sysStandardUploadThumb",
+            name: "#sysStandardUploadName"
+          });
+        });
+
+        $("#sysRemoveStandardLogo").addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          state.standardLogo = "";
+          $("#sysStandardLogo").value = "";
+          standardUpload.classList.remove("has-file");
+          renderBrandPreview();
+        });
+
+        var upload = $("#sysUploadBox");
+        ["dragenter", "dragover"].forEach(function (ev) {
+          upload.addEventListener(ev, function (e) {
+            e.preventDefault();
+            upload.classList.add("is-drag-over");
+          });
+        });
+        ["dragleave", "dragend", "drop"].forEach(function (ev) {
+          upload.addEventListener(ev, function (e) {
+            e.preventDefault();
+            upload.classList.remove("is-drag-over");
+          });
+        });
+        upload.addEventListener("drop", function (e) {
+          setLogoFile(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0], {
+            stateKey: "customLogo",
+            box: "#sysUploadBox",
+            thumb: "#sysUploadThumb",
+            name: "#sysUploadName"
+          });
+        });
+
+        $("#sysRemoveLogo").addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          state.customLogo = "";
+          $("#sysCustomLogo").value = "";
+          upload.classList.remove("has-file");
+          renderBrandPreview();
+        });
+
+        $("#sysThemeSelect").addEventListener("change", function () {
+          setTheme(this.value);
+        });
+
+        $("#sysLogoReset").addEventListener("click", resetLogo);
+        $("#sysLogoSave").addEventListener("click", function () {
+          if (typeof showToast === "function") showToast("Logo 配置已保存");
+        });
+        $("#sysThemeReset").addEventListener("click", function () { setTheme("blue"); });
+        $("#sysThemeSave").addEventListener("click", function () {
+          if (typeof showToast === "function") showToast("主题样式已保存");
+        });
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        bindEvents();
+        setLogoMode("standard");
+        setTheme("blue");
+        renderBrandPreview();
+      });
+    })();
+  </script>
+</body>
+</html>
