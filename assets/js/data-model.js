@@ -132,6 +132,40 @@
                 ['SOUTH', '华南', '王刚'],
                 ['NORTH', '华北', '张敏']
               ]
+            },
+            {
+              name: 'order_promotion_bridge', alias: '订单促销桥接', comment: '订单与促销活动多对多桥接表', type: 'bridge', rows: 280000,
+              pos: { x: 1080, y: 380 },
+              fields: [
+                f('order_id', '订单ID', 'BIGINT', { pk: true, fk: true, nn: true }),
+                f('promotion_id', '促销ID', 'VARCHAR(32)', { pk: true, nn: true }),
+                f('product_id', '产品ID', 'VARCHAR(16)', { fk: true }),
+                f('allocation_amount', '分摊金额', 'DECIMAL(12,2)'),
+                f('applied_at', '生效时间', 'DATETIME')
+              ],
+              preview: [
+                ['SO20260501001', 'PROMO-MAY-01', 'P-301', 128.00, '2026-05-01 10:18'],
+                ['SO20260501002', 'PROMO-MAY-02', 'P-205', 98.05, '2026-05-01 11:02'],
+                ['SO20260502001', 'PROMO-VIP-01', 'P-309', 450.00, '2026-05-02 15:26']
+              ]
+            },
+            {
+              name: 'sync_task_log', alias: '同步任务日志', comment: '模型同步与质量校验日志', type: 'other', rows: 180000,
+              pos: { x: 60, y: 500 },
+              fields: [
+                f('log_id', '日志ID', 'BIGINT', { pk: true, nn: true }),
+                f('task_name', '任务名称', 'VARCHAR(64)', { nn: true }),
+                f('source_table', '来源表', 'VARCHAR(64)'),
+                f('status', '执行状态', 'VARCHAR(16)'),
+                f('start_time', '开始时间', 'DATETIME'),
+                f('duration_ms', '耗时毫秒', 'INT'),
+                f('message', '说明', 'VARCHAR(256)')
+              ],
+              preview: [
+                [90001, '销售订单日同步', 'sales_order', 'SUCCESS', '2026-05-20 08:00:01', 4820, '增量同步完成'],
+                [90002, '订单明细质量校验', 'sales_order_item', 'SUCCESS', '2026-05-20 08:05:13', 3610, '主键重复率 0%'],
+                [90003, '促销桥接表同步', 'order_promotion_bridge', 'WARN', '2026-05-20 08:08:42', 5290, '存在 2 条延迟到达数据']
+              ]
             }
           ],
           // 关系：from/to = 表 name；fromField/toField = 字段 name；join = inner|left|right|full
@@ -345,14 +379,23 @@
     domain: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7l8-4 8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4"/><path d="M4 17l8 4 8-4"/></svg>',
     source: '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5V12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V5.5"/><path d="M5 12v6.5c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V12"/></svg>',
     chevron: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>',
-    table: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 3v18"/></svg>',
-    check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>'
+    table: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 3v18"/></svg>'
   };
 
   function tableMatches(table, keyword) {
     if (!keyword) return true;
     var k = keyword.toLowerCase();
     return (table.name + ' ' + (table.alias || '') + ' ' + (table.comment || '')).toLowerCase().indexOf(k) >= 0;
+  }
+
+  function getTableTypeMeta(type) {
+    var typeMap = {
+      dim: { key: 'dim', label: '维度表' },
+      fact: { key: 'fact', label: '事实表' },
+      bridge: { key: 'bridge', label: '桥接表' },
+      other: { key: 'other', label: '其它表' }
+    };
+    return typeMap[type] || typeMap.other;
   }
 
   function renderTree() {
@@ -380,17 +423,17 @@
 
         var tablesHTML = tablesToShow.map(function (t) {
           var inCanvas = !!t.inCanvas;
-          var rowCls = 'dmt-row dmt-table-row' + (inCanvas ? ' is-in-canvas' : '');
-          var statusBadge = inCanvas
-            ? '<span class="dmt-status dmt-status-on" title="已在画布上"><span class="dmt-status-ico">' + ICONS.check + '</span>已加</span>'
-            : '<span class="dmt-status dmt-status-off" title="未在画布上">未加</span>';
+          var typeMeta = getTableTypeMeta(t.type);
+          var rowCls = 'dmt-row dmt-table-row' + (inCanvas ? ' is-in-canvas' : ' is-not-in-canvas');
+          var typeBadge = '<span class="dmt-type dmt-type-' + typeMeta.key + '" title="' + typeMeta.label + '">' + typeMeta.label + '</span>';
+          var canvasTitle = inCanvas ? '已添加到画布' : '未添加到画布';
           return ''
             + '<div class="dmt-node leaf dmt-table-node" data-source-id="' + s.id + '" data-table-name="' + DM.escapeHTML(t.name) + '" draggable="true">'
-            +   '<div class="' + rowCls + '" data-source-id="' + s.id + '" data-table-name="' + DM.escapeHTML(t.name) + '" title="' + DM.escapeHTML(t.name) + (t.alias ? ' · ' + DM.escapeHTML(t.alias) : '') + '">'
+            +   '<div class="' + rowCls + '" data-source-id="' + s.id + '" data-table-name="' + DM.escapeHTML(t.name) + '" title="' + DM.escapeHTML(t.name) + (t.alias ? ' · ' + DM.escapeHTML(t.alias) : '') + ' · ' + typeMeta.label + ' · ' + canvasTitle + '">'
             +     '<span class="dmt-toggle empty"></span>'
             +     '<span class="dmt-icon">' + ICONS.table + '</span>'
             +     '<span class="dmt-label">' + DM.escapeHTML(t.alias || t.name) + '</span>'
-            +     statusBadge
+            +     typeBadge
             +   '</div>'
             + '</div>';
         }).join('');
@@ -2225,6 +2268,306 @@
     openDrawer();
   }
 
+  var FACT_FIELD_BIZ_OPTIONS = [
+    { key: 'dimension', label: '维度' },
+    { key: 'measure', label: '度量' },
+    { key: 'stat_time', label: '统计时间' },
+    { key: 'time', label: '时间' }
+  ];
+
+  var DIM_FIELD_BIZ_OPTIONS = [
+    { key: 'dim_code', label: '维度编码' },
+    { key: 'dim_name', label: '维度名称' },
+    { key: 'parent_code', label: '父类编码' },
+    { key: 'dim_attr', label: '维度属性' }
+  ];
+
+  var TIME_FORMATS = ['yyyy', 'yyyyMM', 'yyyyMMdd', 'yyyyMMdd HH', 'yyyyMMdd HH:mm', 'yyyyMMdd HH:mm:ss', 'yyyy-MM', 'yyyy-MM-dd', 'yyyy-MM-dd HH:mm:ss'];
+  var TABLE_TIME_DIM_TEMPLATES = [
+    { key: 'day', label: '按日', formula: 'DATE(?)' },
+    { key: 'week', label: '按周', formula: "DATE_FORMAT(?, '%Y-%u')" },
+    { key: 'month', label: '按月', formula: "DATE_FORMAT(?, '%Y-%m')" },
+    { key: 'quarter', label: '按季度', formula: "CONCAT(YEAR(?), '-Q', QUARTER(?))" },
+    { key: 'year', label: '按年', formula: 'YEAR(?)' }
+  ];
+
+  function optionLabel(options, key) {
+    for (var i = 0; i < options.length; i++) {
+      if (options[i].key === key) return options[i].label;
+    }
+    return key || '-';
+  }
+
+  function buildOptions(options, selected) {
+    var DM = window.__DM;
+    return options.map(function (opt) {
+      return '<option value="' + DM.escapeHTML(opt.key) + '"' + (opt.key === selected ? ' selected' : '') + '>' + DM.escapeHTML(opt.label) + '</option>';
+    }).join('');
+  }
+
+  function getTableTimeTemplate(key) {
+    for (var i = 0; i < TABLE_TIME_DIM_TEMPLATES.length; i++) {
+      if (TABLE_TIME_DIM_TEMPLATES[i].key === key) return TABLE_TIME_DIM_TEMPLATES[i];
+    }
+    return TABLE_TIME_DIM_TEMPLATES[0];
+  }
+
+  function ensureTableTimeDimensionMeta(table) {
+    if (!table) return;
+    if (table.isTimeDimension == null) table.isTimeDimension = false;
+    if (!table.timeDimTemplate) table.timeDimTemplate = TABLE_TIME_DIM_TEMPLATES[0].key;
+    var tpl = getTableTimeTemplate(table.timeDimTemplate);
+    if (!table.timeDimFormula) table.timeDimFormula = tpl.formula;
+  }
+
+  function renderTableTimeDimensionMeta(table) {
+    var DM = window.__DM;
+    if (!table || table.type !== 'dim') return '';
+    ensureTableTimeDimensionMeta(table);
+    var checked = table.isTimeDimension ? ' checked' : '';
+    var tpl = getTableTimeTemplate(table.timeDimTemplate);
+    var chipsHtml = TABLE_TIME_DIM_TEMPLATES.map(function (item) {
+      var active = item.key === tpl.key ? ' active' : '';
+      return '<button type="button" class="dmd-time-template-chip' + active + '" data-role="table-time-template" data-template-key="' + DM.escapeHTML(item.key) + '">' + DM.escapeHTML(item.label) + '</button>';
+    }).join('');
+    var templateHtml = table.isTimeDimension ? ''
+      + '<div class="dmd-time-template">'
+      +   '<div class="dmd-time-template-label">时间函数模板<span class="dmd-help" title="选择模板后会填入默认函数，下面的函数内容仍可手动修改。">?</span></div>'
+      +   '<div class="dmd-time-template-chips">' + chipsHtml + '</div>'
+      +   '<input class="dmd-time-formula" data-role="table-time-formula" value="' + DM.escapeHTML(table.timeDimFormula || tpl.formula) + '" />'
+      + '</div>' : '';
+    return ''
+      + '<div class="dmd-time-dim-meta">'
+      +   '<label class="dmd-time-dim-check">'
+      +     '<input type="checkbox" data-role="table-time-dim"' + checked + ' />'
+      +     '<span>是否时间维度</span>'
+      +     '<span class="dmd-help" title="用于标记日期、周、月、季度、年等时间维度表。">?</span>'
+      +   '</label>'
+      +   templateHtml
+      + '</div>';
+  }
+
+  function makeDimensionRef(sourceId, tableName) {
+    return sourceId + '::' + tableName;
+  }
+
+  function getDimensionTables() {
+    var DM = window.__DM;
+    var dims = [];
+    DM.DATA.forEach(function (domain) {
+      domain.sources.forEach(function (source) {
+        (source.tables || []).forEach(function (table) {
+          if (table.type !== 'dim') return;
+          dims.push({
+            domain: domain,
+            source: source,
+            table: table,
+            ref: makeDimensionRef(source.id, table.name)
+          });
+        });
+      });
+    });
+    return dims;
+  }
+
+  function findDimensionByRef(ref) {
+    if (!ref) return null;
+    var parts = String(ref).split('::');
+    if (parts.length !== 2) return null;
+    var found = window.__DM.findSource(parts[0]);
+    if (!found) return null;
+    var table = window.__DM.findTable(found.source, parts[1]);
+    if (!table || table.type !== 'dim') return null;
+    return { domain: found.domain, source: found.source, table: table, ref: ref };
+  }
+
+  function getDimensionLabel(ref) {
+    var item = findDimensionByRef(ref);
+    if (!item) return '';
+    return item.table.alias || item.table.name;
+  }
+
+  function dimMatches(item, keywords) {
+    var haystack = (item.table.name + ' ' + (item.table.alias || '') + ' ' + (item.table.comment || '') + ' ' + item.source.name + ' ' + item.domain.name).toLowerCase();
+    return keywords.some(function (kw) { return haystack.indexOf(kw) >= 0; });
+  }
+
+  function getDefaultDimensionRef(fld) {
+    var raw = (fld.name + ' ' + (fld.alias || '')).toLowerCase();
+    var keywordGroups = [];
+    if (/customer|客户/.test(raw)) keywordGroups.push(['customer', '客户']);
+    if (/product|产品/.test(raw)) keywordGroups.push(['product', '产品']);
+    if (/pay|支付/.test(raw)) keywordGroups.push(['pay', '支付']);
+    if (/channel|渠道/.test(raw)) keywordGroups.push(['channel', '渠道']);
+    if (/region|area|区域|地区/.test(raw)) keywordGroups.push(['region', '区域', '地区']);
+    if (/segment|分群/.test(raw)) keywordGroups.push(['segment', '分群']);
+    if (/tag|标签/.test(raw)) keywordGroups.push(['tag', '标签']);
+
+    var dims = getDimensionTables();
+    var activeSourceId = window.__DM.activeSourceId;
+    for (var g = 0; g < keywordGroups.length; g++) {
+      var preferred = dims.filter(function (item) {
+        return item.source.id === activeSourceId && dimMatches(item, keywordGroups[g]);
+      })[0];
+      if (preferred) return preferred.ref;
+
+      var any = dims.filter(function (item) {
+        return dimMatches(item, keywordGroups[g]);
+      })[0];
+      if (any) return any.ref;
+    }
+    return '';
+  }
+
+  function getDefaultFactBizType(fld) {
+    var raw = (fld.name + ' ' + (fld.alias || '') + ' ' + (fld.type || '')).toLowerCase();
+    var text = fld.name + ' ' + (fld.alias || '');
+    if (/date|time|日期|时间/.test(raw)) return /create|update|pay_time|applied|start|end|创建|更新|支付|生效|开始|结束/.test(raw) ? 'time' : 'stat_time';
+    if (fld.fk || /customer|product|channel|region|city|industry|segment|tag|客户|产品|渠道|区域|城市|行业|分群|标签/.test(raw)) return 'dimension';
+    if (/amount|price|qty|quantity|count|num|rate|sales|duration|金额|单价|数量|销量|销售|耗时|比率/.test(raw)) return 'measure';
+    if (fld.pk || /(^|_)id$|code$|编号|编码/.test(text.toLowerCase())) return 'dimension';
+    return 'dimension';
+  }
+
+  function getDefaultDimBizType(fld) {
+    var raw = (fld.name + ' ' + (fld.alias || '')).toLowerCase();
+    if (/parent|pid|父/.test(raw)) return 'parent_code';
+    if (/name|title|名称|名字/.test(raw)) return 'dim_name';
+    if (/(^|_)id$|code$|编码|编号/.test(raw)) return 'dim_code';
+    return 'dim_attr';
+  }
+
+  function getDefaultBusinessExtra(table, fld, bizType) {
+    var raw = (fld.name + ' ' + (fld.alias || '')).toLowerCase();
+    if (table.type === 'fact') {
+      if (bizType === 'dimension') {
+        return getDefaultDimensionRef(fld);
+      }
+      if (bizType === 'stat_time') return fld.type && /datetime|timestamp/i.test(fld.type) ? 'yyyyMMdd HH:mm:ss' : 'yyyyMMdd';
+      if (bizType === 'time') {
+        if (fld.type && /datetime|timestamp/i.test(fld.type)) return 'yyyy-MM-dd HH:mm:ss';
+        return fld.type && /date/i.test(fld.type) ? 'yyyy-MM-dd' : 'yyyyMMdd';
+      }
+    }
+    return '';
+  }
+
+  function ensureFieldBusinessMeta(table) {
+    if (!table || !table.fields) return;
+    var factKeys = FACT_FIELD_BIZ_OPTIONS.map(function (o) { return o.key; });
+    var dimKeys = DIM_FIELD_BIZ_OPTIONS.map(function (o) { return o.key; });
+    table.fields.forEach(function (fld) {
+      if (table.type === 'fact') {
+        if (factKeys.indexOf(fld.bizType) < 0) fld.bizType = getDefaultFactBizType(fld);
+        if (fld.bizType === 'dimension') {
+          if (!findDimensionByRef(fld.bizExtra)) fld.bizExtra = getDefaultBusinessExtra(table, fld, fld.bizType);
+        } else if (fld.bizExtra == null) {
+          fld.bizExtra = getDefaultBusinessExtra(table, fld, fld.bizType);
+        }
+      } else if (table.type === 'dim') {
+        if (dimKeys.indexOf(fld.bizType) < 0) fld.bizType = getDefaultDimBizType(fld);
+        fld.bizExtra = '';
+      } else {
+        fld.bizExtra = '';
+      }
+    });
+  }
+
+  function findFieldByName(table, fieldName) {
+    if (!table || !table.fields) return null;
+    for (var i = 0; i < table.fields.length; i++) {
+      if (table.fields[i].name === fieldName) return table.fields[i];
+    }
+    return null;
+  }
+
+  function buildDimensionPicker(value, fieldName) {
+    var DM = window.__DM;
+    var selected = findDimensionByRef(value);
+    var treeHtml = DM.DATA.map(function (domain) {
+      var sourceHtml = domain.sources.map(function (source) {
+        var tableHtml = (source.tables || []).filter(function (table) {
+          return table.type === 'dim';
+        }).map(function (table) {
+          var ref = makeDimensionRef(source.id, table.name);
+          var active = ref === value ? ' active' : '';
+          var label = table.alias || table.name;
+          return ''
+            + '<button type="button" class="dmd-biz-tree-table' + active + '" data-role="biz-picker-option" data-field-name="' + DM.escapeHTML(fieldName) + '" data-kind="dimension" data-value="' + DM.escapeHTML(ref) + '" data-label="' + DM.escapeHTML(label) + '">'
+            +   '<span class="dmd-biz-tree-name">' + DM.escapeHTML(label) + '</span>'
+            +   '<span class="dmd-biz-tree-code">' + DM.escapeHTML(table.name) + '</span>'
+            + '</button>';
+        }).join('');
+        if (!tableHtml) return '';
+        return ''
+          + '<div class="dmd-biz-tree-source">'
+          +   '<span class="dmd-biz-tree-caret"></span>'
+          +   '<span class="dmd-biz-tree-icon source"></span>'
+          +   '<span class="dmd-biz-tree-label">' + DM.escapeHTML(source.name) + '</span>'
+          + '</div>'
+          + '<div class="dmd-biz-tree-children">' + tableHtml + '</div>';
+      }).join('');
+      if (!sourceHtml.replace(/\s/g, '')) return '';
+      return ''
+        + '<div class="dmd-biz-tree-domain">'
+        +   '<span class="dmd-biz-tree-caret"></span>'
+        +   '<span class="dmd-biz-tree-icon domain"></span>'
+        +   '<span class="dmd-biz-tree-label">' + DM.escapeHTML(domain.name) + '</span>'
+        + '</div>'
+        + '<div class="dmd-biz-tree-children">' + sourceHtml + '</div>';
+    }).join('');
+    if (!treeHtml.replace(/\s/g, '')) treeHtml = '<div class="dmd-biz-menu-empty">暂无可选维度表</div>';
+    return ''
+      + '<div class="dmd-biz-picker-wrap" data-role="biz-picker" data-field-name="' + DM.escapeHTML(fieldName) + '" data-kind="dimension">'
+      +   '<button type="button" class="dmd-biz-picker" data-role="biz-picker-trigger">'
+      +     '<span>' + DM.escapeHTML(selected ? (selected.table.alias || selected.table.name) : '请选择维度') + '</span>'
+      +     '<i></i>'
+      +   '</button>'
+      +   '<div class="dmd-biz-menu dmd-biz-tree-menu hidden">'
+      +     '<div class="dmd-biz-menu-title">来源数据模型</div>'
+      +     treeHtml
+      +   '</div>'
+      + '</div>';
+  }
+
+  function buildFactBusinessExtra(table, fld) {
+    var DM = window.__DM;
+    var fieldName = fld.name;
+    if (fld.bizType === 'measure') {
+      return '<span class="dmd-biz-muted">无需配置</span>';
+    }
+    if (fld.bizType === 'dimension') {
+      return buildDimensionPicker(fld.bizExtra, fieldName);
+    }
+    if (fld.bizType === 'stat_time' || fld.bizType === 'time') {
+      var selected = fld.bizExtra || getDefaultBusinessExtra(table, fld, fld.bizType);
+      var opts = TIME_FORMATS.map(function (fmt) {
+        return '<option value="' + DM.escapeHTML(fmt) + '"' + (fmt === selected ? ' selected' : '') + '>' + DM.escapeHTML(fmt) + '</option>';
+      }).join('');
+      return '<select class="dmd-biz-extra-select" data-role="field-biz-extra" data-field-name="' + DM.escapeHTML(fieldName) + '">' + opts + '</select>';
+    }
+    return '';
+  }
+
+  function buildBusinessCell(table, fld) {
+    var DM = window.__DM;
+    ensureFieldBusinessMeta(table);
+    if (table.type === 'fact') {
+      return ''
+        + '<div class="dmd-biz-cell">'
+        +   '<select class="dmd-biz-select" data-role="field-biz-type" data-field-name="' + DM.escapeHTML(fld.name) + '">' + buildOptions(FACT_FIELD_BIZ_OPTIONS, fld.bizType) + '</select>'
+        +   '<span class="dmd-biz-extra" data-role="field-biz-extra-wrap">' + buildFactBusinessExtra(table, fld) + '</span>'
+        + '</div>';
+    }
+    if (table.type === 'dim') {
+      return ''
+        + '<div class="dmd-biz-cell dmd-biz-cell-compact">'
+        +   '<select class="dmd-biz-select" data-role="field-biz-type" data-field-name="' + DM.escapeHTML(fld.name) + '">' + buildOptions(DIM_FIELD_BIZ_OPTIONS, fld.bizType) + '</select>'
+        + '</div>';
+    }
+    return '<span class="dmd-biz-disabled">--</span>';
+  }
+
   // ---- 表属性渲染 ----
   function renderTableDrawer(table) {
     var DM = window.__DM;
@@ -2236,13 +2579,17 @@
 
     titleEl.textContent = (table.alias ? table.alias + ' · ' : '') + table.name;
     subEl.textContent = '所属数据源：' + (found ? found.source.name : '-') + ' · ' + (table.comment || '');
+    ensureFieldBusinessMeta(table);
 
     var TYPE_OPTIONS = [
       { key: 'fact', label: '事实表' },
       { key: 'dim', label: '维度表' },
-      { key: 'bridge', label: '桥接表' }
+      { key: 'bridge', label: '桥接表' },
+      { key: 'other', label: '其它表' }
     ];
     var curType = table.type || 'fact';
+    table.type = curType;
+    if (curType === 'dim') ensureTableTimeDimensionMeta(table);
     var typeOptionsHtml = TYPE_OPTIONS.map(function (o) {
       return '<option value="' + o.key + '"' + (o.key === curType ? ' selected' : '') + '>' + o.label + '</option>';
     }).join('');
@@ -2258,6 +2605,7 @@
       +     '<span class="val">'
       +       '<select class="dmd-meta-select" data-role="table-type">' + typeOptionsHtml + '</select>'
       +     '</span>'
+      +     renderTableTimeDimensionMeta(table)
       +     '<span class="lbl">字段数</span><span class="val">' + table.fields.length + '</span>'
       +     '<span class="lbl">记录数</span><span class="val">' + (table.rows != null ? table.rows.toLocaleString() : '-') + '</span>'
       +   '</div>'
@@ -2280,15 +2628,18 @@
         +   '<td>' + DM.escapeHTML(fld.alias || '-') + '</td>'
         +   '<td>' + DM.escapeHTML(fld.type) + '</td>'
         +   '<td>' + (attrs.join('') || '-') + '</td>'
+        +   '<td>' + buildBusinessCell(table, fld) + '</td>'
         + '</tr>';
     }).join('');
 
     var schemaHtml = ''
       + '<div class="dmd-tab-pane" data-pane="schema">'
-      +   '<table class="dmd-table">'
-      +     '<thead><tr><th>字段名</th><th>别名</th><th>类型</th><th>属性</th></tr></thead>'
-      +     '<tbody>' + schemaRows + '</tbody>'
-      +   '</table>'
+      +   '<div class="dmd-schema-wrap">'
+      +     '<table class="dmd-table dmd-schema-table">'
+      +       '<thead><tr><th>字段名</th><th>别名</th><th>类型</th><th>技术属性</th><th>业务属性</th></tr></thead>'
+      +       '<tbody>' + schemaRows + '</tbody>'
+      +     '</table>'
+      +   '</div>'
       + '</div>';
 
     var previewHead = '<tr>' + table.fields.map(function (f) {
@@ -2589,7 +2940,7 @@
     document.addEventListener('mousemove', function (e) {
       if (!dragging) return;
       var dx = startX - e.clientX;
-      var nextW = Math.max(320, Math.min(window.innerWidth * 0.9, startW + dx));
+      var nextW = Math.max(760, Math.min(window.innerWidth * 0.92, startW + dx));
       drawer.style.width = nextW + 'px';
     });
 
@@ -2621,6 +2972,65 @@
 
     if (drawerBody) {
       drawerBody.addEventListener('click', function (e) {
+        var pickerOption = e.target.closest && e.target.closest('[data-role="biz-picker-option"]');
+        if (pickerOption) {
+          var DM = window.__DM;
+          if (!DM.selection || DM.selection.type !== 'table') return;
+          var found = DM.findSource(DM.activeSourceId);
+          var table = found && DM.findTable(found.source, DM.selection.id);
+          var fieldName = pickerOption.getAttribute('data-field-name');
+          var field = table && findFieldByName(table, fieldName);
+          if (!field) return;
+          field.bizExtra = pickerOption.getAttribute('data-value') || '';
+          var pickerWrap = pickerOption.closest('[data-role="biz-picker"]');
+          if (pickerWrap) {
+            var label = pickerWrap.querySelector('.dmd-biz-picker span');
+            var menu = pickerWrap.querySelector('.dmd-biz-menu');
+            var selectedLabel = pickerOption.getAttribute('data-label') || getDimensionLabel(field.bizExtra) || '请选择维度';
+            if (label) label.textContent = selectedLabel;
+            if (menu) {
+              menu.querySelectorAll('.dmd-biz-tree-table.active').forEach(function (item) {
+                item.classList.remove('active');
+              });
+              pickerOption.classList.add('active');
+            }
+            if (menu) menu.classList.add('hidden');
+          }
+          return;
+        }
+
+        var pickerTrigger = e.target.closest && e.target.closest('[data-role="biz-picker-trigger"]');
+        if (pickerTrigger) {
+          var currentWrap = pickerTrigger.closest('[data-role="biz-picker"]');
+          var currentMenu = currentWrap && currentWrap.querySelector('.dmd-biz-menu');
+          drawerBody.querySelectorAll('.dmd-biz-menu').forEach(function (menu) {
+            if (menu !== currentMenu) menu.classList.add('hidden');
+          });
+          if (currentMenu) currentMenu.classList.toggle('hidden');
+          return;
+        }
+
+        if (!e.target.closest || !e.target.closest('[data-role="biz-picker"]')) {
+          drawerBody.querySelectorAll('.dmd-biz-menu').forEach(function (menu) {
+            menu.classList.add('hidden');
+          });
+        }
+
+        var timeTemplateBtn = e.target.closest && e.target.closest('[data-role="table-time-template"]');
+        if (timeTemplateBtn) {
+          var DMTime = window.__DM;
+          if (!DMTime.selection || DMTime.selection.type !== 'table') return;
+          var foundTime = DMTime.findSource(DMTime.activeSourceId);
+          var tableTime = foundTime && DMTime.findTable(foundTime.source, DMTime.selection.id);
+          if (!tableTime || tableTime.type !== 'dim') return;
+          var selectedTpl = getTableTimeTemplate(timeTemplateBtn.getAttribute('data-template-key'));
+          tableTime.timeDimTemplate = selectedTpl.key;
+          tableTime.timeDimFormula = selectedTpl.formula;
+          tableTime.isTimeDimension = true;
+          renderTableDrawer(tableTime);
+          return;
+        }
+
         var tabBtn = e.target.closest && e.target.closest('.dmd-tab');
         if (tabBtn) {
           var key = tabBtn.getAttribute('data-tab');
@@ -2634,19 +3044,83 @@
         }
       });
 
-      // 表属性 - 类型下拉
+      // 表属性 - 类型 / 时间维度
       drawerBody.addEventListener('change', function (e) {
         var DM = window.__DM;
         if (!DM.selection || DM.selection.type !== 'table') return;
-        var sel = e.target.closest && e.target.closest('select[data-role="table-type"]');
-        if (!sel) return;
         var found = DM.findSource(DM.activeSourceId);
         var table = found && DM.findTable(found.source, DM.selection.id);
         if (!table) return;
+
+        var timeDim = e.target.closest && e.target.closest('input[data-role="table-time-dim"]');
+        if (timeDim) {
+          if (table.type !== 'dim') return;
+          ensureTableTimeDimensionMeta(table);
+          table.isTimeDimension = timeDim.checked;
+          if (table.isTimeDimension && !table.timeDimFormula) {
+            table.timeDimFormula = getTableTimeTemplate(table.timeDimTemplate).formula;
+          }
+          renderTableDrawer(table);
+          return;
+        }
+
+        var sel = e.target.closest && e.target.closest('select[data-role="table-type"]');
+        if (!sel) return;
         table.type = sel.value;
+        if (table.type === 'dim') ensureTableTimeDimensionMeta(table);
+        ensureFieldBusinessMeta(table);
+        renderTree();
+        renderTableDrawer(table);
         if (typeof showToast === 'function') {
-          var labelMap = { fact: '事实表', dim: '维度表', bridge: '桥接表' };
+          var labelMap = { fact: '事实表', dim: '维度表', bridge: '桥接表', other: '其它表' };
           showToast('表类型已更新为 ' + (labelMap[sel.value] || sel.value));
+        }
+        return;
+      });
+
+      drawerBody.addEventListener('input', function (e) {
+        var DM = window.__DM;
+        if (!DM.selection || DM.selection.type !== 'table') return;
+        var formulaInput = e.target.closest && e.target.closest('input[data-role="table-time-formula"]');
+        if (!formulaInput) return;
+        var found = DM.findSource(DM.activeSourceId);
+        var table = found && DM.findTable(found.source, DM.selection.id);
+        if (!table || table.type !== 'dim') return;
+        ensureTableTimeDimensionMeta(table);
+        table.timeDimFormula = formulaInput.value;
+      });
+
+      // 表结构 - 业务属性联动
+      drawerBody.addEventListener('change', function (e) {
+        var DM = window.__DM;
+        if (!DM.selection || DM.selection.type !== 'table') return;
+        var found = DM.findSource(DM.activeSourceId);
+        var table = found && DM.findTable(found.source, DM.selection.id);
+        if (!table) return;
+
+        var bizSel = e.target.closest && e.target.closest('select[data-role="field-biz-type"]');
+        if (bizSel) {
+          var fieldName = bizSel.getAttribute('data-field-name');
+          var fld = findFieldByName(table, fieldName);
+          if (!fld) return;
+          fld.bizType = bizSel.value;
+          fld.bizExtra = getDefaultBusinessExtra(table, fld, fld.bizType);
+          var cell = bizSel.closest('.dmd-biz-cell');
+          var extraWrap = cell && cell.querySelector('[data-role="field-biz-extra-wrap"]');
+          if (extraWrap) extraWrap.innerHTML = buildFactBusinessExtra(table, fld);
+          if (typeof showToast === 'function') {
+            var opts = table.type === 'dim' ? DIM_FIELD_BIZ_OPTIONS : FACT_FIELD_BIZ_OPTIONS;
+            showToast('业务属性已更新为 ' + optionLabel(opts, fld.bizType));
+          }
+          return;
+        }
+
+        var extraSel = e.target.closest && e.target.closest('select[data-role="field-biz-extra"]');
+        if (extraSel) {
+          var extraFieldName = extraSel.getAttribute('data-field-name');
+          var extraFld = findFieldByName(table, extraFieldName);
+          if (!extraFld) return;
+          extraFld.bizExtra = extraSel.value;
         }
       });
     }

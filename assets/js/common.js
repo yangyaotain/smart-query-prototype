@@ -393,7 +393,8 @@ function goTo(path) {
       children: [
         { name: "指标体系", href: "knowledge-indicator.html", match: ["knowledge.html", "knowledge-indicator", "knowledge-indicator-create"] },
         { name: "示例库", href: "knowledge-example.html", match: ["knowledge-example"] },
-        { name: "行业知识", href: "knowledge-faq.html", match: ["knowledge-faq"] }
+        { name: "行业知识", href: "knowledge-faq.html", match: ["knowledge-faq"] },
+        { name: "自定义指令", href: "knowledge-instructions.html", match: ["knowledge-instructions"] }
       ]
     },
     {

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>自定义指令 - 智能问数管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/admin.css" />
+  <style>
+    .instruction-page {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .instruction-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 20px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(15,23,42,.05);
+    }
+
+    .instruction-head h1 {
+      margin: 0;
+      color: #0f172a;
+      font-size: 22px;
+      line-height: 1.25;
+    }
+
+    .instruction-head p {
+      margin: 8px 0 0;
+      color: #64748b;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .instruction-status {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 30px;
+      padding: 0 10px;
+      color: #166534;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .instruction-status.is-dirty {
+      color: #92400e;
+      background: #fffbeb;
+      border-color: #fde68a;
+    }
+
+    .instruction-grid {
+      display: block;
+    }
+
+    .instruction-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(15,23,42,.05);
+      overflow: hidden;
+    }
+
+    .instruction-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid #eef2f7;
+    }
+
+    .instruction-card-head h2 {
+      margin: 0;
+      color: #0f172a;
+      font-size: 16px;
+    }
+
+    .instruction-card-head span {
+      color: #94a3b8;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .instruction-editor {
+      padding: 18px;
+    }
+
+    .instruction-editor textarea {
+      width: 100%;
+      min-height: 420px;
+      padding: 14px 15px;
+      color: #1f2937;
+      background: #fbfdff;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      resize: vertical;
+      outline: none;
+      font-family: inherit;
+      font-size: 13px;
+      line-height: 1.75;
+      transition: border-color .15s, box-shadow .15s, background .15s;
+    }
+
+    .instruction-editor textarea:focus {
+      background: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(22,119,255,.14);
+    }
+
+    .instruction-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .instruction-hint {
+      color: #94a3b8;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .instruction-buttons {
+      display: inline-flex;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+
+    @media (max-width: 1080px) {
+      .instruction-grid {
+        display: block;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
+      <div class="admin-brand"><div class="logo">管</div><span>智能问数管理后台</span></div>
+      <nav class="admin-menu"></nav>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <strong>自定义指令</strong>
+        <div class="toolbar">
+          <button class="secondary-btn icon-btn" onclick="goTo('../business/smart-query.html')">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/>
+              <path d="M5.6 5.6l2.1 2.1"/><path d="M16.3 16.3l2.1 2.1"/>
+              <path d="M5.6 18.4l2.1-2.1"/><path d="M16.3 7.7l2.1-2.1"/>
+              <circle cx="12" cy="12" r="3.4"/>
+            </svg>
+            智能问数
+          </button>
+          <button class="user-trigger" type="button">
+            <div class="avatar">张</div><strong>张三</strong><span class="dropdown-arrow"></span>
+          </button>
+        </div>
+      </header>
+
+      <section class="admin-content instruction-page">
+        <div class="instruction-head">
+          <div>
+            <h1>自定义指令</h1>
+            <p>为你的智能问数向大模型提供额外说明和上下文。</p>
+          </div>
+          <div class="instruction-status" id="instructionStatus">已保存</div>
+        </div>
+
+        <div class="instruction-grid">
+          <div class="instruction-card">
+            <div class="instruction-card-head">
+              <h2>指令内容</h2>
+              <span id="instructionCount">0 / 4000</span>
+            </div>
+            <div class="instruction-editor">
+              <textarea id="instructionInput" maxlength="4000" spellcheck="false"></textarea>
+              <div class="instruction-actions">
+                <div class="instruction-hint">保存后，该说明会作为智能问数回答时的长期上下文参与演示。</div>
+                <div class="instruction-buttons">
+                  <button type="button" class="ghost-btn" id="instructionReset">恢复常用要求</button>
+                  <button type="button" class="primary-btn" id="instructionSave">保存</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../../assets/js/common.js?v=20260519-system-config"></script>
+  <script>
+    (function () {
+      var STORE_KEY = 'smart-query-custom-instructions';
+      var STORE_VERSION_KEY = STORE_KEY + '-version';
+      var CURRENT_VERSION = '20260520-common-instructions-v2';
+      var DEFAULT_TEXT = [
+        '回答智能问数问题时，请遵循以下常用指令要求，保持口径准确、表达清晰、结论先行。',
+        '',
+        '一、角色与业务口径',
+        '- 你是企业智能问数助手，回答时优先使用知识库中已维护的指标名称、指标口径、同义词和数据模型。',
+        '- 不自行创造指标，不把样例数据、预测值或估算值表述为真实数据。',
+        '- 当前重点关注收入、服务费、CA 证书收入、非招成交金额、客户转化效率、订单、客户、渠道等经营类指标。',
+        '- 当用户问题存在多个可能口径时，先说明采用的默认口径；如口径差异会影响结论，应提示用户确认。',
+        '',
+        '二、数值与格式',
+        '- 金额默认使用“万元”展示；金额、均值、比例、增长率等数值默认保留小数点后两位。',
+        '- 百分比按 12.34% 这种格式展示，不展示为 0.1234。',
+        '- 大额金额可使用“亿元”，但同一回答中的单位必须保持一致。',
+        '- 排名、占比、同比、环比结果需说明计算口径；差异分析同时给出绝对差值和相对变化率。',
+        '- 数值为 0、为空或无数据时要明确说明，不要省略或猜测。',
+        '',
+        '三、时间范围与对比',
+        '- 用户未指定时间范围时，默认按最近 30 日理解，并在回答中说明该时间假设。',
+        '- 用户提到“本月”“上月”“本季度”“今年”时，默认按自然时间周期理解。',
+        '- 涉及同比时，对比去年同期；涉及环比时，对比上一相邻周期。',
+        '- 如果当前周期数据未完整，要提示“当前周期数据可能未完整”。',
+        '',
+        '四、回答结构',
+        '- 先给结论，再补充关键数据、变化趋势和必要的口径说明。',
+        '- 面向业务人员表达，避免直接暴露 SQL、物理表名、物理字段名或技术实现细节。',
+        '- 趋势类问题说明上升、下降或持平，并指出关键变化点。',
+        '- 排名类问题默认展示 Top 10，除非用户指定数量。',
+        '- 异常类问题需要指出异常时间、异常对象、异常幅度和可能原因。',
+        '',
+        '五、图表与展示建议',
+        '- 时间趋势优先建议折线图。',
+        '- 分类对比优先建议柱状图。',
+        '- 占比结构优先建议饼图或环形图。',
+        '- 明细列表优先建议表格。',
+        '- 地域分布优先建议地图或区域排行表。',
+        '',
+        '六、风险与边界',
+        '- 对不确定的数据口径、缺失的筛选条件或可能存在歧义的问法，要提示需要确认。',
+        '- 不编造数据来源、统计周期或不存在的指标。',
+        '- 涉及权限、敏感客户、个人信息时，只给汇总分析，不输出手机号、证件号、客户明细等隐私数据。',
+        '- 权限不足或数据不可见时，说明无法查看对应数据，并建议用户调整权限或筛选范围。'
+      ].join('\n');
+      var LEGACY_DEFAULT_MARKERS = [
+        '回答智能问数问题时，请优先使用公司内部指标体系中的标准名称和口径。',
+        '回答智能问数问题时，请遵循以下常用指令要求：'
+      ];
+
+      var input = document.getElementById('instructionInput');
+      var count = document.getElementById('instructionCount');
+      var status = document.getElementById('instructionStatus');
+      var saveBtn = document.getElementById('instructionSave');
+      var resetBtn = document.getElementById('instructionReset');
+
+      function isLegacyDefaultValue(value) {
+        if (!value) return true;
+        if (value.indexOf('二、数值与格式') >= 0 && value.indexOf('五、图表与展示建议') >= 0) return false;
+        return LEGACY_DEFAULT_MARKERS.some(function (marker) {
+          return value.indexOf(marker) >= 0;
+        });
+      }
+
+      function loadValue() {
+        try {
+          var saved = localStorage.getItem(STORE_KEY);
+          var version = localStorage.getItem(STORE_VERSION_KEY);
+          if (!saved) {
+            localStorage.setItem(STORE_VERSION_KEY, CURRENT_VERSION);
+            return DEFAULT_TEXT;
+          }
+          if (version !== CURRENT_VERSION && isLegacyDefaultValue(saved)) {
+            localStorage.setItem(STORE_KEY, DEFAULT_TEXT);
+            localStorage.setItem(STORE_VERSION_KEY, CURRENT_VERSION);
+            return DEFAULT_TEXT;
+          }
+          return saved;
+        } catch (e) {
+          return DEFAULT_TEXT;
+        }
+      }
+
+      function updateCount() {
+        count.textContent = String((input.value || '').length) + ' / 4000';
+      }
+
+      function markDirty() {
+        status.textContent = '未保存';
+        status.classList.add('is-dirty');
+        updateCount();
+      }
+
+      function markSaved() {
+        status.textContent = '已保存';
+        status.classList.remove('is-dirty');
+        updateCount();
+      }
+
+      function saveValue() {
+        try {
+          localStorage.setItem(STORE_KEY, input.value || '');
+          localStorage.setItem(STORE_VERSION_KEY, CURRENT_VERSION);
+        } catch (e) {}
+        markSaved();
+        if (typeof showToast === 'function') showToast('自定义指令已保存');
+      }
+
+      function fillValue(text) {
+        input.value = text || '';
+        markDirty();
+        input.focus();
+      }
+
+      input.value = loadValue();
+      markSaved();
+
+      input.addEventListener('input', markDirty);
+      saveBtn.addEventListener('click', saveValue);
+      resetBtn.addEventListener('click', function () { fillValue(DEFAULT_TEXT); });
+    })();
+  </script>
+</body>
+</html>
