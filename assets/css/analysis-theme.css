@@ -66,12 +66,12 @@
   align-items: center;
   justify-content: center;
   color: #fff;
-  background: linear-gradient(135deg, var(--primary), #4f9cff);
+  background: linear-gradient(135deg, var(--primary), var(--primary-accent-strong));
   border: 0;
   border-radius: 8px;
   cursor: pointer;
   transition: filter .15s, transform .04s;
-  box-shadow: 0 6px 14px rgba(22,119,255,.28);
+  box-shadow: 0 6px 14px rgba(var(--primary-rgb), .28);
 }
 .at-side-add:hover { filter: brightness(1.06); }
 .at-side-add:active { transform: translateY(1px); }
@@ -98,7 +98,7 @@
 }
 .at-side-search input:focus {
   background: #fff;
-  border-color: #bfdbfe;
+  border-color: var(--primary-border);
 }
 .at-side-search svg {
   position: absolute;
@@ -134,12 +134,12 @@
 }
 
 .at-theme-item:hover {
-  background: #f4f8ff;
+  background: var(--primary-hover-bg);
   color: var(--primary);
 }
 
 .at-theme-item.is-active {
-  background: linear-gradient(90deg, #eaf3ff 0%, #f8fbff 100%);
+  background: linear-gradient(90deg, var(--primary-soft) 0%, var(--primary-panel-bg) 100%);
   color: var(--primary);
   font-weight: 700;
 }
@@ -202,7 +202,7 @@
 
 .at-theme-item.is-active .at-th-count {
   color: var(--primary);
-  background: #dbeafe;
+  background: var(--primary-border-soft);
 }
 
 .at-theme-item.is-dragging {
@@ -236,7 +236,7 @@
 .at-detail-card {
   padding: 18px 20px;
   background: linear-gradient(120deg, #f5f9ff 0%, #ffffff 80%);
-  border: 1px solid #d6e8ff;
+  border: 1px solid var(--primary-border-soft);
   border-radius: 14px;
   box-shadow: var(--soft-shadow, 0 8px 24px rgba(17,24,39,.06));
   display: flex;
@@ -354,8 +354,8 @@
 }
 .at-detail-actions .at-icon-btn:hover {
   color: var(--primary);
-  background: #f4f8ff;
-  border-color: #bfdbfe;
+  background: var(--primary-hover-bg);
+  border-color: var(--primary-border);
 }
 .at-detail-actions .at-icon-btn.is-danger:hover {
   color: #ef4444;
@@ -423,7 +423,7 @@
   font-size: 11.5px;
   font-weight: 700;
   color: var(--primary);
-  background: #eaf3ff;
+  background: var(--primary-soft);
   border-radius: 10px;
 }
 
@@ -483,7 +483,7 @@
 
 .at-search-wrap input:focus {
   background: #fff;
-  border-color: #bfdbfe;
+  border-color: var(--primary-border);
 }
 
 .at-search-wrap svg {
@@ -515,7 +515,7 @@
 }
 .at-filter-select:focus {
   background-color: #fff;
-  border-color: #bfdbfe;
+  border-color: var(--primary-border);
 }
 
 .at-models-tablewrap {
@@ -551,7 +551,7 @@
 }
 
 .at-models-table tbody tr:hover td {
-  background: #f8fbff;
+  background: var(--primary-panel-bg);
 }
 
 .at-models-table tbody tr:last-child td {
@@ -574,22 +574,22 @@
 }
 
 .at-mname.is-clickable:hover {
-  background: #eff6ff;
+  background: var(--primary-hover-bg);
 }
 
 .at-mname.is-clickable:hover .at-mname-text strong {
-  color: var(--primary, #1677ff);
+  color: var(--primary);
   text-decoration: underline;
   text-underline-offset: 3px;
   text-decoration-thickness: 1px;
 }
 
 .at-models-table tbody tr.at-model-row.is-active td {
-  background: #eff6ff;
+  background: var(--primary-hover-bg);
 }
 
 .at-models-table tbody tr.at-model-row.is-active .at-mname-text strong {
-  color: var(--primary, #1677ff);
+  color: var(--primary);
 }
 
 .at-mname-ico {
@@ -600,7 +600,7 @@
   align-items: center;
   justify-content: center;
   color: #fff;
-  background: linear-gradient(135deg, #4f9cff, #1677ff);
+  background: linear-gradient(135deg, var(--primary-accent-strong), var(--primary));
   border-radius: 8px;
   font-size: 12px;
   font-weight: 800;
@@ -633,8 +633,8 @@
   gap: 5px;
   height: 22px;
   padding: 0 9px;
-  background: #eef4ff;
-  color: #1e40af;
+  background: var(--primary-soft);
+  color: var(--primary-dark);
   border-radius: 999px;
   font-size: 11.5px;
   font-weight: 700;
@@ -644,7 +644,7 @@
   content: '';
   display: inline-block;
   width: 6px; height: 6px;
-  background: #1677ff;
+  background: var(--primary);
   border-radius: 50%;
 }
 
@@ -739,7 +739,7 @@
 
 .at-ctx-item:hover {
   color: var(--primary);
-  background: #f4f8ff;
+  background: var(--primary-hover-bg);
 }
 
 .at-ctx-item.is-danger { color: #ef4444; }
@@ -800,7 +800,7 @@
 .at-form-control input:focus,
 .at-form-control textarea:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(22,119,255,.14);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), .14);
 }
 
 .at-form-counter {
@@ -878,7 +878,7 @@
 
 .atp-source-search input:focus {
   background: #fff;
-  border-color: #bfdbfe;
+  border-color: var(--primary-border);
 }
 
 .atp-source-search svg {
@@ -917,7 +917,7 @@
   user-select: none;
 }
 
-.atp-domain-head:hover { background: #eef4ff; }
+.atp-domain-head:hover { background: var(--primary-soft); }
 
 .atp-domain-head .chev {
   width: 14px;
@@ -977,7 +977,7 @@
 }
 
 .atp-source-item:hover {
-  background: #eef4ff;
+  background: var(--primary-soft);
   color: var(--primary);
 }
 
@@ -986,7 +986,7 @@
 }
 
 .atp-source-item.is-active {
-  background: linear-gradient(90deg, #dbeafe 0%, #f0f7ff 100%);
+  background: linear-gradient(90deg, var(--primary-border-soft) 0%, var(--primary-bg) 100%);
   color: var(--primary);
   font-weight: 700;
 }
@@ -994,7 +994,7 @@
 .atp-source-item.is-active::before {
   background: var(--primary);
   transform: scale(1.15);
-  box-shadow: 0 0 0 2px rgba(22, 119, 255, .15);
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), .15);
 }
 
 .atp-source-item > span:first-of-type {
@@ -1126,20 +1126,20 @@
 }
 
 .atp-model-card:hover {
-  border-color: #bfdbfe;
-  background: #f8fbff;
+  border-color: var(--primary-border);
+  background: var(--primary-panel-bg);
 }
 
 .atp-model-card.is-checked {
   border-color: var(--primary);
-  background: #eff6ff;
-  box-shadow: 0 4px 14px rgba(22,119,255,.12);
+  background: var(--primary-hover-bg);
+  box-shadow: 0 4px 14px rgba(var(--primary-rgb), .12);
 }
 
 .atp-model-card.is-disabled {
   cursor: not-allowed;
   background: #f8fafc;
-  border-color: #dbeafe;
+  border-color: var(--primary-border-soft);
 }
 
 .atp-model-head {
@@ -1208,7 +1208,7 @@
 
 .atp-model-card.is-checked .atp-model-tag {
   color: var(--primary);
-  background: #dbeafe;
+  background: var(--primary-border-soft);
 }
 
 .atp-model-code {

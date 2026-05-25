@@ -89,7 +89,22 @@ const resultChartData = [
   { name: "6月", value: 3248 }
 ];
 
-const resultChartPalette = ["#1677ff", "#3b82f6", "#60a5fa", "#93c5fd", "#bfdbfe", "#dbeafe"];
+function getSmartQueryChartTheme() {
+  return window.getSmartQueryThemeColors();
+}
+
+function getResultChartPalette() {
+  const theme = getSmartQueryChartTheme();
+  return [
+    theme.primary,
+    theme.primaryAccent,
+    theme.focusBorder,
+    theme.primaryBorder,
+    theme.primaryBorderSoft,
+    "#fbbf24",
+    "#f59e0b"
+  ];
+}
 
 const feedbackRecords = {
   sql: {
@@ -1301,6 +1316,7 @@ function renderReportChart(dom) {
 }
 
 function buildReportChartOption() {
+  const theme = getSmartQueryChartTheme();
   const months = resultChartData.map((d) => d.name);
   const values = resultChartData.map((d) => d.value);
   const anomalyIndex = resultChartData.findIndex((d) => d.anomaly);
@@ -1318,7 +1334,7 @@ function buildReportChartOption() {
       textStyle: { color: "#fff", fontSize: 12 },
       axisPointer: {
         type: "line",
-        lineStyle: { color: "#cfe4ff", width: 1, type: "dashed" }
+        lineStyle: { color: theme.primaryBorderSoft, width: 1, type: "dashed" }
       },
       formatter: (params) => {
         const p = params[0];
@@ -1358,15 +1374,15 @@ function buildReportChartOption() {
       smooth: true,
       symbol: "circle",
       symbolSize: 8,
-      lineStyle: { width: 3, color: "#1677ff" },
-      itemStyle: { color: "#1677ff", borderColor: "#fff", borderWidth: 2 },
+      lineStyle: { width: 3, color: theme.primary },
+      itemStyle: { color: theme.primary, borderColor: "#fff", borderWidth: 2 },
       areaStyle: {
         color: {
           type: "linear",
           x: 0, y: 0, x2: 0, y2: 1,
           colorStops: [
-            { offset: 0, color: "rgba(22, 119, 255, 0.32)" },
-            { offset: 1, color: "rgba(22, 119, 255, 0)" }
+            { offset: 0, color: theme.primaryRgba(0.32) },
+            { offset: 1, color: theme.primaryRgba(0) }
           ]
         }
       },
@@ -1375,7 +1391,7 @@ function buildReportChartOption() {
         itemStyle: {
           borderWidth: 3,
           shadowBlur: 12,
-          shadowColor: "rgba(22, 119, 255, 0.45)"
+          shadowColor: theme.primaryRgba(0.45)
         }
       },
       markPoint: {
@@ -1550,6 +1566,7 @@ function renderAttributionChart(dom) {
 }
 
 function buildAttributionChartOption() {
+  const theme = getSmartQueryChartTheme();
   const months = resultChartData.map((d) => d.name);
   const values = resultChartData.map((d) => d.value);
   const anomalyIndex = resultChartData.findIndex((d) => d.anomaly);
@@ -1613,9 +1630,9 @@ function buildAttributionChartOption() {
       smooth: true,
       symbol: "circle",
       symbolSize: (val, params) => params.dataIndex === anomalyIndex ? 14 : 7,
-      lineStyle: { width: 2.5, color: "#1677ff" },
+      lineStyle: { width: 2.5, color: theme.primary },
       itemStyle: {
-        color: (params) => params.dataIndex === anomalyIndex ? "#f97316" : "#1677ff",
+        color: (params) => params.dataIndex === anomalyIndex ? "#f97316" : theme.primary,
         borderColor: "#fff",
         borderWidth: 2,
         shadowBlur: (params) => params.dataIndex === anomalyIndex ? 14 : 0,
@@ -1626,8 +1643,8 @@ function buildAttributionChartOption() {
           type: "linear",
           x: 0, y: 0, x2: 0, y2: 1,
           colorStops: [
-            { offset: 0, color: "rgba(22, 119, 255, 0.22)" },
-            { offset: 1, color: "rgba(22, 119, 255, 0)" }
+            { offset: 0, color: theme.primaryRgba(0.22) },
+            { offset: 1, color: theme.primaryRgba(0) }
           ]
         }
       },
@@ -1822,6 +1839,7 @@ function renderTrendChart(dom) {
 }
 
 function buildTrendChartOption() {
+  const theme = getSmartQueryChartTheme();
   const months = [...resultChartData.map((d) => d.name), ...trendForecastData.map((d) => d.name)];
   const lastHistoryName = resultChartData[resultChartData.length - 1].name;
 
@@ -1852,7 +1870,7 @@ function buildTrendChartOption() {
       itemHeight: 8,
       textStyle: { color: "#4b5563", fontSize: 11 },
       data: [
-        { name: "实际", itemStyle: { color: "#1677ff" } },
+        { name: "实际", itemStyle: { color: theme.primary } },
         { name: "预测", itemStyle: { color: "#7c3aed" } },
         { name: "置信区间", itemStyle: { color: "#c4b5fd" } }
       ]
@@ -1940,15 +1958,15 @@ function buildTrendChartOption() {
         symbol: "circle",
         symbolSize: 7,
         connectNulls: false,
-        lineStyle: { width: 2.5, color: "#1677ff" },
-        itemStyle: { color: "#1677ff", borderColor: "#fff", borderWidth: 2 },
+        lineStyle: { width: 2.5, color: theme.primary },
+        itemStyle: { color: theme.primary, borderColor: "#fff", borderWidth: 2 },
         areaStyle: {
           color: {
             type: "linear",
             x: 0, y: 0, x2: 0, y2: 1,
             colorStops: [
-              { offset: 0, color: "rgba(22, 119, 255, 0.22)" },
-              { offset: 1, color: "rgba(22, 119, 255, 0)" }
+              { offset: 0, color: theme.primaryRgba(0.22) },
+              { offset: 1, color: theme.primaryRgba(0) }
             ]
           }
         },
@@ -2863,9 +2881,10 @@ function buildResultChartOption(type) {
 }
 
 function buildPieChartOption() {
+  const theme = getSmartQueryChartTheme();
   const total = resultChartData.reduce((sum, item) => sum + item.value, 0);
   return {
-    color: resultChartPalette,
+    color: getResultChartPalette(),
     tooltip: {
       trigger: "item",
       backgroundColor: "rgba(17, 24, 39, 0.92)",
@@ -2908,7 +2927,7 @@ function buildPieChartOption() {
         itemStyle: {
           shadowBlur: 18,
           shadowOffsetY: 4,
-          shadowColor: "rgba(22, 119, 255, 0.35)"
+          shadowColor: theme.primaryRgba(0.35)
         }
       },
       data: resultChartData.map((d) => ({ name: d.name, value: d.value }))
@@ -2917,6 +2936,7 @@ function buildPieChartOption() {
 }
 
 function buildAxisChartOption(type) {
+  const theme = getSmartQueryChartTheme();
   const months = resultChartData.map((d) => d.name);
   const values = resultChartData.map((d) => d.value);
   const isBar = type === "bar";
@@ -2954,14 +2974,14 @@ function buildAxisChartOption(type) {
     symbol: "circle",
     symbolSize: 9,
     showSymbol: true,
-    lineStyle: { width: 3, color: "#1677ff" },
-    itemStyle: { color: "#1677ff", borderColor: "#fff", borderWidth: 2 },
+    lineStyle: { width: 3, color: theme.primary },
+    itemStyle: { color: theme.primary, borderColor: "#fff", borderWidth: 2 },
     emphasis: {
       focus: "series",
       itemStyle: {
         borderWidth: 3,
         shadowBlur: 12,
-        shadowColor: "rgba(22, 119, 255, 0.45)"
+        shadowColor: theme.primaryRgba(0.45)
       }
     },
     markPoint,
@@ -2974,8 +2994,8 @@ function buildAxisChartOption(type) {
         type: "linear",
         x: 0, y: 0, x2: 0, y2: 1,
         colorStops: [
-          { offset: 0, color: "rgba(22, 119, 255, 0.32)" },
-          { offset: 1, color: "rgba(22, 119, 255, 0)" }
+          { offset: 0, color: theme.primaryRgba(0.32) },
+          { offset: 1, color: theme.primaryRgba(0) }
         ]
       }
     };
@@ -2991,8 +3011,8 @@ function buildAxisChartOption(type) {
         type: "linear",
         x: 0, y: 0, x2: 0, y2: 1,
         colorStops: [
-          { offset: 0, color: "#1677ff" },
-          { offset: 1, color: "#9dd7ff" }
+          { offset: 0, color: theme.primary },
+          { offset: 1, color: theme.focusBorder }
         ]
       }
     },
@@ -3000,7 +3020,7 @@ function buildAxisChartOption(type) {
       itemStyle: {
         shadowBlur: 14,
         shadowOffsetY: 6,
-        shadowColor: "rgba(22, 119, 255, 0.32)"
+        shadowColor: theme.primaryRgba(0.32)
       }
     },
     markPoint,
@@ -3017,7 +3037,7 @@ function buildAxisChartOption(type) {
       textStyle: { color: "#fff", fontSize: 12 },
       axisPointer: {
         type: "line",
-        lineStyle: { color: "#cfe4ff", width: 1, type: "dashed" }
+        lineStyle: { color: theme.primaryBorderSoft, width: 1, type: "dashed" }
       },
       formatter: (params) => {
         const p = params[0];
@@ -4216,8 +4236,9 @@ function wordParagraph(text) {
 
 function wordTagsRow(tags) {
   if (!tags || !tags.length) return "";
+  const theme = getSmartQueryChartTheme();
   const items = tags.map((t) =>
-    `<span style="display:inline-block;padding:2pt 8pt;margin:0 4pt 4pt 0;background:#e6f4ff;color:#1677ff;font-size:9.5pt;border-radius:10pt;">${wordEsc(t)}</span>`
+    `<span style="display:inline-block;padding:2pt 8pt;margin:0 4pt 4pt 0;background:${theme.primarySoft};color:${theme.primary};font-size:9.5pt;border-radius:10pt;">${wordEsc(t)}</span>`
   ).join("");
   return `<p style="margin:6pt 0;">${items}</p>`;
 }
@@ -4549,7 +4570,7 @@ function wordRenderTemplateReport(root, counter) {
       html += wordList(riskItems);
     }
     if (planItems.length) {
-      html += `<p style="font-size:10.5pt;color:#1677ff;font-weight:600;margin:6pt 0 2pt;">→ 下月计划</p>`;
+      html += `<p style="font-size:10.5pt;color:${getSmartQueryChartTheme().primary};font-weight:600;margin:6pt 0 2pt;">→ 下月计划</p>`;
       html += wordList(planItems);
     }
   }
@@ -4564,7 +4585,7 @@ function wordBuildReportHTML(root, mode, title) {
 
   let body = "";
   body += `<h1 style="text-align:center;font-size:18pt;color:#0f172a;margin:0 0 6pt;">${wordEsc(title)}</h1>`;
-  body += `<p style="text-align:center;font-size:11pt;color:#1677ff;margin:0 0 4pt;font-weight:600;">${wordEsc(reportLabel)}</p>`;
+  body += `<p style="text-align:center;font-size:11pt;color:${getSmartQueryChartTheme().primary};margin:0 0 4pt;font-weight:600;">${wordEsc(reportLabel)}</p>`;
   if (meta) body += `<p style="text-align:center;font-size:9pt;color:#64748b;margin:0 0 4pt;">${wordEsc(meta)}</p>`;
   body += `<p style="text-align:center;font-size:9pt;color:#94a3b8;margin:0 0 14pt;">导出时间：${wordEsc(exportTime)}</p>`;
   body += `<hr style="border:none;border-top:0.75pt solid #e2e8f0;margin:0 0 12pt;"/>`;

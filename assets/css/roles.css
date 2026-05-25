@@ -38,7 +38,7 @@
 .role-panel-head h2,
 .permission-head h2 {
   margin: 0;
-  color: #17375e;
+  color: var(--heading);
   font-size: 16px;
 }
 
@@ -76,14 +76,14 @@
 }
 
 .role-item:hover {
-  background: #f8fbff;
-  border-color: #dbeafe;
+  background: var(--primary-panel-bg);
+  border-color: var(--primary-border-soft);
 }
 
 .role-item.is-active {
   color: var(--primary);
-  background: #f4f8ff;
-  border-color: #bfdbfe;
+  background: var(--primary-hover-bg);
+  border-color: var(--primary-border);
 }
 
 .role-avatar {
@@ -93,7 +93,7 @@
   align-items: center;
   justify-content: center;
   color: #0f4b8f;
-  background: #eaf3ff;
+  background: var(--primary-soft);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 800;
@@ -138,12 +138,12 @@
   padding: 0 8px;
   color: #1f2937;
   background: #fff;
-  border: 1px solid #93c5fd;
+  border: 1px solid var(--focus-border);
   border-radius: 6px;
   font-size: 14px;
   font-weight: 800;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
 }
 
 .permission-panel {
@@ -227,13 +227,13 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  background: #f8fbff;
+  background: var(--primary-panel-bg);
   border-bottom: 1px solid var(--line);
 }
 
 .section-head h3 {
   margin: 0;
-  color: #17375e;
+  color: var(--heading);
   font-size: 14px;
 }
 
@@ -271,8 +271,8 @@
   align-items: center;
   gap: 8px;
   padding: 0 14px;
-  color: #102a48;
-  background: linear-gradient(180deg, #f8fbff 0%, #fff 100%);
+  color: var(--heading);
+  background: linear-gradient(180deg, var(--primary-panel-bg) 0%, #fff 100%);
   border-bottom: 1px solid var(--line);
   font-size: 15px;
   font-weight: 800;
@@ -423,7 +423,7 @@
 .topic-row h3 {
   margin: 0;
   overflow: hidden;
-  color: #17375e;
+  color: var(--heading);
   font-size: 14px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -462,7 +462,7 @@
 
 .model-db-head {
   padding: 13px 14px;
-  background: #f8fbff;
+  background: var(--primary-panel-bg);
   border-bottom: 1px solid var(--line);
 }
 
@@ -481,7 +481,7 @@
   justify-content: center;
   flex: 0 0 auto;
   color: var(--primary);
-  background: #eaf3ff;
+  background: var(--primary-soft);
   border-radius: 8px;
   font-size: 13px;
   font-weight: 900;
@@ -490,7 +490,7 @@
 .model-db-title strong,
 .model-table-head strong {
   overflow: hidden;
-  color: #17375e;
+  color: var(--heading);
   font-size: 14px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -540,7 +540,7 @@
   align-items: center;
   gap: 8px;
   color: #172033;
-  background: linear-gradient(180deg, #f8fbff 0%, #fff 100%);
+  background: linear-gradient(180deg, var(--primary-panel-bg) 0%, #fff 100%);
   border-bottom: 1px solid var(--line);
   font-size: 15px;
 }
@@ -585,8 +585,8 @@
 }
 
 .model-perm-search input:focus {
-  border-color: #93c5fd;
-  box-shadow: inset 0 0 0 1px #93c5fd;
+  border-color: var(--focus-border);
+  box-shadow: inset 0 0 0 1px var(--focus-border);
 }
 
 .model-perm-search .model-search-btn {
@@ -632,7 +632,7 @@
 .model-domain-row:hover,
 .model-source-row:hover {
   color: var(--primary);
-  background: #f4f8ff;
+  background: var(--primary-hover-bg);
 }
 
 .model-caret {
@@ -687,7 +687,7 @@
 
 .model-source-row.is-active {
   color: var(--primary);
-  background: linear-gradient(90deg, #eaf3ff 0%, #f8fbff 100%);
+  background: linear-gradient(90deg, var(--primary-soft) 0%, var(--primary-panel-bg) 100%);
   font-weight: 700;
 }
 
@@ -748,12 +748,12 @@
 
 .model-flat-row:hover {
   color: var(--primary);
-  background: #f4f8ff;
+  background: var(--primary-hover-bg);
 }
 
 .model-flat-row.is-active {
   color: var(--primary);
-  background: linear-gradient(90deg, #eaf3ff 0%, #f8fbff 100%);
+  background: linear-gradient(90deg, var(--primary-soft) 0%, var(--primary-panel-bg) 100%);
   font-weight: 700;
 }
 
@@ -790,8 +790,8 @@
 }
 
 .model-field-tag.is-fk {
-  color: #1d4ed8;
-  background: #eef4ff;
+  color: var(--primary-dark);
+  background: var(--primary-soft);
 }
 
 .model-empty {
@@ -829,14 +829,14 @@
   justify-content: space-between;
   gap: 12px;
   padding: 14px;
-  background: linear-gradient(180deg, #f8fbff 0%, #fff 100%);
+  background: linear-gradient(180deg, var(--primary-panel-bg) 0%, #fff 100%);
   border-bottom: 1px solid var(--line);
 }
 
 .dimension-list-head h3,
 .dimension-config-head h3 {
   margin: 0;
-  color: #102a48;
+  color: var(--heading);
   font-size: 15px;
 }
 
@@ -880,14 +880,14 @@
 }
 
 .dimension-item:hover {
-  background: #f8fbff;
-  border-color: #dbeafe;
+  background: var(--primary-panel-bg);
+  border-color: var(--primary-border-soft);
 }
 
 .dimension-item.is-active {
   color: var(--primary);
-  background: #f4f8ff;
-  border-color: #bfdbfe;
+  background: var(--primary-hover-bg);
+  border-color: var(--primary-border);
 }
 
 .dimension-item-main {
@@ -915,8 +915,8 @@
 
 .dimension-type-tag {
   padding: 3px 7px;
-  color: #1d4ed8;
-  background: #eef4ff;
+  color: var(--primary-dark);
+  background: var(--primary-soft);
   border-radius: 999px;
   font-size: 12px;
   font-weight: 800;
@@ -990,8 +990,8 @@
 
 .dimension-field input:focus,
 .dimension-field select:focus {
-  border-color: #93c5fd;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+  border-color: var(--focus-border);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), .12);
 }
 
 .dimension-value-grid {
@@ -1020,8 +1020,8 @@
 }
 
 .dimension-value-card:hover {
-  border-color: #bfdbfe;
-  background: #f8fbff;
+  border-color: var(--primary-border);
+  background: var(--primary-panel-bg);
 }
 
 .dimension-value-card input,
@@ -1061,7 +1061,7 @@
 
 .dimension-tree-row:hover {
   color: var(--primary);
-  background: #f4f8ff;
+  background: var(--primary-hover-bg);
 }
 
 .dimension-tree-caret {
@@ -1135,8 +1135,8 @@
 }
 
 .dimension-pick-row:hover {
-  background: #f8fbff;
-  border-color: #bfdbfe;
+  background: var(--primary-panel-bg);
+  border-color: var(--primary-border);
 }
 
 .dimension-pick-row strong,
@@ -1158,8 +1158,8 @@
 
 .dimension-pick-row b {
   padding: 3px 8px;
-  color: #1d4ed8;
-  background: #eef4ff;
+  color: var(--primary-dark);
+  background: var(--primary-soft);
   border-radius: 999px;
   font-size: 12px;
 }
@@ -1175,7 +1175,7 @@
 
 .empty-permission h3 {
   margin: 0;
-  color: #17375e;
+  color: var(--heading);
   font-size: 16px;
 }
 
@@ -1211,7 +1211,7 @@
 
 .role-ctx button:hover {
   color: var(--primary);
-  background: #f4f8ff;
+  background: var(--primary-hover-bg);
 }
 
 .danger-btn {

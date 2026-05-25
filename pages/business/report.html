@@ -79,7 +79,7 @@
       margin: 12px 0;
       padding: 10px 16px;
       color: #475569;
-      background: #f8fbff;
+      background: var(--primary-panel-bg);
       border-left: 3px solid var(--primary);
       border-radius: 4px;
       font-size: 14px;
@@ -104,8 +104,8 @@
 
     .report-page-body article.report-page .kpi-card {
       padding: 12px 14px;
-      background: linear-gradient(180deg, #f8fbff, #fff);
-      border: 1px solid #e6eefb;
+      background: linear-gradient(180deg, var(--primary-panel-bg), #fff);
+      border: 1px solid var(--primary-border-soft);
       border-radius: 12px;
     }
 
@@ -157,7 +157,7 @@
 
     .report-page-body article.report-page table.data-table th {
       color: #475569;
-      background: #f8fbff;
+      background: var(--primary-panel-bg);
       font-weight: 600;
     }
 
@@ -282,8 +282,8 @@
 
     /* —— 报告（叶子）专用图标：文档/报告样式（带折角纸张 + 横线），与分类的文件夹明显区分 —— */
     .report-page-body .dir-tree .tree-node[data-type="report"] > .tree-row > .tree-icon {
-      background: linear-gradient(135deg, #eef6ff, #f8fbff);
-      border-color: rgba(22, 119, 255, 0.24);
+      background: linear-gradient(135deg, var(--primary-bg), var(--primary-panel-bg));
+      border-color: rgba(var(--primary-rgb), 0.24);
     }
 
     .report-page-body .dir-tree .tree-node[data-type="report"] > .tree-row > .tree-icon::before {
@@ -294,9 +294,9 @@
 
     .report-page-body .dir-tree .tree-node[data-type="report"] > .tree-row.active > .tree-icon,
     .report-page-body .dir-tree .tree-node[data-type="report"] > .tree-row:hover > .tree-icon {
-      background: linear-gradient(135deg, #e1efff, #f0f7ff);
-      border-color: rgba(22, 119, 255, 0.55);
-      box-shadow: 0 3px 8px rgba(22, 119, 255, 0.18);
+      background: linear-gradient(135deg, var(--primary-soft), var(--primary-hover-bg));
+      border-color: rgba(var(--primary-rgb), 0.55);
+      box-shadow: 0 3px 8px rgba(var(--primary-rgb), 0.18);
     }
 
     .report-page-body .dir-tree .tree-node[data-type="report"] > .tree-row.active > .tree-icon::before {
@@ -330,12 +330,12 @@
     .report-page-body .modal .form-row input:focus {
       outline: none;
       border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+      box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
     /* 右键临时态 */
     .report-page-body .dir-tree .tree-row.ctx-target {
-      background: rgba(22, 119, 255, 0.08);
+      background: rgba(var(--primary-rgb), 0.08);
       box-shadow: inset 2px 0 0 var(--primary);
     }
   </style>
@@ -1526,7 +1526,8 @@
 
       // ECharts option 工厂：根据 type + title 关键词，返回合理可视化
       function buildChartOption(type, title) {
-        const COLOR = ['#1677ff', '#36cfc9', '#ffa940', '#ff7875', '#9254de', '#52c41a', '#13c2c2', '#fadb14'];
+        const theme = window.getSmartQueryThemeColors();
+        const COLOR = [theme.primary, '#36cfc9', '#ffa940', '#ff7875', '#9254de', '#52c41a', '#13c2c2', '#fadb14'];
         const baseTextStyle = { color: '#475569', fontSize: 11 };
         const baseGrid = { left: 50, right: 24, top: 30, bottom: 28 };
         const t = title || '';
@@ -1719,7 +1720,7 @@
               name: { textStyle: { color: '#475569', fontSize: 11 } },
               splitLine: { lineStyle: { color: '#dbe2ec' } },
               axisLine: { lineStyle: { color: '#dbe2ec' } },
-              splitArea: { areaStyle: { color: ['rgba(22,119,255,0.04)', 'rgba(22,119,255,0.08)'] } }
+              splitArea: { areaStyle: { color: [theme.primaryRgba(0.04), theme.primaryRgba(0.08)] } }
             },
             series: [{
               name: title || '区域对比', type: 'radar',
@@ -1750,7 +1751,7 @@
             grid: { left: 70, right: 30, top: 30, bottom: 56 },
             xAxis: { type: 'category', data: xAxis, splitArea: { show: true }, axisLabel: baseTextStyle, axisLine: { lineStyle: { color: '#dbe2ec' } } },
             yAxis: { type: 'category', data: yAxis, splitArea: { show: true }, axisLabel: baseTextStyle, axisLine: { lineStyle: { color: '#dbe2ec' } } },
-            visualMap: { min: 0, max: 100, calculable: true, orient: 'horizontal', left: 'center', bottom: 0, inRange: { color: ['#e6f4ff', '#1677ff', '#0958d9'] }, textStyle: baseTextStyle },
+            visualMap: { min: 0, max: 100, calculable: true, orient: 'horizontal', left: 'center', bottom: 0, inRange: { color: theme.heatmapPalette }, textStyle: baseTextStyle },
             series: [{ name: title || '热力', type: 'heatmap', data: data, label: { show: true, fontSize: 10, color: '#fff' }, emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.2)' } } }]
           };
         }

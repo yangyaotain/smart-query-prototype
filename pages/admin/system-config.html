@@ -40,7 +40,7 @@
 
     .sys-section-head h2 {
       margin: 0;
-      color: #102a48;
+      color: var(--heading);
       font-size: 16px;
     }
 
@@ -120,8 +120,8 @@
     }
 
     .sys-input:focus {
-      border-color: #93c5fd;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+      border-color: var(--focus-border);
+      box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
     .sys-hint {
@@ -157,7 +157,7 @@
 
     .sys-upload:hover,
     .sys-upload.is-drag-over {
-      background: #eff6ff;
+      background: var(--primary-hover-bg);
       border-color: var(--primary);
     }
 
@@ -177,7 +177,7 @@
       align-items: center;
       justify-content: center;
       color: var(--primary);
-      background: #eef4ff;
+      background: var(--primary-soft);
       border-radius: 12px;
     }
 
@@ -223,7 +223,7 @@
       flex: 0 0 64px;
       object-fit: contain;
       background: #fff;
-      border: 1px solid #dbeafe;
+      border: 1px solid var(--primary-border-soft);
       border-radius: 14px;
     }
 
@@ -243,8 +243,8 @@
       display: flex;
       flex-direction: column;
       padding: 18px;
-      background: #f8fbff;
-      border: 1px solid #dbeafe;
+      background: var(--primary-panel-bg);
+      border: 1px solid var(--primary-border-soft);
       border-radius: 16px;
     }
 
@@ -275,7 +275,7 @@
       display: grid;
       place-items: center;
       color: #fff;
-      background: linear-gradient(135deg, var(--primary), #55c7ff);
+      background: linear-gradient(135deg, var(--primary), var(--primary-accent));
       border-radius: 18px;
       font-size: 24px;
       font-weight: 800;
@@ -296,7 +296,7 @@
 
     .sys-brand-text strong {
       display: block;
-      color: #102a48;
+      color: var(--heading);
       font-size: 20px;
       line-height: 1.35;
       overflow: hidden;
@@ -326,7 +326,7 @@
       background-repeat: no-repeat;
       background-position: right 10px center;
       background-size: 14px 14px;
-      border: 1px solid #dbeafe;
+      border: 1px solid var(--primary-border-soft);
       border-radius: 12px;
       font-family: inherit;
       font-size: 14px;
@@ -337,8 +337,8 @@
     }
 
     .sys-theme-select:focus {
-      border-color: #93c5fd;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+      border-color: var(--focus-border);
+      box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
     .sys-theme-summary {
@@ -348,15 +348,15 @@
       gap: 10px;
       padding: 9px 12px;
       color: #64748b;
-      background: #f8fbff;
-      border: 1px solid #dbeafe;
+      background: var(--primary-panel-bg);
+      border: 1px solid var(--primary-border-soft);
       border-radius: 12px;
       font-size: 13px;
       line-height: 1.6;
     }
 
     .sys-theme-summary strong {
-      color: #102a48;
+      color: var(--heading);
     }
 
     .sys-swatches {
@@ -375,7 +375,7 @@
     .sys-preview {
       overflow: hidden;
       background: #fff;
-      border: 1px solid #dbeafe;
+      border: 1px solid var(--primary-border-soft);
       border-radius: 14px;
     }
 
@@ -386,7 +386,7 @@
       justify-content: space-between;
       padding: 0 14px;
       color: #fff;
-      background: var(--sys-preview-primary, #1677ff);
+      background: var(--sys-preview-primary, var(--primary));
     }
 
     .sys-preview-brand {
@@ -402,7 +402,7 @@
       height: 28px;
       display: grid;
       place-items: center;
-      color: var(--sys-preview-primary, #1677ff);
+      color: var(--sys-preview-primary, var(--primary));
       background: #fff;
       border-radius: 9px;
       overflow: hidden;
@@ -418,7 +418,7 @@
       display: grid;
       grid-template-columns: 112px 1fr;
       min-height: 210px;
-      background: var(--sys-preview-bg, #f3f8ff);
+      background: var(--sys-preview-bg, var(--primary-bg));
     }
 
     .sys-preview-side {
@@ -439,8 +439,8 @@
     }
 
     .sys-preview-side span.is-active {
-      color: var(--sys-preview-primary, #1677ff);
-      background: var(--sys-preview-soft, #eaf3ff);
+      color: var(--sys-preview-primary, var(--primary));
+      background: var(--sys-preview-soft, var(--primary-soft));
       font-weight: 800;
     }
 
@@ -456,12 +456,12 @@
     }
 
     .sys-preview-title strong {
-      color: #102a48;
+      color: var(--heading);
       font-size: 14px;
     }
 
     .sys-preview-title em {
-      color: var(--sys-preview-primary, #1677ff);
+      color: var(--sys-preview-primary, var(--primary));
       font-style: normal;
       font-size: 12px;
       font-weight: 800;
@@ -490,7 +490,7 @@
     .sys-preview-kpi strong {
       display: block;
       margin-top: 6px;
-      color: #102a48;
+      color: var(--heading);
       font-size: 18px;
     }
 
@@ -508,7 +508,7 @@
     .sys-preview-chart i {
       flex: 1;
       min-width: 0;
-      background: linear-gradient(180deg, var(--sys-preview-accent, #55c7ff), var(--sys-preview-primary, #1677ff));
+      background: linear-gradient(180deg, var(--sys-preview-accent, var(--primary-accent)), var(--sys-preview-primary, var(--primary)));
       border-radius: 999px 999px 4px 4px;
     }
 
@@ -724,18 +724,18 @@
         blue: {
           name: "蓝色科技风格",
           desc: "强调科技感与数据可信度，适合默认后台与业务分析场景。",
-          primary: "#1677ff",
-          accent: "#55c7ff",
-          soft: "#eaf3ff",
-          bg: "#f3f8ff"
+          primary: "var(--primary)",
+          accent: "var(--primary-accent)",
+          soft: "var(--primary-soft)",
+          bg: "var(--primary-bg)"
         },
         green: {
           name: "绿色清新风格",
-          desc: "更轻盈自然，适合运营看板、业务协作和日常管理场景。",
-          primary: "#10b981",
-          accent: "#34d399",
-          soft: "#ecfdf5",
-          bg: "#f0fdf4"
+          desc: "参考绿色清新原型，强调自然、轻量和业务协作感，适合日常管理与运营看板。",
+          primary: "#20a565",
+          accent: "#2eb872",
+          soft: "#e8f5e9",
+          bg: "#f0fdf6"
         }
       };
 
@@ -792,6 +792,9 @@
       function setTheme(themeKey) {
         var theme = themeMap[themeKey] || themeMap.blue;
         state.theme = themeMap[themeKey] ? themeKey : "blue";
+        if (typeof window.applySmartQueryTheme === "function") {
+          window.applySmartQueryTheme(state.theme);
+        }
         $("#sysThemeSelect").value = state.theme;
         var preview = $("#sysPreview");
         preview.style.setProperty("--sys-preview-primary", theme.primary);
@@ -940,16 +943,22 @@
         $("#sysLogoSave").addEventListener("click", function () {
           if (typeof showToast === "function") showToast("Logo 配置已保存");
         });
-        $("#sysThemeReset").addEventListener("click", function () { setTheme("blue"); });
+        $("#sysThemeReset").addEventListener("click", function () {
+          setTheme("blue");
+          if (typeof showToast === "function") showToast("已切换为蓝色科技风格，保存后全局生效");
+        });
         $("#sysThemeSave").addEventListener("click", function () {
-          if (typeof showToast === "function") showToast("主题样式已保存");
+          if (typeof window.saveSmartQueryTheme === "function") {
+            window.saveSmartQueryTheme(state.theme);
+          }
+          if (typeof showToast === "function") showToast(themeMap[state.theme].name + "已保存并应用");
         });
       }
 
       document.addEventListener("DOMContentLoaded", function () {
         bindEvents();
         setLogoMode("standard");
-        setTheme("blue");
+        setTheme(typeof window.getSmartQueryTheme === "function" ? window.getSmartQueryTheme() : "blue");
         renderBrandPreview();
       });
     })();

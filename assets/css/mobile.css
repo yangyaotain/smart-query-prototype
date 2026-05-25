@@ -4,8 +4,8 @@
   place-items: center;
   padding: 32px;
   background:
-    radial-gradient(circle at 20% 20%, rgba(22,119,255,.14), transparent 30%),
-    linear-gradient(135deg, #f3f8ff, #fff);
+    radial-gradient(circle at 20% 20%, rgba(var(--primary-rgb), .14), transparent 30%),
+    linear-gradient(135deg, var(--primary-bg), #fff);
 }
 
 .phone {
@@ -54,7 +54,7 @@
 
 .mobile-card h3 {
   margin: 0 0 10px;
-  color: #17375e;
+  color: var(--heading);
   font-size: 15px;
 }
 

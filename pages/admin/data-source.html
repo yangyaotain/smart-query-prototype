@@ -40,7 +40,7 @@
       flex: none;
       padding: 14px 14px 12px;
       border-bottom: 1px solid var(--line);
-      background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+      background: linear-gradient(180deg, var(--primary-panel-bg) 0%, #ffffff 100%);
     }
 
     .ds-side-head h3 {
@@ -62,8 +62,8 @@
     }
 
     .ds-side-head .search-box:focus {
-      border-color: #93c5fd;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+      border-color: var(--focus-border);
+      box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
     .ds-tree {
@@ -92,12 +92,12 @@
 
     .dst-row:hover {
       color: var(--primary);
-      background: #f4f8ff;
+      background: var(--primary-hover-bg);
     }
 
     .dst-row.active {
       color: var(--primary);
-      background: linear-gradient(90deg, #eaf3ff 0%, #f8fbff 100%);
+      background: linear-gradient(90deg, var(--primary-soft) 0%, var(--primary-panel-bg) 100%);
       font-weight: 700;
     }
 
@@ -175,7 +175,7 @@
 
     .dst-row.active > .dst-meta {
       color: var(--primary);
-      background: rgba(22, 119, 255, 0.12);
+      background: rgba(var(--primary-rgb), 0.12);
     }
 
     .dst-children {
@@ -221,7 +221,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      background: linear-gradient(120deg, #f7fbff 0%, #ffffff 60%);
+      background: linear-gradient(120deg, var(--primary-panel-bg) 0%, #ffffff 60%);
       border: 1px solid var(--line);
       border-radius: 16px;
     }
@@ -290,7 +290,7 @@
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      color: #2563eb;
+      color: var(--primary);
       text-decoration: none;
       font-size: 13px;
       line-height: 1;
@@ -298,7 +298,7 @@
     }
 
     .ds-act-link:hover {
-      color: #1d4ed8;
+      color: var(--primary-dark);
       text-decoration: underline;
     }
 
@@ -359,7 +359,7 @@
 
     .ds-ctx-menu button:hover {
       color: var(--primary);
-      background: #f4f8ff;
+      background: var(--primary-hover-bg);
     }
 
     .ds-ctx-menu button.danger {
@@ -405,7 +405,7 @@
 
     /* 右键聚焦行 */
     .dst-row.context-active {
-      box-shadow: inset 0 0 0 1.5px rgba(22, 119, 255, 0.32);
+      box-shadow: inset 0 0 0 1.5px rgba(var(--primary-rgb), 0.32);
     }
 
     /* 行内编辑输入框 */
@@ -418,7 +418,7 @@
       background: #fff;
       border: 1px solid var(--primary);
       border-radius: 6px;
-      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+      box-shadow: 0 0 0 3px var(--focus-ring);
       font-size: 12.5px;
       font-weight: 600;
       outline: none;
@@ -477,8 +477,8 @@
     .dse-field input:focus,
     .dse-field select:focus,
     .dse-tree-btn:focus {
-      border-color: #93c5fd;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+      border-color: var(--focus-border);
+      box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
     .dse-field input[readonly],
@@ -569,8 +569,8 @@
 
     .dse-tree-search input:focus {
       background: #fff;
-      border-color: #93c5fd;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+      border-color: var(--focus-border);
+      box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
     .dse-tree-empty {
@@ -609,11 +609,11 @@
       transition: background-color .14s, color .14s;
     }
 
-    .dse-tree-row:hover { color: var(--primary); background: #f4f8ff; }
+    .dse-tree-row:hover { color: var(--primary); background: var(--primary-hover-bg); }
 
     .dse-tree-row.active {
       color: var(--primary);
-      background: #eaf3ff;
+      background: var(--primary-soft);
       font-weight: 700;
     }
 
@@ -663,9 +663,9 @@
     }
 
     .dse-result.testing {
-      background: #f8fbff;
-      border-color: #c7dcff;
-      color: #1d4ed8;
+      background: var(--primary-panel-bg);
+      border-color: var(--primary-border);
+      color: var(--primary-dark);
     }
 
     .dse-result.ok {
@@ -699,7 +699,7 @@
       width: 12px; height: 12px;
       margin-right: 6px;
       vertical-align: -2px;
-      border: 2px solid #93c5fd;
+      border: 2px solid var(--focus-border);
       border-top-color: transparent;
       border-radius: 50%;
       animation: dseSpin .8s linear infinite;
@@ -725,7 +725,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      background: linear-gradient(120deg, #f7fbff 0%, #ffffff 60%);
+      background: linear-gradient(120deg, var(--primary-panel-bg) 0%, #ffffff 60%);
       border: 1px solid var(--line);
       border-radius: 16px;
     }
@@ -771,7 +771,7 @@
     .dsr-btn:hover { filter: brightness(1.06); }
     .dsr-btn:active { transform: translateY(1px); }
     .dsr-btn:disabled { filter: grayscale(.4) brightness(.96); opacity: .65; cursor: not-allowed; }
-    .dsr-blue  { background: #3b82f6; box-shadow: 0 4px 10px rgba(59,130,246,.22); }
+    .dsr-blue  { background: var(--primary-accent-strong); box-shadow: 0 4px 10px rgba(var(--primary-rgb), .22); }
     .dsr-red   { background: #ef4444; box-shadow: 0 4px 10px rgba(239,68,68,.22); }
     .dsr-green { background: #10b981; box-shadow: 0 4px 10px rgba(16,185,129,.22); }
     .dsr-gray  {
@@ -810,8 +810,8 @@
     .dsr-toolbar-right input { width: 200px; }
     .dsr-toolbar-right select:focus,
     .dsr-toolbar-right input:focus {
-      border-color: #93c5fd;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+      border-color: var(--focus-border);
+      box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
     .dsr-table th,
@@ -827,7 +827,7 @@
     .dsr-table td:nth-child(4) { text-align: left; }
     .dsr-table .col-check { width: 44px; }
     .dsr-table .col-status { width: 110px; }
-    .dsr-table tbody tr.row-selected td { background: #f4f8ff; }
+    .dsr-table tbody tr.row-selected td { background: var(--primary-hover-bg); }
     .dsr-table input[type="checkbox"] {
       width: 14px;
       height: 14px;
@@ -906,8 +906,8 @@
     }
     .dsr-pages button:hover:not(:disabled) {
       color: var(--primary);
-      border-color: #93c5fd;
-      background: #f4f8ff;
+      border-color: var(--focus-border);
+      background: var(--primary-hover-bg);
     }
     .dsr-pages button.active {
       color: #fff;
@@ -928,7 +928,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      background: linear-gradient(120deg, #f7fbff 0%, #ffffff 60%);
+      background: linear-gradient(120deg, var(--primary-panel-bg) 0%, #ffffff 60%);
       border: 1px solid var(--line);
       border-radius: 16px;
     }
@@ -965,7 +965,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      background: linear-gradient(120deg, #f7fbff 0%, #ffffff 60%);
+      background: linear-gradient(120deg, var(--primary-panel-bg) 0%, #ffffff 60%);
       border: 1px solid var(--line);
       border-radius: 16px;
     }
@@ -1033,7 +1033,7 @@
       background: #fff;
       border: 1px solid var(--primary);
       border-radius: 6px;
-      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+      box-shadow: 0 0 0 3px var(--focus-ring);
       font-size: 12.5px;
       outline: none;
       box-sizing: border-box;
@@ -1072,7 +1072,7 @@
       font-weight: 700;
       letter-spacing: .2px;
     }
-    .dssc-attr-pk { color: #1e3a8a; background: #dbeafe; }
+    .dssc-attr-pk { color: var(--primary-dark); background: var(--primary-border-soft); }
     .dssc-attr-nn { color: #475569; background: #e2e8f0; }
     .dssc-attr-ai { color: #6d28d9; background: #ede9fe; }
     .dssc-attr-pt { color: #b45309; background: #fff7ed; }
@@ -1105,7 +1105,7 @@
       cursor: pointer;
       transition: color .14s, background-color .14s;
     }
-    .dssc-alias-edit:hover { color: var(--primary); background: #f4f8ff; }
+    .dssc-alias-edit:hover { color: var(--primary); background: var(--primary-hover-bg); }
     .dssc-alias-edit svg {
       width: 14px; height: 14px;
       fill: none; stroke: currentColor;
@@ -1124,7 +1124,7 @@
       background: #fff;
       border: 1px solid var(--primary);
       border-radius: 6px;
-      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+      box-shadow: 0 0 0 3px var(--focus-ring);
       font-size: 12.5px;
       outline: none;
       box-sizing: border-box;

@@ -651,6 +651,16 @@
       // ====================================================================
       const charts = {};
 
+      function getChartTheme() {
+        return window.getSmartQueryThemeColors();
+      }
+
+      function getChartPalette(limit) {
+        const theme = getChartTheme();
+        const palette = [theme.primary, theme.primaryAccent, theme.focusBorder, theme.primaryBorder, '#fbbf24', '#f59e0b'];
+        return limit ? palette.slice(0, limit) : palette;
+      }
+
       function ensureChart(id) {
         const dom = document.getElementById(id);
         if (!dom) return null;
@@ -664,6 +674,7 @@
       }
 
       function buildTrendOption(data, type) {
+        const theme = getChartTheme();
         type = type || 'line';
         const isBar = type === 'bar';
         const months = data.months.concat(['7月','8月','9月']);
@@ -677,16 +688,16 @@
               name: '销售额', type: 'bar', barWidth: 22,
               itemStyle: {
                 borderRadius: [10, 10, 4, 4],
-                color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#1677ff' }, { offset: 1, color: '#9dd7ff' }] }
+                color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: theme.primary }, { offset: 1, color: theme.focusBorder }] }
               },
               data: data.values.concat(fc)
             }]
           : [
               {
                 name: '实际', type: 'line', smooth: true, symbol: 'circle', symbolSize: 8, showSymbol: true,
-                lineStyle: { width: 3, color: '#1677ff' },
-                itemStyle: { color: '#1677ff', borderColor: '#fff', borderWidth: 2 },
-                areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(22,119,255,0.32)' }, { offset: 1, color: 'rgba(22,119,255,0)' }] } },
+                lineStyle: { width: 3, color: theme.primary },
+                itemStyle: { color: theme.primary, borderColor: '#fff', borderWidth: 2 },
+                areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: theme.primaryRgba(0.32) }, { offset: 1, color: theme.primaryRgba(0) }] } },
                 data: realPart
               },
               {
@@ -697,10 +708,10 @@
               }
             ];
         return {
-          color: ['#1677ff', '#f59e0b'],
+          color: [theme.primary, '#f59e0b'],
           legend: { right: 12, top: 4, icon: 'circle', itemWidth: 8, itemHeight: 8, textStyle: { color: '#3b4a64', fontSize: 11 } },
           grid: { top: 36, left: 56, right: 24, bottom: 32 },
-          tooltip: { trigger: 'axis', backgroundColor: 'rgba(17,24,39,0.92)', borderWidth: 0, textStyle: { color: '#fff', fontSize: 12 }, axisPointer: { type: 'line', lineStyle: { color: '#cfe4ff', width: 1, type: 'dashed' } } },
+          tooltip: { trigger: 'axis', backgroundColor: 'rgba(17,24,39,0.92)', borderWidth: 0, textStyle: { color: '#fff', fontSize: 12 }, axisPointer: { type: 'line', lineStyle: { color: theme.primaryBorderSoft, width: 1, type: 'dashed' } } },
           xAxis: { type: 'category', data: months, boundaryGap: isBar, axisTick: { show: false }, axisLine: { lineStyle: { color: '#dbe5f7' } }, axisLabel: { color: '#7e8aa3', fontSize: 11 } },
           yAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } }, axisLabel: { color: '#7e8aa3', fontSize: 11 } },
           series: series
@@ -708,6 +719,7 @@
       }
 
       function buildRegionOption(data) {
+        const theme = getChartTheme();
         return {
           grid: { top: 24, left: 56, right: 24, bottom: 28 },
           tooltip: { trigger: 'axis', backgroundColor: 'rgba(17,24,39,0.92)', borderWidth: 0, textStyle: { color: '#fff', fontSize: 12 } },
@@ -717,16 +729,17 @@
             type: 'bar', barWidth: 20,
             itemStyle: {
               borderRadius: [10, 10, 4, 4],
-              color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#4ea5ff' }, { offset: 1, color: '#cfe4ff' }] }
+              color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: theme.primaryAccent }, { offset: 1, color: theme.primaryBorderSoft }] }
             },
-            emphasis: { itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#1677ff' }, { offset: 1, color: '#8cc8ff' }] } } },
+            emphasis: { itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: theme.primary }, { offset: 1, color: theme.focusBorder }] } } },
             data: data.values
           }]
         };
       }
 
       function buildChannelOption(data, withLabel) {
-        const palette = ['#1677ff', '#4ea5ff', '#8cc8ff', '#cfe2ff', '#fbbf24', '#f59e0b'];
+        const theme = getChartTheme();
+        const palette = getChartPalette();
         return {
           color: palette,
           tooltip: { trigger: 'item', backgroundColor: 'rgba(17,24,39,0.92)', borderWidth: 0, textStyle: { color: '#fff', fontSize: 12 }, formatter: '{b}<br/>占比：{d}%' },
@@ -736,18 +749,19 @@
             itemStyle: { borderColor: '#fff', borderWidth: 2, borderRadius: 4 },
             label: withLabel ? { show: true, position: 'outside', formatter: '{b} {d}%', color: '#374151', fontSize: 11 } : { show: false },
             labelLine: withLabel ? { show: true, length: 6, length2: 8 } : { show: false },
-            emphasis: { scale: true, scaleSize: 6, itemStyle: { shadowBlur: 14, shadowOffsetY: 4, shadowColor: 'rgba(22,119,255,0.32)' } },
+            emphasis: { scale: true, scaleSize: 6, itemStyle: { shadowBlur: 14, shadowOffsetY: 4, shadowColor: theme.primaryRgba(0.32) } },
             data: data
           }]
         };
       }
 
       function buildGaugeOption(value) {
+        const theme = getChartTheme();
         return {
           series: [{
             type: 'gauge', startAngle: 210, endAngle: -30, min: 0, max: 100,
             radius: '92%', center: ['50%', '60%'],
-            progress: { show: true, width: 14, itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: '#4ea5ff' }, { offset: 1, color: '#1677ff' }] } } },
+            progress: { show: true, width: 14, itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: theme.primaryAccent }, { offset: 1, color: theme.primary }] } } },
             axisLine: { lineStyle: { width: 14, color: [[1, '#eef2f7']] } },
             pointer: { show: false },
             axisTick: { show: false },
@@ -762,6 +776,7 @@
       }
 
       function buildTopCustomerOption(data) {
+        const theme = getChartTheme();
         const len = data.names.length;
         const names = data.names.slice().reverse();
         const values = data.values.slice().reverse();
@@ -776,7 +791,7 @@
               borderRadius: [4, 8, 8, 4],
               color: function (p) {
                 const ratio = (p.dataIndex + 1) / len;
-                return { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: '#cfe4ff' }, { offset: 1, color: ratio > 0.6 ? '#1677ff' : '#4ea5ff' }] };
+                return { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: theme.primaryBorderSoft }, { offset: 1, color: ratio > 0.6 ? theme.primary : theme.primaryAccent }] };
               }
             },
             label: { show: true, position: 'right', color: '#1f3f7a', fontSize: 11, fontWeight: 600 },
@@ -786,7 +801,7 @@
       }
 
       function buildProductMixOption(data) {
-        const palette = ['#1677ff', '#4ea5ff', '#cfe2ff'];
+        const palette = getChartPalette(3);
         const series = data.series.map((s, i) => ({
           name: s.name, type: 'bar', stack: 'total', barWidth: 26,
           itemStyle: { color: palette[i % palette.length], borderRadius: i === data.series.length - 1 ? [8, 8, 0, 0] : 0 },

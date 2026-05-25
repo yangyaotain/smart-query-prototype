@@ -39,8 +39,8 @@
 
     .board-edit-page .editor-tool-btn:hover {
       color: var(--primary);
-      border-color: rgba(22, 119, 255, 0.45);
-      background: #f5faff;
+      border-color: rgba(var(--primary-rgb), 0.45);
+      background: var(--primary-hover-bg);
     }
 
     .board-edit-page .editor-tool-btn:disabled {
@@ -116,8 +116,8 @@
 
     /* 图表节点 hover 时高亮缩略图边框 */
     .dir-tree .tree-node[data-type="chart"] > .tree-row:hover .chart-thumb {
-      border-color: rgba(22, 119, 255, 0.55);
-      box-shadow: 0 3px 8px rgba(22, 119, 255, 0.18);
+      border-color: rgba(var(--primary-rgb), 0.55);
+      box-shadow: 0 3px 8px rgba(var(--primary-rgb), 0.18);
     }
 
 
@@ -132,8 +132,8 @@
       gap: 1px;
       padding: 2px 3px;
       border-radius: 5px;
-      background: linear-gradient(135deg, #eaf3ff, #f7faff);
-      border: 1px solid rgba(22, 119, 255, 0.22);
+      background: linear-gradient(135deg, var(--primary-soft), #f7faff);
+      border: 1px solid rgba(var(--primary-rgb), 0.22);
       overflow: hidden;
       transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
@@ -148,7 +148,7 @@
       display: inline-block;
       width: 2px;
       border-radius: 1px;
-      background: linear-gradient(180deg, #4ea5ff, #1677ff);
+      background: linear-gradient(180deg, var(--primary-accent), var(--primary));
     }
 
     .dir-tree .chart-thumb.pie {
@@ -160,8 +160,8 @@
       width: 12px;
       height: 12px;
       border-radius: 50%;
-      background: conic-gradient(#1677ff 0 32%, #4ea5ff 32% 56%, #8cc8ff 56% 78%, #cfe2ff 78% 92%, #e2eeff 92% 100%);
-      box-shadow: 0 0 0 1px rgba(22, 119, 255, 0.15) inset;
+      background: conic-gradient(var(--primary) 0 32%, var(--primary-accent) 32% 56%, var(--focus-border) 56% 78%, var(--primary-border) 78% 92%, var(--primary-border-soft) 92% 100%);
+      box-shadow: 0 0 0 1px rgba(var(--primary-rgb), 0.15) inset;
     }
 
     .dir-tree .chart-thumb.table {
@@ -181,7 +181,7 @@
 
     .dir-tree .chart-thumb.table i.head {
       height: 2px;
-      background: linear-gradient(90deg, #1677ff, #4ea5ff);
+      background: linear-gradient(90deg, var(--primary), var(--primary-accent));
     }
 
     .dir-tree .tree-node[data-type="chart"] .tree-label {
@@ -292,14 +292,14 @@
 
     .board-edit-page .board-name-input:hover {
       border-color: var(--line);
-      background: #f8fbff;
+      background: var(--primary-panel-bg);
     }
 
     .board-edit-page .board-name-input:focus {
       outline: none;
       border-color: var(--primary);
       background: #fff;
-      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+      box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
     }
 
     .board-edit-page .save-state {
@@ -346,13 +346,13 @@
     }
 
     .board-edit-page .canvas-widget:hover {
-      border-color: rgba(22, 119, 255, 0.55);
-      box-shadow: 0 14px 30px rgba(22, 119, 255, 0.12);
+      border-color: rgba(var(--primary-rgb), 0.55);
+      box-shadow: 0 14px 30px rgba(var(--primary-rgb), 0.12);
     }
 
     .board-edit-page .canvas-widget.selected {
       border-color: var(--primary);
-      box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.18), 0 14px 30px rgba(22, 119, 255, 0.18);
+      box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.18), 0 14px 30px rgba(var(--primary-rgb), 0.18);
     }
 
     .board-edit-page .canvas-widget.dragging {
@@ -387,7 +387,7 @@
     }
 
     .board-edit-page .canvas-widget > h3 .widget-title:hover {
-      background: rgba(22, 119, 255, 0.06);
+      background: rgba(var(--primary-rgb), 0.06);
     }
 
     .board-edit-page .canvas-widget > h3 .widget-title.editing {
@@ -405,7 +405,7 @@
       background: #fff;
       border: 1px solid var(--primary);
       border-radius: 8px;
-      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+      box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
       outline: none;
       font-family: inherit;
     }
@@ -444,7 +444,7 @@
     .board-edit-page .canvas-widget .widget-actions button:hover {
       color: var(--primary);
       background: #fff;
-      border-color: rgba(22, 119, 255, 0.5);
+      border-color: rgba(var(--primary-rgb), 0.5);
     }
 
     .board-edit-page .canvas-widget .widget-actions button.danger:hover {
@@ -497,7 +497,7 @@
     .board-edit-page .canvas-widget .resize-handle.resize-e:hover,
     .board-edit-page .canvas-widget .resize-handle.resize-s:hover,
     .board-edit-page .canvas-widget.resizing .resize-handle {
-      background: rgba(22, 119, 255, 0.32);
+      background: rgba(var(--primary-rgb), 0.32);
     }
 
     .board-edit-page .canvas-widget .resize-handle.resize-se {
@@ -507,7 +507,7 @@
       height: 14px;
       cursor: nwse-resize;
       background:
-        linear-gradient(135deg, transparent 50%, rgba(22, 119, 255, 0.55) 50%, rgba(22, 119, 255, 0.55) 60%, transparent 60%, transparent 70%, rgba(22, 119, 255, 0.55) 70%, rgba(22, 119, 255, 0.55) 80%, transparent 80%, transparent 90%, rgba(22, 119, 255, 0.55) 90%);
+        linear-gradient(135deg, transparent 50%, rgba(var(--primary-rgb), 0.55) 50%, rgba(var(--primary-rgb), 0.55) 60%, transparent 60%, transparent 70%, rgba(var(--primary-rgb), 0.55) 70%, rgba(var(--primary-rgb), 0.55) 80%, transparent 80%, transparent 90%, rgba(var(--primary-rgb), 0.55) 90%);
       border-bottom-right-radius: 14px;
     }
 
@@ -518,7 +518,7 @@
 
     .board-edit-page .canvas-widget.resizing {
       transition: none;
-      box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.32), 0 18px 38px rgba(22, 119, 255, 0.18) !important;
+      box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.32), 0 18px 38px rgba(var(--primary-rgb), 0.18) !important;
       cursor: ew-resize;
     }
 
@@ -590,9 +590,9 @@
 
     /* 拖入图表时高亮整块画布外框 */
     .board-edit-page .editor-canvas.drag-over .board-canvas {
-      outline: 2px dashed rgba(22, 119, 255, 0.55);
+      outline: 2px dashed rgba(var(--primary-rgb), 0.55);
       outline-offset: 4px;
-      background: #eef6ff;
+      background: var(--primary-bg);
     }
 
     /* —— 树节点 hover 高亮目录的图表数 —— */
@@ -619,7 +619,7 @@
       border-radius: 8px;
       font-size: 12px;
       font-weight: 600;
-      box-shadow: 0 12px 24px rgba(22, 119, 255, 0.32);
+      box-shadow: 0 12px 24px rgba(var(--primary-rgb), 0.32);
       z-index: 9999;
     }
   </style>
@@ -780,9 +780,19 @@
         'M2,42 L14,36 L26,28 L38,32 L50,20 L62,26 L74,14 L86,18 L98,10'
       ];
 
+      function getChartTheme() {
+        return window.getSmartQueryThemeColors();
+      }
+
+      function getChartPalette(limit) {
+        const theme = getChartTheme();
+        const palette = [theme.primary, theme.primaryAccent, theme.focusBorder, theme.primaryBorder, '#fbbf24', '#f59e0b'];
+        return limit ? palette.slice(0, limit) : palette;
+      }
+
       function buildLineMini() {
         const path = LINE_PATHS[0];
-        return '<svg viewBox="0 0 100 50" preserveAspectRatio="none"><path d="' + path + '" fill="none" stroke="#1677ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        return '<svg viewBox="0 0 100 50" preserveAspectRatio="none"><path d="' + path + '" fill="none" stroke="var(--primary)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
       }
       function buildBarsMini() {
         const heights = [55, 38, 64, 45, 72, 40];
@@ -1120,6 +1130,7 @@
       }
 
       function buildTrendOption(data) {
+        const theme = getChartTheme();
         const months = data.months.concat(['7月','8月','9月']);
         const realPart = data.values.concat([null, null, null]);
         const forecastPart = new Array(data.values.length - 1).fill(null);
@@ -1127,18 +1138,18 @@
         const fc = data.forecast || [];
         for (let i = 0; i < fc.length; i++) forecastPart.push(fc[i]);
         return {
-          color: ['#1677ff', '#f59e0b'],
+          color: [theme.primary, '#f59e0b'],
           legend: { right: 12, top: 4, icon: 'circle', itemWidth: 8, itemHeight: 8, textStyle: { color: '#3b4a64', fontSize: 11 } },
           grid: { top: 36, left: 56, right: 24, bottom: 32 },
-          tooltip: { trigger: 'axis', backgroundColor: 'rgba(17,24,39,0.92)', borderWidth: 0, textStyle: { color: '#fff', fontSize: 12 }, axisPointer: { type: 'line', lineStyle: { color: '#cfe4ff', width: 1, type: 'dashed' } } },
+          tooltip: { trigger: 'axis', backgroundColor: 'rgba(17,24,39,0.92)', borderWidth: 0, textStyle: { color: '#fff', fontSize: 12 }, axisPointer: { type: 'line', lineStyle: { color: theme.primaryBorderSoft, width: 1, type: 'dashed' } } },
           xAxis: { type: 'category', data: months, boundaryGap: false, axisTick: { show: false }, axisLine: { lineStyle: { color: '#dbe5f7' } }, axisLabel: { color: '#7e8aa3', fontSize: 11 } },
           yAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } }, axisLabel: { color: '#7e8aa3', fontSize: 11 } },
           series: [
             {
               name: '实际', type: 'line', smooth: true, symbol: 'circle', symbolSize: 8, showSymbol: true,
-              lineStyle: { width: 3, color: '#1677ff' },
-              itemStyle: { color: '#1677ff', borderColor: '#fff', borderWidth: 2 },
-              areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(22,119,255,0.32)' }, { offset: 1, color: 'rgba(22,119,255,0)' }] } },
+              lineStyle: { width: 3, color: theme.primary },
+              itemStyle: { color: theme.primary, borderColor: '#fff', borderWidth: 2 },
+              areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: theme.primaryRgba(0.32) }, { offset: 1, color: theme.primaryRgba(0) }] } },
               data: realPart
             },
             {
@@ -1152,6 +1163,7 @@
       }
 
       function buildRegionOption(data) {
+        const theme = getChartTheme();
         return {
           grid: { top: 24, left: 56, right: 24, bottom: 28 },
           tooltip: { trigger: 'axis', backgroundColor: 'rgba(17,24,39,0.92)', borderWidth: 0, textStyle: { color: '#fff', fontSize: 12 } },
@@ -1161,16 +1173,17 @@
             type: 'bar', barWidth: 20,
             itemStyle: {
               borderRadius: [10, 10, 4, 4],
-              color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#4ea5ff' }, { offset: 1, color: '#cfe4ff' }] }
+              color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: theme.primaryAccent }, { offset: 1, color: theme.primaryBorderSoft }] }
             },
-            emphasis: { itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#1677ff' }, { offset: 1, color: '#8cc8ff' }] } } },
+            emphasis: { itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: theme.primary }, { offset: 1, color: theme.focusBorder }] } } },
             data: data.values
           }]
         };
       }
 
       function buildChannelOption(data) {
-        const palette = ['#1677ff', '#4ea5ff', '#8cc8ff', '#cfe2ff', '#fbbf24', '#f59e0b'];
+        const theme = getChartTheme();
+        const palette = getChartPalette();
         return {
           color: palette,
           tooltip: { trigger: 'item', backgroundColor: 'rgba(17,24,39,0.92)', borderWidth: 0, textStyle: { color: '#fff', fontSize: 12 }, formatter: '{b}<br/>占比：{d}%' },
@@ -1180,18 +1193,19 @@
             itemStyle: { borderColor: '#fff', borderWidth: 2, borderRadius: 4 },
             label: { show: false },
             labelLine: { show: false },
-            emphasis: { scale: true, scaleSize: 6, itemStyle: { shadowBlur: 14, shadowOffsetY: 4, shadowColor: 'rgba(22,119,255,0.32)' } },
+            emphasis: { scale: true, scaleSize: 6, itemStyle: { shadowBlur: 14, shadowOffsetY: 4, shadowColor: theme.primaryRgba(0.32) } },
             data: data
           }]
         };
       }
 
       function buildGaugeOption(value) {
+        const theme = getChartTheme();
         return {
           series: [{
             type: 'gauge', startAngle: 210, endAngle: -30, min: 0, max: 100,
             radius: '92%', center: ['50%', '60%'],
-            progress: { show: true, width: 14, itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: '#4ea5ff' }, { offset: 1, color: '#1677ff' }] } } },
+            progress: { show: true, width: 14, itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: theme.primaryAccent }, { offset: 1, color: theme.primary }] } } },
             axisLine: { lineStyle: { width: 14, color: [[1, '#eef2f7']] } },
             pointer: { show: false },
             axisTick: { show: false },
@@ -1206,6 +1220,7 @@
       }
 
       function buildTopCustomerOption(data) {
+        const theme = getChartTheme();
         const len = data.names.length;
         const names = data.names.slice().reverse();
         const values = data.values.slice().reverse();
@@ -1220,7 +1235,7 @@
               borderRadius: [4, 8, 8, 4],
               color: function (p) {
                 const ratio = (p.dataIndex + 1) / len;
-                return { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: '#cfe4ff' }, { offset: 1, color: ratio > 0.6 ? '#1677ff' : '#4ea5ff' }] };
+                return { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: theme.primaryBorderSoft }, { offset: 1, color: ratio > 0.6 ? theme.primary : theme.primaryAccent }] };
               }
             },
             label: { show: true, position: 'right', color: '#1f3f7a', fontSize: 11, fontWeight: 600 },
@@ -1230,7 +1245,7 @@
       }
 
       function buildProductMixOption(data) {
-        const palette = ['#1677ff', '#4ea5ff', '#cfe2ff'];
+        const palette = getChartPalette(3);
         const series = data.series.map((s, i) => ({
           name: s.name, type: 'bar', stack: 'total', barWidth: 26,
           itemStyle: { color: palette[i % palette.length], borderRadius: i === data.series.length - 1 ? [8, 8, 0, 0] : 0 },
@@ -1249,7 +1264,7 @@
 
       // 渠道占比的简易（用于左侧拖入 thumb=pie 的图表）
       function buildSimplePieOption(legendNames) {
-        const palette = ['#1677ff', '#4ea5ff', '#8cc8ff', '#cfe2ff', '#fbbf24'];
+        const palette = getChartPalette(5);
         const data = (legendNames || ['类别A','类别B','类别C','类别D']).map((n, i) => ({ name: n, value: 30 - i * 5 + 10 }));
         return {
           color: palette,
@@ -1260,6 +1275,7 @@
       }
 
       function buildSimpleLineOption() {
+        const theme = getChartTheme();
         return {
           grid: { top: 28, left: 48, right: 24, bottom: 28 },
           tooltip: { trigger: 'axis', backgroundColor: 'rgba(17,24,39,0.92)', borderWidth: 0, textStyle: { color: '#fff', fontSize: 12 } },
@@ -1267,15 +1283,16 @@
           yAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } }, axisLabel: { color: '#7e8aa3', fontSize: 11 } },
           series: [{
             type: 'line', smooth: true, symbol: 'circle', symbolSize: 8, showSymbol: true,
-            lineStyle: { width: 3, color: '#1677ff' },
-            itemStyle: { color: '#1677ff', borderColor: '#fff', borderWidth: 2 },
-            areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(22,119,255,0.32)' }, { offset: 1, color: 'rgba(22,119,255,0)' }] } },
+            lineStyle: { width: 3, color: theme.primary },
+            itemStyle: { color: theme.primary, borderColor: '#fff', borderWidth: 2 },
+            areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: theme.primaryRgba(0.32) }, { offset: 1, color: theme.primaryRgba(0) }] } },
             data: [82, 96, 108, 124, 142, 158]
           }]
         };
       }
 
       function buildSimpleBarOption() {
+        const theme = getChartTheme();
         return {
           grid: { top: 24, left: 48, right: 24, bottom: 28 },
           tooltip: { trigger: 'axis', backgroundColor: 'rgba(17,24,39,0.92)', borderWidth: 0, textStyle: { color: '#fff', fontSize: 12 } },
@@ -1283,7 +1300,7 @@
           yAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } }, axisLabel: { color: '#7e8aa3', fontSize: 11 } },
           series: [{
             type: 'bar', barWidth: 22,
-            itemStyle: { borderRadius: [10, 10, 4, 4], color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#4ea5ff' }, { offset: 1, color: '#cfe4ff' }] } },
+            itemStyle: { borderRadius: [10, 10, 4, 4], color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: theme.primaryAccent }, { offset: 1, color: theme.primaryBorderSoft }] } },
             data: [62, 88, 75, 54, 96]
           }]
         };

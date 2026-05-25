@@ -7,6 +7,12 @@
 (function () {
   'use strict';
 
+  function getThemeColors() {
+    return typeof window.getSmartQueryThemeColors === 'function'
+      ? window.getSmartQueryThemeColors()
+      : { primary: 'var(--primary)' };
+  }
+
   // ---------- 1) Mock 字典 ----------
   var DATA_SOURCE_TREE = [
     {
@@ -1849,8 +1855,9 @@
   }
 
   function buildXlsHtml(headers, rows) {
+    var theme = getThemeColors();
     var head = '<tr>' + headers.map(function (h) {
-      return '<th style="background:#1677ff;color:#fff;font-weight:bold;">' + escapeXmlOrHtml(h) + '</th>';
+      return '<th style="background:' + theme.primary + ';color:#fff;font-weight:bold;">' + escapeXmlOrHtml(h) + '</th>';
     }).join('') + '</tr>';
     var body = rows.map(function (r) {
       return '<tr>' + r.map(function (c) {

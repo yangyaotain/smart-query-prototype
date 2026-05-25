@@ -17,7 +17,7 @@
 
 .oi-head h1 {
   margin: 0;
-  color: #102a48;
+  color: var(--heading);
   font-size: 22px;
   line-height: 1.25;
 }
@@ -89,7 +89,7 @@
 
 .oi-tab:hover {
   color: var(--primary);
-  background: #f4f8ff;
+  background: var(--primary-hover-bg);
 }
 
 .oi-tab.is-active {
@@ -169,8 +169,8 @@
 
 .oi-field input:focus,
 .oi-field select:focus {
-  border-color: #93c5fd;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+  border-color: var(--focus-border);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), .12);
 }
 
 .oi-filter-actions {
@@ -209,7 +209,7 @@
 
 .oi-table th {
   color: #526173;
-  background: #f8fbff;
+  background: var(--primary-panel-bg);
   font-size: 12px;
   font-weight: 800;
 }
@@ -289,8 +289,8 @@
 }
 
 .oi-theme-tag {
-  color: #1d4ed8;
-  background: #eef4ff;
+  color: var(--primary-dark);
+  background: var(--primary-soft);
 }
 
 .oi-metric-tag {
@@ -317,8 +317,8 @@
   height: 30px;
   padding: 0 10px;
   color: var(--primary);
-  background: #f4f8ff;
-  border: 1px solid #bfdbfe;
+  background: var(--primary-hover-bg);
+  border: 1px solid var(--primary-border);
   border-radius: 6px;
   font-size: 12.5px;
   font-weight: 800;
@@ -422,7 +422,7 @@
 
 .oi-section-title h4 {
   margin: 0;
-  color: #102a48;
+  color: var(--heading);
   font-size: 14px;
 }
 

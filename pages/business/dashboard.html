@@ -412,15 +412,16 @@
       }
 
       function buildLine() {
+        const theme = window.getSmartQueryThemeColors();
         const path = LINE_PATHS[Math.floor(Math.random() * LINE_PATHS.length)];
         const gid = 'lf' + Math.random().toString(36).slice(2, 8);
         return '<div class="dash-thumb line-thumb">'
           + '<svg viewBox="0 0 100 50" preserveAspectRatio="none">'
           + '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1">'
-          + '<stop offset="0%" stop-color="#1677ff" stop-opacity="0.32"/>'
-          + '<stop offset="100%" stop-color="#1677ff" stop-opacity="0"/></linearGradient></defs>'
+          + '<stop offset="0%" stop-color="' + theme.primary + '" stop-opacity="0.32"/>'
+          + '<stop offset="100%" stop-color="' + theme.primary + '" stop-opacity="0"/></linearGradient></defs>'
           + '<path d="' + path + ' L98,50 L2,50 Z" fill="url(#' + gid + ')"/>'
-          + '<path d="' + path + '" fill="none" stroke="#1677ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+          + '<path d="' + path + '" fill="none" stroke="' + theme.primary + '" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
           + '</svg></div>';
       }
 
@@ -516,12 +517,13 @@
       };
 
       function buildPreviewLine() {
+        const theme = window.getSmartQueryThemeColors();
         const path = PREVIEW_LINE_PATHS.full;
         const dots = PREVIEW_LINE_PATHS.dots;
         const labels = PREVIEW_LINE_PATHS.labels;
         const yLabels = ['3500','2800','2100','1400','700','0'];
         let svg = '<svg viewBox="0 0 500 240" class="prev-svg">';
-        svg += '<defs><linearGradient id="prevLF" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1677ff" stop-opacity="0.32"/><stop offset="100%" stop-color="#1677ff" stop-opacity="0"/></linearGradient></defs>';
+        svg += '<defs><linearGradient id="prevLF" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="' + theme.primary + '" stop-opacity="0.32"/><stop offset="100%" stop-color="' + theme.primary + '" stop-opacity="0"/></linearGradient></defs>';
         for (let i = 0; i < 5; i++) {
           const y = 40 + i * 36;
           svg += '<line x1="30" y1="' + y + '" x2="480" y2="' + y + '" stroke="#eef2f7" stroke-dasharray="3 4"/>';
@@ -533,15 +535,16 @@
           svg += '<text x="' + (30 + i * 70) + '" y="216" fill="#64748b" font-size="11" text-anchor="middle">' + l + '</text>';
         });
         svg += '<path d="' + path + ' L450,200 L30,200 Z" fill="url(#prevLF)"/>';
-        svg += '<path d="' + path + '" fill="none" stroke="#1677ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
+        svg += '<path d="' + path + '" fill="none" stroke="' + theme.primary + '" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
         dots.forEach(([x,y]) => {
-          svg += '<circle cx="' + x + '" cy="' + y + '" r="3.5" fill="#fff" stroke="#1677ff" stroke-width="2"/>';
+          svg += '<circle cx="' + x + '" cy="' + y + '" r="3.5" fill="#fff" stroke="' + theme.primary + '" stroke-width="2"/>';
         });
         svg += '</svg>';
         return svg;
       }
 
       function buildPreviewBars() {
+        const theme = window.getSmartQueryThemeColors();
         const data = [4820, 3560, 2180, 1920, 1640, 1210];
         const labels = ['华东','华南','华北','西南','华中','东北'];
         const max = 5000;
@@ -560,21 +563,22 @@
           const x = 40 + gap + i * (barW + gap);
           const y = 220 - h;
           svg += '<rect x="' + x + '" y="' + y + '" width="' + barW + '" height="' + h + '" rx="4" fill="url(#prevBG)"/>';
-          svg += '<text x="' + (x + barW/2) + '" y="' + (y - 6) + '" fill="#1677ff" font-size="10" font-weight="600" text-anchor="middle">' + v + '</text>';
+          svg += '<text x="' + (x + barW/2) + '" y="' + (y - 6) + '" fill="' + theme.primary + '" font-size="10" font-weight="600" text-anchor="middle">' + v + '</text>';
           svg += '<text x="' + (x + barW/2) + '" y="234" fill="#64748b" font-size="11" text-anchor="middle">' + labels[i] + '</text>';
         });
-        svg += '<defs><linearGradient id="prevBG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4ea5ff"/><stop offset="100%" stop-color="#1677ff"/></linearGradient></defs>';
+        svg += '<defs><linearGradient id="prevBG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="' + theme.primaryAccent + '"/><stop offset="100%" stop-color="' + theme.primary + '"/></linearGradient></defs>';
         svg += '</svg>';
         return svg;
       }
 
       function buildPreviewPie() {
+        const theme = window.getSmartQueryThemeColors();
         const data = [
-          { name: '电子产品', val: 32, color: '#1677ff' },
-          { name: '快消品',   val: 24, color: '#4ea5ff' },
-          { name: '服装服饰', val: 18, color: '#8cc8ff' },
-          { name: '家居家装', val: 14, color: '#cfe2ff' },
-          { name: '食品生鲜', val: 8,  color: '#e2eeff' },
+          { name: '电子产品', val: 32, color: theme.primary },
+          { name: '快消品',   val: 24, color: theme.primaryAccent },
+          { name: '服装服饰', val: 18, color: theme.focusBorder },
+          { name: '家居家装', val: 14, color: theme.primaryBorder },
+          { name: '食品生鲜', val: 8,  color: theme.primaryBorderSoft },
           { name: '其他',     val: 4,  color: '#f1f5fb' },
         ];
         const cx = 130, cy = 110, r = 80;
@@ -596,7 +600,7 @@
           const y = i * 28;
           legend += '<rect x="0" y="' + y + '" width="14" height="14" rx="3" fill="' + d.color + '"/>';
           legend += '<text x="22" y="' + (y + 11) + '" fill="#374151" font-size="12">' + d.name + '</text>';
-          legend += '<text x="180" y="' + (y + 11) + '" fill="#1677ff" font-size="12" font-weight="600" text-anchor="end">' + d.val + '%</text>';
+          legend += '<text x="180" y="' + (y + 11) + '" fill="' + theme.primary + '" font-size="12" font-weight="600" text-anchor="end">' + d.val + '%</text>';
         });
         legend += '</g>';
         return '<svg viewBox="0 0 500 240" class="prev-svg">' + slices

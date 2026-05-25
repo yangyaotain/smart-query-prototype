@@ -16,6 +16,17 @@
   const HEAD_H = 28;
   const NODE_PAD_H = 0;
 
+  function getThemeColors() {
+    return typeof window.getSmartQueryThemeColors === 'function'
+      ? window.getSmartQueryThemeColors()
+      : {
+          primary: 'var(--primary)',
+          primaryAccentStrong: 'var(--primary-accent-strong)',
+          primaryBorder: 'var(--primary-border)',
+          heading: 'var(--heading)'
+        };
+  }
+
   /** 表字段：name / alias / type / pk / fk(true) */
   function f(name, alias, type, opts) {
     return Object.assign({ name, alias, type, pk: false, fk: false, nn: false }, opts || {});
@@ -1298,6 +1309,7 @@
     var svg = document.getElementById('dmMinimapSvg');
     var box = DM._contentBox;
     if (!svg || !box) return;
+    var theme = getThemeColors();
     svg.setAttribute('viewBox', '0 0 ' + box.w + ' ' + box.h);
     var found = DM.findSource(DM.activeSourceId);
     if (!found) { svg.innerHTML = ''; return; }
@@ -1326,7 +1338,7 @@
       var x2 = b.pos.x + DM.NODE_W / 2;
       var y2 = b.pos.y + DM.HEAD_H / 2;
       html += '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2
-            + '" stroke="#bfdbfe" stroke-width="2"/>';
+            + '" stroke="' + theme.primaryBorder + '" stroke-width="2"/>';
     });
     // 节点
     src.tables.forEach(function (t) {
@@ -1334,7 +1346,7 @@
       if (focusSet && !focusSet[t.name]) return;
       var h = DM.nodeHeight(t, src);
       var fill = (DM.selection && DM.selection.type === 'table' && DM.selection.id === t.name)
-        ? '#fbbf24' : '#3b82f6';
+        ? '#fbbf24' : theme.primaryAccentStrong;
       html += '<rect x="' + t.pos.x + '" y="' + t.pos.y + '" width="' + DM.NODE_W
             + '" height="' + h + '" rx="3" ry="3" fill="' + fill + '" opacity=".82"/>';
     });
@@ -1458,8 +1470,9 @@
   }
 
   function buildXlsHtml(headers, rows) {
+    var theme = getThemeColors();
     var head = '<tr>' + headers.map(function (h) {
-      return '<th style="background:#1677ff;color:#fff;font-weight:bold;">' + escapeXmlOrHtml(h) + '</th>';
+      return '<th style="background:' + theme.primary + ';color:#fff;font-weight:bold;">' + escapeXmlOrHtml(h) + '</th>';
     }).join('') + '</tr>';
     var body = rows.map(function (r) {
       return '<tr>' + r.map(function (c) {
@@ -1858,7 +1871,7 @@
     showDmConfirm({
       title: '从画布移除表',
       subtitle: subtitle,
-      message: '确定要把表「<strong style="color:#102a48;">' + DM.escapeHTML(table.alias || table.name) + '</strong>」从画布上移除吗？',
+      message: '确定要把表「<strong style="color:var(--heading);">' + DM.escapeHTML(table.alias || table.name) + '</strong>」从画布上移除吗？',
       onConfirm: function () {
         table.inCanvas = false;
         found.source.relations = (found.source.relations || []).filter(function (r) {
@@ -1885,7 +1898,7 @@
     showDmConfirm({
       title: '删除关联关系',
       subtitle: '删除后该连线消失，两端表仍保留在画布上。',
-      message: '确定删除「<strong style="color:#102a48;">' + DM.escapeHTML(rel.from) + '</strong>」与「<strong style="color:#102a48;">' + DM.escapeHTML(rel.to) + '</strong>」之间的关联关系吗？',
+      message: '确定删除「<strong style="color:var(--heading);">' + DM.escapeHTML(rel.from) + '</strong>」与「<strong style="color:var(--heading);">' + DM.escapeHTML(rel.to) + '</strong>」之间的关联关系吗？',
       onConfirm: function () {
         found.source.relations = (found.source.relations || []).filter(function (r) { return r.id !== edgeId; });
         DM.selection = null;

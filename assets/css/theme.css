@@ -3,6 +3,17 @@
   --primary-dark: #0b3d91;
   --primary-soft: #eaf3ff;
   --primary-bg: #f3f8ff;
+  --primary-rgb: 22, 119, 255;
+  --primary-accent: #55c7ff;
+  --primary-accent-strong: #4f9cff;
+  --primary-border: #bfdbfe;
+  --primary-border-soft: #dbeafe;
+  --primary-hover-bg: #f4f8ff;
+  --primary-panel-bg: #f8fbff;
+  --focus-border: #93c5fd;
+  --focus-ring: rgba(var(--primary-rgb), 0.12);
+  --heading: #102a48;
+  --heading-strong: #0f2f57;
   --bg: #f5f7fa;
   --card: #ffffff;
   --text: #1f2937;
@@ -16,6 +27,39 @@
   --cyan: #06b6d4;
   --shadow: 0 18px 45px rgba(20, 80, 180, 0.10);
   --soft-shadow: 0 8px 24px rgba(17, 24, 39, 0.06);
+  --primary-shadow: rgba(var(--primary-rgb), 0.20);
+  --primary-shadow-strong: rgba(var(--primary-rgb), 0.28);
+  --primary-shadow-soft: rgba(var(--primary-rgb), 0.10);
+}
+
+:root[data-theme="green"] {
+  --primary: #20a565;
+  --primary-dark: #15803d;
+  --primary-soft: #e8f5e9;
+  --primary-bg: #f0fdf6;
+  --primary-rgb: 32, 165, 101;
+  --primary-accent: #2eb872;
+  --primary-accent-strong: #16a34a;
+  --primary-border: #bbf7d4;
+  --primary-border-soft: #dcfce9;
+  --primary-hover-bg: #f0f9f4;
+  --primary-panel-bg: #f7fcf9;
+  --focus-border: #86d9ad;
+  --focus-ring: rgba(32, 165, 101, 0.14);
+  --heading: #1a2b25;
+  --heading-strong: #1f2b28;
+  --bg: #f4f7f6;
+  --text: #1f2b28;
+  --muted: #5c6863;
+  --weak: #919b96;
+  --border: #d1d9d6;
+  --line: #ebeeed;
+  --green: #20a565;
+  --shadow: 0 18px 45px rgba(28, 103, 69, 0.10);
+  --soft-shadow: 0 8px 24px rgba(31, 43, 40, 0.06);
+  --primary-shadow: rgba(32, 165, 101, 0.20);
+  --primary-shadow-strong: rgba(32, 165, 101, 0.28);
+  --primary-shadow-soft: rgba(32, 165, 101, 0.10);
 }
 
 * {
@@ -56,9 +100,9 @@ a {
   display: grid;
   place-items: center;
   color: #fff;
-  background: linear-gradient(135deg, var(--primary), #55c7ff);
+  background: linear-gradient(135deg, var(--primary), var(--primary-accent));
   font-weight: 800;
-  box-shadow: 0 12px 28px rgba(22, 119, 255, 0.26);
+  box-shadow: 0 12px 28px var(--primary-shadow-strong);
 }
 
 .primary-btn,
@@ -75,13 +119,13 @@ a {
 .primary-btn {
   color: #fff;
   background: var(--primary);
-  box-shadow: 0 10px 22px rgba(22, 119, 255, 0.20);
+  box-shadow: 0 10px 22px var(--primary-shadow);
 }
 
 .secondary-btn {
   color: var(--primary);
   background: #fff;
-  border-color: #bfdbfe;
+  border-color: var(--primary-border);
 }
 
 .ghost-btn {
@@ -95,7 +139,7 @@ a {
   padding: 0 10px;
   color: var(--primary-dark);
   background: #fff;
-  border: 1px solid #d6e8ff;
+  border: 1px solid var(--primary-border-soft);
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
@@ -112,7 +156,7 @@ a {
   padding: 5px 9px;
   color: var(--primary);
   background: #fff;
-  border: 1px solid #d6e8ff;
+  border: 1px solid var(--primary-border-soft);
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;

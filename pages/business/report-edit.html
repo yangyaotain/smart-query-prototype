@@ -112,14 +112,14 @@
 
     .report-edit-page .editor-toolbar button:hover {
       color: var(--primary);
-      background: #f0f6ff;
-      border-color: rgba(22, 119, 255, 0.32);
+      background: var(--primary-bg);
+      border-color: rgba(var(--primary-rgb), 0.32);
     }
 
     .report-edit-page .editor-toolbar button.active {
       color: var(--primary);
       background: var(--primary-soft);
-      border-color: rgba(22, 119, 255, 0.45);
+      border-color: rgba(var(--primary-rgb), 0.45);
     }
 
     .report-edit-page .editor-toolbar button svg {
@@ -146,14 +146,14 @@
     }
 
     .report-edit-page .editor-toolbar .tb-select:hover {
-      border-color: rgba(22, 119, 255, 0.42);
-      background-color: #f8fbff;
+      border-color: rgba(var(--primary-rgb), 0.42);
+      background-color: var(--primary-panel-bg);
     }
 
     .report-edit-page .editor-toolbar .tb-select:focus {
       outline: none;
       border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+      box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
     }
 
     .report-edit-page .editor-toolbar .tb-spacer {
@@ -266,7 +266,7 @@
       height: 26px;
       padding: 0 10px;
       color: #475569;
-      background: #f8fbff;
+      background: var(--primary-panel-bg);
       border: 1px solid var(--line);
       border-radius: 6px;
       font-size: 12px;
@@ -275,7 +275,7 @@
 
     .editor-popover .color-actions button:hover {
       color: var(--primary);
-      border-color: rgba(22, 119, 255, 0.45);
+      border-color: rgba(var(--primary-rgb), 0.45);
     }
 
     /* 行距列表 */
@@ -299,7 +299,7 @@
 
     .editor-popover .lh-list button:hover {
       color: var(--primary);
-      background: #f0f6ff;
+      background: var(--primary-bg);
     }
 
     .editor-popover .lh-list button.active {
@@ -326,7 +326,7 @@
     }
 
     .editor-popover .tb-grid .cell.on {
-      background: rgba(22, 119, 255, 0.18);
+      background: rgba(var(--primary-rgb), 0.18);
       border-color: var(--primary);
     }
 
@@ -420,7 +420,7 @@
 
     .report-edit-page .editor-canvas article.report-page table:not(.data-table) th {
       color: #475569;
-      background: #f4f8ff;
+      background: var(--primary-hover-bg);
       font-weight: 600;
     }
 
@@ -457,7 +457,7 @@
       height: 28px;
       padding: 0 10px;
       color: #1f3a5f;
-      background: #f8fbff;
+      background: var(--primary-panel-bg);
       border: 1px solid var(--line);
       border-radius: 6px;
       font-size: 13px;
@@ -466,14 +466,14 @@
     .editor-find-bar input:focus {
       outline: none;
       border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+      box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
     }
 
     .editor-find-bar button {
       height: 26px;
       padding: 0 8px;
       color: #475569;
-      background: #f8fbff;
+      background: var(--primary-panel-bg);
       border: 1px solid var(--line);
       border-radius: 6px;
       font-size: 12px;
@@ -482,7 +482,7 @@
 
     .editor-find-bar button:hover {
       color: var(--primary);
-      border-color: rgba(22, 119, 255, 0.42);
+      border-color: rgba(var(--primary-rgb), 0.42);
     }
 
     .editor-find-bar .count {
@@ -536,7 +536,7 @@
       display: inline-flex;
       gap: 4px;
       padding: 3px;
-      background: #f4f8ff;
+      background: var(--primary-hover-bg);
       border: 1px solid #e6eefb;
       border-radius: 8px;
     }
@@ -619,8 +619,8 @@
 
     .db-pick-pagination .page-btn:hover:not(:disabled) {
       color: var(--primary);
-      border-color: rgba(22, 119, 255, 0.42);
-      background: #f0f6ff;
+      border-color: rgba(var(--primary-rgb), 0.42);
+      background: var(--primary-bg);
     }
 
     .db-pick-pagination .page-btn.active {
@@ -632,7 +632,7 @@
 
     .db-pick-pagination .page-btn:disabled {
       color: #c7d2e0;
-      background: #f8fbff;
+      background: var(--primary-panel-bg);
       cursor: not-allowed;
     }
 
@@ -659,7 +659,7 @@
     }
 
     .pick-card:hover {
-      border-color: rgba(22, 119, 255, 0.55);
+      border-color: rgba(var(--primary-rgb), 0.55);
       transform: translateY(-2px);
       box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
     }
@@ -667,7 +667,7 @@
     .pick-card.selected {
       border-color: var(--primary);
       background: var(--primary-soft);
-      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+      box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
     }
 
     .pick-card .check {
@@ -703,7 +703,7 @@
       height: 84px;
       margin-bottom: 10px;
       padding: 6px;
-      background: linear-gradient(180deg, #fbfdff, #f4f8ff);
+      background: linear-gradient(180deg, #fbfdff, var(--primary-hover-bg));
       border: 1px solid #e6eefb;
       border-radius: 8px;
       display: flex;
@@ -724,7 +724,7 @@
     }
     .pick-card .pc-thumb .pc-bars span {
       flex: 1;
-      background: linear-gradient(180deg, #5fa8ff, #1677ff);
+      background: linear-gradient(180deg, var(--primary-accent), var(--primary));
       border-radius: 3px 3px 0 0;
     }
 
@@ -732,7 +732,7 @@
       width: 56px;
       height: 56px;
       border-radius: 50%;
-      background: conic-gradient(#1677ff 0 32%, #36cfc9 32% 56%, #ffa940 56%, #9254de 80%, #ff7875 92%);
+      background: conic-gradient(var(--primary) 0 32%, #36cfc9 32% 56%, #ffa940 56%, #9254de 80%, #ff7875 92%);
       box-shadow: inset 0 0 0 8px #fff;
     }
 
@@ -748,7 +748,7 @@
       background: #c7d6f0;
       border-radius: 2px;
     }
-    .pick-card .pc-thumb .pc-table .row.head { background: #1677ff; height: 8px; }
+    .pick-card .pc-thumb .pc-table .row.head { background: var(--primary); height: 8px; }
 
     .pick-card .pc-name {
       color: #17375e;
@@ -773,7 +773,7 @@
       padding: 1px 6px;
       color: var(--primary);
       background: #fff;
-      border: 1px solid rgba(22, 119, 255, 0.25);
+      border: 1px solid rgba(var(--primary-rgb), 0.25);
       border-radius: 4px;
       font-size: 10.5px;
       font-weight: 600;
@@ -829,8 +829,8 @@
 
     .report-edit-page .editor-canvas article.report-page:focus,
     .report-edit-page .editor-canvas article.report-page:focus-within {
-      border-color: rgba(22, 119, 255, 0.55);
-      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+      border-color: rgba(var(--primary-rgb), 0.55);
+      box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
     }
 
     .report-edit-page .editor-canvas article.report-page h1 {
@@ -875,7 +875,7 @@
       margin: 12px 0;
       padding: 10px 16px;
       color: #475569;
-      background: #f8fbff;
+      background: var(--primary-panel-bg);
       border-left: 3px solid var(--primary);
       border-radius: 4px;
       font-size: 14px;
@@ -906,7 +906,7 @@
 
     .report-edit-page .editor-canvas article.report-page .kpi-card {
       padding: 12px 14px;
-      background: linear-gradient(180deg, #f8fbff, #fff);
+      background: linear-gradient(180deg, var(--primary-panel-bg), #fff);
       border: 1px solid #e6eefb;
       border-radius: 12px;
     }
@@ -951,7 +951,7 @@
 
     .report-edit-page .editor-canvas article.report-page table.data-table th {
       color: #475569;
-      background: #f8fbff;
+      background: var(--primary-panel-bg);
       font-weight: 600;
     }
 
@@ -1074,7 +1074,7 @@
     }
 
     .report-edit-page .ai-write-menu button:hover {
-      background: #f0f6ff;
+      background: var(--primary-bg);
     }
 
     .report-edit-page .ai-write-menu .ico {
@@ -1135,8 +1135,8 @@
 
     .ai-chat-input-wrap .input-card .input-tools button:hover {
       color: var(--primary);
-      background: #eaf3ff;
-      border-color: rgba(22, 119, 255, 0.32);
+      background: var(--primary-soft);
+      border-color: rgba(var(--primary-rgb), 0.32);
     }
 
     .ai-chat-input-wrap .input-card .input-tools svg {
@@ -1228,7 +1228,7 @@
       padding: 4px 8px 4px 5px;
       max-width: 220px;
       background: rgba(255, 255, 255, 0.92);
-      border: 1px solid rgba(22, 119, 255, 0.18);
+      border: 1px solid rgba(var(--primary-rgb), 0.18);
       border-radius: 8px;
       font-size: 11.5px;
       color: #1f3f7a;
@@ -1264,7 +1264,7 @@
     .ai-chat-pane .target-card {
       margin: 0 12px 10px;
       padding: 10px 12px;
-      background: #f4f8ff;
+      background: var(--primary-hover-bg);
       border: 1px solid #dcecff;
       border-radius: 10px;
       font-size: 12.5px;
@@ -1285,7 +1285,7 @@
       padding: 2px 8px;
       color: var(--primary);
       background: #fff;
-      border: 1px solid rgba(22, 119, 255, 0.25);
+      border: 1px solid rgba(var(--primary-rgb), 0.25);
       border-radius: 999px;
       font-size: 11px;
     }
@@ -1307,7 +1307,7 @@
 
     .ai-chat-pane .target-card .tc-head .clear:hover {
       color: var(--primary);
-      background: rgba(22, 119, 255, 0.08);
+      background: rgba(var(--primary-rgb), 0.08);
     }
 
     .ai-chat-pane .target-card .tc-body {
@@ -1527,7 +1527,7 @@
 
         <!-- 插入仪表盘 -->
         <div class="tb-group">
-          <button type="button" id="btnInsertDashboard" title="从我的仪表盘选择图表插入到报告" style="width:auto;padding:0 12px;color:var(--primary);background:var(--primary-soft);border-color:rgba(22,119,255,0.45);font-weight:600;">
+          <button type="button" id="btnInsertDashboard" title="从我的仪表盘选择图表插入到报告" style="width:auto;padding:0 12px;color:var(--primary);background:var(--primary-soft);border-color:rgba(var(--primary-rgb),0.45);font-weight:600;">
             <svg viewBox="0 0 24 24" style="margin-right:4px;"><rect x="3" y="3" width="8" height="9" rx="1.6"/><rect x="13" y="3" width="8" height="5" rx="1.6"/><rect x="3" y="14" width="8" height="7" rx="1.6"/><rect x="13" y="10" width="8" height="11" rx="1.6"/></svg>
             插入仪表盘
           </button>
@@ -1908,7 +1908,8 @@
       });
 
       function buildChartOption(type, title) {
-        const COLOR = ['#1677ff', '#36cfc9', '#ffa940', '#ff7875', '#9254de', '#52c41a', '#13c2c2', '#fadb14'];
+        const theme = window.getSmartQueryThemeColors();
+        const COLOR = [theme.primary, '#36cfc9', '#ffa940', '#ff7875', '#9254de', '#52c41a', '#13c2c2', '#fadb14'];
         const baseTextStyle = { color: '#475569', fontSize: 11 };
         const baseGrid = { left: 50, right: 24, top: 30, bottom: 28 };
         const t = title || '';
@@ -1977,7 +1978,7 @@
             grid: { left: 70, right: 30, top: 30, bottom: 56 },
             xAxis: { type: 'category', data: xAxis, splitArea: { show: true }, axisLabel: baseTextStyle, axisLine: { lineStyle: { color: '#dbe2ec' } } },
             yAxis: { type: 'category', data: yAxis, splitArea: { show: true }, axisLabel: baseTextStyle, axisLine: { lineStyle: { color: '#dbe2ec' } } },
-            visualMap: { min: 0, max: 100, calculable: true, orient: 'horizontal', left: 'center', bottom: 0, inRange: { color: ['#e6f4ff', '#1677ff', '#0958d9'] }, textStyle: baseTextStyle },
+            visualMap: { min: 0, max: 100, calculable: true, orient: 'horizontal', left: 'center', bottom: 0, inRange: { color: theme.heatmapPalette }, textStyle: baseTextStyle },
             series: [{ name: title || '热力', type: 'heatmap', data: data, label: { show: true, fontSize: 10, color: '#fff' }, emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.2)' } } }]
           };
         }
@@ -2303,11 +2304,11 @@
       const PALETTE = [
         '#000000', '#374151', '#6b7280', '#9ca3af', '#d1d5db', '#ffffff', '#fafafa', '#f3f4f6',
         '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981', '#14b8a6',
-        '#06b6d4', '#0ea5e9', '#1677ff', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899'
+        '#06b6d4', '#0ea5e9', window.getSmartQueryThemeColors().primary, '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899'
       ];
       const HIGHLIGHTS = [
         '#fef3c7', '#fde68a', '#fed7aa', '#fecaca', '#fbcfe8', '#e9d5ff', '#ddd6fe', '#c7d2fe',
-        '#bfdbfe', '#bae6fd', '#a5f3fc', '#a7f3d0', '#d9f99d', '#fef08a', '#fcd34d', '#fdba74'
+        window.getSmartQueryThemeColors().primaryBorder, '#bae6fd', '#a5f3fc', '#a7f3d0', '#d9f99d', '#fef08a', '#fcd34d', '#fdba74'
       ];
 
       function buildPopoverHTML(type) {
@@ -2321,7 +2322,7 @@
               cells +
             '</div>' +
             '<div class="color-actions">' +
-              '<input type="color" id="popColorPicker" value="#1677ff" />' +
+              '<input type="color" id="popColorPicker" value="' + window.getSmartQueryThemeColors().primary + '" />' +
               '<button type="button" data-act="apply-pick">应用自定义</button>' +
             '</div>'
           );
@@ -3356,14 +3357,15 @@
       }
 
       function buildPickThumb(type) {
+        const theme = window.getSmartQueryThemeColors();
         if (type === 'line') {
           return (
             '<svg viewBox="0 0 100 50" preserveAspectRatio="none">' +
               '<defs><linearGradient id="pcl" x1="0" y1="0" x2="0" y2="1">' +
-                '<stop offset="0%" stop-color="#1677ff" stop-opacity="0.32"/>' +
-                '<stop offset="100%" stop-color="#1677ff" stop-opacity="0"/></linearGradient></defs>' +
+                '<stop offset="0%" stop-color="' + theme.primary + '" stop-opacity="0.32"/>' +
+                '<stop offset="100%" stop-color="' + theme.primary + '" stop-opacity="0"/></linearGradient></defs>' +
               '<path d="M2,40 L14,32 L26,36 L38,22 L50,28 L62,18 L74,24 L86,12 L98,16 L98,50 L2,50 Z" fill="url(#pcl)"/>' +
-              '<path d="M2,40 L14,32 L26,36 L38,22 L50,28 L62,18 L74,24 L86,12 L98,16" fill="none" stroke="#1677ff" stroke-width="1.6" stroke-linecap="round"/>' +
+              '<path d="M2,40 L14,32 L26,36 L38,22 L50,28 L62,18 L74,24 L86,12 L98,16" fill="none" stroke="' + theme.primary + '" stroke-width="1.6" stroke-linecap="round"/>' +
             '</svg>'
           );
         }
