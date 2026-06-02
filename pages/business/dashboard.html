@@ -6,6 +6,382 @@
   <title>我的仪表盘 - 智能问数</title>
   <link rel="stylesheet" href="../../assets/css/theme.css" />
   <link rel="stylesheet" href="../../assets/css/business.css" />
+  <style>
+    .preview-drawer .drawer-head > div:first-child {
+      min-width: 0;
+    }
+
+    .preview-drawer-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+
+    .preview-drawer .drawer-body {
+      position: relative;
+    }
+
+    .preview-update-mask {
+      position: absolute;
+      inset: 0;
+      z-index: 8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(15, 23, 42, 0.34);
+      backdrop-filter: blur(10px);
+    }
+
+    .preview-update-panel {
+      width: min(610px, calc(100% - 28px));
+      max-height: calc(100% - 24px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: #fff;
+      border: 1px solid rgba(var(--primary-rgb), 0.18);
+      border-radius: 18px;
+      box-shadow: 0 24px 56px rgba(15, 23, 42, 0.22);
+      animation: previewUpdateIn 0.2s ease both;
+    }
+
+    @keyframes previewUpdateIn {
+      from { opacity: 0; transform: translateY(8px) scale(0.985); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .preview-update-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 16px 18px;
+      background: linear-gradient(135deg, var(--primary-soft), var(--primary-panel-bg));
+      border-bottom: 1px solid var(--line);
+    }
+
+    .preview-update-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .preview-update-orb {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary), var(--primary-accent));
+      border-radius: 14px;
+      box-shadow: 0 12px 26px var(--primary-shadow);
+    }
+
+    .preview-update-orb::after {
+      content: "";
+      position: absolute;
+      inset: -4px;
+      border: 1px solid rgba(var(--primary-rgb), 0.24);
+      border-radius: 18px;
+      animation: previewUpdateGlow 1.6s ease-out infinite;
+    }
+
+    @keyframes previewUpdateGlow {
+      0% { transform: scale(0.94); opacity: 0.75; }
+      100% { transform: scale(1.22); opacity: 0; }
+    }
+
+    .preview-update-orb svg,
+    .preview-update-stop svg {
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .preview-update-orb svg {
+      width: 20px;
+      height: 20px;
+      stroke-width: 1.9;
+    }
+
+    .preview-update-title h3 {
+      margin: 0 0 5px;
+      color: var(--heading);
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .preview-update-title p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .preview-update-badge {
+      height: 28px;
+      padding: 0 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      flex: 0 0 auto;
+      color: var(--primary);
+      background: #fff;
+      border: 1px solid var(--primary-border-soft);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.08);
+    }
+
+    .preview-update-badge::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 0 5px rgba(var(--primary-rgb), 0.1);
+    }
+
+    .preview-update-body {
+      min-height: 0;
+      overflow: auto;
+      padding: 16px 18px 18px;
+    }
+
+    .preview-update-overview {
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 16px;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--primary-panel-bg), #fff);
+      border: 1px solid var(--primary-border-soft);
+      border-radius: 16px;
+    }
+
+    .preview-update-ring {
+      --update-progress: 0%;
+      width: 92px;
+      height: 92px;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at center, #fff 58%, transparent 59%),
+        conic-gradient(var(--primary) var(--update-progress), var(--primary-border-soft) 0);
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 1px rgba(var(--primary-rgb), 0.08);
+    }
+
+    .preview-update-ring strong {
+      color: var(--heading);
+      font-size: 20px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .preview-update-summary h4 {
+      margin: 0 0 8px;
+      color: var(--heading);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .preview-update-summary p {
+      margin: 0;
+      color: #475569;
+      font-size: 12px;
+      line-height: 1.65;
+    }
+
+    .preview-update-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .preview-update-metric {
+      min-height: 28px;
+      padding: 5px 9px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #475569;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .preview-update-metric strong {
+      color: var(--primary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .preview-update-progress {
+      height: 8px;
+      overflow: hidden;
+      background: var(--primary-border-soft);
+      border-radius: 999px;
+    }
+
+    .preview-update-progress span {
+      width: 0;
+      height: 100%;
+      display: block;
+      background: linear-gradient(90deg, var(--primary), var(--primary-accent));
+      border-radius: inherit;
+      transition: width 0.28s ease;
+    }
+
+    .preview-update-process {
+      margin-top: 14px;
+      overflow: hidden;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+
+    .preview-update-process-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      background: var(--primary-panel-bg);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .preview-update-process-head h4 {
+      margin: 0;
+      color: var(--heading);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .preview-update-process-head span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .preview-update-timeline {
+      padding: 14px 16px 0;
+    }
+
+    .preview-update-step {
+      position: relative;
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      gap: 9px;
+      padding-bottom: 14px;
+    }
+
+    .preview-update-step:not(:last-child)::before {
+      content: "";
+      position: absolute;
+      left: 8px;
+      top: 21px;
+      bottom: 0;
+      width: 1px;
+      background: var(--primary-border-soft);
+    }
+
+    .preview-update-step-dot {
+      z-index: 1;
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+      display: grid;
+      place-items: center;
+      color: #94a3b8;
+      background: #fff;
+      border: 1px solid #dbe2ec;
+      border-radius: 50%;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .preview-update-step.is-done .preview-update-step-dot {
+      color: #fff;
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .preview-update-step.is-current .preview-update-step-dot {
+      color: #fff;
+      background: var(--orange);
+      border-color: var(--orange);
+      animation: thinkingPulse 1.1s infinite;
+    }
+
+    .preview-update-step strong {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--heading);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .preview-update-step p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .preview-update-step.is-current strong {
+      color: var(--primary);
+    }
+
+    .preview-update-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 13px 18px;
+      background: #fff;
+      border-top: 1px solid var(--line);
+    }
+
+    .preview-update-foot p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .preview-update-stop {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex: 0 0 auto;
+      color: #dc2626;
+      background: #fff;
+      border-color: #fecaca;
+    }
+
+    .preview-update-stop:hover {
+      color: #b91c1c;
+      background: #fef2f2;
+      border-color: #fca5a5;
+    }
+
+    .preview-update-stop svg {
+      width: 14px;
+      height: 14px;
+      stroke-width: 2;
+    }
+  </style>
 </head>
 <body>
   <header class="topbar">
@@ -293,7 +669,13 @@
         <h3 id="previewTitle">仪表盘预览</h3>
         <p id="previewMeta">分析主题：销售分析 · 查询时间：2026-04-28 08:43 · 数据更新时间：2026-04-28 08:00</p>
       </div>
-      <button class="close" data-act="close">×</button>
+      <div class="preview-drawer-actions">
+        <button class="action-dropdown-btn" type="button" id="previewDataUpdateBtn" onclick="startPreviewDataUpdate()">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.5 6.2"></path><path d="M3 12A9 9 0 0 1 18.5 5.8"></path><path d="M18 2v5h-5"></path><path d="M6 22v-5h5"></path></svg>
+          <span>数据更新</span>
+        </button>
+        <button class="close" data-act="close">×</button>
+      </div>
     </div>
 
     <div class="drawer-body">
@@ -334,6 +716,79 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="action-icon"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg>
           </button>
         </div>
+      </div>
+
+      <div class="preview-update-mask hidden" id="previewUpdateMask" role="dialog" aria-modal="true" aria-labelledby="previewUpdateTitle">
+        <section class="preview-update-panel">
+          <div class="preview-update-head">
+            <div class="preview-update-title">
+              <div class="preview-update-orb">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3"></path><path d="M12 18v3"></path><path d="M3 12h3"></path><path d="M18 12h3"></path><path d="M5.6 5.6l2.1 2.1"></path><path d="M16.3 16.3l2.1 2.1"></path><path d="M18.4 5.6l-2.1 2.1"></path><path d="M7.7 16.3l-2.1 2.1"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </div>
+              <div>
+                <h3 id="previewUpdateTitle">数据更新中</h3>
+                <p id="previewUpdateSubtitle">AI 正在刷新当前预览数据、图表和明细表</p>
+              </div>
+            </div>
+            <div class="preview-update-badge" id="previewUpdateBadge">运行中</div>
+          </div>
+          <div class="preview-update-body">
+            <div class="preview-update-overview">
+              <div class="preview-update-ring" id="previewUpdateRing">
+                <strong id="previewUpdatePercent">0%</strong>
+              </div>
+              <div class="preview-update-summary">
+                <h4 id="previewUpdatePhase">准备更新</h4>
+                <p id="previewUpdateDesc">正在读取当前预览的仪表盘、分析主题和数据更新时间。</p>
+                <div class="preview-update-metrics">
+                  <span class="preview-update-metric">当前仪表盘 <strong id="previewUpdateName">近6个月销售额趋势</strong></span>
+                  <span class="preview-update-metric">已用时间 <strong id="previewUpdateElapsed">0.0s</strong></span>
+                  <span class="preview-update-metric">模拟耗时 <strong>10s</strong></span>
+                </div>
+              </div>
+            </div>
+            <div class="preview-update-progress"><span id="previewUpdateProgressBar"></span></div>
+            <div class="preview-update-process">
+              <div class="preview-update-process-head">
+                <h4>AI 思考与数据执行过程</h4>
+                <span id="previewUpdateStepSummary">0 / 6 已完成</span>
+              </div>
+              <div class="preview-update-timeline" id="previewUpdateTimeline">
+                <div class="preview-update-step" data-step="0">
+                  <div class="preview-update-step-dot">1</div>
+                  <div><strong>识别预览内容</strong><p>读取仪表盘名称、分析主题、图表类型和明细表结构。</p></div>
+                </div>
+                <div class="preview-update-step" data-step="1">
+                  <div class="preview-update-step-dot">2</div>
+                  <div><strong>确认指标口径</strong><p>匹配销售额、订单量、环比、同比和客单价等指标口径。</p></div>
+                </div>
+                <div class="preview-update-step" data-step="2">
+                  <div class="preview-update-step-dot">3</div>
+                  <div><strong>刷新图表数据</strong><p>同步当前图表所需的数据切片，并准备重绘图形。</p></div>
+                </div>
+                <div class="preview-update-step" data-step="3">
+                  <div class="preview-update-step-dot">4</div>
+                  <div><strong>校验明细数据</strong><p>检查明细表中的缺失值、异常波动和统计口径差异。</p></div>
+                </div>
+                <div class="preview-update-step" data-step="4">
+                  <div class="preview-update-step-dot">5</div>
+                  <div><strong>重新生成结论</strong><p>结合最新数据生成分析结论、标签和风险提示。</p></div>
+                </div>
+                <div class="preview-update-step" data-step="5">
+                  <div class="preview-update-step-dot">6</div>
+                  <div><strong>汇总更新结果</strong><p>整理更新时间和预览摘要，准备恢复抽屉内容。</p></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="preview-update-foot">
+            <p id="previewUpdateFootNote">更新期间当前预览内容暂不变更，可关闭抽屉或打开其他预览。</p>
+            <button class="ghost-btn preview-update-stop" type="button" id="previewUpdateStopBtn">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"></rect></svg>
+              <span>停止更新</span>
+            </button>
+          </div>
+        </section>
       </div>
     </div>
 
@@ -620,16 +1075,255 @@
       // ---- 预览抽屉控制 ----
       const previewMask = document.getElementById('previewMask');
       const previewDrawer = document.getElementById('previewDrawer');
+      let currentPreviewItem = null;
+
+      const PREVIEW_UPDATE_KEY = 'smart-query-dashboard-preview-update-task';
+      const PREVIEW_UPDATE_DURATION = 10000;
+      const PREVIEW_UPDATE_STEPS = [
+        { at: 0, phase: 'AI 思考过程', desc: '正在识别当前仪表盘、分析主题、图表类型和明细表结构。' },
+        { at: 1600, phase: '指标口径确认', desc: '正在匹配销售额、订单量、环比、同比和客单价等核心指标。' },
+        { at: 3200, phase: '图表数据刷新', desc: '正在同步当前图表所需的数据切片，并准备重绘图形。' },
+        { at: 5000, phase: '明细数据校验', desc: '正在检查明细表中的缺失值、异常波动和统计口径差异。' },
+        { at: 6800, phase: '数据分析过程', desc: '正在结合最新数据生成分析结论、标签和风险提示。' },
+        { at: 8400, phase: '结果汇总', desc: '正在整理更新时间和预览摘要，准备恢复抽屉内容。' }
+      ];
+      let previewUpdateTimer = null;
+      let previewUpdateTask = null;
+
+      const previewUpdateEls = {
+        mask: document.getElementById('previewUpdateMask'),
+        title: document.getElementById('previewUpdateTitle'),
+        subtitle: document.getElementById('previewUpdateSubtitle'),
+        badge: document.getElementById('previewUpdateBadge'),
+        ring: document.getElementById('previewUpdateRing'),
+        percent: document.getElementById('previewUpdatePercent'),
+        phase: document.getElementById('previewUpdatePhase'),
+        desc: document.getElementById('previewUpdateDesc'),
+        name: document.getElementById('previewUpdateName'),
+        elapsed: document.getElementById('previewUpdateElapsed'),
+        progressBar: document.getElementById('previewUpdateProgressBar'),
+        stepSummary: document.getElementById('previewUpdateStepSummary'),
+        timeline: document.getElementById('previewUpdateTimeline'),
+        footNote: document.getElementById('previewUpdateFootNote'),
+        stopBtn: document.getElementById('previewUpdateStopBtn'),
+        trigger: document.getElementById('previewDataUpdateBtn')
+      };
+
+      function savePreviewUpdateTask(task) {
+        try {
+          localStorage.setItem(PREVIEW_UPDATE_KEY, JSON.stringify(task));
+        } catch (e) {}
+      }
+
+      function clearPreviewUpdateTask() {
+        try {
+          localStorage.removeItem(PREVIEW_UPDATE_KEY);
+        } catch (e) {}
+      }
+
+      function readPreviewUpdateTask() {
+        try {
+          const raw = localStorage.getItem(PREVIEW_UPDATE_KEY);
+          if (!raw) return null;
+          const task = JSON.parse(raw);
+          if (!task || !task.startedAt || task.status !== 'running') return null;
+          return task;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function getPreviewUpdateElapsed(task) {
+        return Math.max(0, Date.now() - Number(task.startedAt || 0));
+      }
+
+      function getPreviewUpdateStepIndex(elapsed) {
+        let index = 0;
+        PREVIEW_UPDATE_STEPS.forEach((step, i) => {
+          if (elapsed >= step.at) index = i;
+        });
+        return index;
+      }
+
+      function getPreviewDataUpdateText(item) {
+        return (item && item.dataUpdatedAt) || '今日 08:00';
+      }
+
+      function buildPreviewMetaText(item, tpl) {
+        return '分析主题：' + tpl.subject + ' · 查询时间：' + item.time + ' · 数据更新时间：' + getPreviewDataUpdateText(item);
+      }
+
+      function buildPreviewChartMetaText(item, tpl) {
+        return tpl.chartMeta.replace(/数据更新：.*$/, '数据更新：' + getPreviewDataUpdateText(item));
+      }
+
+      function refreshPreviewTimeText(item) {
+        if (!item || !currentPreviewItem || currentPreviewItem.id !== item.id || previewDrawer.classList.contains('hidden')) return;
+        const tpl = PREVIEW_TPL[item.thumb] || PREVIEW_TPL.line;
+        document.getElementById('previewMeta').textContent = buildPreviewMetaText(item, tpl);
+        document.getElementById('previewChartMeta').textContent = buildPreviewChartMetaText(item, tpl);
+      }
+
+      function setPreviewUpdateVisible(visible) {
+        if (!previewUpdateEls.mask) return;
+        previewUpdateEls.mask.classList.toggle('hidden', !visible);
+        if (previewUpdateEls.trigger) previewUpdateEls.trigger.disabled = visible;
+      }
+
+      function isPreviewUpdateForCurrent(task) {
+        return !!task && !!currentPreviewItem && task.dashboardId === currentPreviewItem.id && !previewDrawer.classList.contains('hidden');
+      }
+
+      function paintPreviewUpdate(task) {
+        const elapsed = Math.min(getPreviewUpdateElapsed(task), PREVIEW_UPDATE_DURATION);
+        const progress = Math.min(1, elapsed / PREVIEW_UPDATE_DURATION);
+        const percent = Math.round(progress * 100);
+        const stepIndex = getPreviewUpdateStepIndex(elapsed);
+        const currentStep = PREVIEW_UPDATE_STEPS[stepIndex];
+        const isFinished = elapsed >= PREVIEW_UPDATE_DURATION;
+        const completedCount = isFinished ? PREVIEW_UPDATE_STEPS.length : stepIndex;
+
+        previewUpdateEls.title.textContent = isFinished ? '数据更新完成' : '数据更新中';
+        previewUpdateEls.subtitle.textContent = isFinished
+          ? '已完成预览数据刷新、明细校验和分析结论汇总'
+          : 'AI 正在刷新当前预览数据、图表和明细表';
+        previewUpdateEls.badge.textContent = isFinished ? '已完成' : '运行中';
+        previewUpdateEls.percent.textContent = percent + '%';
+        previewUpdateEls.ring.style.setProperty('--update-progress', percent + '%');
+        previewUpdateEls.progressBar.style.width = percent + '%';
+        previewUpdateEls.phase.textContent = isFinished ? '更新完成' : currentStep.phase;
+        previewUpdateEls.desc.textContent = isFinished ? '最新预览数据已完成同步，分析结论已汇总。' : currentStep.desc;
+        previewUpdateEls.name.textContent = task.dashboardName || '当前仪表盘';
+        previewUpdateEls.elapsed.textContent = (elapsed / 1000).toFixed(1) + 's';
+        previewUpdateEls.stepSummary.textContent = completedCount + ' / ' + PREVIEW_UPDATE_STEPS.length + ' 已完成';
+        previewUpdateEls.footNote.textContent = isFinished
+          ? '更新已完成，正在恢复抽屉内容。'
+          : '更新期间当前预览内容暂不变更，可关闭抽屉或打开其他预览。';
+
+        previewUpdateEls.timeline.querySelectorAll('.preview-update-step').forEach((stepNode, i) => {
+          const dot = stepNode.querySelector('.preview-update-step-dot');
+          stepNode.classList.remove('is-done', 'is-current');
+          if (isFinished || i < stepIndex) {
+            stepNode.classList.add('is-done');
+            dot.textContent = '✓';
+          } else if (i === stepIndex) {
+            stepNode.classList.add('is-current');
+            dot.textContent = '•';
+          } else {
+            dot.textContent = String(i + 1);
+          }
+        });
+      }
+
+      function finishPreviewDataUpdate() {
+        if (!previewUpdateTask) return;
+        const finishedTask = previewUpdateTask;
+        clearInterval(previewUpdateTimer);
+        previewUpdateTimer = null;
+        if (isPreviewUpdateForCurrent(finishedTask)) {
+          paintPreviewUpdate(finishedTask);
+        }
+        clearPreviewUpdateTask();
+
+        const now = new Date();
+        const timeText = '今日 ' + now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
+        const target = DASHBOARDS.find((d) => d.id === finishedTask.dashboardId);
+        if (target) {
+          target.dataUpdatedAt = timeText;
+          refreshPreviewTimeText(target);
+        }
+
+        previewUpdateTask = null;
+        setTimeout(() => {
+          setPreviewUpdateVisible(false);
+          showToast((finishedTask.dashboardName || '仪表盘') + ' 数据更新完成');
+        }, isPreviewUpdateForCurrent(finishedTask) ? 650 : 0);
+      }
+
+      function syncPreviewUpdateMask() {
+        if (!previewUpdateTask) {
+          setPreviewUpdateVisible(false);
+          return;
+        }
+        if (getPreviewUpdateElapsed(previewUpdateTask) >= PREVIEW_UPDATE_DURATION) {
+          finishPreviewDataUpdate();
+          return;
+        }
+        if (isPreviewUpdateForCurrent(previewUpdateTask)) {
+          setPreviewUpdateVisible(true);
+          paintPreviewUpdate(previewUpdateTask);
+        } else {
+          setPreviewUpdateVisible(false);
+        }
+      }
+
+      function openPreviewUpdateTask(task) {
+        previewUpdateTask = task;
+        clearInterval(previewUpdateTimer);
+        syncPreviewUpdateMask();
+        previewUpdateTimer = setInterval(() => {
+          if (!previewUpdateTask) return;
+          if (getPreviewUpdateElapsed(previewUpdateTask) >= PREVIEW_UPDATE_DURATION) {
+            finishPreviewDataUpdate();
+          } else {
+            syncPreviewUpdateMask();
+          }
+        }, 180);
+      }
+
+      function restorePreviewUpdateTask() {
+        const storedTask = readPreviewUpdateTask();
+        if (!storedTask) {
+          setPreviewUpdateVisible(false);
+          return;
+        }
+        if (getPreviewUpdateElapsed(storedTask) >= PREVIEW_UPDATE_DURATION) {
+          previewUpdateTask = storedTask;
+          finishPreviewDataUpdate();
+        } else {
+          openPreviewUpdateTask(storedTask);
+        }
+      }
+
+      window.startPreviewDataUpdate = function () {
+        const storedTask = readPreviewUpdateTask();
+        if (storedTask && getPreviewUpdateElapsed(storedTask) < PREVIEW_UPDATE_DURATION) {
+          openPreviewUpdateTask(storedTask);
+          if (!currentPreviewItem || storedTask.dashboardId !== currentPreviewItem.id) {
+            showToast('「' + (storedTask.dashboardName || '仪表盘') + '」正在更新，打开该预览可查看进度');
+          }
+          return;
+        }
+        if (!currentPreviewItem) return;
+        const task = {
+          status: 'running',
+          dashboardId: currentPreviewItem.id,
+          dashboardName: currentPreviewItem.name,
+          startedAt: Date.now(),
+          duration: PREVIEW_UPDATE_DURATION
+        };
+        savePreviewUpdateTask(task);
+        openPreviewUpdateTask(task);
+      };
+
+      previewUpdateEls.stopBtn.addEventListener('click', function () {
+        clearInterval(previewUpdateTimer);
+        previewUpdateTimer = null;
+        previewUpdateTask = null;
+        clearPreviewUpdateTask();
+        setPreviewUpdateVisible(false);
+        showToast('已停止更新，预览内容保持不变');
+      });
 
       function openPreview(item) {
+        currentPreviewItem = item;
         const tpl = PREVIEW_TPL[item.thumb] || PREVIEW_TPL.line;
         document.getElementById('previewTitle').textContent = item.name + ' · 分析结果';
-        document.getElementById('previewMeta').textContent =
-          '分析主题：' + tpl.subject + ' · 查询时间：' + item.time + ' · 数据更新时间：今日 08:00';
+        document.getElementById('previewMeta').textContent = buildPreviewMetaText(item, tpl);
         document.getElementById('previewConclusion').textContent = tpl.conclusion;
         document.getElementById('previewTags').innerHTML = tpl.tags.map((t) => '<span>' + t + '</span>').join('');
         document.getElementById('previewChartTitle').textContent = tpl.chartTitle;
-        document.getElementById('previewChartMeta').textContent = tpl.chartMeta;
+        document.getElementById('previewChartMeta').textContent = buildPreviewChartMetaText(item, tpl);
 
         const chartArea = document.getElementById('previewChartArea');
         const chartCard = document.getElementById('previewChartCard');
@@ -654,12 +1348,14 @@
         previewMask.classList.remove('hidden');
         previewDrawer.classList.remove('hidden');
         previewDrawer.classList.add('open');
+        restorePreviewUpdateTask();
       }
 
       function closePreview() {
         previewMask.classList.add('hidden');
         previewDrawer.classList.add('hidden');
         previewDrawer.classList.remove('open');
+        setPreviewUpdateVisible(false);
       }
 
       previewMask.addEventListener('click', closePreview);

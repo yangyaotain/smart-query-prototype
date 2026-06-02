@@ -333,6 +333,375 @@
       box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
+    /* 数据更新遮罩：跟随系统主题变量（蓝色 / 绿色） */
+    .report-page-body .module-content {
+      position: relative;
+    }
+
+    .report-update-mask {
+      position: absolute;
+      inset: 0;
+      z-index: 12;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(15, 23, 42, 0.42);
+      backdrop-filter: blur(12px);
+    }
+
+    .report-update-panel {
+      width: min(760px, calc(100vw - 48px));
+      max-height: calc(100% - 32px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: #fff;
+      border: 1px solid rgba(var(--primary-rgb), 0.18);
+      border-radius: 18px;
+      box-shadow: 0 28px 72px rgba(15, 23, 42, 0.22);
+      animation: reportUpdateIn 0.2s ease both;
+    }
+
+    @keyframes reportUpdateIn {
+      from { opacity: 0; transform: translateY(8px) scale(0.985); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .report-update-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 22px;
+      background: linear-gradient(135deg, var(--primary-soft), var(--primary-panel-bg));
+      border-bottom: 1px solid var(--line);
+    }
+
+    .report-update-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .report-update-orb {
+      position: relative;
+      width: 42px;
+      height: 42px;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary), var(--primary-accent));
+      border-radius: 14px;
+      box-shadow: 0 12px 26px var(--primary-shadow);
+    }
+
+    .report-update-orb::after {
+      content: "";
+      position: absolute;
+      inset: -4px;
+      border: 1px solid rgba(var(--primary-rgb), 0.24);
+      border-radius: 18px;
+      animation: reportUpdateGlow 1.6s ease-out infinite;
+    }
+
+    @keyframes reportUpdateGlow {
+      0% { transform: scale(0.94); opacity: 0.75; }
+      100% { transform: scale(1.22); opacity: 0; }
+    }
+
+    .report-update-orb svg {
+      width: 21px;
+      height: 21px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .report-update-title h3 {
+      margin: 0 0 5px;
+      color: var(--heading);
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .report-update-title p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .report-update-badge {
+      height: 30px;
+      padding: 0 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      flex: 0 0 auto;
+      color: var(--primary);
+      background: #fff;
+      border: 1px solid var(--primary-border-soft);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.08);
+    }
+
+    .report-update-badge::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 0 5px rgba(var(--primary-rgb), 0.1);
+    }
+
+    .report-update-body {
+      min-height: 0;
+      overflow: auto;
+      padding: 18px 22px 20px;
+    }
+
+    .report-update-overview {
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      gap: 18px;
+      align-items: center;
+      margin-bottom: 18px;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--primary-panel-bg), #fff);
+      border: 1px solid var(--primary-border-soft);
+      border-radius: 16px;
+    }
+
+    .report-update-ring {
+      --update-progress: 0%;
+      width: 104px;
+      height: 104px;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at center, #fff 58%, transparent 59%),
+        conic-gradient(var(--primary) var(--update-progress), var(--primary-border-soft) 0);
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 1px rgba(var(--primary-rgb), 0.08);
+    }
+
+    .report-update-ring strong {
+      color: var(--heading);
+      font-size: 22px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .report-update-summary {
+      min-width: 0;
+    }
+
+    .report-update-summary h4 {
+      margin: 0 0 8px;
+      color: var(--heading);
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .report-update-summary p {
+      margin: 0;
+      color: #475569;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .report-update-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .report-update-metric {
+      min-height: 30px;
+      padding: 6px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #475569;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .report-update-metric strong {
+      color: var(--primary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .report-update-progress {
+      height: 8px;
+      overflow: hidden;
+      background: var(--primary-border-soft);
+      border-radius: 999px;
+    }
+
+    .report-update-progress span {
+      width: 0;
+      height: 100%;
+      display: block;
+      background: linear-gradient(90deg, var(--primary), var(--primary-accent));
+      border-radius: inherit;
+      transition: width 0.28s ease;
+    }
+
+    .report-update-process {
+      margin-top: 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .report-update-process-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--primary-panel-bg);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .report-update-process-head h4 {
+      margin: 0;
+      color: var(--heading);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .report-update-process-head span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .report-update-timeline {
+      padding: 16px 18px 2px;
+    }
+
+    .report-update-step {
+      position: relative;
+      display: grid;
+      grid-template-columns: 24px 1fr;
+      gap: 10px;
+      padding-bottom: 16px;
+    }
+
+    .report-update-step:not(:last-child)::before {
+      content: "";
+      position: absolute;
+      left: 9px;
+      top: 22px;
+      bottom: 0;
+      width: 1px;
+      background: var(--primary-border-soft);
+    }
+
+    .report-update-step-dot {
+      z-index: 1;
+      width: 19px;
+      height: 19px;
+      margin-top: 2px;
+      display: grid;
+      place-items: center;
+      color: #94a3b8;
+      background: #fff;
+      border: 1px solid #dbe2ec;
+      border-radius: 50%;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .report-update-step.is-done .report-update-step-dot {
+      color: #fff;
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .report-update-step.is-current .report-update-step-dot {
+      color: #fff;
+      background: var(--orange);
+      border-color: var(--orange);
+      animation: thinkingPulse 1.1s infinite;
+    }
+
+    .report-update-step strong {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--heading);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .report-update-step p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.65;
+    }
+
+    .report-update-step.is-current strong {
+      color: var(--primary);
+    }
+
+    .report-update-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 22px;
+      background: #fff;
+      border-top: 1px solid var(--line);
+    }
+
+    .report-update-foot p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .report-update-stop {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex: 0 0 auto;
+      color: #dc2626;
+      background: #fff;
+      border-color: #fecaca;
+    }
+
+    .report-update-stop:hover {
+      color: #b91c1c;
+      background: #fef2f2;
+      border-color: #fca5a5;
+    }
+
+    .report-update-stop svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
     /* 右键临时态 */
     .report-page-body .dir-tree .tree-row.ctx-target {
       background: rgba(var(--primary-rgb), 0.08);
@@ -390,6 +759,10 @@
           <p id="reportMetaTop" style="margin:6px 0 0;color:#6b7280;font-size:13px;">来源：智能问数数据解读、归因分析、我的仪表盘</p>
         </div>
         <div class="toolbar">
+          <button class="action-dropdown-btn" type="button" id="reportDataUpdateBtn" onclick="startReportDataUpdate()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.5 6.2"></path><path d="M3 12A9 9 0 0 1 18.5 5.8"></path><path d="M18 2v5h-5"></path><path d="M6 22v-5h5"></path></svg>
+            <span>数据更新</span>
+          </button>
           <button class="action-dropdown-btn" type="button" id="reportExportBtn" onclick="toggleReportExport(event)">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"></path><path d="M8.5 10.5L12 14l3.5-3.5"></path><path d="M5 19h14"></path></svg>
             <span>导出</span>
@@ -409,6 +782,79 @@
           </aside>
           <article class="report-page" id="reportArticle"></article>
         </div>
+      </div>
+      <!-- 数据更新执行遮罩：只覆盖右侧报告内容区 -->
+      <div class="report-update-mask hidden" id="reportUpdateMask" role="dialog" aria-modal="true" aria-labelledby="reportUpdateTitle">
+        <section class="report-update-panel">
+          <div class="report-update-head">
+            <div class="report-update-title">
+              <div class="report-update-orb">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3"></path><path d="M12 18v3"></path><path d="M3 12h3"></path><path d="M18 12h3"></path><path d="M5.6 5.6l2.1 2.1"></path><path d="M16.3 16.3l2.1 2.1"></path><path d="M18.4 5.6l-2.1 2.1"></path><path d="M7.7 16.3l-2.1 2.1"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </div>
+              <div>
+                <h3 id="reportUpdateTitle">数据更新中</h3>
+                <p id="reportUpdateSubtitle">AI 正在更新报告数据、校验指标口径并重新生成分析结论</p>
+              </div>
+            </div>
+            <div class="report-update-badge" id="reportUpdateBadge">运行中</div>
+          </div>
+          <div class="report-update-body">
+            <div class="report-update-overview">
+              <div class="report-update-ring" id="reportUpdateRing">
+                <strong id="reportUpdatePercent">0%</strong>
+              </div>
+              <div class="report-update-summary">
+                <h4 id="reportUpdatePhase">准备更新</h4>
+                <p id="reportUpdateDesc">正在读取当前报告上下文，确认需要刷新的数据范围。</p>
+                <div class="report-update-metrics">
+                  <span class="report-update-metric">当前报告 <strong id="reportUpdateReportName">二季度销售复盘报告</strong></span>
+                  <span class="report-update-metric">已用时间 <strong id="reportUpdateElapsed">0.0s</strong></span>
+                  <span class="report-update-metric">模拟耗时 <strong>10s</strong></span>
+                </div>
+              </div>
+            </div>
+            <div class="report-update-progress"><span id="reportUpdateProgressBar"></span></div>
+            <div class="report-update-process">
+              <div class="report-update-process-head">
+                <h4>AI 思考与数据执行过程</h4>
+                <span id="reportUpdateStepSummary">0 / 6 已完成</span>
+              </div>
+              <div class="report-update-timeline" id="reportUpdateTimeline">
+                <div class="report-update-step" data-step="0">
+                  <div class="report-update-step-dot">1</div>
+                  <div><strong>识别报告上下文</strong><p>读取报告主题、章节结构和已绑定的数据资产。</p></div>
+                </div>
+                <div class="report-update-step" data-step="1">
+                  <div class="report-update-step-dot">2</div>
+                  <div><strong>确认指标口径</strong><p>匹配销售额、订单量、客户分层、区域贡献等核心指标口径。</p></div>
+                </div>
+                <div class="report-update-step" data-step="2">
+                  <div class="report-update-step-dot">3</div>
+                  <div><strong>执行数据更新</strong><p>同步最新经营数据，并刷新图表与表格所需的数据切片。</p></div>
+                </div>
+                <div class="report-update-step" data-step="3">
+                  <div class="report-update-step-dot">4</div>
+                  <div><strong>校验异常数据</strong><p>检查缺失值、异常波动和跨数据源口径差异。</p></div>
+                </div>
+                <div class="report-update-step" data-step="4">
+                  <div class="report-update-step-dot">5</div>
+                  <div><strong>重新分析趋势归因</strong><p>计算区域、产品线、客户层级变化，并生成风险提示。</p></div>
+                </div>
+                <div class="report-update-step" data-step="5">
+                  <div class="report-update-step-dot">6</div>
+                  <div><strong>汇总更新结果</strong><p>整理最新数据摘要，准备回写报告展示状态。</p></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="report-update-foot">
+            <p id="reportUpdateFootNote">更新期间页面内容暂不变更，完成后展示最新更新时间。</p>
+            <button class="ghost-btn report-update-stop" type="button" id="reportUpdateStopBtn">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"></rect></svg>
+              <span>停止更新</span>
+            </button>
+          </div>
+        </section>
       </div>
     </section>
   </main>
@@ -1190,6 +1636,7 @@
           row.classList.add('active');
           activeReportId = node.dataset.id;
           renderReport(activeReportId);
+          syncReportUpdateMask();
         }
       });
 
@@ -1778,7 +2225,233 @@
       renderReport(activeReportId);
 
       // ====================================================================
-      // 8. 顶部导出菜单
+      // 8. 数据更新：10 秒静态模拟 + 跨页面状态恢复
+      // ====================================================================
+      const REPORT_UPDATE_KEY = 'smart-query-report-update-task';
+      const REPORT_UPDATE_DURATION = 10000;
+      const REPORT_UPDATE_STEPS = [
+        { at: 0, phase: 'AI 思考过程', desc: '正在识别报告主题、章节结构和已绑定的数据资产。' },
+        { at: 1600, phase: '指标口径确认', desc: '正在匹配销售额、订单量、客户分层、区域贡献等核心指标口径。' },
+        { at: 3200, phase: '数据更新执行', desc: '正在同步最新经营数据，并刷新图表与表格所需的数据切片。' },
+        { at: 5000, phase: '数据质量校验', desc: '正在检查缺失值、异常波动和跨数据源口径差异。' },
+        { at: 6800, phase: '数据分析过程', desc: '正在重新计算趋势、区域贡献、产品线变化和客户风险。' },
+        { at: 8400, phase: '结果汇总', desc: '正在整理最新数据摘要，准备回写报告展示状态。' }
+      ];
+      let reportUpdateTimer = null;
+      let reportUpdateTask = null;
+
+      const reportUpdateEls = {
+        mask: document.getElementById('reportUpdateMask'),
+        title: document.getElementById('reportUpdateTitle'),
+        subtitle: document.getElementById('reportUpdateSubtitle'),
+        badge: document.getElementById('reportUpdateBadge'),
+        ring: document.getElementById('reportUpdateRing'),
+        percent: document.getElementById('reportUpdatePercent'),
+        phase: document.getElementById('reportUpdatePhase'),
+        desc: document.getElementById('reportUpdateDesc'),
+        reportName: document.getElementById('reportUpdateReportName'),
+        elapsed: document.getElementById('reportUpdateElapsed'),
+        progressBar: document.getElementById('reportUpdateProgressBar'),
+        stepSummary: document.getElementById('reportUpdateStepSummary'),
+        timeline: document.getElementById('reportUpdateTimeline'),
+        footNote: document.getElementById('reportUpdateFootNote'),
+        stopBtn: document.getElementById('reportUpdateStopBtn'),
+        trigger: document.getElementById('reportDataUpdateBtn')
+      };
+
+      function saveReportUpdateTask(task) {
+        try {
+          localStorage.setItem(REPORT_UPDATE_KEY, JSON.stringify(task));
+        } catch (e) {}
+      }
+
+      function clearReportUpdateTask() {
+        try {
+          localStorage.removeItem(REPORT_UPDATE_KEY);
+        } catch (e) {}
+      }
+
+      function readReportUpdateTask() {
+        try {
+          const raw = localStorage.getItem(REPORT_UPDATE_KEY);
+          if (!raw) return null;
+          const task = JSON.parse(raw);
+          if (!task || !task.startedAt || task.status !== 'running') return null;
+          return task;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function getReportUpdateElapsed(task) {
+        return Math.max(0, Date.now() - Number(task.startedAt || 0));
+      }
+
+      function getReportUpdateStepIndex(elapsed) {
+        let index = 0;
+        REPORT_UPDATE_STEPS.forEach((step, i) => {
+          if (elapsed >= step.at) index = i;
+        });
+        return index;
+      }
+
+      function setReportUpdateVisible(visible) {
+        if (!reportUpdateEls.mask) return;
+        reportUpdateEls.mask.classList.toggle('hidden', !visible);
+        if (reportUpdateEls.trigger) reportUpdateEls.trigger.disabled = visible;
+      }
+
+      function isReportUpdateForActiveReport(task) {
+        return !!task && task.reportId === activeReportId;
+      }
+
+      function syncReportUpdateMask() {
+        if (!reportUpdateTask) {
+          setReportUpdateVisible(false);
+          return;
+        }
+        if (getReportUpdateElapsed(reportUpdateTask) >= REPORT_UPDATE_DURATION) {
+          finishReportDataUpdate();
+          return;
+        }
+        if (isReportUpdateForActiveReport(reportUpdateTask)) {
+          setReportUpdateVisible(true);
+          paintReportUpdate(reportUpdateTask);
+        } else {
+          setReportUpdateVisible(false);
+        }
+      }
+
+      function paintReportUpdate(task) {
+        const elapsed = Math.min(getReportUpdateElapsed(task), REPORT_UPDATE_DURATION);
+        const progress = Math.min(1, elapsed / REPORT_UPDATE_DURATION);
+        const percent = Math.round(progress * 100);
+        const stepIndex = getReportUpdateStepIndex(elapsed);
+        const currentStep = REPORT_UPDATE_STEPS[stepIndex];
+        const isFinished = elapsed >= REPORT_UPDATE_DURATION;
+        const completedCount = isFinished ? REPORT_UPDATE_STEPS.length : stepIndex;
+
+        reportUpdateEls.title.textContent = isFinished ? '数据更新完成' : '数据更新中';
+        reportUpdateEls.subtitle.textContent = isFinished
+          ? '已完成数据刷新、指标校验和分析结果汇总'
+          : 'AI 正在更新报告数据、校验指标口径并重新生成分析结论';
+        reportUpdateEls.badge.textContent = isFinished ? '已完成' : '运行中';
+        reportUpdateEls.percent.textContent = percent + '%';
+        reportUpdateEls.ring.style.setProperty('--update-progress', percent + '%');
+        reportUpdateEls.progressBar.style.width = percent + '%';
+        reportUpdateEls.phase.textContent = isFinished ? '更新完成' : currentStep.phase;
+        reportUpdateEls.desc.textContent = isFinished ? '最新数据已完成同步，分析过程已汇总。' : currentStep.desc;
+        reportUpdateEls.reportName.textContent = task.reportName || '当前报告';
+        reportUpdateEls.elapsed.textContent = (elapsed / 1000).toFixed(1) + 's';
+        reportUpdateEls.stepSummary.textContent = completedCount + ' / ' + REPORT_UPDATE_STEPS.length + ' 已完成';
+        reportUpdateEls.footNote.textContent = isFinished
+          ? '更新已完成，正在恢复报告查看页面。'
+          : '更新期间页面内容暂不变更，完成后展示最新更新时间。';
+
+        reportUpdateEls.timeline.querySelectorAll('.report-update-step').forEach((stepNode, i) => {
+          const dot = stepNode.querySelector('.report-update-step-dot');
+          stepNode.classList.remove('is-done', 'is-current');
+          if (isFinished || i < stepIndex) {
+            stepNode.classList.add('is-done');
+            dot.textContent = '✓';
+          } else if (i === stepIndex) {
+            stepNode.classList.add('is-current');
+            dot.textContent = '•';
+          } else {
+            dot.textContent = String(i + 1);
+          }
+        });
+      }
+
+      function finishReportDataUpdate() {
+        if (!reportUpdateTask) return;
+        const finishedTask = reportUpdateTask;
+        clearInterval(reportUpdateTimer);
+        reportUpdateTimer = null;
+        if (isReportUpdateForActiveReport(finishedTask)) {
+          paintReportUpdate(finishedTask);
+        }
+        clearReportUpdateTask();
+        const now = new Date();
+        const timeText = now.toLocaleTimeString('zh-CN', { hour12: false });
+        const targetData = REPORT_DATA[finishedTask.reportId];
+        if (targetData) {
+          const baseMeta = targetData.metaTop || '';
+          targetData.metaTop = baseMeta.replace(/\s*·\s*最近更新：.*$/, '') + ' · 最近更新：' + timeText;
+          if (finishedTask.reportId === activeReportId && reportMetaTopEl) {
+            reportMetaTopEl.textContent = targetData.metaTop;
+          }
+        }
+        reportUpdateTask = null;
+        setTimeout(() => {
+          setReportUpdateVisible(false);
+          showToast((finishedTask.reportName || '报告') + ' 数据更新完成');
+        }, isReportUpdateForActiveReport(finishedTask) ? 650 : 0);
+      }
+
+      function openReportUpdateTask(task) {
+        reportUpdateTask = task;
+        clearInterval(reportUpdateTimer);
+        syncReportUpdateMask();
+        reportUpdateTimer = setInterval(() => {
+          if (!reportUpdateTask) return;
+          if (getReportUpdateElapsed(reportUpdateTask) >= REPORT_UPDATE_DURATION) {
+            finishReportDataUpdate();
+          } else {
+            syncReportUpdateMask();
+          }
+        }, 180);
+      }
+
+      window.startReportDataUpdate = function () {
+        const existingTask = readReportUpdateTask();
+        if (existingTask && getReportUpdateElapsed(existingTask) < REPORT_UPDATE_DURATION) {
+          openReportUpdateTask(existingTask);
+          if (existingTask.reportId !== activeReportId) {
+            showToast('「' + (existingTask.reportName || '报告') + '」正在更新，切回该报告可查看进度');
+          }
+          return;
+        }
+
+        const report = REPORT_DATA[activeReportId] || {};
+        const task = {
+          status: 'running',
+          reportId: activeReportId,
+          reportName: report.title || reportTitleEl.textContent || '当前报告',
+          startedAt: Date.now(),
+          duration: REPORT_UPDATE_DURATION
+        };
+        const exportMenuEl = document.getElementById('reportExportMenu');
+        if (exportMenuEl) exportMenuEl.classList.add('hidden');
+        saveReportUpdateTask(task);
+        openReportUpdateTask(task);
+      };
+
+      reportUpdateEls.stopBtn.addEventListener('click', function () {
+        clearInterval(reportUpdateTimer);
+        reportUpdateTimer = null;
+        reportUpdateTask = null;
+        clearReportUpdateTask();
+        setReportUpdateVisible(false);
+        showToast('已停止更新，报告内容保持不变');
+      });
+
+      const restoringUpdateTask = readReportUpdateTask();
+      if (restoringUpdateTask) {
+        if (getReportUpdateElapsed(restoringUpdateTask) >= REPORT_UPDATE_DURATION) {
+          clearReportUpdateTask();
+        } else {
+          if (restoringUpdateTask.reportId && REPORT_DATA[restoringUpdateTask.reportId]) {
+            activeReportId = restoringUpdateTask.reportId;
+            renderTree();
+            renderReport(activeReportId);
+          }
+          openReportUpdateTask(restoringUpdateTask);
+        }
+      }
+
+      // ====================================================================
+      // 9. 顶部导出菜单
       // ====================================================================
       const exportMenu = document.getElementById('reportExportMenu');
       window.toggleReportExport = function (e) {
@@ -1808,7 +2481,7 @@
       });
 
       // ====================================================================
-      // 9. 通用对话框：prompt / confirm
+      // 10. 通用对话框：prompt / confirm
       // ====================================================================
       const promptMask = document.getElementById('promptMask');
       const promptModal = document.getElementById('promptModal');
