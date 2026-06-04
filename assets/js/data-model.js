@@ -2296,14 +2296,6 @@
   ];
 
   var TIME_FORMATS = ['yyyy', 'yyyyMM', 'yyyyMMdd', 'yyyyMMdd HH', 'yyyyMMdd HH:mm', 'yyyyMMdd HH:mm:ss', 'yyyy-MM', 'yyyy-MM-dd', 'yyyy-MM-dd HH:mm:ss'];
-  var TABLE_TIME_DIM_TEMPLATES = [
-    { key: 'day', label: '按日', formula: 'DATE(?)' },
-    { key: 'week', label: '按周', formula: "DATE_FORMAT(?, '%Y-%u')" },
-    { key: 'month', label: '按月', formula: "DATE_FORMAT(?, '%Y-%m')" },
-    { key: 'quarter', label: '按季度', formula: "CONCAT(YEAR(?), '-Q', QUARTER(?))" },
-    { key: 'year', label: '按年', formula: 'YEAR(?)' }
-  ];
-
   function optionLabel(options, key) {
     for (var i = 0; i < options.length; i++) {
       if (options[i].key === key) return options[i].label;
@@ -2316,48 +2308,6 @@
     return options.map(function (opt) {
       return '<option value="' + DM.escapeHTML(opt.key) + '"' + (opt.key === selected ? ' selected' : '') + '>' + DM.escapeHTML(opt.label) + '</option>';
     }).join('');
-  }
-
-  function getTableTimeTemplate(key) {
-    for (var i = 0; i < TABLE_TIME_DIM_TEMPLATES.length; i++) {
-      if (TABLE_TIME_DIM_TEMPLATES[i].key === key) return TABLE_TIME_DIM_TEMPLATES[i];
-    }
-    return TABLE_TIME_DIM_TEMPLATES[0];
-  }
-
-  function ensureTableTimeDimensionMeta(table) {
-    if (!table) return;
-    if (table.isTimeDimension == null) table.isTimeDimension = false;
-    if (!table.timeDimTemplate) table.timeDimTemplate = TABLE_TIME_DIM_TEMPLATES[0].key;
-    var tpl = getTableTimeTemplate(table.timeDimTemplate);
-    if (!table.timeDimFormula) table.timeDimFormula = tpl.formula;
-  }
-
-  function renderTableTimeDimensionMeta(table) {
-    var DM = window.__DM;
-    if (!table || table.type !== 'dim') return '';
-    ensureTableTimeDimensionMeta(table);
-    var checked = table.isTimeDimension ? ' checked' : '';
-    var tpl = getTableTimeTemplate(table.timeDimTemplate);
-    var chipsHtml = TABLE_TIME_DIM_TEMPLATES.map(function (item) {
-      var active = item.key === tpl.key ? ' active' : '';
-      return '<button type="button" class="dmd-time-template-chip' + active + '" data-role="table-time-template" data-template-key="' + DM.escapeHTML(item.key) + '">' + DM.escapeHTML(item.label) + '</button>';
-    }).join('');
-    var templateHtml = table.isTimeDimension ? ''
-      + '<div class="dmd-time-template">'
-      +   '<div class="dmd-time-template-label">时间函数模板<span class="dmd-help" title="选择模板后会填入默认函数，下面的函数内容仍可手动修改。">?</span></div>'
-      +   '<div class="dmd-time-template-chips">' + chipsHtml + '</div>'
-      +   '<input class="dmd-time-formula" data-role="table-time-formula" value="' + DM.escapeHTML(table.timeDimFormula || tpl.formula) + '" />'
-      + '</div>' : '';
-    return ''
-      + '<div class="dmd-time-dim-meta">'
-      +   '<label class="dmd-time-dim-check">'
-      +     '<input type="checkbox" data-role="table-time-dim"' + checked + ' />'
-      +     '<span>是否时间维度</span>'
-      +     '<span class="dmd-help" title="用于标记日期、周、月、季度、年等时间维度表。">?</span>'
-      +   '</label>'
-      +   templateHtml
-      + '</div>';
   }
 
   function makeDimensionRef(sourceId, tableName) {
@@ -2602,7 +2552,6 @@
     ];
     var curType = table.type || 'fact';
     table.type = curType;
-    if (curType === 'dim') ensureTableTimeDimensionMeta(table);
     var typeOptionsHtml = TYPE_OPTIONS.map(function (o) {
       return '<option value="' + o.key + '"' + (o.key === curType ? ' selected' : '') + '>' + o.label + '</option>';
     }).join('');
@@ -2618,7 +2567,6 @@
       +     '<span class="val">'
       +       '<select class="dmd-meta-select" data-role="table-type">' + typeOptionsHtml + '</select>'
       +     '</span>'
-      +     renderTableTimeDimensionMeta(table)
       +     '<span class="lbl">字段数</span><span class="val">' + table.fields.length + '</span>'
       +     '<span class="lbl">记录数</span><span class="val">' + (table.rows != null ? table.rows.toLocaleString() : '-') + '</span>'
       +   '</div>'
@@ -3029,21 +2977,6 @@
           });
         }
 
-        var timeTemplateBtn = e.target.closest && e.target.closest('[data-role="table-time-template"]');
-        if (timeTemplateBtn) {
-          var DMTime = window.__DM;
-          if (!DMTime.selection || DMTime.selection.type !== 'table') return;
-          var foundTime = DMTime.findSource(DMTime.activeSourceId);
-          var tableTime = foundTime && DMTime.findTable(foundTime.source, DMTime.selection.id);
-          if (!tableTime || tableTime.type !== 'dim') return;
-          var selectedTpl = getTableTimeTemplate(timeTemplateBtn.getAttribute('data-template-key'));
-          tableTime.timeDimTemplate = selectedTpl.key;
-          tableTime.timeDimFormula = selectedTpl.formula;
-          tableTime.isTimeDimension = true;
-          renderTableDrawer(tableTime);
-          return;
-        }
-
         var tabBtn = e.target.closest && e.target.closest('.dmd-tab');
         if (tabBtn) {
           var key = tabBtn.getAttribute('data-tab');
@@ -3057,7 +2990,7 @@
         }
       });
 
-      // 表属性 - 类型 / 时间维度
+      // 表属性 - 类型
       drawerBody.addEventListener('change', function (e) {
         var DM = window.__DM;
         if (!DM.selection || DM.selection.type !== 'table') return;
@@ -3065,22 +2998,9 @@
         var table = found && DM.findTable(found.source, DM.selection.id);
         if (!table) return;
 
-        var timeDim = e.target.closest && e.target.closest('input[data-role="table-time-dim"]');
-        if (timeDim) {
-          if (table.type !== 'dim') return;
-          ensureTableTimeDimensionMeta(table);
-          table.isTimeDimension = timeDim.checked;
-          if (table.isTimeDimension && !table.timeDimFormula) {
-            table.timeDimFormula = getTableTimeTemplate(table.timeDimTemplate).formula;
-          }
-          renderTableDrawer(table);
-          return;
-        }
-
         var sel = e.target.closest && e.target.closest('select[data-role="table-type"]');
         if (!sel) return;
         table.type = sel.value;
-        if (table.type === 'dim') ensureTableTimeDimensionMeta(table);
         ensureFieldBusinessMeta(table);
         renderTree();
         renderTableDrawer(table);
@@ -3089,18 +3009,6 @@
           showToast('表类型已更新为 ' + (labelMap[sel.value] || sel.value));
         }
         return;
-      });
-
-      drawerBody.addEventListener('input', function (e) {
-        var DM = window.__DM;
-        if (!DM.selection || DM.selection.type !== 'table') return;
-        var formulaInput = e.target.closest && e.target.closest('input[data-role="table-time-formula"]');
-        if (!formulaInput) return;
-        var found = DM.findSource(DM.activeSourceId);
-        var table = found && DM.findTable(found.source, DM.selection.id);
-        if (!table || table.type !== 'dim') return;
-        ensureTableTimeDimensionMeta(table);
-        table.timeDimFormula = formulaInput.value;
       });
 
       // 表结构 - 业务属性联动
