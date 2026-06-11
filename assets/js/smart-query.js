@@ -50,6 +50,8 @@ const fileUploadInput = document.getElementById("fileUploadInput");
 const attachmentPreviewList = document.getElementById("attachmentPreviewList");
 const themeName = document.getElementById("themeName");
 const themeDesc = document.getElementById("themeDesc");
+const themeIndicatorCount = document.getElementById("themeIndicatorCount");
+const themeIndicatorList = document.getElementById("themeIndicatorList");
 const followupContextChip = document.getElementById("followupContextChip");
 const followupChipTitle = document.getElementById("followupChipTitle");
 const followupPrefix = document.getElementById("followupPrefix");
@@ -207,6 +209,65 @@ const themeDescMap = {
   "库存分析": "覆盖库存金额、周转天数、滞销品识别、缺货风险和补货建议。",
   "财务分析": "覆盖收入、毛利率、费用结构、预算执行与利润贡献分析。",
   "经营概览": "整合销售、客户、库存和财务指标，形成经营全景与关键风险预警。"
+};
+
+const themeIndicatorMap = {
+  "全部": [
+    { name: "销售额", synonyms: "销售收入、GMV、成交金额", desc: "统计指定时间范围内的销售收入表现，用于分析销售规模和趋势。" },
+    { name: "订单量", synonyms: "订单数、成交单量、交易笔数", desc: "统计订单成交数量，用于判断业务活跃度和销售规模。" },
+    { name: "成交客户数", synonyms: "购买客户、下单客户、成交人数", desc: "统计产生实际成交的客户数量，用于衡量客户转化效果。" },
+    { name: "客单价", synonyms: "平均订单金额、人均消费", desc: "衡量单笔订单的平均价值，用于分析价格带和客户消费能力。" },
+    { name: "新增客户数", synonyms: "新客数、首次成交客户", desc: "统计首次产生交易的客户数量，用于观察拉新效果。" },
+    { name: "复购率", synonyms: "重复购买率、回购率", desc: "衡量客户重复购买情况，用于评估客户留存和忠诚度。" },
+    { name: "库存金额", synonyms: "库存价值、在库金额", desc: "统计当前库存占用金额，用于分析库存资金压力。" },
+    { name: "库存周转天数", synonyms: "周转天数、存货周转周期", desc: "衡量库存从入库到销售的周转效率，用于识别库存积压。" },
+    { name: "收入", synonyms: "营业收入、业务收入", desc: "统计企业经营收入，用于观察整体经营规模。" },
+    { name: "毛利率", synonyms: "销售毛利率、利润率", desc: "衡量销售收入中的毛利占比，用于分析盈利质量。" },
+    { name: "预算完成率", synonyms: "预算达成率、预算执行率", desc: "衡量实际结果与预算目标的完成情况，用于跟踪经营计划。" }
+  ],
+  "销售分析": [
+    { name: "销售额", synonyms: "销售收入、GMV、成交金额", desc: "统计指定时间范围内的销售收入表现，用于分析销售规模和趋势。" },
+    { name: "订单量", synonyms: "订单数、成交单量、交易笔数", desc: "统计订单成交数量，用于判断业务活跃度和销售规模。" },
+    { name: "成交客户数", synonyms: "购买客户、下单客户、成交人数", desc: "统计产生实际成交的客户数量，用于衡量客户转化效果。" },
+    { name: "客单价", synonyms: "平均订单金额、人均消费", desc: "衡量单笔订单的平均价值，用于分析价格带和客户消费能力。" },
+    { name: "渠道转化率", synonyms: "转化率、渠道成交率", desc: "统计各销售渠道从访问到成交的转化表现，用于评估渠道效率。" },
+    { name: "区域销售额", synonyms: "区域收入、地区GMV", desc: "按区域统计销售收入，用于对比不同区域的业绩贡献。" },
+    { name: "商品销售额", synonyms: "商品收入、产品销售额", desc: "统计商品维度的销售收入，用于识别重点商品和热销品类。" },
+    { name: "销售件数", synonyms: "销量、销售数量、售出件数", desc: "统计商品售出数量，用于判断商品动销情况和需求变化。" },
+    { name: "毛利额", synonyms: "毛利、销售毛利、利润贡献", desc: "统计销售产生的毛利贡献，用于分析经营质量和利润空间。" },
+    { name: "新增客户数", synonyms: "新客数、首次成交客户", desc: "统计首次产生交易的客户数量，用于观察拉新效果。" },
+    { name: "复购率", synonyms: "重复购买率、回购率", desc: "衡量客户重复购买情况，用于评估客户留存和忠诚度。" }
+  ],
+  "客户分析": [
+    { name: "新增客户数", synonyms: "新客数、首次成交客户", desc: "统计首次产生交易的客户数量，用于观察拉新效果。" },
+    { name: "成交客户数", synonyms: "购买客户、下单客户、成交人数", desc: "统计产生实际成交的客户数量，用于衡量客户转化效果。" },
+    { name: "复购率", synonyms: "重复购买率、回购率", desc: "衡量客户重复购买情况，用于评估客户留存和忠诚度。" },
+    { name: "客户流失率", synonyms: "流失率、客户减少率", desc: "统计客户流失占比，用于识别客户关系风险。" },
+    { name: "客户生命周期价值", synonyms: "客户价值、LTV", desc: "衡量客户在生命周期内创造的综合价值。" },
+    { name: "高价值客户数", synonyms: "重点客户、核心客户", desc: "统计达到高价值标准的客户数量，用于支持重点客户运营。" }
+  ],
+  "库存分析": [
+    { name: "库存金额", synonyms: "库存价值、在库金额", desc: "统计当前库存占用金额，用于分析库存资金压力。" },
+    { name: "库存周转天数", synonyms: "周转天数、存货周转周期", desc: "衡量库存从入库到销售的周转效率，用于识别库存积压。" },
+    { name: "滞销商品数", synonyms: "滞销品、慢动销商品", desc: "统计销售缓慢的商品数量，用于发现清理和促销对象。" },
+    { name: "缺货风险商品数", synonyms: "缺货预警、断货风险", desc: "统计存在缺货风险的商品数量，用于辅助补货决策。" },
+    { name: "安全库存达成率", synonyms: "安全库存率、库存保障率", desc: "衡量库存是否满足安全库存要求，用于判断供应保障能力。" }
+  ],
+  "财务分析": [
+    { name: "收入", synonyms: "营业收入、业务收入", desc: "统计企业经营收入，用于观察整体经营规模。" },
+    { name: "毛利率", synonyms: "销售毛利率、利润率", desc: "衡量销售收入中的毛利占比，用于分析盈利质量。" },
+    { name: "费用率", synonyms: "费用占比、经营费用率", desc: "衡量费用相对收入的占比，用于评估费用控制水平。" },
+    { name: "利润额", synonyms: "利润、净收益", desc: "统计经营利润结果，用于衡量业务盈利贡献。" },
+    { name: "预算完成率", synonyms: "预算达成率、预算执行率", desc: "衡量实际结果与预算目标的完成情况，用于跟踪经营计划。" }
+  ],
+  "经营概览": [
+    { name: "销售额", synonyms: "销售收入、GMV、成交金额", desc: "统计指定时间范围内的销售收入表现，用于分析销售规模和趋势。" },
+    { name: "订单量", synonyms: "订单数、成交单量、交易笔数", desc: "统计订单成交数量，用于判断业务活跃度和销售规模。" },
+    { name: "成交客户数", synonyms: "购买客户、下单客户、成交人数", desc: "统计产生实际成交的客户数量，用于衡量客户转化效果。" },
+    { name: "库存金额", synonyms: "库存价值、在库金额", desc: "统计当前库存占用金额，用于分析库存资金压力。" },
+    { name: "毛利率", synonyms: "销售毛利率、利润率", desc: "衡量销售收入中的毛利占比，用于分析盈利质量。" },
+    { name: "预算完成率", synonyms: "预算达成率、预算执行率", desc: "衡量实际结果与预算目标的完成情况，用于跟踪经营计划。" }
+  ]
 };
 
 const qaThinkingSteps = [
@@ -564,6 +625,24 @@ function handleThemeChange(theme) {
   if (!themeName || !themeDesc) return;
   themeName.textContent = theme;
   themeDesc.textContent = themeDescMap[theme] || themeDescMap["经营概览"];
+  renderThemeIndicators(theme);
+}
+
+function renderThemeIndicators(theme) {
+  if (!themeIndicatorList) return;
+  const indicators = themeIndicatorMap[theme] || themeIndicatorMap["经营概览"] || [];
+  if (themeIndicatorCount) {
+    themeIndicatorCount.textContent = `关联指标 ${indicators.length} 个`;
+  }
+  themeIndicatorList.innerHTML = indicators.map((item) => `
+    <div class="theme-indicator-item">
+      <div class="theme-indicator-main">
+        <strong>${escapeHtml(item.name)}</strong>
+        <span title="同义词：${escapeHtml(item.synonyms)}">同义词：${escapeHtml(item.synonyms)}</span>
+      </div>
+      <p>${escapeHtml(item.desc)}</p>
+    </div>
+  `).join("");
 }
 
 function toggleModelItem(item) {
@@ -571,6 +650,7 @@ function toggleModelItem(item) {
   item.classList.toggle("expanded");
 }
 window.toggleModelItem = toggleModelItem;
+renderThemeIndicators(themeName?.textContent?.trim() || "销售分析");
 
 function renderThinkingTimeline(mode = "qa") {
   const timeline = thinkingBox?.querySelector(".timeline");

@@ -550,32 +550,69 @@
     }, 0);
   });
 
-  // 分析主题（含 modelIds 引用）
+  var INDICATOR_GROUPS = [
+    { id: 'g_revenue', name: '收入指标', children: [
+      { id: 'g_rev_sale', name: '销售收入' },
+      { id: 'g_rev_service', name: '服务收入' }
+    ]},
+    { id: 'g_customer_metric', name: '客户指标', children: [
+      { id: 'g_cust_growth', name: '客户增长' },
+      { id: 'g_cust_value', name: '客户价值' }
+    ]},
+    { id: 'g_inventory_metric', name: '供应链指标', children: [
+      { id: 'g_inv_eff', name: '库存效率' },
+      { id: 'g_logistics_eff', name: '物流履约' }
+    ]},
+    { id: 'g_finance_metric', name: '财务指标', children: [
+      { id: 'g_ar_ap', name: '应收应付' },
+      { id: 'g_profit', name: '利润分析' }
+    ]}
+  ];
+
+  var INDICATORS = [
+    { id: 'i_sales_amount', groupId: 'g_rev_sale', type: 'atom', name: '销售额', synonyms: '销售收入,成交金额,GMV', desc: '订单实付金额合计。', srcId: 's_sales_main', table: 'sales_order', field: 'sales_amount', agg: 'SUM', unit: '元', updatedAt: '2026-05-04' },
+    { id: 'i_order_count', groupId: 'g_rev_sale', type: 'atom', name: '订单量', synonyms: '订单数,成交单数', desc: '已支付订单数量。', srcId: 's_order_svc', table: 'order_pay', field: 'order_id', agg: 'COUNT_DISTINCT', unit: '单', updatedAt: '2026-05-03' },
+    { id: 'i_customer_count', groupId: 'g_cust_growth', type: 'atom', name: '成交客户数', synonyms: '购买客户,支付客户', desc: '发生支付行为的去重客户数。', srcId: 's_cdw', table: 'customer_event', field: 'customer_id', agg: 'COUNT_DISTINCT', unit: '人', updatedAt: '2026-05-02' },
+    { id: 'i_new_customer', groupId: 'g_cust_growth', type: 'atom', name: '新增客户数', synonyms: '新客数,新增会员', desc: '统计周期内首次注册或首次成交客户数。', srcId: 's_cdw', table: 'customer', field: 'customer_id', agg: 'COUNT_DISTINCT', unit: '人', updatedAt: '2026-04-30' },
+    { id: 'i_inventory_amount', groupId: 'g_inv_eff', type: 'atom', name: '库存金额', synonyms: '库存余额,存货金额', desc: '期末库存数量乘以成本价。', srcId: 's_inventory', table: 'inventory_balance', field: 'stock_amount', agg: 'SUM', unit: '元', updatedAt: '2026-04-29' },
+    { id: 'i_delivery_rate', groupId: 'g_logistics_eff', type: 'atom', name: '准时履约率', synonyms: '准时发货率,准时送达率', desc: '准时履约订单数 / 应履约订单数。', srcId: 's_logistics', table: 'logistics_order', field: 'on_time_flag', agg: 'AVG', unit: '%', updatedAt: '2026-04-28' },
+    { id: 'i_receivable_amount', groupId: 'g_ar_ap', type: 'atom', name: '应收余额', synonyms: '应收账款余额,AR余额', desc: '当前未核销应收金额。', srcId: 's_finance', table: 'ar_balance', field: 'balance_amount', agg: 'SUM', unit: '元', updatedAt: '2026-04-27' },
+    { id: 'i_profit_amount', groupId: 'g_profit', type: 'atom', name: '毛利额', synonyms: '毛利润,销售毛利', desc: '销售额扣减销售成本后的金额。', srcId: 's_finance', table: 'profit_detail', field: 'gross_profit', agg: 'SUM', unit: '元', updatedAt: '2026-04-26' },
+    { id: 'i_avg_order_value', groupId: 'g_cust_value', type: 'derived', name: '客单价', synonyms: 'AOV,平均订单金额', desc: '销售额 / 订单量。', srcId: 's_sales_main', formula: '销售额 / 订单量', unit: '元', updatedAt: '2026-05-05' },
+    { id: 'i_repurchase_rate', groupId: 'g_cust_value', type: 'derived', name: '复购率', synonyms: '重复购买率,老客复购', desc: '复购客户数 / 成交客户数。', srcId: 's_cdw', formula: '复购客户数 / 成交客户数', unit: '%', updatedAt: '2026-05-01' }
+  ];
+
+  // 分析主题（含 modelIds / indicatorIds 引用）
   var THEMES = [
     {
       id: 'th_sales', name: '销售分析',
       desc: '覆盖销售额、订单量、渠道转化、区域业绩、产品销售等核心经营指标，支撑销售管理层日常经营复盘。',
-      modelIds: ['m_sales_order', 'm_sales_item', 'm_sales_channel', 'm_customer', 'm_pay_order']
+      modelIds: ['m_sales_order', 'm_sales_item', 'm_sales_channel', 'm_customer', 'm_pay_order'],
+      indicatorIds: ['i_sales_amount', 'i_order_count', 'i_customer_count', 'i_avg_order_value']
     },
     {
       id: 'th_customer', name: '客户分析',
       desc: '客户新增、复购、价值分层、流失预警等经营主题，结合客户标签与分群进行洞察。',
-      modelIds: ['m_customer', 'm_customer_tag', 'm_customer_segment', 'm_customer_journey']
+      modelIds: ['m_customer', 'm_customer_tag', 'm_customer_segment', 'm_customer_journey'],
+      indicatorIds: ['i_customer_count', 'i_new_customer', 'i_repurchase_rate', 'i_avg_order_value']
     },
     {
       id: 'th_inventory', name: '库存分析',
       desc: '库存金额、周转天数、滞销品、缺货风险与采购建议，支撑供应链与运营决策。',
-      modelIds: ['m_inventory', 'm_inv_move', 'm_purchase', 'm_logistics']
+      modelIds: ['m_inventory', 'm_inv_move', 'm_purchase', 'm_logistics'],
+      indicatorIds: ['i_inventory_amount', 'i_delivery_rate']
     },
     {
       id: 'th_finance', name: '财务分析',
       desc: '应收应付动态、回款风险、账期结构、损益和总账明细分析。',
-      modelIds: ['m_ar', 'm_ap', 'm_gl']
+      modelIds: ['m_ar', 'm_ap', 'm_gl'],
+      indicatorIds: ['i_receivable_amount', 'i_profit_amount']
     },
     {
       id: 'th_marketing', name: '营销活动分析',
       desc: '活动触达人数、订单转化、ROI、券核销与人群效率，对接销售与客户主题。',
-      modelIds: ['m_sales_order', 'm_customer_segment', 'm_customer_tag']
+      modelIds: ['m_sales_order', 'm_customer_segment', 'm_customer_tag'],
+      indicatorIds: ['i_sales_amount', 'i_customer_count', 'i_repurchase_rate']
     }
   ];
 
@@ -613,6 +650,37 @@
     return null;
   }
 
+  function findIndicatorById(id) {
+    for (var i = 0; i < INDICATORS.length; i++) {
+      if (INDICATORS[i].id === id) return INDICATORS[i];
+    }
+    return null;
+  }
+
+  function indicatorTypeText(type) {
+    return type === 'atom' ? '原子指标' : type === 'derived' ? '衍生指标' : '-';
+  }
+
+  function indicatorFormulaText(it) {
+    if (!it) return '-';
+    if (it.type === 'derived') return it.formula || it.desc || '-';
+    var agg = it.agg || 'SUM';
+    var field = it.field || '-';
+    return agg + '(' + field + ')';
+  }
+
+  function indicatorGroupName(id) {
+    for (var i = 0; i < INDICATOR_GROUPS.length; i++) {
+      var g = INDICATOR_GROUPS[i];
+      if (g.id === id) return g.name;
+      var children = g.children || [];
+      for (var j = 0; j < children.length; j++) {
+        if (children[j].id === id) return children[j].name;
+      }
+    }
+    return '';
+  }
+
   function nameInitials(name) {
     if (!name) return 'M';
     var s = String(name).trim();
@@ -626,14 +694,21 @@
   // ---------- 3) 状态 ----------
   var state = {
     activeThemeId: THEMES[0] ? THEMES[0].id : null,
+    activeRelationTab: 'models',
     themeKeyword: '',
     modelKeyword: '',
     modelSrcFilter: '',
+    indicatorKeyword: '',
+    indicatorTypeFilter: '',
     ctxThemeId: null,
     pickerSelected: {},     // 弹窗内选中的 modelId 集合（不含已添加）
     pickerActiveSrc: '',    // 当前选中的数据源 id
     pickerSourceKw: '',
     pickerModelKw: '',
+    indicatorPickerSelected: {},
+    indicatorPickerActiveGroup: '',
+    indicatorPickerGroupKw: '',
+    indicatorPickerKw: '',
     editingThemeId: null,   // 表单弹窗：null=新建，否则=编辑
     activeModelId: null,    // 抽屉中正在查看的模型
     drawerActiveTab: 'schema',
@@ -661,7 +736,7 @@
 
     list.innerHTML = filtered.map(function (t) {
       var active = t.id === state.activeThemeId ? ' is-active' : '';
-      var cnt = (t.modelIds || []).length;
+      var cnt = (t.modelIds || []).length + (t.indicatorIds || []).length;
       return ''
         + '<div class="at-theme-item' + active + '" draggable="true" data-id="' + escapeHTML(t.id) + '" oncontextmenu="return false;">'
         +   '<span class="at-drag" title="拖动排序"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="15" cy="18" r="1.4"/></svg></span>'
@@ -685,6 +760,7 @@
       return;
     }
     var mids = t.modelIds || [];
+    var iids = t.indicatorIds || [];
     var srcSet = {};
     var fieldSum = 0;
     var tableSum = 0;
@@ -694,6 +770,10 @@
       srcSet[m.srcId] = true;
       fieldSum += (m.fieldCount || 0);
       tableSum += (m.tableCount || 0);
+    });
+    iids.forEach(function (id) {
+      var it = findIndicatorById(id);
+      if (it && it.srcId) srcSet[it.srcId] = true;
     });
     var srcCnt = Object.keys(srcSet).length;
 
@@ -718,9 +798,24 @@
       + '</div>'
       + '<div class="at-detail-stats">'
       +   '<div class="at-stat"><strong>' + mids.length + '</strong><span>数据模型</span></div>'
+      +   '<div class="at-stat"><strong>' + iids.length + '</strong><span>指标</span></div>'
       +   '<div class="at-stat"><strong>' + srcCnt + '</strong><span>数据源</span></div>'
       +   '<div class="at-stat"><strong>' + fieldSum + '</strong><span>字段</span></div>'
       + '</div>';
+  }
+
+  function renderRelationTabs() {
+    var t = findThemeById(state.activeThemeId);
+    var modelCount = t ? (t.modelIds || []).length : 0;
+    var indicatorCount = t ? (t.indicatorIds || []).length : 0;
+    var mt = $('#atModelsTabCount'); if (mt) mt.textContent = String(modelCount);
+    var it = $('#atIndicatorsTabCount'); if (it) it.textContent = String(indicatorCount);
+    $$('.at-tab').forEach(function (btn) {
+      btn.classList.toggle('is-active', btn.getAttribute('data-tab') === state.activeRelationTab);
+    });
+    $$('.at-tab-panel').forEach(function (panel) {
+      panel.classList.toggle('is-active', panel.getAttribute('data-panel') === state.activeRelationTab);
+    });
   }
 
   // ---------- 6) 渲染 - 关联数据模型表 ----------
@@ -760,6 +855,7 @@
     });
 
     if (cntEl) cntEl.textContent = String(rows.length) + (rows.length !== modelsAll.length ? ' / ' + modelsAll.length : '');
+    renderRelationTabs();
 
     if (!rows.length) {
       tbody.innerHTML = ''
@@ -794,6 +890,70 @@
         +   '<td>'
         +     '<div class="at-row-act">'
         +       '<button type="button" class="at-icon-btn" title="移除关联" data-act="remove-model" data-mid="' + escapeHTML(m.id) + '">'
+        +         '<svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>'
+        +       '</button>'
+        +     '</div>'
+        +   '</td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  function renderIndicators() {
+    var tbody = $('#atIndicatorsTbody');
+    var cntEl = $('#atIndicatorsCount');
+    if (!tbody) return;
+    var t = findThemeById(state.activeThemeId);
+    var ids = t ? (t.indicatorIds || []) : [];
+    var indicatorsAll = ids.map(findIndicatorById).filter(Boolean);
+    var kw = (state.indicatorKeyword || '').trim().toLowerCase();
+    var rows = indicatorsAll.filter(function (it) {
+      if (state.indicatorTypeFilter && it.type !== state.indicatorTypeFilter) return false;
+      if (!kw) return true;
+      var found = findSourceById(it.srcId);
+      var srcName = found ? found.source.name.toLowerCase() : '';
+      return (it.name || '').toLowerCase().indexOf(kw) >= 0
+        || (it.synonyms || '').toLowerCase().indexOf(kw) >= 0
+        || srcName.indexOf(kw) >= 0;
+    });
+
+    if (cntEl) cntEl.textContent = String(rows.length) + (rows.length !== indicatorsAll.length ? ' / ' + indicatorsAll.length : '');
+    renderRelationTabs();
+
+    if (!rows.length) {
+      tbody.innerHTML = ''
+        + '<tr><td colspan="6">'
+        +   '<div class="at-empty">'
+        +     '<div class="at-empty-ico"><svg viewBox="0 0 24 24"><path d="M4 19h16"/><path d="M7 16V8"/><path d="M12 16V5"/><path d="M17 16v-6"/></svg></div>'
+        +     (indicatorsAll.length === 0 ? '该主题尚未关联任何指标，点击右上角"添加"开始绑定' : '没有匹配的指标')
+        +   '</div>'
+        + '</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = rows.map(function (it) {
+      var found = findSourceById(it.srcId);
+      var srcName = found ? found.source.name : '-';
+      var srcType = found ? found.source.type : '';
+      var typeCls = it.type === 'derived' ? ' is-derived' : '';
+      var formula = indicatorFormulaText(it);
+      return ''
+        + '<tr data-iid="' + escapeHTML(it.id) + '">'
+        +   '<td>'
+        +     '<div class="at-mname">'
+        +       '<span class="at-mname-ico">' + escapeHTML(nameInitials(it.name)) + '</span>'
+        +       '<div class="at-mname-text">'
+        +         '<strong>' + escapeHTML(it.name) + '</strong>'
+        +         '<span>' + escapeHTML(it.synonyms || indicatorGroupName(it.groupId) || '') + '</span>'
+        +       '</div>'
+        +     '</div>'
+        +   '</td>'
+        +   '<td><span class="at-type-chip' + typeCls + '">' + indicatorTypeText(it.type) + '</span></td>'
+        +   '<td><span class="at-src-chip" title="' + escapeHTML(srcType) + '">' + escapeHTML(srcName) + '</span></td>'
+        +   '<td><div class="at-formula-cell" title="' + escapeHTML(formula) + '">' + escapeHTML(formula) + '</div></td>'
+        +   '<td style="color:#64748b;">' + escapeHTML(it.updatedAt || '') + '</td>'
+        +   '<td>'
+        +     '<div class="at-row-act">'
+        +       '<button type="button" class="at-icon-btn" title="移除关联" data-act="remove-indicator" data-iid="' + escapeHTML(it.id) + '">'
         +         '<svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>'
         +       '</button>'
         +     '</div>'
@@ -1010,13 +1170,18 @@
     state.activeThemeId = id;
     state.modelKeyword = '';
     state.modelSrcFilter = '';
+    state.indicatorKeyword = '';
+    state.indicatorTypeFilter = '';
     var ms = $('#atModelSearch'); if (ms) ms.value = '';
     var sel = $('#atModelFilterSrc'); if (sel) sel.value = '';
+    var is = $('#atIndicatorSearch'); if (is) is.value = '';
+    var its = $('#atIndicatorTypeFilter'); if (its) its.value = '';
     // 切换主题后关闭可能已打开的模型抽屉，避免显示与当前主题无关的内容
     if (state.activeModelId) closeModelDrawer();
     renderThemeList();
     renderDetail();
     renderModels();
+    renderIndicators();
   }
 
   // ---------- 8) 拖动排序 ----------
@@ -1192,7 +1357,7 @@
       if (t) { t.name = name; t.desc = desc; }
       if (typeof showToast === 'function') showToast('已保存主题');
     } else {
-      var nt = { id: uid('th'), name: name, desc: desc, modelIds: [] };
+      var nt = { id: uid('th'), name: name, desc: desc, modelIds: [], indicatorIds: [] };
       THEMES.push(nt);
       state.activeThemeId = nt.id;
       if (typeof showToast === 'function') showToast('已新建主题：' + name);
@@ -1201,6 +1366,7 @@
     renderThemeList();
     renderDetail();
     renderModels();
+    renderIndicators();
   }
 
   function bindThemeForm() {
@@ -1336,6 +1502,7 @@
     renderThemeList();
     renderDetail();
     renderModels();
+    renderIndicators();
     if (typeof showToast === 'function') showToast('已删除主题：' + t.name);
   }
 
@@ -1354,6 +1521,25 @@
         renderDetail();
         renderModels();
         if (typeof showToast === 'function') showToast('已移除：' + m.name);
+      }
+    });
+  }
+
+  function confirmRemoveIndicator(iid) {
+    var t = findThemeById(state.activeThemeId);
+    var it = findIndicatorById(iid);
+    if (!t || !it) return;
+    showConfirm({
+      title: '移除关联指标',
+      subtitle: '仅从当前主题移除此指标，指标体系中的指标不会被删除。',
+      message: '确定要从"' + t.name + '"移除指标"' + it.name + '"吗？',
+      okText: '确认移除',
+      onOk: function () {
+        t.indicatorIds = (t.indicatorIds || []).filter(function (x) { return x !== iid; });
+        renderThemeList();
+        renderDetail();
+        renderIndicators();
+        if (typeof showToast === 'function') showToast('已移除：' + it.name);
       }
     });
   }
@@ -1549,8 +1735,239 @@
     if (typeof showToast === 'function') showToast('已添加 ' + added + ' 个数据模型');
   }
 
+  // ---------- 12.5) 指标选择弹窗 ----------
+  function indicatorGroupIds(gid) {
+    if (!gid) return null;
+    for (var i = 0; i < INDICATOR_GROUPS.length; i++) {
+      var g = INDICATOR_GROUPS[i];
+      if (g.id === gid) {
+        var ids = [g.id];
+        (g.children || []).forEach(function (c) { ids.push(c.id); });
+        return ids;
+      }
+      var children = g.children || [];
+      for (var j = 0; j < children.length; j++) {
+        if (children[j].id === gid) return [gid];
+      }
+    }
+    return [gid];
+  }
+
+  function indicatorCountByGroup(gid) {
+    var ids = indicatorGroupIds(gid);
+    if (!ids) return INDICATORS.length;
+    var map = {};
+    ids.forEach(function (id) { map[id] = true; });
+    return INDICATORS.filter(function (it) { return !!map[it.groupId]; }).length;
+  }
+
+  function openIndicatorPicker() {
+    var t = findThemeById(state.activeThemeId);
+    if (!t) {
+      if (typeof showToast === 'function') showToast('请先选择一个主题');
+      return;
+    }
+    state.indicatorPickerSelected = {};
+    state.indicatorPickerActiveGroup = '';
+    state.indicatorPickerGroupKw = '';
+    state.indicatorPickerKw = '';
+    var gSearch = $('#atiGroupSearch'); if (gSearch) gSearch.value = '';
+    var iSearch = $('#atiIndicatorSearch'); if (iSearch) iSearch.value = '';
+    renderIndicatorPickerGroups();
+    renderIndicatorPickerItems();
+    updateIndicatorPickerMeta();
+    $('#atIndicatorPickerMask').classList.remove('hidden');
+    $('#atIndicatorPickerModal').classList.remove('hidden');
+  }
+
+  function closeIndicatorPicker() {
+    $('#atIndicatorPickerMask').classList.add('hidden');
+    $('#atIndicatorPickerModal').classList.add('hidden');
+  }
+
+  function renderIndicatorPickerGroups() {
+    var box = $('#atiGroupList');
+    if (!box) return;
+    var kw = (state.indicatorPickerGroupKw || '').trim().toLowerCase();
+    var allActive = state.indicatorPickerActiveGroup === '';
+    var html = ''
+      + '<div class="atp-indicator-group' + (allActive ? ' is-active' : '') + '" data-gid="">'
+      +   '<span>全部指标</span><span class="atp-src-cnt">' + INDICATORS.length + '</span>'
+      + '</div>';
+
+    html += INDICATOR_GROUPS.map(function (g) {
+      var children = (g.children || []).filter(function (c) {
+        if (!kw) return true;
+        return g.name.toLowerCase().indexOf(kw) >= 0 || c.name.toLowerCase().indexOf(kw) >= 0;
+      });
+      if (kw && g.name.toLowerCase().indexOf(kw) < 0 && !children.length) return '';
+      var childHtml = children.map(function (c) {
+        var active = state.indicatorPickerActiveGroup === c.id ? ' is-active' : '';
+        return ''
+          + '<div class="atp-indicator-group' + active + '" data-gid="' + escapeHTML(c.id) + '">'
+          +   '<span>' + escapeHTML(c.name) + '</span><span class="atp-src-cnt">' + indicatorCountByGroup(c.id) + '</span>'
+          + '</div>';
+      }).join('');
+      var groupActive = state.indicatorPickerActiveGroup === g.id ? ' is-active' : '';
+      return ''
+        + '<div class="atp-domain">'
+        +   '<div class="atp-domain-head">'
+        +     '<span class="chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>'
+        +     '<span>' + escapeHTML(g.name) + '</span>'
+        +   '</div>'
+        +   '<div class="atp-domain-children">'
+        +     '<div class="atp-indicator-group' + groupActive + '" data-gid="' + escapeHTML(g.id) + '">'
+        +       '<span>全部' + escapeHTML(g.name) + '</span><span class="atp-src-cnt">' + indicatorCountByGroup(g.id) + '</span>'
+        +     '</div>'
+        +     childHtml
+        +   '</div>'
+        + '</div>';
+    }).join('');
+    box.innerHTML = html || '<div class="at-empty" style="padding:24px 12px;font-size:12.5px;">未找到匹配的指标目录</div>';
+  }
+
+  function renderIndicatorPickerItems() {
+    var box = $('#atiIndicatorsList');
+    if (!box) return;
+    var t = findThemeById(state.activeThemeId);
+    var existing = {};
+    (t && t.indicatorIds ? t.indicatorIds : []).forEach(function (id) { existing[id] = true; });
+    var groupIds = indicatorGroupIds(state.indicatorPickerActiveGroup);
+    var groupMap = null;
+    if (groupIds) {
+      groupMap = {};
+      groupIds.forEach(function (id) { groupMap[id] = true; });
+    }
+    var kw = (state.indicatorPickerKw || '').trim().toLowerCase();
+    var rows = INDICATORS.filter(function (it) {
+      if (groupMap && !groupMap[it.groupId]) return false;
+      if (!kw) return true;
+      return (it.name || '').toLowerCase().indexOf(kw) >= 0
+        || (it.synonyms || '').toLowerCase().indexOf(kw) >= 0;
+    });
+
+    if (!rows.length) {
+      box.innerHTML = ''
+        + '<div class="at-empty" style="grid-column: 1 / -1;">'
+        +   '<div class="at-empty-ico"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></div>'
+        +   '没有匹配的指标'
+        + '</div>';
+      return;
+    }
+
+    box.innerHTML = rows.map(function (it) {
+      var added = !!existing[it.id];
+      var checked = !!state.indicatorPickerSelected[it.id];
+      var found = findSourceById(it.srcId);
+      var srcName = found ? found.source.name : '-';
+      var clsList = ['atp-model-card'];
+      if (added) clsList.push('is-disabled');
+      else if (checked) clsList.push('is-checked');
+      return ''
+        + '<div class="' + clsList.join(' ') + '" data-iid="' + escapeHTML(it.id) + '"' + (added ? ' aria-disabled="true"' : '') + '>'
+        +   '<div class="atp-model-head">'
+        +     '<span class="atp-model-check"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg></span>'
+        +     '<span class="atp-model-name" title="' + escapeHTML(it.synonyms || '') + '">' + escapeHTML(it.name) + '</span>'
+        +     '<span class="atp-model-tag">' + indicatorTypeText(it.type) + '</span>'
+        +   '</div>'
+        +   '<div class="atp-model-meta">'
+        +     '<span>' + escapeHTML(srcName) + '</span>'
+        +     '<span>' + escapeHTML(indicatorFormulaText(it)) + '</span>'
+        +     (added ? '<span class="atp-model-tag is-added">已添加</span>' : '')
+        +   '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  function updateIndicatorPickerMeta() {
+    var n = Object.keys(state.indicatorPickerSelected).length;
+    var el = $('#atiSelectedCount'); if (el) el.textContent = String(n);
+  }
+
+  function bindIndicatorPicker() {
+    var modal = $('#atIndicatorPickerModal');
+    var mask = $('#atIndicatorPickerMask');
+    if (!modal) return;
+    if (mask) mask.addEventListener('click', closeIndicatorPicker);
+    modal.addEventListener('click', function (e) {
+      var act = e.target.closest && e.target.closest('[data-act]');
+      if (act) {
+        var role = act.getAttribute('data-act');
+        if (role === 'cancel') { closeIndicatorPicker(); return; }
+        if (role === 'ok') { saveIndicatorPicker(); return; }
+      }
+      var groupItem = e.target.closest && e.target.closest('.atp-indicator-group');
+      if (groupItem) {
+        state.indicatorPickerActiveGroup = groupItem.getAttribute('data-gid') || '';
+        renderIndicatorPickerGroups();
+        renderIndicatorPickerItems();
+        return;
+      }
+      var dHead = e.target.closest && e.target.closest('.atp-domain-head');
+      if (dHead) {
+        var d = dHead.parentElement;
+        if (d) d.classList.toggle('is-collapsed');
+        return;
+      }
+      var card = e.target.closest && e.target.closest('.atp-model-card[data-iid]');
+      if (card && !card.classList.contains('is-disabled')) {
+        var iid = card.getAttribute('data-iid');
+        if (state.indicatorPickerSelected[iid]) delete state.indicatorPickerSelected[iid];
+        else state.indicatorPickerSelected[iid] = true;
+        renderIndicatorPickerItems();
+        updateIndicatorPickerMeta();
+        return;
+      }
+      if (e.target.id === 'atiClearAll') {
+        state.indicatorPickerSelected = {};
+        renderIndicatorPickerItems();
+        updateIndicatorPickerMeta();
+      }
+    });
+    var gSearch = $('#atiGroupSearch');
+    if (gSearch) gSearch.addEventListener('input', function () {
+      state.indicatorPickerGroupKw = gSearch.value || '';
+      renderIndicatorPickerGroups();
+    });
+    var iSearch = $('#atiIndicatorSearch');
+    if (iSearch) iSearch.addEventListener('input', function () {
+      state.indicatorPickerKw = iSearch.value || '';
+      renderIndicatorPickerItems();
+    });
+  }
+
+  function saveIndicatorPicker() {
+    var t = findThemeById(state.activeThemeId);
+    if (!t) { closeIndicatorPicker(); return; }
+    var ids = Object.keys(state.indicatorPickerSelected);
+    if (!ids.length) {
+      if (typeof showToast === 'function') showToast('请先勾选要添加的指标');
+      return;
+    }
+    t.indicatorIds = (t.indicatorIds || []).slice();
+    var added = 0;
+    ids.forEach(function (id) {
+      if (t.indicatorIds.indexOf(id) < 0) { t.indicatorIds.push(id); added++; }
+    });
+    closeIndicatorPicker();
+    renderThemeList();
+    renderDetail();
+    renderIndicators();
+    if (typeof showToast === 'function') showToast('已添加 ' + added + ' 个指标');
+  }
+
   // ---------- 13) 顶部 / 列表 等其它绑定 ----------
   function bindMisc() {
+    var tabs = document.querySelector('.at-tabs-bar');
+    if (tabs) tabs.addEventListener('click', function (e) {
+      var btn = e.target.closest && e.target.closest('.at-tab');
+      if (!btn) return;
+      var tab = btn.getAttribute('data-tab');
+      if (!tab || tab === state.activeRelationTab) return;
+      state.activeRelationTab = tab;
+      renderRelationTabs();
+    });
+
     // 左侧主题点击
     var list = $('#atThemeList');
     if (list) {
@@ -1594,6 +2011,19 @@
     var addBtn = $('#atBtnAddModel');
     if (addBtn) addBtn.addEventListener('click', openPicker);
 
+    var ikw = $('#atIndicatorSearch');
+    if (ikw) ikw.addEventListener('input', function () {
+      state.indicatorKeyword = ikw.value || '';
+      renderIndicators();
+    });
+    var itf = $('#atIndicatorTypeFilter');
+    if (itf) itf.addEventListener('change', function () {
+      state.indicatorTypeFilter = itf.value || '';
+      renderIndicators();
+    });
+    var addIndicatorBtn = $('#atBtnAddIndicator');
+    if (addIndicatorBtn) addIndicatorBtn.addEventListener('click', openIndicatorPicker);
+
     var tbody = $('#atModelsTbody');
     if (tbody) tbody.addEventListener('click', function (e) {
       // 移除按钮（注意要在打开抽屉之前判断，避免冒泡到行点击）
@@ -1612,6 +2042,14 @@
         else openModelDrawer(mid);
       }
     });
+
+    var indicatorsTbody = $('#atIndicatorsTbody');
+    if (indicatorsTbody) indicatorsTbody.addEventListener('click', function (e) {
+      var rmBtn = e.target.closest && e.target.closest('[data-act="remove-indicator"]');
+      if (!rmBtn) return;
+      e.stopPropagation();
+      confirmRemoveIndicator(rmBtn.getAttribute('data-iid'));
+    });
   }
 
   // ---------- 14) 启动 ----------
@@ -1619,11 +2057,13 @@
     renderThemeList();
     renderDetail();
     renderModels();
+    renderIndicators();
     bindThemeListDrag();
     bindContextMenu();
     bindThemeForm();
     bindConfirm();
     bindPicker();
+    bindIndicatorPicker();
     bindMisc();
     bindModelDrawer();
   });
@@ -1633,6 +2073,8 @@
     THEMES: THEMES,
     MODELS: MODELS,
     DOMAINS: DOMAINS,
+    INDICATOR_GROUPS: INDICATOR_GROUPS,
+    INDICATORS: INDICATORS,
     state: state,
     select: selectTheme,
     openPicker: openPicker,

@@ -1138,6 +1138,136 @@
     }).join('');
   }
 
+  var FORMULA_OPERATOR_TOOLS = [
+    { label: '+', value: '+' },
+    { label: '-', value: '-' },
+    { label: '*', value: '*' },
+    { label: '/', value: '/' },
+    { label: '()', value: '()' },
+    { label: '[]', value: '[]' }
+  ];
+  var FORMULA_OPERATORS = ['+', '-', '*', '/', '(', ')', '[', ']'];
+  var FORMULA_NUMERIC_FUNCTIONS = ['ROUND()', 'ABS()', 'CEIL()', 'FLOOR()'];
+  var FORMULA_LOGIC_FUNCTIONS = ['IF()', 'COALESCE()'];
+  var FORMULA_FUNCTIONS = FORMULA_NUMERIC_FUNCTIONS.concat(FORMULA_LOGIC_FUNCTIONS);
+
+  function formulaAtomOptions() {
+    return INDICATORS.filter(function (it) { return it.type === 'atom'; });
+  }
+
+  function formulaAtomByName(name) {
+    return formulaAtomOptions().find(function (it) { return it.name === name; });
+  }
+
+  function isFormulaFunctionToken(value) {
+    var upper = String(value || '').toUpperCase();
+    return FORMULA_FUNCTIONS.some(function (fn) { return fn.toUpperCase() === upper; });
+  }
+
+  function isFormulaNumberToken(value) {
+    return /^-?\d+(\.\d+)?%?$/.test(String(value || '').trim());
+  }
+
+  function isFormulaMetricToken(value) {
+    var text = String(value || '').trim();
+    return !!text && !isFormulaNumberToken(text) && !isFormulaFunctionToken(text) && FORMULA_OPERATORS.indexOf(text) < 0
+      && /[\u4e00-\u9fa5]/.test(text);
+  }
+
+  function formulaParts(formula) {
+    var functionPattern = FORMULA_FUNCTIONS.map(function (fn) {
+      return fn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }).join('|');
+    var re = new RegExp('(?:' + functionPattern + ')|[+\\-*/()\\[\\]]|[^\\s+\\-*/()\\[\\]]+', 'gi');
+    return (String(formula || '').match(re) || [])
+      .map(function (p) { return p.trim(); })
+      .filter(Boolean);
+  }
+
+  function joinFormulaParts(parts) {
+    return parts.filter(Boolean).join(' ')
+      .replace(/\(\s+/g, '(')
+      .replace(/\s+\)/g, ')')
+      .replace(/\[\s+/g, '[')
+      .replace(/\s+\]/g, ']')
+      .replace(/\s+,/g, ',');
+  }
+
+  function formulaEditorHTML(formula) {
+    var parts = formulaParts(formula);
+    if (!parts.length) {
+      return '<span class="ki-formula-placeholder">输入 @ 搜索指标，或直接输入公式 / 点击上方符号</span>';
+    }
+    return parts.map(function (part, idx) {
+      var atom = formulaAtomByName(part);
+      if (atom || isFormulaMetricToken(part)) {
+        return ''
+          + '<span class="ki-formula-token" contenteditable="false" data-formula-part-index="' + idx + '" data-formula-token="' + escapeHTML(part) + '">'
+          +   escapeHTML(part)
+          +   '<button type="button" class="ki-formula-token-remove" data-act="remove-formula-part" data-formula-part-index="' + idx + '" aria-label="删除' + escapeHTML(part) + '">x</button>'
+          + '</span>';
+      }
+      if (FORMULA_OPERATORS.indexOf(part) >= 0) {
+        return '<span class="ki-formula-op" data-formula-token="' + escapeHTML(part) + '">' + escapeHTML(part) + '</span>';
+      }
+      if (isFormulaFunctionToken(part)) {
+        return '<span class="ki-formula-fn" data-formula-token="' + escapeHTML(part) + '">' + escapeHTML(part.replace('()', '')) + '</span>';
+      }
+      return '<span class="ki-formula-text" data-formula-token="' + escapeHTML(part) + '">' + escapeHTML(part) + '</span>';
+    }).join('');
+  }
+
+  function formulaAtomListHTML() {
+    return formulaAtomOptions().map(function (it) {
+      var code = it.synonyms || it.field || '原子指标';
+      var searchText = [it.name, it.synonyms || '', it.desc || '', groupPathName(it.groupId)].join(' ');
+      return ''
+        + '<button type="button" class="ki-formula-atom-option" data-formula-atom-id="' + escapeHTML(it.id) + '" data-search="' + escapeHTML(searchText) + '">'
+        +   '<span>' + escapeHTML(it.name) + '</span>'
+        +   '<em>' + escapeHTML(code) + '</em>'
+        + '</button>';
+    }).join('');
+  }
+
+  function formulaBuilderHTML(d) {
+    return ''
+      + '<div class="ki-formula-builder">'
+      +   '<div class="ki-formula-toolbar">'
+      +     '<div class="ki-formula-tool-group" aria-label="运算符">'
+      +       FORMULA_OPERATOR_TOOLS.map(function (op) {
+                return '<button type="button" class="ki-formula-tool" data-act="insert-formula-op" data-formula-value="' + escapeHTML(op.value) + '">' + escapeHTML(op.label) + '</button>';
+              }).join('')
+      +     '</div>'
+      +     '<div class="ki-formula-tool-group" aria-label="数值函数">'
+      +       FORMULA_NUMERIC_FUNCTIONS.map(function (fn) {
+                return '<button type="button" class="ki-formula-tool" data-act="insert-formula-fn" data-formula-value="' + escapeHTML(fn) + '">' + escapeHTML(fn.replace('()', '')) + '</button>';
+              }).join('')
+      +     '</div>'
+      +     '<div class="ki-formula-tool-group" aria-label="逻辑函数">'
+      +       FORMULA_LOGIC_FUNCTIONS.map(function (fn) {
+                return '<button type="button" class="ki-formula-tool" data-act="insert-formula-fn" data-formula-value="' + escapeHTML(fn) + '">' + escapeHTML(fn.replace('()', '')) + '</button>';
+              }).join('')
+      +     '</div>'
+      +     '<button type="button" class="ki-formula-clear" data-act="clear-formula">清空</button>'
+      +   '</div>'
+      +   '<div class="ki-formula-editor-wrap">'
+      +     '<div class="ki-formula-editor" data-role="formula-editor" contenteditable="true" spellcheck="false">'
+      +       formulaEditorHTML(d.formula)
+      +     '</div>'
+      +     '<div class="ki-formula-suggest hidden" data-role="formula-suggest">'
+      +       formulaAtomListHTML()
+      +       '<div class="ki-formula-empty hidden">暂无匹配原子指标</div>'
+      +     '</div>'
+      +   '</div>'
+      +   '<input type="hidden" data-bind="formula" value="' + escapeHTML(d.formula || '') + '" />'
+      +   '<div class="ki-formula-help">'
+      +     '<span>输入 @ 可搜索并插入指标</span>'
+      +     '<span>点击上方符号 / 函数会插入到当前光标位置</span>'
+      +     '<span>工具栏没有的运算符号，可以自定义输入</span>'
+      +   '</div>'
+      + '</div>';
+  }
+
   function renderFormBody(d) {
     // 通用：名称、类型、同义词、描述
     var common = ''
@@ -1200,8 +1330,7 @@
     return ''
       + '<div class="ki-form-row">'
       +   '<label class="ki-form-label">计算公式</label>'
-      +   '<textarea class="ki-textarea" data-bind="formula" rows="3" placeholder="例：销售额 / 订单量">' + escapeHTML(d.formula || '') + '</textarea>'
-      +   '<div class="ki-form-hint">公式中的标识符必须是系统中已定义的原子指标名</div>'
+      +   formulaBuilderHTML(d)
       + '</div>'
       + '<div class="ki-form-row">'
       +   '<label class="ki-form-label">单位</label>'
@@ -1406,6 +1535,354 @@
     if (empty) empty.classList.toggle('hidden', !kw || any);
   }
 
+  function syncFormulaHiddenInput() {
+    var input = $('#kiDrawer input[data-bind="formula"]');
+    if (input && state.drawer.draft) input.value = state.drawer.draft.formula || '';
+  }
+
+  function refreshFormulaBuilder() {
+    var editor = $('#kiDrawer .ki-formula-editor');
+    if (!editor || !state.drawer.draft) return;
+    editor.innerHTML = formulaEditorHTML(state.drawer.draft.formula);
+    syncFormulaHiddenInput();
+  }
+
+  function selectionInsideFormulaEditor(editor) {
+    var sel = window.getSelection && window.getSelection();
+    return !!(sel && sel.rangeCount && editor && editor.contains(sel.anchorNode));
+  }
+
+  function setCaretAfterNode(node) {
+    if (!node || !window.getSelection) return;
+    var range = document.createRange();
+    range.setStartAfter(node);
+    range.collapse(true);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  function setFormulaCaretToEnd(editor) {
+    if (!editor || !window.getSelection) return;
+    editor.focus();
+    var range = document.createRange();
+    range.selectNodeContents(editor);
+    range.collapse(false);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  function setFormulaCaretToStart(editor) {
+    if (!editor || !window.getSelection) return;
+    editor.focus();
+    var range = document.createRange();
+    range.setStart(editor, 0);
+    range.collapse(true);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  function formulaContentNodes(editor) {
+    return Array.prototype.slice.call(editor.childNodes || []).filter(function (node) {
+      if (node.nodeType === 3) return String(node.textContent || '').trim();
+      return !(node.classList && node.classList.contains('ki-formula-placeholder'));
+    });
+  }
+
+  function setFormulaCaretFromPoint(editor, event) {
+    if (!editor || !event || !window.getSelection) return;
+    editor.focus();
+    var contentNodes = formulaContentNodes(editor);
+    if (contentNodes.length) {
+      var firstRect = contentNodes[0].getBoundingClientRect && contentNodes[0].getBoundingClientRect();
+      var lastNode = contentNodes[contentNodes.length - 1];
+      var lastRect = lastNode.getBoundingClientRect && lastNode.getBoundingClientRect();
+      if (firstRect && event.clientX <= firstRect.left) {
+        setFormulaCaretToStart(editor);
+        return;
+      }
+      if (lastRect && (event.clientX >= lastRect.right || event.clientY > lastRect.bottom)) {
+        setFormulaCaretToEnd(editor);
+        return;
+      }
+    }
+    var range = null;
+    if (document.caretPositionFromPoint) {
+      var pos = document.caretPositionFromPoint(event.clientX, event.clientY);
+      if (pos && editor.contains(pos.offsetNode)) {
+        range = document.createRange();
+        range.setStart(pos.offsetNode, pos.offset);
+      }
+    } else if (document.caretRangeFromPoint) {
+      var pointRange = document.caretRangeFromPoint(event.clientX, event.clientY);
+      if (pointRange && editor.contains(pointRange.startContainer)) {
+        range = pointRange;
+      }
+    }
+    if (!range) {
+      setFormulaCaretToEnd(editor);
+      return;
+    }
+    range.collapse(true);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  function createFormulaNode(value, isAtom) {
+    var span = document.createElement('span');
+    span.setAttribute('data-formula-token', value);
+    if (isAtom || isFormulaMetricToken(value)) {
+      span.className = 'ki-formula-token';
+      span.contentEditable = 'false';
+      span.appendChild(document.createTextNode(value));
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'ki-formula-token-remove';
+      btn.setAttribute('data-act', 'remove-formula-part');
+      btn.setAttribute('aria-label', '删除' + value);
+      btn.textContent = 'x';
+      span.appendChild(btn);
+    } else if (FORMULA_OPERATORS.indexOf(value) >= 0 || value === '()' || value === '[]') {
+      span.className = 'ki-formula-op';
+      span.textContent = value;
+    } else if (isFormulaFunctionToken(value)) {
+      span.className = 'ki-formula-fn';
+      span.textContent = value.replace('()', '');
+    } else {
+      span.className = 'ki-formula-text';
+      span.textContent = value;
+    }
+    return span;
+  }
+
+  function removeFormulaPlaceholder(editor) {
+    var placeholder = editor && editor.querySelector('.ki-formula-placeholder');
+    if (placeholder) placeholder.remove();
+  }
+
+  function syncFormulaFromEditor(editor) {
+    if (!state.drawer.draft || !editor) return;
+    state.drawer.draft.formula = formulaFromEditor(editor);
+    syncFormulaHiddenInput();
+  }
+
+  function formulaTextBeforeCaretFromFragment(editor) {
+    var sel = window.getSelection && window.getSelection();
+    if (!sel || !sel.rangeCount || !selectionInsideFormulaEditor(editor)) return '';
+    var range = sel.getRangeAt(0).cloneRange();
+    var pre = range.cloneRange();
+    pre.selectNodeContents(editor);
+    pre.setEnd(range.endContainer, range.endOffset);
+    return pre.toString().replace(/\u00a0/g, ' ');
+  }
+
+  function setFormulaCaretAfterTokenIndex(editor, index) {
+    var nodes = formulaContentNodes(editor);
+    if (!nodes.length) {
+      setFormulaCaretToEnd(editor);
+      return;
+    }
+    var node = nodes[Math.max(0, Math.min(index, nodes.length - 1))];
+    setCaretAfterNode(node);
+  }
+
+  function normalizeFormulaEditor(editor) {
+    if (!editor || !state.drawer.draft) return;
+    if (currentFormulaTrigger(editor)) return;
+    var beforeText = formulaTextBeforeCaretFromFragment(editor);
+    var formula = formulaFromEditor(editor);
+    state.drawer.draft.formula = formula;
+    editor.innerHTML = formulaEditorHTML(formula);
+    syncFormulaHiddenInput();
+    var beforeCount = formulaParts(beforeText).length;
+    if (beforeCount <= 0) setFormulaCaretToStart(editor);
+    else setFormulaCaretAfterTokenIndex(editor, beforeCount - 1);
+  }
+
+  function insertFormulaPart(value, isAtom) {
+    if (!state.drawer.draft || !value) return;
+    var editor = $('#kiDrawer .ki-formula-editor');
+    if (!editor) {
+      var parts = formulaParts(state.drawer.draft.formula);
+      parts.push(value);
+      state.drawer.draft.formula = joinFormulaParts(parts);
+      return;
+    }
+    editor.focus();
+    removeFormulaPlaceholder(editor);
+    var node = createFormulaNode(value, !!isAtom);
+    var spacer = document.createTextNode(' ');
+    var frag = document.createDocumentFragment();
+    frag.appendChild(node);
+    frag.appendChild(spacer);
+    var sel = window.getSelection && window.getSelection();
+    var range;
+    if (selectionInsideFormulaEditor(editor)) {
+      range = sel.getRangeAt(0);
+    } else {
+      range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+    range.deleteContents();
+    range.insertNode(frag);
+    setCaretAfterNode(spacer);
+    syncFormulaFromEditor(editor);
+  }
+
+  function appendFormulaPart(value) {
+    insertFormulaPart(value, !!formulaAtomByName(value));
+  }
+
+  function removeFormulaPart(index) {
+    if (!state.drawer.draft) return;
+    var parts = formulaParts(state.drawer.draft.formula);
+    parts.splice(index, 1);
+    state.drawer.draft.formula = joinFormulaParts(parts);
+    refreshFormulaBuilder();
+  }
+
+  function formulaFromEditor(editor) {
+    var parts = [];
+    Array.prototype.slice.call(editor.childNodes || []).forEach(function (node) {
+      if (node.nodeType === 3) {
+        formulaParts(node.textContent || '').forEach(function (part) { parts.push(part); });
+        return;
+      }
+      if (node.nodeType !== 1) return;
+      if (node.classList && node.classList.contains('ki-formula-placeholder')) return;
+      var token = node.getAttribute && node.getAttribute('data-formula-token');
+      if (token) {
+        parts.push(token);
+        return;
+      }
+      formulaParts(node.textContent || '').forEach(function (part) {
+        if (part && part !== 'x') parts.push(part);
+      });
+    });
+    return joinFormulaParts(parts);
+  }
+
+  function formulaTextBeforeCaret(editor) {
+    var sel = window.getSelection && window.getSelection();
+    if (!sel || !sel.rangeCount || !selectionInsideFormulaEditor(editor)) return '';
+    var range = sel.getRangeAt(0).cloneRange();
+    var pre = range.cloneRange();
+    pre.selectNodeContents(editor);
+    pre.setEnd(range.endContainer, range.endOffset);
+    return pre.toString().replace(/\u00a0/g, ' ');
+  }
+
+  function currentFormulaTrigger(editor) {
+    var before = formulaTextBeforeCaret(editor);
+    var explicit = before.match(/@([\u4e00-\u9fa5a-zA-Z0-9_]*)$/);
+    if (explicit) {
+      return { query: explicit[1], length: explicit[0].length, explicit: true };
+    }
+    return null;
+  }
+
+  function formulaCaretRect(editor) {
+    var sel = window.getSelection && window.getSelection();
+    if (!sel || !sel.rangeCount || !selectionInsideFormulaEditor(editor)) return null;
+    var range = sel.getRangeAt(0).cloneRange();
+    range.collapse(true);
+    var rect = range.getClientRects()[0] || range.getBoundingClientRect();
+    if (rect && (rect.width || rect.height)) return rect;
+    var marker = document.createElement('span');
+    marker.textContent = '\u200b';
+    range.insertNode(marker);
+    rect = marker.getBoundingClientRect();
+    marker.remove();
+    return rect;
+  }
+
+  function positionFormulaSuggest(editor, suggest) {
+    if (!editor || !suggest) return;
+    var wrap = editor.closest('.ki-formula-editor-wrap');
+    var wrapRect = wrap ? wrap.getBoundingClientRect() : editor.getBoundingClientRect();
+    var rect = formulaCaretRect(editor) || editor.getBoundingClientRect();
+    var maxLeft = Math.max(8, wrapRect.width - 372);
+    var left = Math.max(8, Math.min(rect.left - wrapRect.left, maxLeft));
+    var top = Math.max(40, rect.bottom - wrapRect.top + 6);
+    suggest.style.left = left + 'px';
+    suggest.style.right = 'auto';
+    suggest.style.top = top + 'px';
+  }
+
+  function visibleFormulaOptions(suggest) {
+    return $$('.ki-formula-atom-option', suggest).filter(function (row) {
+      return !row.classList.contains('hidden');
+    });
+  }
+
+  function setFormulaSuggestActive(suggest, nextIndex) {
+    var rows = visibleFormulaOptions(suggest);
+    rows.forEach(function (row) { row.classList.remove('is-active'); });
+    if (!rows.length) return;
+    var index = ((nextIndex % rows.length) + rows.length) % rows.length;
+    rows[index].classList.add('is-active');
+    rows[index].scrollIntoView({ block: 'nearest' });
+  }
+
+  function activeFormulaOption(suggest) {
+    return $('.ki-formula-atom-option.is-active:not(.hidden)', suggest) || visibleFormulaOptions(suggest)[0] || null;
+  }
+
+  function filterFormulaSuggest(editor) {
+    if (!editor) return;
+    var suggest = editor.parentElement && $('[data-role="formula-suggest"]', editor.parentElement);
+    if (!suggest) return;
+    var trigger = currentFormulaTrigger(editor);
+    if (!trigger || (!trigger.explicit && !trigger.query)) {
+      suggest.classList.add('hidden');
+      return;
+    }
+    suggest.classList.remove('hidden');
+    positionFormulaSuggest(editor, suggest);
+    var kw = normalizePickerKw(trigger.query);
+    var visible = 0;
+    $$('.ki-formula-atom-option', suggest).forEach(function (row) {
+      var hay = normalizePickerKw(row.getAttribute('data-search') || row.textContent);
+      var show = !kw || hay.indexOf(kw) >= 0;
+      row.classList.toggle('hidden', !show);
+      if (show) visible++;
+    });
+    var empty = $('.ki-formula-empty', suggest);
+    if (empty) empty.classList.toggle('hidden', visible > 0);
+    setFormulaSuggestActive(suggest, 0);
+  }
+
+  function removeFormulaTriggerText(editor) {
+    var trigger = currentFormulaTrigger(editor);
+    var sel = window.getSelection && window.getSelection();
+    if (!trigger || !sel || !sel.rangeCount || !selectionInsideFormulaEditor(editor)) return;
+    var node = sel.anchorNode;
+    if (!node || node.nodeType !== 3) return;
+    var offset = sel.anchorOffset;
+    var start = Math.max(0, offset - trigger.length);
+    node.textContent = node.textContent.slice(0, start) + node.textContent.slice(offset);
+    var range = document.createRange();
+    range.setStart(node, start);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  function insertFormulaAtomFromSuggest(atom) {
+    var editor = $('#kiDrawer .ki-formula-editor');
+    if (!editor || !atom) return;
+    removeFormulaTriggerText(editor);
+    insertFormulaPart(atom.name, true);
+    var suggest = editor.parentElement && $('[data-role="formula-suggest"]', editor.parentElement);
+    if (suggest) suggest.classList.add('hidden');
+  }
+
   // ---------- 8c) 抽屉事件 ----------
   function bindDrawer() {
     var drawer = $('#kiDrawer');
@@ -1420,6 +1897,53 @@
     });
 
     drawer.addEventListener('click', function (e) {
+      var formulaRemove = e.target.closest && e.target.closest('[data-act="remove-formula-part"]');
+      if (formulaRemove) {
+        e.preventDefault();
+        e.stopPropagation();
+        var tokenEl = formulaRemove.closest('.ki-formula-token');
+        var editorEl = formulaRemove.closest('.ki-formula-editor');
+        if (tokenEl) tokenEl.remove();
+        syncFormulaFromEditor(editorEl || $('#kiDrawer .ki-formula-editor'));
+        return;
+      }
+
+      var formulaAtom = e.target.closest && e.target.closest('.ki-formula-atom-option[data-formula-atom-id]');
+      if (formulaAtom) {
+        e.preventDefault();
+        var atom = findAtomIndicatorById(formulaAtom.getAttribute('data-formula-atom-id'));
+        if (atom) {
+          insertFormulaAtomFromSuggest(atom);
+        }
+        return;
+      }
+
+      var formulaTool = e.target.closest && e.target.closest('[data-act="insert-formula-op"], [data-act="insert-formula-fn"]');
+      if (formulaTool) {
+        e.preventDefault();
+        appendFormulaPart(formulaTool.getAttribute('data-formula-value') || '');
+        return;
+      }
+
+      var clearFormula = e.target.closest && e.target.closest('[data-act="clear-formula"]');
+      if (clearFormula) {
+        e.preventDefault();
+        if (state.drawer.draft) {
+          state.drawer.draft.formula = '';
+          refreshFormulaBuilder();
+        }
+        return;
+      }
+
+      var formulaEditor = e.target.closest && e.target.closest('[data-role="formula-editor"]');
+      if (formulaEditor) {
+        if (!e.target.closest('.ki-formula-token') && !e.target.closest('.ki-formula-token-remove')) {
+          setFormulaCaretFromPoint(formulaEditor, e);
+        }
+        removeFormulaPlaceholder(formulaEditor);
+        filterFormulaSuggest(formulaEditor);
+      }
+
       var sourceBtn = e.target.closest && e.target.closest('[data-act="toggle-source-tree"], [data-act="toggle-model-tree"], [data-act="toggle-field-picker"], [data-act="toggle-atom-picker"]');
       if (sourceBtn) {
         e.stopPropagation();
@@ -1533,6 +2057,9 @@
       if (!(e.target.closest && e.target.closest('.ki-source-picker'))) {
         $$('.ki-source-picker.is-open', drawer).forEach(function (el) { el.classList.remove('is-open'); });
       }
+      if (!(e.target.closest && e.target.closest('.ki-formula-builder'))) {
+        $$('.ki-formula-suggest', drawer).forEach(function (el) { el.classList.add('hidden'); });
+      }
 
       var act = e.target.closest && e.target.closest('[data-act]');
       if (act) {
@@ -1576,12 +2103,52 @@
       }
     });
 
+    drawer.addEventListener('mousedown', function (e) {
+      if (e.target.closest && e.target.closest('.ki-formula-toolbar button')) {
+        e.preventDefault();
+      }
+    });
+
+    drawer.addEventListener('keydown', function (e) {
+      var formulaEditor = e.target.closest && e.target.closest('[data-role="formula-editor"]');
+      if (!formulaEditor) return;
+      var suggest = formulaEditor.parentElement && $('[data-role="formula-suggest"]', formulaEditor.parentElement);
+      if (!suggest || suggest.classList.contains('hidden')) return;
+      var rows = visibleFormulaOptions(suggest);
+      if (!rows.length && e.key !== 'Escape') return;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        var current = rows.findIndex(function (row) { return row.classList.contains('is-active'); });
+        setFormulaSuggestActive(suggest, current + (e.key === 'ArrowDown' ? 1 : -1));
+        return;
+      }
+      if (e.key === 'Enter') {
+        var option = activeFormulaOption(suggest);
+        if (!option) return;
+        e.preventDefault();
+        var atom = findAtomIndicatorById(option.getAttribute('data-formula-atom-id'));
+        if (atom) insertFormulaAtomFromSuggest(atom);
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        suggest.classList.add('hidden');
+      }
+    });
+
     // input/change 双向绑定
     drawer.addEventListener('input', function (e) {
       handleBindInput(e);
     });
     drawer.addEventListener('change', function (e) {
       handleBindInput(e);
+    });
+    drawer.addEventListener('focusout', function (e) {
+      var formulaEditor = e.target.closest && e.target.closest('[data-role="formula-editor"]');
+      if (formulaEditor && state.drawer.draft) {
+        state.drawer.draft.formula = formulaFromEditor(formulaEditor);
+        normalizeFormulaEditor(formulaEditor);
+      }
     });
 
     // 拖动调整宽度
@@ -1625,6 +2192,13 @@
     }
     if (role === 'atom-search') {
       filterAtomPicker(el);
+      return;
+    }
+    if (role === 'formula-editor') {
+      removeFormulaPlaceholder(el);
+      state.drawer.draft.formula = formulaFromEditor(el);
+      syncFormulaHiddenInput();
+      filterFormulaSuggest(el);
       return;
     }
     var d = state.drawer.draft;

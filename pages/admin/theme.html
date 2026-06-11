@@ -66,44 +66,100 @@
             </div>
 
             <div class="at-models-card">
-              <div class="at-models-toolbar">
-                <div class="at-models-title">
-                  <h3>关联数据模型</h3>
-                  <span class="at-models-count" id="atModelsCount">0</span>
-                </div>
-                <div class="at-models-actions">
-                  <div class="at-search-wrap">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
-                    </svg>
-                    <input type="text" id="atModelSearch" placeholder="搜索模型名称 / 编码 / 数据源" />
+              <div class="at-tabs-bar">
+                <button type="button" class="at-tab is-active" data-tab="models">
+                  关联模型<span id="atModelsTabCount">0</span>
+                </button>
+                <button type="button" class="at-tab" data-tab="indicators">
+                  关联指标<span id="atIndicatorsTabCount">0</span>
+                </button>
+              </div>
+
+              <div class="at-tab-panel is-active" id="atPanelModels" data-panel="models">
+                <div class="at-models-toolbar">
+                  <div class="at-models-title">
+                    <h3>关联数据模型</h3>
+                    <span class="at-models-count" id="atModelsCount">0</span>
                   </div>
-                  <select id="atModelFilterSrc" class="at-filter-select" title="按数据源筛选">
-                    <option value="">全部数据源</option>
-                  </select>
-                  <button type="button" class="primary-btn" id="atBtnAddModel">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" class="btn-ico">
-                      <path d="M12 5v14"/><path d="M5 12h14"/>
-                    </svg>
-                    添加
-                  </button>
+                  <div class="at-models-actions">
+                    <div class="at-search-wrap">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
+                      </svg>
+                      <input type="text" id="atModelSearch" placeholder="搜索模型名称 / 编码 / 数据源" />
+                    </div>
+                    <select id="atModelFilterSrc" class="at-filter-select" title="按数据源筛选">
+                      <option value="">全部数据源</option>
+                    </select>
+                    <button type="button" class="primary-btn" id="atBtnAddModel">
+                      <svg viewBox="0 0 24 24" aria-hidden="true" class="btn-ico">
+                        <path d="M12 5v14"/><path d="M5 12h14"/>
+                      </svg>
+                      添加
+                    </button>
+                  </div>
+                </div>
+                <div class="at-models-tablewrap">
+                  <table class="at-models-table">
+                    <thead>
+                      <tr>
+                        <th style="width:38%;">模型名称</th>
+                        <th style="width:22%;">所属数据源</th>
+                        <th style="width:14%;">字段数</th>
+                        <th style="width:18%;">更新时间</th>
+                        <th style="width:8%;">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody id="atModelsTbody">
+                      <!-- JS 渲染 -->
+                    </tbody>
+                  </table>
                 </div>
               </div>
-              <div class="at-models-tablewrap">
-                <table class="at-models-table">
-                  <thead>
-                    <tr>
-                      <th style="width:38%;">模型名称</th>
-                      <th style="width:22%;">所属数据源</th>
-                      <th style="width:14%;">字段数</th>
-                      <th style="width:18%;">更新时间</th>
-                      <th style="width:8%;">操作</th>
-                    </tr>
-                  </thead>
-                  <tbody id="atModelsTbody">
-                    <!-- JS 渲染 -->
-                  </tbody>
-                </table>
+
+              <div class="at-tab-panel" id="atPanelIndicators" data-panel="indicators">
+                <div class="at-models-toolbar">
+                  <div class="at-models-title">
+                    <h3>关联指标</h3>
+                    <span class="at-models-count" id="atIndicatorsCount">0</span>
+                  </div>
+                  <div class="at-models-actions">
+                    <div class="at-search-wrap">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
+                      </svg>
+                      <input type="text" id="atIndicatorSearch" placeholder="搜索指标名称 / 同义词 / 数据源" />
+                    </div>
+                    <select id="atIndicatorTypeFilter" class="at-filter-select" title="按指标类型筛选">
+                      <option value="">全部类型</option>
+                      <option value="atom">原子指标</option>
+                      <option value="derived">衍生指标</option>
+                    </select>
+                    <button type="button" class="primary-btn" id="atBtnAddIndicator">
+                      <svg viewBox="0 0 24 24" aria-hidden="true" class="btn-ico">
+                        <path d="M12 5v14"/><path d="M5 12h14"/>
+                      </svg>
+                      添加
+                    </button>
+                  </div>
+                </div>
+                <div class="at-models-tablewrap">
+                  <table class="at-models-table">
+                    <thead>
+                      <tr>
+                        <th style="width:28%;">指标名称</th>
+                        <th style="width:13%;">指标类型</th>
+                        <th style="width:18%;">所属数据源</th>
+                        <th>口径 / 公式</th>
+                        <th style="width:14%;">更新时间</th>
+                        <th style="width:8%;">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody id="atIndicatorsTbody">
+                      <!-- JS 渲染 -->
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
@@ -219,6 +275,55 @@
           </div>
           <div class="atp-models-list" id="atpModelsList">
             <!-- JS 渲染：模型卡片 + 复选框 -->
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="ghost-btn" data-act="cancel">取消</button>
+      <button type="button" class="primary-btn" data-act="ok">保存</button>
+    </div>
+  </div>
+
+  <!-- 弹窗：选择指标 -->
+  <div class="modal-mask hidden" id="atIndicatorPickerMask"></div>
+  <div class="modal at-picker-modal hidden" id="atIndicatorPickerModal" role="dialog" aria-modal="true" aria-labelledby="atIndicatorPickerTitle">
+    <div class="modal-head">
+      <div>
+        <h3 id="atIndicatorPickerTitle">选择指标</h3>
+        <p>从指标体系维护中选择指标，可多选；已加入主题的指标显示"已添加"。</p>
+      </div>
+      <button type="button" class="close" data-act="cancel" aria-label="关闭">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="atp-layout">
+        <aside class="atp-sources">
+          <div class="atp-side-head">指标目录</div>
+          <div class="atp-source-search">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
+            </svg>
+            <input type="text" id="atiGroupSearch" placeholder="搜索指标目录" />
+          </div>
+          <div class="atp-source-list" id="atiGroupList">
+            <!-- JS 渲染：指标目录 -->
+          </div>
+        </aside>
+        <div class="atp-models">
+          <div class="atp-models-toolbar">
+            <div class="atp-models-search">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
+              </svg>
+              <input type="text" id="atiIndicatorSearch" placeholder="搜索指标名称 / 同义词" />
+            </div>
+            <div class="atp-models-meta">
+              已选 <strong id="atiSelectedCount">0</strong> 项
+              <button type="button" class="atp-clear" id="atiClearAll">清空</button>
+            </div>
+          </div>
+          <div class="atp-models-list" id="atiIndicatorsList">
+            <!-- JS 渲染：指标卡片 + 复选框 -->
           </div>
         </div>
       </div>

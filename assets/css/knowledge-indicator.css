@@ -1489,6 +1489,260 @@
   cursor: default;
 }
 
+.ki-formula-builder {
+  display: grid;
+  gap: 10px;
+}
+
+.ki-formula-editor-wrap {
+  position: relative;
+}
+
+.ki-formula-editor {
+  min-height: 126px;
+  padding: 14px;
+  display: block;
+  color: #0f172a;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  outline: none;
+  font-size: 14px;
+  line-height: 1.6;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.ki-formula-editor:focus {
+  border-color: #b7ebd2;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, .12);
+}
+
+.ki-formula-placeholder {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.ki-formula-token {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  margin: 3px 5px 3px 0;
+  padding: 0 9px;
+  color: #1358bd;
+  background: #eef6ff;
+  border: 1px solid #bdd7ff;
+  border-radius: 7px;
+  font-weight: 800;
+  vertical-align: middle;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.5);
+}
+
+.ki-formula-token-remove {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  color: #3b73cc;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ki-formula-token-remove:hover {
+  color: #ef4444;
+  background: #fff;
+}
+
+.ki-formula-op,
+.ki-formula-fn,
+.ki-formula-text {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  margin: 3px 5px 3px 0;
+  color: #0f172a;
+  font-weight: 800;
+  vertical-align: middle;
+}
+
+.ki-formula-op {
+  min-width: 24px;
+  justify-content: center;
+  color: #334155;
+  background: #f8fafc;
+  border: 1px solid transparent;
+  border-radius: 7px;
+}
+
+.ki-formula-fn {
+  padding: 0 9px;
+  color: #6d28d9;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  border-radius: 7px;
+  font-weight: 800;
+}
+
+.ki-formula-text {
+  padding: 0 9px;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  font-weight: 700;
+}
+
+.ki-formula-toolbar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.ki-formula-tool-group {
+  display: inline-flex;
+  flex: 0 1 auto;
+  flex-wrap: nowrap;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ki-formula-tool {
+  flex: 0 0 auto;
+  height: 30px;
+  padding: 0 10px;
+  color: #334155;
+  background: #fff;
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: color .15s, background .15s, border-color .15s;
+}
+
+.ki-formula-tool:hover {
+  color: var(--primary);
+  background: var(--primary-hover-bg);
+  border-color: var(--primary-border);
+}
+
+.ki-formula-clear {
+  flex: 0 0 auto;
+  height: 30px;
+  margin-left: 2px;
+  padding: 0 13px;
+  color: #0f172a;
+  background: #fff;
+  border: 1px solid #b7ebd2;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: color .15s, background .15s, border-color .15s;
+}
+
+.ki-formula-clear:hover {
+  color: #047857;
+  background: #f0fdf4;
+}
+
+.ki-formula-suggest {
+  position: absolute;
+  z-index: 85;
+  left: 12px;
+  right: 12px;
+  top: calc(100% + 8px);
+  width: 360px;
+  max-width: calc(100% - 24px);
+  max-height: 230px;
+  padding: 6px;
+  overflow: auto;
+  background: #fff;
+  border: 1px solid #cfe8da;
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, .14);
+}
+
+.ki-formula-atom-option {
+  width: 100%;
+  min-height: 40px;
+  padding: 7px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #1f2937;
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ki-formula-atom-option:hover,
+.ki-formula-atom-option.is-active {
+  background: #e9f7ef;
+}
+
+.ki-formula-atom-option.is-active {
+  outline: 1px solid #b7ebd2;
+}
+
+.ki-formula-atom-option span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+}
+
+.ki-formula-atom-option em {
+  max-width: 160px;
+  overflow: hidden;
+  color: #475569;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-style: normal;
+  font-size: 12px;
+}
+
+.ki-formula-empty {
+  padding: 12px;
+  color: #94a3b8;
+  text-align: center;
+  font-size: 12.5px;
+}
+
+.ki-formula-help {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ki-formula-help span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  background: #f8fafc;
+  border: 1px solid #edf2f7;
+  border-radius: 999px;
+}
+
 .ki-modifier-config {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, .9fr);
