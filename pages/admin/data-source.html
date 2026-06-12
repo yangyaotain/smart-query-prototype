@@ -40,7 +40,7 @@
       flex: none;
       padding: 14px 14px 12px;
       border-bottom: 1px solid var(--line);
-      background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+      background: linear-gradient(180deg, var(--primary-panel-bg) 0%, #ffffff 100%);
     }
 
     .ds-side-head h3 {
@@ -62,8 +62,8 @@
     }
 
     .ds-side-head .search-box:focus {
-      border-color: #93c5fd;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+      border-color: var(--focus-border);
+      box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
     .ds-tree {
@@ -92,12 +92,12 @@
 
     .dst-row:hover {
       color: var(--primary);
-      background: #f4f8ff;
+      background: var(--primary-hover-bg);
     }
 
     .dst-row.active {
       color: var(--primary);
-      background: linear-gradient(90deg, #eaf3ff 0%, #f8fbff 100%);
+      background: linear-gradient(90deg, var(--primary-soft) 0%, var(--primary-panel-bg) 100%);
       font-weight: 700;
     }
 
@@ -175,7 +175,7 @@
 
     .dst-row.active > .dst-meta {
       color: var(--primary);
-      background: rgba(22, 119, 255, 0.12);
+      background: rgba(var(--primary-rgb), 0.12);
     }
 
     .dst-children {
@@ -221,7 +221,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      background: linear-gradient(120deg, #f7fbff 0%, #ffffff 60%);
+      background: linear-gradient(120deg, var(--primary-panel-bg) 0%, #ffffff 60%);
       border: 1px solid var(--line);
       border-radius: 16px;
     }
@@ -263,6 +263,7 @@
 
     .ds-detail-actions {
       display: flex;
+      align-items: center;
       gap: 8px;
       flex-wrap: wrap;
     }
@@ -290,7 +291,7 @@
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      color: #2563eb;
+      color: var(--primary);
       text-decoration: none;
       font-size: 13px;
       line-height: 1;
@@ -298,7 +299,7 @@
     }
 
     .ds-act-link:hover {
-      color: #1d4ed8;
+      color: var(--primary-dark);
       text-decoration: underline;
     }
 
@@ -359,7 +360,7 @@
 
     .ds-ctx-menu button:hover {
       color: var(--primary);
-      background: #f4f8ff;
+      background: var(--primary-hover-bg);
     }
 
     .ds-ctx-menu button.danger {
@@ -405,7 +406,7 @@
 
     /* 右键聚焦行 */
     .dst-row.context-active {
-      box-shadow: inset 0 0 0 1.5px rgba(22, 119, 255, 0.32);
+      box-shadow: inset 0 0 0 1.5px rgba(var(--primary-rgb), 0.32);
     }
 
     /* 行内编辑输入框 */
@@ -418,7 +419,7 @@
       background: #fff;
       border: 1px solid var(--primary);
       border-radius: 6px;
-      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+      box-shadow: 0 0 0 3px var(--focus-ring);
       font-size: 12.5px;
       font-weight: 600;
       outline: none;
@@ -477,8 +478,8 @@
     .dse-field input:focus,
     .dse-field select:focus,
     .dse-tree-btn:focus {
-      border-color: #93c5fd;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+      border-color: var(--focus-border);
+      box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
     .dse-field input[readonly],
@@ -569,8 +570,8 @@
 
     .dse-tree-search input:focus {
       background: #fff;
-      border-color: #93c5fd;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+      border-color: var(--focus-border);
+      box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
     .dse-tree-empty {
@@ -609,11 +610,11 @@
       transition: background-color .14s, color .14s;
     }
 
-    .dse-tree-row:hover { color: var(--primary); background: #f4f8ff; }
+    .dse-tree-row:hover { color: var(--primary); background: var(--primary-hover-bg); }
 
     .dse-tree-row.active {
       color: var(--primary);
-      background: #eaf3ff;
+      background: var(--primary-soft);
       font-weight: 700;
     }
 
@@ -663,9 +664,9 @@
     }
 
     .dse-result.testing {
-      background: #f8fbff;
-      border-color: #c7dcff;
-      color: #1d4ed8;
+      background: var(--primary-panel-bg);
+      border-color: var(--primary-border);
+      color: var(--primary-dark);
     }
 
     .dse-result.ok {
@@ -699,7 +700,7 @@
       width: 12px; height: 12px;
       margin-right: 6px;
       vertical-align: -2px;
-      border: 2px solid #93c5fd;
+      border: 2px solid var(--focus-border);
       border-top-color: transparent;
       border-radius: 50%;
       animation: dseSpin .8s linear infinite;
@@ -725,7 +726,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      background: linear-gradient(120deg, #f7fbff 0%, #ffffff 60%);
+      background: linear-gradient(120deg, var(--primary-panel-bg) 0%, #ffffff 60%);
       border: 1px solid var(--line);
       border-radius: 16px;
     }
@@ -771,7 +772,7 @@
     .dsr-btn:hover { filter: brightness(1.06); }
     .dsr-btn:active { transform: translateY(1px); }
     .dsr-btn:disabled { filter: grayscale(.4) brightness(.96); opacity: .65; cursor: not-allowed; }
-    .dsr-blue  { background: #3b82f6; box-shadow: 0 4px 10px rgba(59,130,246,.22); }
+    .dsr-blue  { background: var(--primary-accent-strong); box-shadow: 0 4px 10px rgba(var(--primary-rgb), .22); }
     .dsr-red   { background: #ef4444; box-shadow: 0 4px 10px rgba(239,68,68,.22); }
     .dsr-green { background: #10b981; box-shadow: 0 4px 10px rgba(16,185,129,.22); }
     .dsr-gray  {
@@ -810,8 +811,8 @@
     .dsr-toolbar-right input { width: 200px; }
     .dsr-toolbar-right select:focus,
     .dsr-toolbar-right input:focus {
-      border-color: #93c5fd;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+      border-color: var(--focus-border);
+      box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
     .dsr-table th,
@@ -827,7 +828,7 @@
     .dsr-table td:nth-child(4) { text-align: left; }
     .dsr-table .col-check { width: 44px; }
     .dsr-table .col-status { width: 110px; }
-    .dsr-table tbody tr.row-selected td { background: #f4f8ff; }
+    .dsr-table tbody tr.row-selected td { background: var(--primary-hover-bg); }
     .dsr-table input[type="checkbox"] {
       width: 14px;
       height: 14px;
@@ -906,8 +907,8 @@
     }
     .dsr-pages button:hover:not(:disabled) {
       color: var(--primary);
-      border-color: #93c5fd;
-      background: #f4f8ff;
+      border-color: var(--focus-border);
+      background: var(--primary-hover-bg);
     }
     .dsr-pages button.active {
       color: #fff;
@@ -928,7 +929,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      background: linear-gradient(120deg, #f7fbff 0%, #ffffff 60%);
+      background: linear-gradient(120deg, var(--primary-panel-bg) 0%, #ffffff 60%);
       border: 1px solid var(--line);
       border-radius: 16px;
     }
@@ -965,7 +966,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      background: linear-gradient(120deg, #f7fbff 0%, #ffffff 60%);
+      background: linear-gradient(120deg, var(--primary-panel-bg) 0%, #ffffff 60%);
       border: 1px solid var(--line);
       border-radius: 16px;
     }
@@ -1033,7 +1034,7 @@
       background: #fff;
       border: 1px solid var(--primary);
       border-radius: 6px;
-      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+      box-shadow: 0 0 0 3px var(--focus-ring);
       font-size: 12.5px;
       outline: none;
       box-sizing: border-box;
@@ -1072,7 +1073,7 @@
       font-weight: 700;
       letter-spacing: .2px;
     }
-    .dssc-attr-pk { color: #1e3a8a; background: #dbeafe; }
+    .dssc-attr-pk { color: var(--primary-dark); background: var(--primary-border-soft); }
     .dssc-attr-nn { color: #475569; background: #e2e8f0; }
     .dssc-attr-ai { color: #6d28d9; background: #ede9fe; }
     .dssc-attr-pt { color: #b45309; background: #fff7ed; }
@@ -1105,7 +1106,7 @@
       cursor: pointer;
       transition: color .14s, background-color .14s;
     }
-    .dssc-alias-edit:hover { color: var(--primary); background: #f4f8ff; }
+    .dssc-alias-edit:hover { color: var(--primary); background: var(--primary-hover-bg); }
     .dssc-alias-edit svg {
       width: 14px; height: 14px;
       fill: none; stroke: currentColor;
@@ -1124,7 +1125,7 @@
       background: #fff;
       border: 1px solid var(--primary);
       border-radius: 6px;
-      box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+      box-shadow: 0 0 0 3px var(--focus-ring);
       font-size: 12.5px;
       outline: none;
       box-sizing: border-box;
@@ -1201,11 +1202,6 @@
                     <option value="fact">事实表</option>
                     <option value="dim">维度表</option>
                     <option value="bridge">桥接表</option>
-                  </select>
-                  <select id="dsTableReg">
-                    <option value="">全部注册状态</option>
-                    <option value="registered">已注册</option>
-                    <option value="unregistered">未注册</option>
                   </select>
                   <button class="primary-btn" type="button" id="dsBtnQuery">
                     <svg viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
@@ -1545,11 +1541,11 @@
     </div>
     <div class="modal-foot">
       <button type="button" class="ghost-btn" data-act="cancel">取消</button>
-      <button type="button" class="primary-btn" data-act="ok" style="background:#ef4444;box-shadow:0 8px 20px rgba(239,68,68,.22);">确认删除</button>
+      <button type="button" class="primary-btn" data-act="ok">确认删除</button>
     </div>
   </div>
 
-  <script src="../../assets/js/common.js"></script>
+  <script src="../../assets/js/common.js?v=20260519-system-config"></script>
   <script>
     // ============================================================
     // 数据源 + 表 数据集（按业务域两级目录组织）
@@ -1663,7 +1659,30 @@
     let treeKeyword = '';
     let tableKeyword = '';
     let tableTypeFilter = '';
-    let tableRegFilter = '';
+
+    function getSourceItems() {
+      const items = [];
+      DS_DATA.forEach((domain) => {
+        (domain.sources || []).forEach((source) => {
+          items.push({ domain, source });
+        });
+      });
+      return items;
+    }
+
+    function findDomainByDisplayName(name) {
+      if (!name) return null;
+      const direct = DS_DATA.find((domain) => domain.name === name);
+      if (direct) return direct;
+      const found = getSourceItems().find((item) => item.source.name === name);
+      return found ? found.domain : null;
+    }
+
+    function extractAddrFromJdbc(url, fallback) {
+      const value = String(url || '').trim();
+      const matched = value.match(/^[a-z0-9+.-]+:\/\/([^/:?#]+)(?::\d+)?/i);
+      return matched ? matched[1] : (fallback || 'new-source.internal');
+    }
 
     // ----------------------------------------------------------------
     // 渲染 - 目录树
@@ -1764,8 +1783,6 @@
       const list = found.source.tables.filter((t) => {
         if (kw && !(t.name.toLowerCase().includes(kw) || (t.comment || '').toLowerCase().includes(kw))) return false;
         if (tableTypeFilter && t.type !== tableTypeFilter) return false;
-        if (tableRegFilter === 'registered' && !t.registered) return false;
-        if (tableRegFilter === 'unregistered' && t.registered) return false;
         return true;
       });
       if (!list.length) {
@@ -1847,11 +1864,6 @@
 
     document.getElementById('dsTableType').addEventListener('change', (e) => {
       tableTypeFilter = e.target.value || '';
-      renderTableList();
-    });
-
-    document.getElementById('dsTableReg').addEventListener('change', (e) => {
-      tableRegFilter = e.target.value || '';
       renderTableList();
     });
 
@@ -2123,7 +2135,8 @@
         subtitle: '删除后将无法恢复。',
         message: '确定要删除该条数据吗？',
         okText: '确认删除',
-        cancelText: '取消'
+        cancelText: '取消',
+        danger: true
       }, opts || {});
       document.getElementById('dsConfirmTitle').textContent = o.title;
       document.getElementById('dsConfirmSubtitle').textContent = o.subtitle;
@@ -2133,6 +2146,8 @@
       const closeBtn = dsConfirmModal.querySelector('.modal-head [data-act="cancel"]');
       okBtn.textContent = o.okText;
       cancelBtn.textContent = o.cancelText;
+      okBtn.style.background = o.danger ? '#ef4444' : '';
+      okBtn.style.boxShadow = o.danger ? '0 8px 20px rgba(239,68,68,.22)' : '';
       dsConfirmMask.classList.remove('hidden');
       dsConfirmModal.classList.remove('hidden');
       const cleanup = () => {
@@ -2515,8 +2530,14 @@
     document.getElementById('dseBtnSave').addEventListener('click', () => {
       const sourceKind = document.getElementById('dseSourceKind').value;
       const domain = getTreeBtnValue(document.getElementById('dseDomainBtn'));
+      const type = getTreeBtnValue(document.getElementById('dseTypeBtn'));
       if (!domain) {
         showToast && showToast('请选择所属分类');
+        return;
+      }
+      const targetDomain = findDomainByDisplayName(domain);
+      if (!targetDomain) {
+        showToast && showToast('请选择有效的数据源分组');
         return;
       }
       if (sourceKind === 'platform' && !dseSelectedMidSourceId) {
@@ -2528,10 +2549,52 @@
         showToast && showToast('请填写数据库名称');
         return;
       }
+      const dbAlias = (document.getElementById('dseDbAlias').value || '').trim();
+      const url = (document.getElementById('dseUrl').value || '').trim();
+      const displayName = dbAlias || dbName;
+      const sourcePayload = {
+        sourceKind,
+        midSourceId: sourceKind === 'platform' ? dseSelectedMidSourceId : '',
+        name: displayName,
+        type: type || 'MySQL',
+        addr: extractAddrFromJdbc(url, dbName),
+        status: 'ok',
+        sync: dseCurrentMode === 'edit' ? undefined : '尚未同步'
+      };
+      if (dseCurrentMode === 'edit') {
+        const found = findSource(activeSourceId);
+        if (found) {
+          found.source.sourceKind = sourcePayload.sourceKind;
+          found.source.midSourceId = sourcePayload.midSourceId;
+          found.source.name = sourcePayload.name;
+          found.source.type = sourcePayload.type;
+          found.source.addr = sourcePayload.addr;
+          found.source.status = sourcePayload.status;
+          if (targetDomain.id !== found.domain.id) {
+            found.domain.sources = found.domain.sources.filter((s) => s.id !== found.source.id);
+            targetDomain.sources.push(found.source);
+          }
+        }
+      } else {
+        const newSource = {
+          id: genId('s'),
+          sourceKind: sourcePayload.sourceKind,
+          midSourceId: sourcePayload.midSourceId,
+          name: sourcePayload.name,
+          type: sourcePayload.type,
+          addr: sourcePayload.addr,
+          status: sourcePayload.status,
+          sync: sourcePayload.sync,
+          tables: []
+        };
+        targetDomain.sources.push(newSource);
+        activeSourceId = newSource.id;
+      }
+      renderTree();
+      renderDetail();
+      renderTableList();
       closeDseEdit();
-      showToast && showToast(sourceKind === 'platform'
-        ? (dseCurrentMode === 'edit' ? '已保存中台数据源分类' : '已引用中台数据源')
-        : (dseCurrentMode === 'edit' ? '已保存修改' : '已新增数据源'));
+      showToast && showToast(dseCurrentMode === 'edit' ? '已保存修改' : ('已新增数据源：' + displayName));
     });
 
     // ----------------------------------------------------------------

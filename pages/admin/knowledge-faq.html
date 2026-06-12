@@ -74,7 +74,7 @@
       background: var(--primary);
       border: 0;
       border-radius: 8px;
-      box-shadow: 0 6px 14px rgba(22, 119, 255, .24);
+      box-shadow: 0 6px 14px rgba(var(--primary-rgb), .24);
     }
 
     .ik-icon-add svg,
@@ -122,8 +122,8 @@
     .ik-field textarea:focus,
     .ik-select:focus {
       background: #fff;
-      border-color: #bfdbfe;
-      box-shadow: 0 0 0 3px rgba(22, 119, 255, .08);
+      border-color: var(--primary-border);
+      box-shadow: 0 0 0 3px rgba(var(--primary-rgb), .08);
     }
 
     .ik-tree {
@@ -154,19 +154,19 @@
 
     .ik-tree-row:hover {
       color: var(--primary);
-      background: #f4f8ff;
+      background: var(--primary-hover-bg);
     }
 
     .ik-tree-row.is-active {
       color: var(--primary);
-      background: linear-gradient(90deg, #eaf3ff 0%, #f8fbff 100%);
+      background: linear-gradient(90deg, var(--primary-soft) 0%, var(--primary-panel-bg) 100%);
       font-weight: 800;
     }
 
     .ik-tree-row.is-context {
       color: var(--primary);
-      background: #eaf3ff;
-      box-shadow: inset 0 0 0 1px #bfdbfe;
+      background: var(--primary-soft);
+      box-shadow: inset 0 0 0 1px var(--primary-border);
     }
 
     .ik-tree-toggle {
@@ -217,7 +217,7 @@
 
     .ik-tree-row.is-active .ik-tree-count {
       color: var(--primary);
-      background: #dbeafe;
+      background: var(--primary-border-soft);
     }
 
     .ik-tree-children {
@@ -296,7 +296,7 @@
       align-items: center;
       justify-content: center;
       color: var(--primary);
-      background: #eef4ff;
+      background: var(--primary-bg);
       border-radius: 8px;
     }
 
@@ -314,7 +314,7 @@
       align-items: center;
       padding: 0 8px;
       color: var(--primary);
-      background: #eaf3ff;
+      background: var(--primary-soft);
       border-radius: 999px;
       font-size: 11.5px;
       font-weight: 800;
@@ -404,7 +404,7 @@
     }
 
     .ik-table tbody tr:hover td {
-      background: #f8fbff;
+      background: var(--primary-panel-bg);
     }
 
     .ik-title {
@@ -499,7 +499,7 @@
 
     .ik-action:hover {
       color: var(--primary);
-      background: #f4f8ff;
+      background: var(--primary-hover-bg);
     }
 
     .ik-action.is-danger:hover {
@@ -549,8 +549,8 @@
 
     .ik-pg-buttons button:hover:not(:disabled) {
       color: var(--primary);
-      background: #f4f8ff;
-      border-color: #bfdbfe;
+      background: var(--primary-hover-bg);
+      border-color: var(--primary-border);
     }
 
     .ik-pg-buttons button.is-current {
@@ -592,7 +592,7 @@
 
     .ik-ctx-item:hover {
       color: var(--primary);
-      background: #f4f8ff;
+      background: var(--primary-hover-bg);
     }
 
     .ik-ctx-item.is-danger {
@@ -913,7 +913,7 @@
     </div>
   </div>
 
-  <script src="../../assets/js/common.js"></script>
+  <script src="../../assets/js/common.js?v=20260519-system-config"></script>
   <script>
     const IK_ICONS = {
       chev: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3.5 10 8l-4.5 4.5z"/></svg>',
