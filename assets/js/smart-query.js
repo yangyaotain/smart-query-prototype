@@ -261,6 +261,105 @@ const themeIndicatorMap = {
   ]
 };
 
+const indicatorMetaMap = {
+  "销售额": {
+    dimensions: ["时间", "区域", "渠道", "产品线"],
+    example: "示例：近6个月华东区销售额趋势如何？"
+  },
+  "订单量": {
+    dimensions: ["时间", "区域", "渠道", "订单状态"],
+    example: "示例：本月各渠道订单量对比。"
+  },
+  "成交客户数": {
+    dimensions: ["时间", "区域", "客户类型", "渠道"],
+    example: "示例：本季度华南区成交客户数环比变化。"
+  },
+  "客单价": {
+    dimensions: ["时间", "区域", "渠道", "客户等级"],
+    example: "示例：近一年华东区客单价变化。"
+  },
+  "渠道转化率": {
+    dimensions: ["时间", "渠道", "活动", "客户来源"],
+    example: "示例：本月各渠道订单转化率对比。"
+  },
+  "区域销售额": {
+    dimensions: ["时间", "区域", "城市", "销售部门"],
+    example: "示例：本季度各区域销售业绩对比。"
+  },
+  "商品销售额": {
+    dimensions: ["时间", "产品线", "商品", "品牌"],
+    example: "示例：各产品线销售贡献占比如何？"
+  },
+  "销售件数": {
+    dimensions: ["时间", "产品线", "商品", "渠道"],
+    example: "示例：本月热销商品销售件数 TOP10。"
+  },
+  "毛利额": {
+    dimensions: ["时间", "区域", "产品线", "渠道"],
+    example: "示例：本月各产品线毛利额贡献。"
+  },
+  "新增客户数": {
+    dimensions: ["时间", "区域", "渠道", "客户来源"],
+    example: "示例：上月新增客户数量及来源分布。"
+  },
+  "复购率": {
+    dimensions: ["时间", "区域", "客户等级", "产品线"],
+    example: "示例：近3个月新客复购率趋势。"
+  },
+  "客户流失率": {
+    dimensions: ["时间", "区域", "客户等级", "行业"],
+    example: "示例：华南区客户流失率下降原因。"
+  },
+  "客户生命周期价值": {
+    dimensions: ["时间", "客户等级", "渠道", "行业"],
+    example: "示例：高价值客户生命周期价值分布。"
+  },
+  "高价值客户数": {
+    dimensions: ["时间", "区域", "客户等级", "销售部门"],
+    example: "示例：本月高价值客户数按区域分布。"
+  },
+  "库存金额": {
+    dimensions: ["时间", "仓库", "产品线", "商品"],
+    example: "示例：本月各仓库库存金额占比。"
+  },
+  "库存周转天数": {
+    dimensions: ["时间", "仓库", "产品线", "商品"],
+    example: "示例：哪些产品库存周转偏慢？"
+  },
+  "滞销商品数": {
+    dimensions: ["时间", "仓库", "品类", "商品"],
+    example: "示例：本月滞销商品数按品类分布。"
+  },
+  "缺货风险商品数": {
+    dimensions: ["时间", "仓库", "品类", "供应商"],
+    example: "示例：未来7天缺货风险商品有哪些？"
+  },
+  "安全库存达成率": {
+    dimensions: ["时间", "仓库", "品类", "供应商"],
+    example: "示例：各仓库安全库存达成率对比。"
+  },
+  "收入": {
+    dimensions: ["时间", "业务线", "区域", "收入类型"],
+    example: "示例：本季度各业务线收入结构。"
+  },
+  "毛利率": {
+    dimensions: ["时间", "业务线", "产品线", "渠道"],
+    example: "示例：近30天销售毛利率变化。"
+  },
+  "费用率": {
+    dimensions: ["时间", "部门", "费用类型", "项目"],
+    example: "示例：本月各部门费用率对比。"
+  },
+  "利润额": {
+    dimensions: ["时间", "业务线", "区域", "产品线"],
+    example: "示例：本季度区域利润额贡献排名。"
+  },
+  "预算完成率": {
+    dimensions: ["时间", "部门", "业务线", "预算科目"],
+    example: "示例：今年累计销售预算完成进度。"
+  }
+};
+
 const themeOptionNames = Object.keys(themeDescMap);
 const selectedThemes = new Set(["销售分析"]);
 
@@ -673,8 +772,28 @@ function renderThemeIndicators(themes) {
         <span title="同义词：${escapeHtml(item.synonyms)}">同义词：${escapeHtml(item.synonyms)}</span>
       </div>
       <p>${escapeHtml(item.desc)}</p>
+      ${renderIndicatorMeta(item)}
     </div>
   `).join("");
+}
+
+function renderIndicatorMeta(item) {
+  const meta = indicatorMetaMap[item.name] || {};
+  const dimensions = item.dimensions || meta.dimensions || [];
+  const example = item.example || meta.example || "";
+  const dimensionHtml = dimensions.length
+    ? `<div class="theme-indicator-dims" aria-label="${escapeHtml(item.name)}相关维度">
+        <span class="theme-indicator-dim-label">相关维度</span>
+        <div class="theme-indicator-dim-list">${dimensions.map((dim) => `<span>${escapeHtml(dim)}</span>`).join("")}</div>
+      </div>`
+    : "";
+  const exampleHtml = example
+    ? `<div class="theme-indicator-example">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg>
+        <span>${escapeHtml(example)}</span>
+      </div>`
+    : "";
+  return dimensionHtml + exampleHtml;
 }
 
 function syncThemeSelection() {
