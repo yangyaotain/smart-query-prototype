@@ -12,8 +12,8 @@
      * ============================================================ */
     .report-edit-page .editor-page {
       grid-template-columns: 260px 1fr;
-      gap: 14px;
-      padding: 14px;
+      gap: var(--report-layout-gap, 10px);
+      padding: var(--report-layout-gap, 10px);
     }
 
     /* 顶部 toolbar */
@@ -1118,6 +1118,29 @@
       margin-top: 6px;
     }
 
+    .ai-chat-input-wrap .input-card .textarea-row {
+      align-items: flex-start;
+      gap: 4px;
+    }
+
+    .ai-chat-input-wrap .input-card .followup-prefix {
+      padding-top: 1px;
+      color: var(--primary);
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.55;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .ai-chat-input-wrap .input-card .followup-prefix.hidden {
+      display: none;
+    }
+
+    .ai-chat-input-wrap .input-card textarea.has-followup-prefix::placeholder {
+      color: rgba(var(--primary-rgb), 0.55);
+    }
+
     .ai-chat-input-wrap .input-card .input-tools button {
       height: 24px;
       padding: 0 8px;
@@ -1260,6 +1283,24 @@
       white-space: nowrap;
     }
 
+    .ai-msg.user.ai-action-msg .ai-msg-bubble {
+      color: #17375e;
+      background: #fff;
+      border-color: rgba(var(--primary-rgb), 0.24);
+      box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.08);
+    }
+
+    .ai-msg.user.ai-action-msg .ai-msg-action-label {
+      color: var(--primary);
+      font-weight: 800;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .ai-msg.user.ai-action-msg .ai-msg-action-text {
+      color: #17375e;
+    }
+
     /* AI 助手浮窗内的"目标文本"卡片 */
     .ai-chat-pane .target-card {
       margin: 0 12px 10px;
@@ -1338,6 +1379,297 @@
 
     .report-edit-page .editor-tip strong {
       color: #17375e;
+    }
+
+    /* WPS 灵犀式 AI 编辑增强：右侧停靠 + 文内候选 + 采纳闭环 */
+    .report-edit-page {
+      --ai-assistant-width: 392px;
+      --report-layout-gap: 10px;
+    }
+
+    .report-edit-page .editor-page {
+      transition: padding-right 0.22s ease;
+    }
+
+    @media (min-width: 1280px) {
+      .report-edit-page.ai-assistant-open .editor-page {
+        padding-right: calc(var(--ai-assistant-width, 392px) + (var(--report-layout-gap, 10px) * 2));
+      }
+    }
+
+    .report-edit-page .ai-chat-pane {
+      width: var(--ai-assistant-width, 392px);
+      right: var(--report-layout-gap, 10px);
+      top: calc(64px + var(--report-layout-gap, 10px));
+      bottom: var(--report-layout-gap, 10px);
+      border-radius: 16px;
+    }
+
+    .report-edit-page .ai-chat-pane.maximized {
+      width: calc(100vw - (var(--report-layout-gap, 10px) * 2)) !important;
+    }
+
+    .report-edit-page .ai-chat-head {
+      background: linear-gradient(135deg, #fff, var(--primary-panel-bg));
+      cursor: default;
+    }
+
+    .report-edit-page .ai-chat-pane .ai-resize-handle {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      z-index: 6;
+      width: 12px;
+      cursor: col-resize;
+    }
+
+    .report-edit-page .ai-chat-pane .ai-resize-handle::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: transparent;
+      transition: background-color 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .report-edit-page .ai-chat-pane .ai-resize-handle::after {
+      content: "";
+      position: absolute;
+      left: 3px;
+      top: 50%;
+      width: 4px;
+      height: 34px;
+      border-radius: 999px;
+      background: rgba(var(--primary-rgb), 0.18);
+      opacity: 0;
+      transform: translateY(-50%);
+      transition: opacity 0.16s ease, background-color 0.16s ease;
+    }
+
+    .report-edit-page .ai-chat-pane .ai-resize-handle:hover::before,
+    .report-edit-page.ai-resizing .ai-chat-pane .ai-resize-handle::before {
+      background: var(--primary);
+      box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.08);
+    }
+
+    .report-edit-page .ai-chat-pane .ai-resize-handle:hover::after,
+    .report-edit-page.ai-resizing .ai-chat-pane .ai-resize-handle::after {
+      opacity: 1;
+      background: var(--primary);
+    }
+
+    .report-edit-page .ai-chat-pane.minimized .ai-resize-handle,
+    .report-edit-page .ai-chat-pane.maximized .ai-resize-handle {
+      display: none;
+    }
+
+    .report-edit-page.ai-resizing,
+    .report-edit-page.ai-resizing * {
+      cursor: col-resize !important;
+      user-select: none !important;
+    }
+
+    .report-edit-page .ai-chat-title strong {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .report-edit-page .ai-chat-title strong::after {
+      content: "内容由 AI 生成";
+      padding: 2px 7px;
+      color: var(--primary);
+      background: var(--primary-soft);
+      border: 1px solid rgba(var(--primary-rgb), 0.18);
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .report-edit-page .ai-chat-pane .target-card {
+      border-color: rgba(var(--primary-rgb), 0.24);
+      background: linear-gradient(180deg, var(--primary-panel-bg), #fff);
+    }
+
+    .report-edit-page .editor-canvas article.report-page .ai-source-active {
+      position: relative;
+      background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.08), rgba(var(--primary-rgb), 0.02));
+      border-radius: 6px;
+      box-shadow: inset 3px 0 0 var(--primary);
+    }
+
+    .report-edit-page .editor-canvas article.report-page .ai-inline-candidate {
+      margin: 12px 0 16px;
+      padding: 12px;
+      color: #17375e;
+      background: linear-gradient(180deg, #fff, var(--primary-panel-bg));
+      border: 1.5px solid rgba(var(--primary-rgb), 0.38);
+      border-radius: 12px;
+      box-shadow: 0 10px 24px rgba(var(--primary-rgb), 0.12);
+    }
+
+    .report-edit-page .editor-canvas article.report-page .ai-inline-candidate.generating {
+      border-style: dashed;
+    }
+
+    .report-edit-page .editor-canvas article.report-page .ai-candidate-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .report-edit-page .editor-canvas article.report-page .ai-candidate-head .ai-tag {
+      padding: 2px 8px;
+      color: #fff;
+      background: var(--primary);
+      border-radius: 999px;
+      font-size: 11px;
+    }
+
+    .report-edit-page .editor-canvas article.report-page .ai-candidate-head .ai-note {
+      margin-left: auto;
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .report-edit-page .editor-canvas article.report-page .ai-candidate-body {
+      padding: 10px 12px;
+      color: #1f3a5f;
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid rgba(var(--primary-rgb), 0.12);
+      border-radius: 9px;
+      font-size: 14px;
+      line-height: 1.85;
+      white-space: pre-wrap;
+    }
+
+    .report-edit-page .editor-canvas article.report-page .ai-candidate-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .report-edit-page .editor-canvas article.report-page .ai-candidate-actions button {
+      height: 30px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 0 10px;
+      color: #475569;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .report-edit-page .editor-canvas article.report-page .ai-candidate-actions button:hover {
+      color: var(--primary);
+      background: var(--primary-soft);
+      border-color: rgba(var(--primary-rgb), 0.38);
+    }
+
+    .report-edit-page .editor-canvas article.report-page .ai-candidate-actions .primary {
+      color: #fff;
+      background: var(--primary);
+      border-color: var(--primary);
+      box-shadow: 0 8px 18px rgba(var(--primary-rgb), 0.18);
+    }
+
+    .report-edit-page .editor-canvas article.report-page .ai-candidate-actions .primary:hover {
+      color: #fff;
+      background: var(--primary-dark);
+      border-color: var(--primary-dark);
+    }
+
+    .report-edit-page .editor-canvas article.report-page .ai-candidate-actions .danger:hover {
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.08);
+      border-color: rgba(239, 68, 68, 0.28);
+    }
+
+    .report-edit-page .ai-inline-status {
+      position: fixed;
+      left: 50%;
+      bottom: 30px;
+      z-index: 9200;
+      min-width: 410px;
+      max-width: min(620px, calc(100vw - 48px));
+      height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 12px 0 16px;
+      color: #17375e;
+      background: #fff;
+      border: 1px solid rgba(var(--primary-rgb), 0.28);
+      border-radius: 12px;
+      box-shadow: 0 16px 38px rgba(15, 23, 42, 0.16);
+      transform: translateX(-50%);
+    }
+
+    .report-edit-page .ai-inline-status.hidden {
+      display: none;
+    }
+
+    .report-edit-page .ai-inline-status .status-ring {
+      width: 16px;
+      height: 16px;
+      flex: none;
+      border: 2px solid rgba(var(--primary-rgb), 0.16);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: ai-spin 0.9s linear infinite;
+    }
+
+    .report-edit-page .ai-inline-status.done .status-ring {
+      border-color: #22c55e;
+      background: #22c55e;
+      animation: none;
+    }
+
+    .report-edit-page .ai-inline-status strong {
+      font-size: 13px;
+    }
+
+    .report-edit-page .ai-inline-status span {
+      color: #64748b;
+      font-size: 12px;
+    }
+
+    .report-edit-page .ai-inline-status button {
+      margin-left: auto;
+      height: 30px;
+      padding: 0 10px;
+      color: #475569;
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .report-edit-page .ai-inline-status button:hover {
+      color: var(--primary);
+      background: var(--primary-soft);
+      border-color: rgba(var(--primary-rgb), 0.34);
+    }
+
+    @keyframes ai-spin {
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
@@ -1756,6 +2088,7 @@
 
   <!-- =================== AI 对话浮窗（同看板） =================== -->
   <aside class="ai-chat-pane hidden" id="aiChatPane" aria-hidden="true">
+    <div class="ai-resize-handle" id="aiResizeHandle" title="拖拽调整 AI 助手宽度"></div>
     <header class="ai-chat-head" id="aiChatHead">
       <div class="ai-chat-avatar">
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1846,7 +2179,10 @@
       <div class="input-card">
         <div class="input-main">
           <div id="aiAttachmentPreview" class="attachment-preview-list hidden"></div>
-          <textarea id="aiChatInput" placeholder="向 AI 编辑助手提问，或先在报告中选中文字、右键发起 AI 写作"></textarea>
+          <div class="textarea-row">
+            <span class="followup-prefix hidden" id="aiActionPrefix">改写：</span>
+            <textarea id="aiChatInput" placeholder="向 AI 编辑助手提问，或先在报告中选中文字、右键发起 AI 写作"></textarea>
+          </div>
           <div class="input-tools">
             <button type="button" id="aiUploadImageBtn" title="上传图片">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5C4 5.1 5.1 4 6.5 4h11C18.9 4 20 5.1 20 6.5v11c0 1.4-1.1 2.5-2.5 2.5h-11C5.1 20 4 18.9 4 17.5v-11Z"/><path d="M7 16l3.2-3.3 2.2 2.2 2.5-3.1L18 16H7Z"/><path d="M8.5 8.8h.01"/></svg>
@@ -1876,6 +2212,13 @@
       </div>
     </div>
   </aside>
+
+  <div class="ai-inline-status hidden" id="aiInlineStatus" aria-live="polite">
+    <span class="status-ring"></span>
+    <strong id="aiInlineStatusTitle">正在生成...</strong>
+    <span id="aiInlineStatusDesc">AI 正在理解选区并组织候选内容</span>
+    <button type="button" id="aiInlineStopBtn">停止 Esc</button>
+  </div>
 
   <script src="../../assets/js/echarts.min.js"></script>
   <script src="../../assets/js/common.js"></script>
@@ -1995,7 +2338,7 @@
         rewrite:  { label: '改写',     desc: '保留原意，换种表达',     placeholder: '这里输入要改写的重点或要求，如风格调整、信息更新、字数要求' },
         expand:   { label: '扩写',     desc: '根据原文，拓展内容',     placeholder: '这里输入要扩写的方向或重点，如补充论据、案例、数据或结构' },
         imitate:  { label: '仿写',     desc: '参考借鉴，融入创意',     placeholder: '这里输入要仿写参考的风格或要求，如借鉴句式、参考语气、保留主题' },
-        polish:   { label: '润色',     desc: '优化表达，提升质感',     placeholder: '这里输入要润色的目标，如表达更专业、逻辑更顺、用词更精炼' },
+        polish:   { label: '润色',     desc: '优化表达，提升质感',     placeholder: '这里输入要润色的目标，如表达更专业、逻辑更顺、用词更简洁' },
         shrink:   { label: '缩写',     desc: '精简内容，提炼精髓',     placeholder: '这里输入要保留的关键信息或字数要求，如保留结论、控制在 100 字内' },
         continue: { label: '续写',     desc: '增加文本，延续创作',     placeholder: '这里输入要延续的方向或主题，如基于结尾继续展开下一段、加入具体案例' },
         deep:     { label: '深度写作', desc: '结合素材，整体梳理撰写', placeholder: '这里输入主题或要求，如结合素材整体梳理重写、加入数据与案例、按汇报口吻撰写' }
@@ -2615,10 +2958,62 @@
 
       // 暂存上次选区文本（右键弹出菜单时保存）
       let lastSelectionText = '';
+      let lastAIRange = null;
+      let aiSourceBlocks = [];
       function rememberSelection() {
         const sel = window.getSelection();
         const text = (sel && sel.toString()) || '';
         lastSelectionText = text.trim();
+        if (sel && sel.rangeCount > 0 && article.contains(sel.anchorNode)) {
+          lastAIRange = sel.getRangeAt(0).cloneRange();
+        }
+      }
+
+      function rememberSelectionIfText() {
+        const sel = window.getSelection();
+        if (!sel || !sel.rangeCount || !article.contains(sel.anchorNode)) return;
+        const text = (sel.toString() || '').trim();
+        if (!text) return;
+        lastSelectionText = text;
+        lastAIRange = sel.getRangeAt(0).cloneRange();
+      }
+
+      article.addEventListener('mouseup', rememberSelectionIfText);
+      article.addEventListener('keyup', rememberSelectionIfText);
+
+      function clearAISourceMarks() {
+        aiSourceBlocks.forEach((el) => el.classList.remove('ai-source-active'));
+        aiSourceBlocks = [];
+      }
+
+      function collectSelectionBlocks(range) {
+        const blockTags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'BLOCKQUOTE'];
+        const blocks = new Set();
+        function findBlock(node) {
+          let n = node && node.nodeType === 3 ? node.parentNode : node;
+          while (n && n !== article && blockTags.indexOf(n.tagName) < 0) n = n.parentNode;
+          if (n && n !== article) blocks.add(n);
+        }
+        if (range) {
+          findBlock(range.startContainer);
+          findBlock(range.endContainer);
+          const walker = document.createTreeWalker(article, NodeFilter.SHOW_ELEMENT, {
+            acceptNode: (n) => blockTags.indexOf(n.tagName) >= 0 && range.intersectsNode(n)
+              ? NodeFilter.FILTER_ACCEPT
+              : NodeFilter.FILTER_SKIP
+          });
+          let n;
+          while ((n = walker.nextNode())) blocks.add(n);
+        }
+        return Array.from(blocks);
+      }
+
+      function markAISelection() {
+        clearAISourceMarks();
+        if (!lastAIRange || !lastSelectionText) return [];
+        aiSourceBlocks = collectSelectionBlocks(lastAIRange);
+        aiSourceBlocks.forEach((el) => el.classList.add('ai-source-active'));
+        return aiSourceBlocks;
       }
 
       // ====================================================================
@@ -2631,30 +3026,73 @@
       const welcome = document.getElementById('aiWelcome');
       const msgList = document.getElementById('aiMsgList');
       const chatInput = document.getElementById('aiChatInput');
+      const actionPrefix = document.getElementById('aiActionPrefix');
       const sendBtn = document.getElementById('aiChatSendBtn');
       const minBtn = document.getElementById('aiChatMin');
       const maxBtn = document.getElementById('aiChatMax');
       const closeBtn = document.getElementById('aiChatClose');
       const maxIcon = document.getElementById('aiChatMaxIcon');
+      const resizeHandle = document.getElementById('aiResizeHandle');
 
       const targetCard = document.getElementById('targetCard');
       const tcBadge = document.getElementById('tcBadge');
       const tcBody = document.getElementById('tcBody');
       const tcClear = document.getElementById('tcClear');
-
+      const inlineStatus = document.getElementById('aiInlineStatus');
+      const inlineStatusTitle = document.getElementById('aiInlineStatusTitle');
+      const inlineStatusDesc = document.getElementById('aiInlineStatusDesc');
+      const inlineStopBtn = document.getElementById('aiInlineStopBtn');
       let isThinking = false;
       let currentAct = null;
+      let pendingAction = null;
       let aiAttachments = [];
+      let aiTimers = [];
+      let activeInlineCandidate = null;
+      const AI_WIDTH_KEY = 'smart-query-report-ai-width';
+      const DEFAULT_AI_WIDTH = 392;
+      const MIN_AI_WIDTH = 320;
+      const MAX_AI_WIDTH = 760;
+
+      function getMaxAIWidth() {
+        return Math.max(MIN_AI_WIDTH, Math.min(MAX_AI_WIDTH, window.innerWidth - 700));
+      }
+
+      function clampAIWidth(width) {
+        const maxWidth = getMaxAIWidth();
+        return Math.max(MIN_AI_WIDTH, Math.min(maxWidth, Math.round(width || DEFAULT_AI_WIDTH)));
+      }
+
+      function readAIWidth() {
+        try {
+          return clampAIWidth(Number(localStorage.getItem(AI_WIDTH_KEY)) || DEFAULT_AI_WIDTH);
+        } catch (e) {
+          return DEFAULT_AI_WIDTH;
+        }
+      }
+
+      function applyAIWidth(width, shouldSave) {
+        const nextWidth = clampAIWidth(width);
+        document.body.style.setProperty('--ai-assistant-width', nextWidth + 'px');
+        if (shouldSave) {
+          try { localStorage.setItem(AI_WIDTH_KEY, String(nextWidth)); } catch (e) {}
+        }
+        return nextWidth;
+      }
+
+      applyAIWidth(readAIWidth(), false);
 
       function openChat() {
+        applyAIWidth(readAIWidth(), false);
         pane.classList.remove('hidden', 'minimized');
         pane.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('ai-assistant-open');
         launcher.classList.add('hidden');
       }
       function closeChat() {
         pane.classList.add('hidden');
         pane.classList.remove('minimized', 'maximized');
         pane.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('ai-assistant-open');
         pane.style.left = pane.style.top = pane.style.right = pane.style.bottom = '';
         pane.style.height = pane.style.width = '';
         maxIcon.innerHTML = '<rect x="4" y="4" width="16" height="16" rx="2"></rect>';
@@ -2679,64 +3117,93 @@
       closeBtn.addEventListener('click', closeChat);
       minBtn.addEventListener('click', toggleMinimize);
       maxBtn.addEventListener('click', toggleMaximize);
+      inlineStopBtn.addEventListener('click', stopAIGeneration);
 
-      // —— 拖动 ——
-      let dragging = false;
-      let dragStart = null;
-      head.addEventListener('mousedown', function (e) {
-        if (e.target.closest('button')) return;
-        if (pane.classList.contains('maximized')) return;
-        if (pane.classList.contains('minimized')) return;
-        const rect = pane.getBoundingClientRect();
-        pane.style.right = 'auto';
-        pane.style.bottom = 'auto';
-        pane.style.left = rect.left + 'px';
-        pane.style.top = rect.top + 'px';
-        pane.style.height = rect.height + 'px';
-        dragging = true;
-        dragStart = { x: e.clientX, y: e.clientY, l: rect.left, t: rect.top };
-        document.body.style.userSelect = 'none';
+      // —— 左边缘拖拽：调整编辑区与 AI 助手的宽度占比 ——
+      let resizingAI = false;
+      let resizeStart = null;
+      resizeHandle.addEventListener('mousedown', function (e) {
+        if (pane.classList.contains('maximized') || pane.classList.contains('minimized')) return;
+        resizingAI = true;
+        resizeStart = { x: e.clientX, width: pane.getBoundingClientRect().width };
+        document.body.classList.add('ai-resizing');
+        e.preventDefault();
+        e.stopPropagation();
+      });
+      resizeHandle.addEventListener('dblclick', function (e) {
+        applyAIWidth(DEFAULT_AI_WIDTH, true);
+        showToast('已恢复 AI 助手默认宽度');
+        e.preventDefault();
+        e.stopPropagation();
       });
       document.addEventListener('mousemove', function (e) {
-        if (!dragging) return;
-        let nx = dragStart.l + (e.clientX - dragStart.x);
-        let ny = dragStart.t + (e.clientY - dragStart.y);
-        const w = pane.offsetWidth, h = pane.offsetHeight;
-        nx = Math.max(0, Math.min(window.innerWidth - w, nx));
-        ny = Math.max(0, Math.min(window.innerHeight - h, ny));
-        pane.style.left = nx + 'px';
-        pane.style.top = ny + 'px';
+        if (!resizingAI || !resizeStart) return;
+        applyAIWidth(resizeStart.width + (resizeStart.x - e.clientX), false);
       });
       document.addEventListener('mouseup', function () {
-        if (dragging) { dragging = false; document.body.style.userSelect = ''; }
+        if (!resizingAI) return;
+        resizingAI = false;
+        resizeStart = null;
+        document.body.classList.remove('ai-resizing');
+        applyAIWidth(pane.getBoundingClientRect().width, true);
+      });
+      window.addEventListener('resize', function () {
+        applyAIWidth(readAIWidth(), false);
       });
 
       // ====================================================================
       // 6. 调起 AI（来自右键菜单 / 顶部 AI 按钮 / 欢迎建议 / 底部芯片）
       // ====================================================================
-      function invokeAI(act, fromQuick) {
+      function setActionComposer(act, requirement) {
         const op = AI_OPS[act];
         if (!op) return;
+        pendingAction = act;
+        currentAct = act;
+        actionPrefix.textContent = op.label + '：';
+        actionPrefix.classList.remove('hidden');
+        chatInput.classList.add('has-followup-prefix');
+        chatInput.value = requirement || '';
+        chatInput.placeholder = '可继续补充' + op.label + '要求，确认后点击发送';
+      }
+
+      function clearActionComposer(shouldClearInput) {
+        pendingAction = null;
+        actionPrefix.classList.add('hidden');
+        chatInput.classList.remove('has-followup-prefix');
+        chatInput.placeholder = '向 AI 编辑助手提问，或先在报告中选中文字、右键发起 AI 写作';
+        if (shouldClearInput) chatInput.value = '';
+      }
+
+      function invokeAI(act, options) {
+        const op = AI_OPS[act];
+        if (!op) return;
+        const opts = typeof options === 'boolean' ? { fromQuick: options } : (options || {});
         currentAct = act;
         openChat();
         // 输入框 placeholder + 焦点
         chatInput.placeholder = op.placeholder;
         // 目标文本卡片
-        const text = lastSelectionText || '';
-        if (text && !fromQuick) {
+        const text = (!opts.fromQuick && lastSelectionText) ? lastSelectionText : '';
+        if (text && !opts.fromQuick) {
           tcBadge.textContent = op.label;
           tcBody.textContent = text;
           targetCard.classList.remove('hidden');
+          markAISelection();
         } else {
           // 没有选中文本时不强制显示目标卡片
           tcBadge.textContent = op.label;
           tcBody.textContent = '';
           targetCard.classList.add('hidden');
+          clearAISourceMarks();
         }
         // 副标题更新
         document.getElementById('aiChatSubtitle').textContent =
           '当前操作：' + op.label + ' · ' + op.desc;
-        setTimeout(() => chatInput.focus(), 80);
+        setActionComposer(act, buildDefaultRequirement(act, text));
+        setTimeout(() => {
+          chatInput.focus();
+          chatInput.setSelectionRange(chatInput.value.length, chatInput.value.length);
+        }, 80);
       }
 
       tcClear.addEventListener('click', clearTargetCard);
@@ -2744,8 +3211,10 @@
         targetCard.classList.add('hidden');
         tcBody.textContent = '';
         currentAct = null;
+        clearActionComposer(true);
         chatInput.placeholder = '向 AI 编辑助手提问，或先在报告中选中文字、右键发起 AI 写作';
         document.getElementById('aiChatSubtitle').textContent = '为「二季度销售复盘报告」提供 AI 写作能力';
+        clearAISourceMarks();
       }
 
       // 欢迎建议 + 底部芯片：点击 = 调起对应能力（无目标文本）
@@ -2753,12 +3222,12 @@
         const btn = e.target.closest('button[data-act]');
         if (!btn) return;
         // 优先用最近选中的文本；没有则不带目标
-        invokeAI(btn.dataset.act, !lastSelectionText);
+        invokeAI(btn.dataset.act, { fromQuick: !lastSelectionText });
       });
       document.querySelector('.ai-chip-row').addEventListener('click', (e) => {
         const btn = e.target.closest('button[data-act]');
         if (!btn) return;
-        invokeAI(btn.dataset.act, !lastSelectionText);
+        invokeAI(btn.dataset.act, { fromQuick: !lastSelectionText });
       });
 
       // ====================================================================
@@ -2767,16 +3236,26 @@
       function ensureWelcomeHidden() {
         welcome.classList.add('hidden');
       }
-      function appendUserMsg(text, attachments) {
+      function appendUserMsg(text, attachments, actionLabel) {
         ensureWelcomeHidden();
         const div = document.createElement('div');
         div.className = 'ai-msg user';
+        if (actionLabel) div.classList.add('ai-action-msg');
         div.innerHTML =
           '<div class="ai-msg-avatar">我</div>' +
           '<div class="ai-msg-content"><div class="ai-msg-bubble"></div></div>';
         const bubble = div.querySelector('.ai-msg-bubble');
         const hasText = text && text.trim();
-        if (hasText) {
+        if (hasText && actionLabel) {
+          const label = document.createElement('span');
+          label.className = 'ai-msg-action-label';
+          label.textContent = actionLabel + '：';
+          const content = document.createElement('span');
+          content.className = 'ai-msg-action-text';
+          content.textContent = text;
+          bubble.appendChild(label);
+          bubble.appendChild(content);
+        } else if (hasText) {
           bubble.textContent = text;
         } else {
           bubble.textContent = '已上传以下附件，请基于其内容协助处理：';
@@ -2911,77 +3390,278 @@
 
       function scrollChatToBottom() { body.scrollTop = body.scrollHeight; }
 
+      function buildDefaultRequirement(act, sourceText) {
+        const hasSource = !!(sourceText && sourceText.trim());
+        const map = {
+          rewrite: hasSource ? '请保留核心数据，改写为更适合经营汇报的表达' : '请基于当前报告生成一段经营汇报内容',
+          expand: hasSource ? '请围绕选中内容扩写到 300 字左右，补充业务动因与管理建议' : '请补充一段包含数据、动因和建议的报告内容',
+          imitate: hasSource ? '请参考选中内容的业务语境，仿写一段同风格表达' : '请按经营分析报告风格仿写一段内容',
+          polish: hasSource ? '请保持数据不变，优化为更规范、严谨的汇报表达' : '请润色当前报告的表达风格',
+          shrink: hasSource ? '请压缩为 100 字以内，并保留关键指标和结论' : '请提炼当前报告摘要',
+          continue: hasSource ? '请承接选中内容继续写下一段，补充可执行动作' : '请续写当前章节的后续分析',
+          deep: hasSource ? '请结合上下文深度重写，形成论点、证据、建议结构' : '请基于全文上下文生成深度分析段落'
+        };
+        return map[act] || '请优化选中内容';
+      }
+
+      function scheduleAITimer(fn, delay) {
+        const id = setTimeout(() => {
+          aiTimers = aiTimers.filter((timerId) => timerId !== id);
+          fn();
+        }, delay);
+        aiTimers.push(id);
+        return id;
+      }
+
+      function clearAITimers() {
+        aiTimers.forEach((id) => clearTimeout(id));
+        aiTimers = [];
+      }
+
+      function showInlineStatus(title, desc, done) {
+        inlineStatus.classList.toggle('done', !!done);
+        inlineStatus.classList.remove('hidden');
+        inlineStatusTitle.textContent = title;
+        inlineStatusDesc.textContent = desc || '';
+        inlineStopBtn.textContent = done ? '知道了' : '停止 Esc';
+      }
+
+      function hideInlineStatus() {
+        inlineStatus.classList.add('hidden');
+        inlineStatus.classList.remove('done');
+      }
+
+      function stopAIGeneration() {
+        if (inlineStatus.classList.contains('done')) {
+          hideInlineStatus();
+          return;
+        }
+        if (!isThinking) return;
+        clearAITimers();
+        isThinking = false;
+        showInlineStatus('已停止生成', '本次 AI 编辑已停止，正文内容保持不变', true);
+        document.querySelectorAll('.ai-msg.bot .thinking-box:not(.collapsed)').forEach((box) => {
+          box.classList.add('collapsed');
+          box.querySelectorAll('.step-dot').forEach((dot) => {
+            dot.classList.remove('loading');
+            dot.textContent = '-';
+          });
+        });
+        showToast('已停止生成');
+      }
+
+      function findBlockFromRange(range) {
+        if (!range) return null;
+        let node = range.endContainer && range.endContainer.nodeType === 3 ? range.endContainer.parentNode : range.endContainer;
+        const blockTags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'BLOCKQUOTE', 'DIV'];
+        while (node && node !== article && blockTags.indexOf(node.tagName) < 0) node = node.parentNode;
+        return node && node !== article ? node : null;
+      }
+
+      function removeActiveInlineCandidate() {
+        if (activeInlineCandidate && activeInlineCandidate.el && activeInlineCandidate.el.parentNode) {
+          activeInlineCandidate.el.remove();
+        }
+        activeInlineCandidate = null;
+      }
+
+      function insertInlineCandidate(act, sourceText, generated, requirement) {
+        removeActiveInlineCandidate();
+        if (!sourceText) clearAISourceMarks();
+        const op = AI_OPS[act] || { label: 'AI 编辑' };
+        const id = 'ai_candidate_' + Date.now();
+        const card = document.createElement('div');
+        card.className = 'ai-inline-candidate';
+        card.id = id;
+        card.setAttribute('contenteditable', 'false');
+        card.innerHTML =
+          '<div class="ai-candidate-head">' +
+            '<span class="ai-tag">' + escapeHTMLJS(op.label) + '</span>' +
+            '<strong>AI 已生成候选内容，请先确认</strong>' +
+            '<span class="ai-note">不会自动覆盖正文</span>' +
+          '</div>' +
+          '<div class="ai-candidate-body"></div>' +
+          '<div class="ai-candidate-actions">' +
+            '<button type="button" data-ai-candidate-action="regenerate"><span class="btn-ico">↻</span>重新生成</button>' +
+            '<button type="button" class="danger" data-ai-candidate-action="discard"><span class="btn-ico">×</span>弃用</button>' +
+            '<button type="button" class="primary" data-ai-candidate-action="accept"><span class="btn-ico">✓</span>采纳</button>' +
+          '</div>';
+        card.querySelector('.ai-candidate-body').textContent = generated;
+
+        const rangeCopy = lastAIRange ? lastAIRange.cloneRange() : null;
+        let anchor = aiSourceBlocks.length ? aiSourceBlocks[aiSourceBlocks.length - 1] : findBlockFromRange(rangeCopy);
+        if (!anchor || !article.contains(anchor)) anchor = article.lastElementChild;
+        if (anchor && anchor.parentNode === article) {
+          anchor.insertAdjacentElement('afterend', card);
+        } else {
+          article.appendChild(card);
+        }
+        activeInlineCandidate = { id, el: card, act, sourceText, generated, requirement, range: rangeCopy };
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return activeInlineCandidate;
+      }
+
+      function updateInlineCandidate(mode) {
+        if (!activeInlineCandidate || !activeInlineCandidate.el) return;
+        const modeRequirement = {
+          regenerate: '请重新生成一个结构更清晰的版本'
+        }[mode] || activeInlineCandidate.requirement;
+        const next = generateSample(activeInlineCandidate.act, modeRequirement, activeInlineCandidate.sourceText, mode);
+        activeInlineCandidate.generated = next;
+        activeInlineCandidate.requirement = modeRequirement;
+        activeInlineCandidate.el.querySelector('.ai-candidate-body').textContent = next;
+        showToast('已重新生成候选内容');
+      }
+
+      function acceptInlineCandidate(candidate) {
+        const state = candidate || activeInlineCandidate;
+        if (!state || !state.el) return;
+        const generated = state.generated || '';
+        if (!generated) return;
+        if (state.sourceText && state.range) {
+          try {
+            state.range.deleteContents();
+            const textNode = document.createTextNode(generated);
+            state.range.insertNode(textNode);
+            const sel = window.getSelection();
+            const nextRange = document.createRange();
+            nextRange.setStartAfter(textNode);
+            nextRange.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(nextRange);
+          } catch (e) {
+            const html = article.innerHTML;
+            if (html.indexOf(state.sourceText) >= 0) {
+              article.innerHTML = html.replace(state.sourceText, escapeHTMLJS(generated));
+            }
+          }
+          state.el.remove();
+        } else {
+          const p = document.createElement('p');
+          p.textContent = generated;
+          state.el.replaceWith(p);
+        }
+        activeInlineCandidate = null;
+        clearAISourceMarks();
+        rebuildSectionList();
+        showInlineStatus('已采纳到正文', 'AI 候选内容已写入当前报告', true);
+        showToast('已采纳到正文');
+      }
+
+      function discardInlineCandidate() {
+        removeActiveInlineCandidate();
+        clearAISourceMarks();
+        hideInlineStatus();
+        showToast('已弃用 AI 候选内容');
+      }
+
+      article.addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-ai-candidate-action]');
+        if (!btn) return;
+        const action = btn.dataset.aiCandidateAction;
+        if (action === 'accept') return acceptInlineCandidate();
+        if (action === 'discard') return discardInlineCandidate();
+        updateInlineCandidate(action);
+      });
+
       // 模拟 AI 生成结果（按 act 类型 + 原文 + 用户要求）
-      function buildReply(act, requirement, sourceText) {
+      function buildReply(act, requirement, sourceText, generatedText) {
         const op = AI_OPS[act] || { label: '改写' };
         const has = sourceText && sourceText.trim().length > 0;
         const reqLine = requirement && requirement.trim()
-          ? '<p><strong>用户要求：</strong>' + requirement + '</p>'
-          : '<p><em>未提供具体要求，已采用通用 ' + op.label + ' 策略。</em></p>';
+          ? '<p><strong>用户要求：</strong>' + escapeHTMLJS(requirement) + '</p>'
+          : '<p><em>未提供具体要求，已采用通用 ' + escapeHTMLJS(op.label) + ' 策略。</em></p>';
         const targetLine = has
-          ? '<p><strong>原文：</strong>' + sourceText + '</p>'
+          ? '<p><strong>原文：</strong>' + escapeHTMLJS(sourceText) + '</p>'
           : '<p><em>未选中文本，将基于全文上下文生成。</em></p>';
-        const samples = generateSample(act, requirement, sourceText);
+        const samples = generatedText || generateSample(act, requirement, sourceText);
         return (
-          '<strong>' + op.label + '结果（示例）</strong>' +
+          '<strong>' + escapeHTMLJS(op.label) + '结果</strong>' +
           reqLine +
           targetLine +
-          '<p><strong>生成内容：</strong></p>' +
-          '<blockquote>' + samples + '</blockquote>' +
-          '<p style="color:#6b7280;font-size:12px;">点击右下方 ✓ 可将生成内容替换/插入到正文。</p>'
+          '<p data-generated-content="true"><strong>生成内容：</strong>' +
+            '<span class="generated-text">' + escapeHTMLJS(samples) + '</span>' +
+          '</p>' +
+          '<p style="color:#6b7280;font-size:12px;">候选内容已同步到正文，请在文内确认采纳或弃用。</p>'
         );
       }
 
-      function generateSample(act, requirement, sourceText) {
-        const head = sourceText ? sourceText.slice(0, 24) + (sourceText.length > 24 ? '…' : '') : '本段';
+      function generateSample(act, requirement, sourceText, variant) {
+        const head = sourceText ? sourceText.slice(0, 28) + (sourceText.length > 28 ? '…' : '') : '当前章节';
         switch (act) {
-          case 'rewrite':  return '（改写示例）将"' + head + '"以更简练、商务化的表达进行重写：在保留核心论点的前提下，调整句式与连接词，使段落更聚焦关键信息。';
-          case 'expand':   return '（扩写示例）在"' + head + '"基础上，补充具体数据来源、对比口径、典型案例与可执行动作建议，使段落论述更立体。';
-          case 'imitate':  return '（仿写示例）参考用户指定的语气与句式，沿用同一主题"' + head + '"撰写一段新内容，保持节奏感与画面感。';
-          case 'polish':   return '（润色示例）保持原意，对"' + head + '"进行用词替换、语序调整与衔接优化，使表达更专业、流畅。';
-          case 'shrink':   return '（缩写示例）将"' + head + '"提炼为 1-2 句要点：明确核心结论与建议，剔除非必要修饰。';
-          case 'continue': return '（续写示例）承接"' + head + '"的语义脉络，自然延续到下一段：补充新的角度、引出后续行动建议，避免与原文重复。';
-          case 'deep':     return '（深度写作示例）结合报告中可用素材与上下文章节，对"' + head + '"主题进行整体梳理：明确论点—证据—建议三段式结构，并加入数据支撑与时间节奏。';
-          default:         return '（生成结果）已根据指令完成内容生成。';
+          case 'rewrite':
+            return '围绕' + head + '，本段可调整为更聚焦经营结论的表达：先呈现关键指标变化，再说明增长质量与目标完成情况，最后指出后续需要跟进的业务动作，使段落逻辑从“数据罗列”转为“结论驱动”。';
+          case 'expand':
+            return '在' + head + '基础上，可进一步补充三个层次的分析：第一，说明同比、环比和目标达成率的变化，帮助判断增长是否具备持续性；第二，结合区域、渠道、客户等维度解释增长来源，明确哪些动作产生了实际贡献；第三，将结论转化为下阶段动作，例如复制高贡献区域打法、跟进低达成区域、优化库存与毛利结构。这样扩写后，段落不仅呈现数据，也能支撑经营决策。';
+          case 'imitate':
+            return '参考当前报告的经营分析语气，可写为：本阶段业务表现整体延续改善，核心指标保持正向变化，说明重点区域和关键渠道的经营动作已经形成阶段性拉动。后续应继续围绕高贡献客户、可复制活动和风险指标建立跟踪机制，确保增长结果能够沉淀为稳定能力。';
+          case 'polish':
+            return '在保持原有数据和结论不变的前提下，建议将' + head + '优化为更规范、连贯的表述：突出核心指标的变化趋势，减少重复修饰，并通过“从结果看、从结构看、后续建议”串联分析，使内容更符合经营汇报场景。';
+          case 'shrink':
+            return head + '可提炼为：核心指标整体向好，增长主要来自重点区域和关键渠道拉动；后续需继续跟踪目标达成、毛利率和库存周转，确保增长质量稳定。';
+          case 'continue':
+            return '在此基础上，下一步建议将分析延伸到执行层面：对高增长区域沉淀可复制打法，对低达成区域建立周度跟进机制，同时关注毛利率、库存周转和客户复购等质量指标，避免单纯追求规模增长带来的经营压力。';
+          case 'deep':
+            return '综合来看，' + head + '可以进一步组织为“结论-证据-建议”结构：结论层面，当前业务保持正向增长，但不同区域与渠道的贡献差异明显；证据层面，应结合销售额、订单量、客单价、目标达成率和毛利率进行交叉验证；建议层面，优先复制高贡献区域打法，并对低完成率区域、库存压力和重点客户流失风险设置专项跟踪。';
+          default:
+            return '已根据当前报告上下文完成内容生成，可直接作为正文候选使用。';
         }
       }
 
-      function sendChat(text) {
+      function sendChat(text, options) {
         if (isThinking) return;
-        const hasText = text && text.trim();
+        const actForMessage = pendingAction || currentAct || '';
+        const opForMessage = actForMessage ? AI_OPS[actForMessage] : null;
+        const actionLabel = pendingAction && opForMessage ? opForMessage.label : '';
+        let messageText = text || '';
+        if (!messageText.trim() && (actForMessage || tcBody.textContent.trim())) {
+          messageText = buildDefaultRequirement(actForMessage || 'rewrite', tcBody.textContent);
+        }
+        const hasText = messageText && messageText.trim();
         const hasAttach = aiAttachments && aiAttachments.length > 0;
         if (!hasText && !hasAttach) return;
         const attachSnapshot = aiAttachments.slice();
-        appendUserMsg(text, attachSnapshot);
+        appendUserMsg(messageText, attachSnapshot, actionLabel);
         chatInput.value = '';
+        clearActionComposer(false);
         clearAIAttachments();
         isThinking = true;
+        clearAITimers();
+        showInlineStatus('正在生成...', 'AI 正在理解选区并组织候选内容', false);
         const thinkingMsg = appendThinkingBox();
         const box = thinkingMsg.querySelector('.thinking-box');
         const dots = thinkingMsg.querySelectorAll('.step-dot');
         const timeEl = thinkingMsg.querySelector('.thinking-pill-time');
         let elapsed = 0;
         const timer = setInterval(() => { elapsed += 1; timeEl.textContent = '(用时' + elapsed + 's)'; }, 1000);
+        aiTimers.push(timer);
 
         const stepDelay = 360;
         dots.forEach((dot, i) => {
-          setTimeout(() => {
+          scheduleAITimer(() => {
             for (let k = 0; k < i; k++) { dots[k].classList.remove('loading'); dots[k].textContent = '✓'; }
             scrollChatToBottom();
           }, i * stepDelay);
         });
 
         const totalThinking = dots.length * stepDelay + 200;
-        setTimeout(() => {
+        scheduleAITimer(() => {
           dots.forEach((dot) => { dot.classList.remove('loading'); dot.textContent = '✓'; });
           clearInterval(timer);
           if (elapsed < 1) timeEl.textContent = '(用时1s)';
           box.classList.add('collapsed');
-          const html = buildReply(currentAct || 'rewrite', text, tcBody.textContent || '');
+          const act = actForMessage || currentAct || 'rewrite';
+          const source = tcBody.textContent || '';
+          const generated = generateSample(act, messageText, source);
+          const candidate = insertInlineCandidate(act, source, generated, messageText);
+          showInlineStatus('AI 已生成候选内容', '请在正文中确认采纳、弃用或继续调整', true);
+          const html = buildReply(act, messageText, source, generated);
           const replyMsg = appendBotMsg(html, () => { isThinking = false; });
-          // 把 currentAct 暂存到这条消息上，方便"应用到正文"使用
-          replyMsg.dataset.act = currentAct || 'rewrite';
-          replyMsg.dataset.source = tcBody.textContent || '';
+          // 把本轮结果暂存到消息上，方便"应用到正文"使用
+          replyMsg.dataset.act = act;
+          replyMsg.dataset.source = source;
+          replyMsg.dataset.generated = generated;
+          replyMsg.dataset.candidateId = candidate ? candidate.id : '';
         }, totalThinking);
       }
 
@@ -3117,11 +3797,15 @@
         } else if (act === 'apply') {
           const msg = btn.closest('.ai-msg.bot');
           if (!msg) return;
-          const bubble = msg.querySelector('.ai-msg-bubble blockquote');
-          const generated = bubble ? bubble.textContent.trim() : '';
+          const generatedNode = msg.querySelector('[data-generated-content] .generated-text');
+          const generated = msg.dataset.generated || (generatedNode ? generatedNode.textContent.trim() : '');
           const actType = msg.dataset.act || 'rewrite';
           const source = msg.dataset.source || '';
           if (!generated) { showToast('没有可应用的生成内容'); return; }
+          if (activeInlineCandidate && (!msg.dataset.candidateId || msg.dataset.candidateId === activeInlineCandidate.id)) {
+            acceptInlineCandidate(activeInlineCandidate);
+            return;
+          }
           applyToArticle(actType, source, generated);
           showToast('已写入正文');
         }
@@ -3158,6 +3842,10 @@
       // ====================================================================
       document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') {
+          if (isThinking) {
+            stopAIGeneration();
+            return;
+          }
           if (!writeMenu.classList.contains('hidden')) hideWriteMenu();
         }
       });
