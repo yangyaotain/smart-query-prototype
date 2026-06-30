@@ -856,6 +856,27 @@
       font-weight: 700;
     }
 
+    .report-edit-page .editor-canvas article.report-page h4,
+    .report-edit-page .editor-canvas article.report-page h5,
+    .report-edit-page .editor-canvas article.report-page h6 {
+      margin: 12px 0 6px;
+      color: #24476d;
+      font-weight: 700;
+      line-height: 1.65;
+    }
+
+    .report-edit-page .editor-canvas article.report-page h4 {
+      font-size: 14px;
+    }
+
+    .report-edit-page .editor-canvas article.report-page h5 {
+      font-size: 13.5px;
+    }
+
+    .report-edit-page .editor-canvas article.report-page h6 {
+      font-size: 13px;
+    }
+
     .report-edit-page .editor-canvas article.report-page p {
       margin: 8px 0;
       color: #374151;
@@ -1709,6 +1730,8 @@
             <option value="H2">标题 2</option>
             <option value="H3">标题 3</option>
             <option value="H4">标题 4</option>
+            <option value="H5">标题 5</option>
+            <option value="H6">标题 6</option>
           </select>
           <select id="tbFont" class="tb-select" style="width:104px;" title="字体">
             <option value="">默认字体</option>
@@ -2495,7 +2518,7 @@
         });
         try {
           const block = (document.queryCommandValue('formatBlock') || '').toUpperCase().replace(/[<>]/g, '');
-          if (['P', 'H1', 'H2', 'H3', 'H4'].indexOf(block) >= 0) blockSelect.value = block;
+          if (['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].indexOf(block) >= 0) blockSelect.value = block;
           else blockSelect.value = 'P';
         } catch (e) {}
       }
