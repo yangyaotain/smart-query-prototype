@@ -61,6 +61,7 @@
 
     /* 中间编辑区域 */
     .report-edit-page .editor-canvas-wrap {
+      position: relative;
       display: flex;
       flex-direction: column;
       min-height: 0;
@@ -810,27 +811,62 @@
       flex: 1;
       min-height: 0;
       overflow: auto;
-      padding: 24px 20px 60px;
-      background: #f4f8fd;
+      padding: 24px 34px 82px;
+      background: #d8dadd;
       border: 0;
       border-radius: 0;
     }
 
     .report-edit-page .editor-canvas article.report-page {
-      max-width: 920px;
+      width: min(860px, 100%);
+      max-width: none;
       margin: 0 auto;
-      padding: 32px 40px 56px;
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
       outline: none;
+      transform-origin: top center;
     }
 
     .report-edit-page .editor-canvas article.report-page:focus,
     .report-edit-page .editor-canvas article.report-page:focus-within {
-      border-color: rgba(var(--primary-rgb), 0.55);
-      box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
+      border-color: transparent;
+      box-shadow: none;
+    }
+
+    .report-edit-page .editor-canvas article.report-page > .report-doc-page {
+      position: relative;
+      width: 100%;
+      min-height: 1180px;
+      padding: 64px 72px 78px;
+      background: #fff;
+      border: 1px solid #c6cbd2;
+      border-radius: 0;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.16);
+      box-sizing: border-box;
+    }
+
+    .report-edit-page .editor-canvas article.report-page > .report-doc-page:focus-within {
+      border-color: rgba(var(--primary-rgb), 0.42);
+      box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1), 0 2px 10px rgba(15, 23, 42, 0.16);
+    }
+
+    .report-edit-page .editor-canvas article.report-page .report-page-number {
+      position: absolute;
+      left: 72px;
+      right: 72px;
+      bottom: 24px;
+      padding-top: 8px;
+      color: #94a3b8;
+      border-top: 1px solid #edf1f7;
+      font-size: 12px;
+      text-align: center;
+      user-select: none;
     }
 
     .report-edit-page .editor-canvas article.report-page h1 {
@@ -1042,6 +1078,81 @@
       flex: 1;
       min-height: 0;
       width: 100%;
+    }
+
+    .report-edit-zoom-toolbar {
+      position: absolute;
+      right: 116px;
+      bottom: 14px;
+      z-index: 30;
+      min-width: 196px;
+      height: 32px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 6px;
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid #d9e4f0;
+      border-radius: 8px;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+    }
+
+    .report-edit-zoom-toolbar button {
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      color: #526579;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .report-edit-zoom-toolbar button:not(.report-edit-zoom-value) {
+      width: 24px;
+      padding: 0;
+    }
+
+    .report-edit-zoom-toolbar button:hover:not(:disabled) {
+      color: var(--primary);
+      background: var(--primary-soft);
+      border-color: rgba(var(--primary-rgb), 0.24);
+    }
+
+    .report-edit-zoom-toolbar button:disabled {
+      color: #b8c2ce;
+      cursor: not-allowed;
+    }
+
+    .report-edit-zoom-toolbar svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .report-edit-zoom-toolbar input[type="range"] {
+      width: 82px;
+      height: 4px;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    .report-edit-zoom-value {
+      min-width: 60px;
+      padding: 0 6px;
+      color: #26384d !important;
+      background: #f7f9fc !important;
+      border-color: #e2e8f0 !important;
+      font-variant-numeric: tabular-nums;
     }
 
     /* 右键菜单 - AI 写作操作 */
@@ -1896,8 +2007,9 @@
       </div>
 
       <!-- 富文本编辑画布 -->
-      <div class="editor-canvas">
+      <div class="editor-canvas" id="editorCanvas">
         <article class="report-page" id="reportArticle" contenteditable="true" spellcheck="false">
+          <section class="report-doc-page">
           <h1>二季度销售复盘报告</h1>
           <p class="report-meta">生成时间：2026-06-30 · 报告类型：经营分析 · 季度复盘 · 数据周期：2026-04-01 ~ 2026-06-30</p>
           <p>本报告基于智能问数二季度全量数据自动生成，覆盖经营全景、区域、渠道、产品、客户五大维度，重点回答"二季度做得如何、靠什么增长、有什么风险、下一步怎么做"四个核心问题，可作为经营会议汇报与下季度策略输入。</p>
@@ -1929,6 +2041,10 @@
           </div>
           <blockquote><strong>结论：</strong>整体处于稳步上行通道，但目标节奏仍偏慢，6 月已进入冲刺窗口期，建议聚焦未达成的细分品类与客户。</blockquote>
 
+            <div class="report-page-number" contenteditable="false">第 1 / 5 页</div>
+          </section>
+
+          <section class="report-doc-page">
           <h2 id="s2">二、区域销售表现</h2>
           <p>二季度六大区销售额合计 <strong>9,258 万元</strong>，TOP3 大区合计贡献 <strong>69.7%</strong>，呈现"东高西低、华东独大"格局。</p>
           <table class="data-table">
@@ -1955,6 +2071,10 @@
             <li>南京：154 万元（占比 4.7%），新品贡献 32%。</li>
           </ul>
 
+            <div class="report-page-number" contenteditable="false">第 2 / 5 页</div>
+          </section>
+
+          <section class="report-doc-page">
           <h2 id="s3">三、异常增长归因</h2>
           <p>二季度共出现 3 次异常增长信号，由智能问数自动识别并完成归因：</p>
           <h3>3.1 4 月销售额环比 +15.1%</h3>
@@ -1974,6 +2094,10 @@
           <p>线上电商渠道占比由 1 月 33% 提升至 6 月 <strong>40.6%</strong>，已超过门店零售成为第一大渠道。需要同步评估履约、客服、售后链路的承载能力。</p>
           <blockquote><strong>归因结论：</strong>本季度增长 70% 来自"促销 + 新品 + 渠道结构升级"，自然增长占比下降，提示需要持续投入"主动经营动作"才能维持当前增速。</blockquote>
 
+            <div class="report-page-number" contenteditable="false">第 3 / 5 页</div>
+          </section>
+
+          <section class="report-doc-page">
           <h2 id="s4">四、问题与风险</h2>
           <p>本季度数据中识别 4 项需要管理层关注的风险：</p>
           <ol>
@@ -1988,6 +2112,10 @@
           </div>
           <blockquote><strong>风险提示：</strong>若库存与流失同时恶化，预计三季度毛利率额外承压 0.5-1.0 pct。建议优先处理库存与流失客户两件事。</blockquote>
 
+            <div class="report-page-number" contenteditable="false">第 4 / 5 页</div>
+          </section>
+
+          <section class="report-doc-page">
           <h2 id="s5">五、经营建议</h2>
           <p>结合数据洞察与策略可执行性，建议下季度从短期、中期、长期三个层次推进：</p>
           <h3>5.1 短期（1-30 天）</h3>
@@ -2009,7 +2137,22 @@
             <li>构建毛利率护城河：高端 + 新品销售占比目标提升至 75%。</li>
           </ul>
           <blockquote><strong>下季度目标：</strong>销售额 ≥10,200 万元，目标完成率 ≥95%，综合毛利率回升至 27.5%，TOP10 客户集中度下降到 60% 以内。</blockquote>
+            <div class="report-page-number" contenteditable="false">第 5 / 5 页</div>
+          </section>
         </article>
+      </div>
+      <div class="report-edit-zoom-toolbar" id="editZoomToolbar" aria-label="编辑器缩放工具条">
+        <button type="button" id="editZoomOut" title="缩小" aria-label="缩小">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg>
+        </button>
+        <input type="range" id="editZoomRange" min="60" max="160" step="10" value="100" aria-label="缩放比例" />
+        <button type="button" id="editZoomIn" title="放大" aria-label="放大">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+        </button>
+        <button class="report-edit-zoom-value" type="button" id="editZoomReset" title="恢复 100%" aria-label="恢复 100%">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"></rect><path d="M8 9h8"></path><path d="M8 13h5"></path></svg>
+          <span id="editZoomValue">100%</span>
+        </button>
       </div>
     </section>
   </main>
@@ -2372,9 +2515,67 @@
       // ====================================================================
       const article = document.getElementById('reportArticle');
       const sectionList = document.getElementById('sectionList');
+      const editZoomRange = document.getElementById('editZoomRange');
+      const editZoomValue = document.getElementById('editZoomValue');
+      const editZoomOut = document.getElementById('editZoomOut');
+      const editZoomIn = document.getElementById('editZoomIn');
+      const editZoomReset = document.getElementById('editZoomReset');
+      const EDIT_ZOOM_MIN = 60;
+      const EDIT_ZOOM_MAX = 160;
+      const EDIT_ZOOM_STEP = 10;
+      let editZoom = 100;
+
+      function clampEditZoom(value) {
+        const zoom = Number(value) || 100;
+        return Math.max(EDIT_ZOOM_MIN, Math.min(EDIT_ZOOM_MAX, Math.round(zoom)));
+      }
+
+      function resizeEditorCharts() {
+        if (typeof echarts === 'undefined') return;
+        article.querySelectorAll('.chart-canvas').forEach((dom) => {
+          const inst = echarts.getInstanceByDom(dom);
+          if (inst) inst.resize();
+        });
+      }
+
+      function applyEditZoom() {
+        editZoom = clampEditZoom(editZoom);
+        article.style.zoom = (editZoom / 100).toFixed(2);
+        if (editZoomRange) editZoomRange.value = editZoom;
+        if (editZoomValue) editZoomValue.textContent = editZoom + '%';
+        if (editZoomOut) editZoomOut.disabled = editZoom <= EDIT_ZOOM_MIN;
+        if (editZoomIn) editZoomIn.disabled = editZoom >= EDIT_ZOOM_MAX;
+        requestAnimationFrame(resizeEditorCharts);
+      }
+
+      function setEditZoom(value) {
+        editZoom = clampEditZoom(value);
+        applyEditZoom();
+      }
+
+      function getCurrentDocPage() {
+        const sel = window.getSelection();
+        const node = sel && sel.rangeCount ? sel.anchorNode : null;
+        const base = node && node.nodeType === 1 ? node : node && node.parentElement;
+        return (base && base.closest && base.closest('.report-doc-page')) ||
+          article.querySelector('.report-doc-page:last-of-type') ||
+          article;
+      }
+
+      function appendNodeToReportPage(node, page) {
+        const targetPage = page || getCurrentDocPage();
+        const footer = targetPage.querySelector ? targetPage.querySelector(':scope > .report-page-number') : null;
+        targetPage.insertBefore(node, footer || null);
+      }
+
+      function appendHtmlToReportPage(html, page) {
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+        Array.from(temp.childNodes).forEach((node) => appendNodeToReportPage(node, page));
+      }
 
       function rebuildSectionList() {
-        const items = article.querySelectorAll(':scope > h2');
+        const items = article.querySelectorAll('h2');
         sectionList.innerHTML = '';
         items.forEach((h2, i) => {
           if (!h2.id) h2.id = 'sec-' + (i + 1);
@@ -2402,6 +2603,12 @@
         if (secRebuildTimer) clearTimeout(secRebuildTimer);
         secRebuildTimer = setTimeout(rebuildSectionList, 600);
       });
+
+      if (editZoomOut) editZoomOut.addEventListener('click', () => setEditZoom(editZoom - EDIT_ZOOM_STEP));
+      if (editZoomIn) editZoomIn.addEventListener('click', () => setEditZoom(editZoom + EDIT_ZOOM_STEP));
+      if (editZoomReset) editZoomReset.addEventListener('click', () => setEditZoom(100));
+      if (editZoomRange) editZoomRange.addEventListener('input', (e) => setEditZoom(e.target.value));
+      applyEditZoom();
 
       // ====================================================================
       // 3. 富文本工具条（增强版：字体/字号/颜色/对齐/缩进/行距/待办/代码块/分割线/链接/图片/表格/查找）
@@ -2561,7 +2768,7 @@
           range.deleteContents();
           range.insertNode(ul);
         } else {
-          article.appendChild(ul);
+          appendNodeToReportPage(ul);
         }
         // 光标移到最后一个 li
         const r2 = document.createRange();
@@ -3514,10 +3721,13 @@
         const rangeCopy = lastAIRange ? lastAIRange.cloneRange() : null;
         let anchor = aiSourceBlocks.length ? aiSourceBlocks[aiSourceBlocks.length - 1] : findBlockFromRange(rangeCopy);
         if (!anchor || !article.contains(anchor)) anchor = article.lastElementChild;
-        if (anchor && anchor.parentNode === article) {
-          anchor.insertAdjacentElement('afterend', card);
+        const insertAnchor = anchor && anchor.closest && anchor.closest('li') ? anchor.closest('ul, ol') : anchor;
+        if (insertAnchor && insertAnchor.classList && insertAnchor.classList.contains('report-doc-page')) {
+          appendNodeToReportPage(card, insertAnchor);
+        } else if (insertAnchor && article.contains(insertAnchor)) {
+          insertAnchor.insertAdjacentElement('afterend', card);
         } else {
-          article.appendChild(card);
+          appendNodeToReportPage(card);
         }
         activeInlineCandidate = { id, el: card, act, sourceText, generated, requirement, range: rangeCopy };
         card.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -3848,7 +4058,7 @@
         }
         const p = document.createElement('p');
         p.textContent = generated;
-        article.appendChild(p);
+        appendNodeToReportPage(p);
         rebuildSectionList();
       }
 
@@ -4114,7 +4324,7 @@
         article.focus();
         restoreSelection();
         try { document.execCommand('insertHTML', false, html + '<p><br/></p>'); } catch (e) {
-          article.insertAdjacentHTML('beforeend', html);
+          appendHtmlToReportPage(html + '<p><br/></p>');
         }
 
         // 渲染新插入的图表

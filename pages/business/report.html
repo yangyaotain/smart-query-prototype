@@ -13,27 +13,58 @@
     .report-page-body .report-content-wrap {
       flex: 1;
       min-height: 0;
-      overflow: auto;
+      overflow: hidden;
+      padding: 0;
     }
 
     .report-page-body article.report-page {
-      max-width: 940px;
+      width: min(860px, 100%);
+      max-width: none;
       margin: 0 auto;
-      padding: 32px 40px 56px;
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      transform-origin: top center;
     }
 
-    .report-page-body article.report-page > h1 {
+    .report-page-body article.report-page .report-doc-page {
+      position: relative;
+      width: 100%;
+      min-height: 1180px;
+      padding: 64px 72px 78px;
+      background: #fff;
+      border: 1px solid #c6cbd2;
+      border-radius: 0;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.16);
+      box-sizing: border-box;
+    }
+
+    .report-page-body article.report-page .report-page-number {
+      position: absolute;
+      left: 72px;
+      right: 72px;
+      bottom: 24px;
+      padding-top: 8px;
+      color: #94a3b8;
+      border-top: 1px solid #edf1f7;
+      font-size: 12px;
+      text-align: center;
+      user-select: none;
+    }
+
+    .report-page-body article.report-page h1 {
       margin: 0 0 6px;
       color: #17375e;
       font-size: 24px;
       font-weight: 700;
     }
 
-    .report-page-body article.report-page > h2 {
+    .report-page-body article.report-page h2 {
       margin: 28px 0 10px;
       color: #17375e;
       font-size: 18px;
@@ -55,7 +86,7 @@
       margin-bottom: 4px;
     }
 
-    .report-page-body article.report-page > h3 {
+    .report-page-body article.report-page h3 {
       margin: 18px 0 8px;
       color: #1e3a5f;
       font-size: 15px;
@@ -229,12 +260,35 @@
       width: 100%;
     }
 
-    .report-page-body .context-card.section-nav {
-      align-self: start;
-      position: sticky;
-      top: 0;
-      max-height: calc(100vh - 200px);
+    .report-page-body .report-layout {
+      height: 100%;
+      display: grid;
+      grid-template-columns: 238px minmax(0, 1fr);
+      gap: 0;
+      background: #d8dadd;
+    }
+
+    .report-page-body .report-doc-stage {
+      min-width: 0;
       overflow: auto;
+      padding: 24px 34px 78px;
+      background: #d8dadd;
+    }
+
+    .report-page-body .context-card.section-nav {
+      align-self: stretch;
+      position: relative;
+      top: auto;
+      height: 100%;
+      max-height: none;
+      margin: 0;
+      padding: 14px 12px;
+      overflow: auto;
+      background: #eceff3;
+      border: 0;
+      border-right: 1px solid #c9cdd3;
+      border-radius: 0;
+      box-shadow: none;
     }
 
     .report-page-body .context-card.section-nav h4 {
@@ -336,12 +390,89 @@
     /* 数据更新遮罩：跟随系统主题变量（蓝色 / 绿色） */
     .report-page-body .module-content {
       position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .report-zoom-toolbar {
+      position: absolute;
+      right: 22px;
+      bottom: 14px;
+      z-index: 14;
+      min-width: 196px;
+      height: 32px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 6px;
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid #d9e4f0;
+      border-radius: 8px;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+    }
+
+    .report-zoom-toolbar button {
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      color: #526579;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .report-zoom-toolbar button:not(.report-zoom-value) {
+      width: 24px;
+      padding: 0;
+    }
+
+    .report-zoom-toolbar button:hover:not(:disabled) {
+      color: var(--primary);
+      background: var(--primary-soft);
+      border-color: rgba(var(--primary-rgb), 0.24);
+    }
+
+    .report-zoom-toolbar button:disabled {
+      color: #b8c2ce;
+      cursor: not-allowed;
+    }
+
+    .report-zoom-toolbar svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .report-zoom-toolbar input[type="range"] {
+      width: 82px;
+      height: 4px;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    .report-zoom-value {
+      min-width: 60px;
+      padding: 0 6px;
+      color: #26384d !important;
+      background: #f7f9fc !important;
+      border-color: #e2e8f0 !important;
+      font-variant-numeric: tabular-nums;
     }
 
     .report-update-mask {
       position: absolute;
       inset: 0;
-      z-index: 12;
+      z-index: 20;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -776,12 +907,27 @@
       </div>
       <div class="module-scroll report-content-wrap">
         <div class="report-layout">
-          <aside class="context-card section-nav" style="height:max-content;">
+          <aside class="context-card section-nav">
             <h4>报告章节</h4>
             <div id="reportSectionList"></div>
           </aside>
-          <article class="report-page" id="reportArticle"></article>
+          <main class="report-doc-stage" id="reportDocStage">
+            <article class="report-page" id="reportArticle"></article>
+          </main>
         </div>
+      </div>
+      <div class="report-zoom-toolbar" id="reportZoomToolbar" aria-label="报告缩放工具条">
+        <button type="button" id="reportZoomOut" title="缩小" aria-label="缩小">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg>
+        </button>
+        <input type="range" id="reportZoomRange" min="60" max="160" step="10" value="100" aria-label="缩放比例" />
+        <button type="button" id="reportZoomIn" title="放大" aria-label="放大">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+        </button>
+        <button class="report-zoom-value" type="button" id="reportZoomReset" title="恢复 100%" aria-label="恢复 100%">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"></rect><path d="M8 9h8"></path><path d="M8 13h5"></path></svg>
+          <span id="reportZoomValue">100%</span>
+        </button>
       </div>
       <!-- 数据更新执行遮罩：只覆盖右侧报告内容区 -->
       <div class="report-update-mask hidden" id="reportUpdateMask" role="dialog" aria-modal="true" aria-labelledby="reportUpdateTitle">
@@ -1911,6 +2057,70 @@
       const reportMetaTopEl = document.getElementById('reportMetaTop');
       const reportSectionListEl = document.getElementById('reportSectionList');
       const reportArticleEl = document.getElementById('reportArticle');
+      const reportDocStageEl = document.getElementById('reportDocStage');
+      const reportZoomRange = document.getElementById('reportZoomRange');
+      const reportZoomValue = document.getElementById('reportZoomValue');
+      const reportZoomOut = document.getElementById('reportZoomOut');
+      const reportZoomIn = document.getElementById('reportZoomIn');
+      const reportZoomReset = document.getElementById('reportZoomReset');
+      const REPORT_ZOOM_MIN = 60;
+      const REPORT_ZOOM_MAX = 160;
+      const REPORT_ZOOM_STEP = 10;
+      let reportZoom = 100;
+
+      function clampReportZoom(value) {
+        const zoom = Number(value) || 100;
+        return Math.max(REPORT_ZOOM_MIN, Math.min(REPORT_ZOOM_MAX, Math.round(zoom)));
+      }
+
+      function resizeVisibleCharts(scope) {
+        if (typeof echarts === 'undefined') return;
+        (scope || document).querySelectorAll('.chart-canvas').forEach((dom) => {
+          const inst = echarts.getInstanceByDom(dom);
+          if (inst) inst.resize();
+        });
+      }
+
+      function applyReportZoom() {
+        reportZoom = clampReportZoom(reportZoom);
+        reportArticleEl.style.zoom = (reportZoom / 100).toFixed(2);
+        if (reportZoomRange) reportZoomRange.value = reportZoom;
+        if (reportZoomValue) reportZoomValue.textContent = reportZoom + '%';
+        if (reportZoomOut) reportZoomOut.disabled = reportZoom <= REPORT_ZOOM_MIN;
+        if (reportZoomIn) reportZoomIn.disabled = reportZoom >= REPORT_ZOOM_MAX;
+        requestAnimationFrame(() => resizeVisibleCharts(reportArticleEl));
+      }
+
+      function setReportZoom(value) {
+        reportZoom = clampReportZoom(value);
+        applyReportZoom();
+      }
+
+      function buildReportDocPages(data) {
+        const temp = document.createElement('div');
+        temp.innerHTML = data.body || '';
+        const pages = [];
+        let html =
+          '<h1>' + escapeHTML(data.title) + '</h1>' +
+          '<p class="report-meta">生成时间：' + escapeHTML(data.generatedAt || '') + ' · 报告类型：' + escapeHTML(data.type || '') + '</p>';
+        let hasSection = false;
+        Array.from(temp.childNodes).forEach((node) => {
+          const isHeading = node.nodeType === 1 && node.tagName && node.tagName.toLowerCase() === 'h2';
+          if (isHeading && hasSection && html.trim()) {
+            pages.push(html);
+            html = '';
+          }
+          if (isHeading) hasSection = true;
+          html += node.nodeType === 1 ? node.outerHTML : escapeHTML(node.textContent || '');
+        });
+        if (html.trim()) pages.push(html);
+        return pages.map((pageHtml, index) => (
+          '<section class="report-doc-page" data-page-index="' + (index + 1) + '">' +
+            pageHtml +
+            '<div class="report-page-number">第 ' + (index + 1) + ' / ' + pages.length + ' 页</div>' +
+          '</section>'
+        )).join('');
+      }
 
       function renderReport(id) {
         const data = REPORT_DATA[id];
@@ -1927,17 +2137,14 @@
         )).join('');
 
         // 正文：标题 + 副信息 + 章节内容
-        reportArticleEl.innerHTML =
-          '<h1>' + escapeHTML(data.title) + '</h1>' +
-          '<p class="report-meta">生成时间：' + escapeHTML(data.generatedAt || '') + ' · 报告类型：' + escapeHTML(data.type || '') + '</p>' +
-          (data.body || '');
+        reportArticleEl.innerHTML = buildReportDocPages(data);
+        applyReportZoom();
 
         // 渲染所有图表占位
         requestAnimationFrame(() => renderCharts(reportArticleEl));
 
         // 滚动回顶
-        const scrollWrap = document.querySelector('.report-content-wrap');
-        if (scrollWrap) scrollWrap.scrollTop = 0;
+        if (reportDocStageEl) reportDocStageEl.scrollTop = 0;
       }
 
       // ====================================================================
@@ -1964,11 +2171,7 @@
       }
 
       window.addEventListener('resize', function () {
-        if (typeof echarts === 'undefined') return;
-        document.querySelectorAll('.chart-canvas').forEach((dom) => {
-          const inst = echarts.getInstanceByDom(dom);
-          if (inst) inst.resize();
-        });
+        resizeVisibleCharts(document);
       });
 
       // ECharts option 工厂：根据 type + title 关键词，返回合理可视化
@@ -2219,6 +2422,11 @@
           target.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       });
+
+      if (reportZoomOut) reportZoomOut.addEventListener('click', () => setReportZoom(reportZoom - REPORT_ZOOM_STEP));
+      if (reportZoomIn) reportZoomIn.addEventListener('click', () => setReportZoom(reportZoom + REPORT_ZOOM_STEP));
+      if (reportZoomReset) reportZoomReset.addEventListener('click', () => setReportZoom(100));
+      if (reportZoomRange) reportZoomRange.addEventListener('input', (e) => setReportZoom(e.target.value));
 
       // 初始化
       renderTree();
