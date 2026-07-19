@@ -62,6 +62,10 @@ const followupChipTitle = document.getElementById("followupChipTitle");
 const followupPrefix = document.getElementById("followupPrefix");
 const sendBtn = document.getElementById("sendBtn");
 const associateList = document.getElementById("associateList");
+const skillSelectWrap = document.getElementById("skillSelectWrap");
+const skillSelectTrigger = document.getElementById("skillSelectTrigger");
+const skillSelectText = document.getElementById("skillSelectText");
+const skillPicker = document.getElementById("skillPicker");
 let activeSideItem = null;
 let pendingUpload = null;
 let selectedChartMenuAction = "";
@@ -75,6 +79,55 @@ let isAnswering = false;
 let currentAnswerMode = "qa";
 let currentQuestionText = "近6个月华东区销售额趋势如何？";
 let currentAnswerTitle = "华东区近6个月销售额趋势分析";
+let selectedSkillKey = "general";
+let activeSkillRun = null;
+
+const BASE_QUESTION_PLACEHOLDER = questionInput?.dataset.placeholder || "请输入你想了解的业务问题";
+
+const SKILL_DEFINITIONS = {
+  general: {
+    key: "general",
+    id: null,
+    name: "通用问数",
+    prompt: "",
+    placeholder: BASE_QUESTION_PLACEHOLDER
+  },
+  monthly: {
+    key: "monthly",
+    id: "skill-monthly",
+    name: "月度经营分析",
+    prompt: "请生成一份关于【报告月份】【分析范围】的经营分析报告，重点分析销售目标、渠道贡献和经营风险，并给出下月建议。",
+    placeholder: "请继续描述本次月度经营分析要求"
+  },
+  quarterly: {
+    key: "quarterly",
+    id: "skill-quarterly",
+    name: "季度经营复盘",
+    prompt: "请生成一份关于【报告季度】【分析范围】的季度经营复盘报告，重点分析目标完成、结构变化和问题归因，并给出下一季度改进建议。",
+    placeholder: "请继续描述本次季度经营复盘要求"
+  },
+  annual: {
+    key: "annual",
+    id: "skill-annual",
+    name: "年度经营总结",
+    prompt: "请生成一份关于【报告年度】【分析范围】的年度经营总结，重点呈现目标完成、增长结构、重点成果和核心问题，并提出下一年度经营规划。",
+    placeholder: "请继续描述本次年度经营总结要求"
+  },
+  campaign: {
+    key: "campaign",
+    id: "skill-campaign",
+    name: "营销活动复盘",
+    prompt: "请对【活动名称】【活动周期】进行复盘，重点分析活动目标、转化漏斗、渠道与客群贡献、投入产出和低效环节，并给出优化建议。",
+    placeholder: "请继续描述本次营销活动复盘要求"
+  }
+};
+
+const LEGACY_DEFAULT_SKILL_PROMPTS = {
+  report_monthly: "请生成一份2026年6月全公司经营分析报告，结合销售和客户数据，分析目标完成情况、同比环比、区域与渠道贡献、主要风险，并提出下月重点行动。",
+  report_quarterly: "请复盘2026年第二季度全公司的经营情况，结合销售和客户数据分析季度目标完成、同比环比、区域渠道贡献、重点问题及下一季度改进动作。",
+  report_annual: "请总结2026年度全公司的经营表现，结合销售、客户和库存数据，呈现年度目标完成、增长结构、重点成果、核心问题以及下一年度经营规划。",
+  analysis_campaign: "请对618年中促销活动进行复盘，结合活动周期内的触达、转化、成交、ROI、客群和商品数据，分析目标完成情况、低效环节与优化建议。"
+};
 
 let resultChart = null;
 let reportChart = null;
@@ -617,11 +670,129 @@ function formatFileSize(size) {
   return `${(size / 1024 / 1024).toFixed(1)}MB`;
 }
 
+function readQuestionEditorText() {
+  if (!questionInput) return "";
+  const readNode = (node) => {
+    if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || "";
+    if (node.nodeType !== Node.ELEMENT_NODE) return "";
+    if (node.matches("[data-skill-tag]")) return "";
+    if (node.tagName === "BR") return "\n";
+    const content = Array.from(node.childNodes).map(readNode).join("");
+    return /^(DIV|P)$/.test(node.tagName) ? `${content}\n` : content;
+  };
+  return Array.from(questionInput.childNodes)
+    .map(readNode)
+    .join("")
+    .replace(/\u00a0/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function createSkillTag(skill) {
+  const tag = document.createElement("span");
+  tag.className = "composer-skill-tag";
+  tag.dataset.skillTag = skill.key;
+  tag.contentEditable = "false";
+
+  const name = document.createElement("span");
+  name.textContent = skill.name;
+  tag.appendChild(name);
+
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "composer-skill-remove";
+  remove.textContent = "×";
+  remove.setAttribute("aria-label", `取消技能“${skill.name}”`);
+  remove.addEventListener("click", clearSelectedSkill);
+  tag.appendChild(remove);
+  return tag;
+}
+
+function appendPromptTemplate(container, template, withHints) {
+  const text = String(template || "");
+  if (!withHints) {
+    if (text) container.appendChild(document.createTextNode(text));
+    return;
+  }
+
+  const tokenPattern = /【([^【】\n]+)】/g;
+  let cursor = 0;
+  let match;
+  while ((match = tokenPattern.exec(text))) {
+    if (match.index > cursor) {
+      container.appendChild(document.createTextNode(text.slice(cursor, match.index)));
+    }
+    const hint = document.createElement("span");
+    hint.className = "composer-prompt-hint";
+    hint.dataset.promptHint = match[1];
+    hint.textContent = match[1];
+    container.appendChild(hint);
+    cursor = tokenPattern.lastIndex;
+  }
+  if (cursor < text.length) {
+    container.appendChild(document.createTextNode(text.slice(cursor)));
+  }
+}
+
+function syncQuestionEditorEmptyState() {
+  if (!questionInput) return;
+  questionInput.dataset.empty = String(!readQuestionEditorText());
+}
+
+function setQuestionEditorContent(text, options = {}) {
+  if (!questionInput) return;
+  const withHints = options.withHints === true;
+  questionInput.replaceChildren();
+  if (selectedSkillKey !== "general" && !pendingFollowupContext) {
+    const skill = SKILL_DEFINITIONS[selectedSkillKey];
+    if (skill) questionInput.appendChild(createSkillTag(skill));
+  }
+  appendPromptTemplate(questionInput, text, withHints);
+  syncQuestionEditorEmptyState();
+}
+
+function ensureSelectedSkillTag() {
+  if (!questionInput || pendingFollowupContext) return;
+  const existingTag = questionInput.querySelector("[data-skill-tag]");
+  if (selectedSkillKey === "general") {
+    existingTag?.remove();
+    return;
+  }
+  if (!existingTag) {
+    const skill = SKILL_DEFINITIONS[selectedSkillKey];
+    if (skill) questionInput.insertBefore(createSkillTag(skill), questionInput.firstChild);
+  }
+}
+
+function normalizeEditedPromptHints() {
+  if (!questionInput) return;
+  questionInput.querySelectorAll("[data-prompt-hint]").forEach((hint) => {
+    const current = hint.textContent || "";
+    if (!current) {
+      hint.remove();
+      return;
+    }
+    hint.classList.toggle("is-filled", current !== hint.dataset.promptHint);
+  });
+}
+
+function placeQuestionCaretAtEnd() {
+  if (!questionInput) return;
+  const range = document.createRange();
+  range.selectNodeContents(questionInput);
+  range.collapse(false);
+  const selection = window.getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+}
+
 function fillQuestion(text) {
   if (!questionInput) return;
-  questionInput.value = text;
+  setQuestionEditorContent(text);
   handleQuestionInput();
-  questionInput.focus();
+  focusQuestionComposer();
+  placeQuestionCaretAtEnd();
 }
 
 function showSuggest() {
@@ -641,7 +812,14 @@ function positionSuggestPop() {
 
 function handleQuestionInput() {
   if (!questionInput || !suggestPop) return;
-  const text = questionInput.value;
+  normalizeEditedPromptHints();
+  ensureSelectedSkillTag();
+  syncQuestionEditorEmptyState();
+  if (selectedSkillKey !== "general" && !pendingFollowupContext) {
+    suggestPop.classList.add("hidden");
+    return;
+  }
+  const text = readQuestionEditorText();
   const trimmed = text.trim();
   if (!trimmed) {
     suggestPop.classList.add("hidden");
@@ -709,7 +887,7 @@ function escapeHtml(s) {
 
 function runSuggestedQuestion(text) {
   if (!questionInput) return;
-  questionInput.value = text;
+  setQuestionEditorContent(text);
   suggestPop?.classList.add("hidden");
   runQuestion();
 }
@@ -852,6 +1030,327 @@ window.toggleThemeDropdown = toggleThemeDropdown;
 window.toggleThemeOption = toggleThemeOption;
 syncThemeSelection();
 
+function focusQuestionComposer() {
+  questionInput?.focus();
+}
+
+function syncSkillInputMode() {
+  const hasSkill = selectedSkillKey !== "general";
+  questionInput?.classList.toggle("has-skill-prompt", hasSkill);
+  questionInput?.setAttribute("aria-hidden", "false");
+  ensureSelectedSkillTag();
+  syncQuestionEditorEmptyState();
+}
+
+function syncSkillQuestionPlaceholder() {
+  if (!questionInput || pendingFollowupContext) return;
+  const skill = SKILL_DEFINITIONS[selectedSkillKey] || SKILL_DEFINITIONS.general;
+  const placeholder = skill.placeholder || BASE_QUESTION_PLACEHOLDER;
+  questionInput.dataset.placeholder = placeholder;
+  questionInput.setAttribute("aria-placeholder", placeholder);
+  syncQuestionEditorEmptyState();
+}
+
+function toggleSkillPicker(event) {
+  event?.stopPropagation();
+  if (!skillPicker || !skillSelectWrap) return;
+  const willOpen = skillPicker.classList.contains("hidden");
+  skillPicker.classList.toggle("hidden", !willOpen);
+  skillSelectWrap.classList.toggle("is-open", willOpen);
+  skillSelectTrigger?.setAttribute("aria-expanded", String(willOpen));
+  suggestPop?.classList.add("hidden");
+}
+
+function closeSkillPicker() {
+  skillPicker?.classList.add("hidden");
+  skillSelectWrap?.classList.remove("is-open");
+  skillSelectTrigger?.setAttribute("aria-expanded", "false");
+}
+
+function syncSkillPickerSelection() {
+  const hasSkill = selectedSkillKey !== "general";
+  const skill = SKILL_DEFINITIONS[selectedSkillKey] || SKILL_DEFINITIONS.general;
+  if (skillSelectText) skillSelectText.textContent = skill.name;
+  if (skillSelectTrigger) {
+    skillSelectTrigger.classList.toggle("has-skill", hasSkill);
+    skillSelectTrigger.title = `当前技能：${skill.name}，点击切换`;
+  }
+  document.querySelectorAll(".skill-option[data-skill]").forEach((option) => {
+    option.classList.toggle("selected", option.dataset.skill === selectedSkillKey);
+  });
+}
+
+function clearSelectedSkill(event) {
+  event?.preventDefault();
+  event?.stopPropagation();
+  const currentText = readQuestionEditorText();
+  selectedSkillKey = "general";
+  activeSkillRun = null;
+  setQuestionEditorContent(currentText);
+  syncSkillPickerSelection();
+  syncSkillInputMode();
+  syncSkillQuestionPlaceholder();
+  focusQuestionComposer();
+  placeQuestionCaretAtEnd();
+  showToast("已取消技能，当前文字已保留");
+}
+
+function selectSkill(skillKey, event, silent) {
+  event?.stopPropagation();
+  const currentText = readQuestionEditorText();
+  const next = SKILL_DEFINITIONS[skillKey] ? skillKey : "general";
+  selectedSkillKey = next;
+  const skill = SKILL_DEFINITIONS[next];
+  activeSkillRun = null;
+  if (questionInput && !pendingFollowupContext) {
+    setQuestionEditorContent(next === "general" ? currentText : skill.prompt || "", {
+      withHints: next !== "general"
+    });
+    handleQuestionInput();
+  }
+  syncSkillInputMode();
+  syncSkillPickerSelection();
+  syncSkillQuestionPlaceholder();
+  closeSkillPicker();
+  if (!silent) {
+    showToast(next === "general" ? "已切换为通用问数，当前文字已保留" : `已选择“${skill.name}”，提示内容可自由修改`);
+    window.setTimeout(() => {
+      focusQuestionComposer();
+      placeQuestionCaretAtEnd();
+    }, 0);
+  }
+}
+
+function hydrateSkillsFromAdminStore() {
+  const codeMap = {
+    report_monthly: "monthly",
+    report_quarterly: "quarterly",
+    report_annual: "annual",
+    analysis_campaign: "campaign"
+  };
+  let stored;
+  try {
+    stored = JSON.parse(localStorage.getItem("smart-query-skill-catalog-v1") || "null");
+  } catch (error) {
+    return;
+  }
+  if (!Array.isArray(stored)) return;
+
+  const fixedKeys = Object.values(codeMap);
+  fixedKeys.forEach((key) => {
+    document.querySelector(`.skill-option[data-skill="${key}"]`)?.classList.add("hidden");
+  });
+
+  const customEnabled = stored.filter((item) => item.enabled && !codeMap[item.code]);
+  const optionList = skillPicker?.querySelector(".skill-picker-list");
+  if (customEnabled.length && optionList) {
+    optionList.insertAdjacentHTML("beforeend", '<div class="skill-picker-group" data-managed-skill-group>自定义技能</div>');
+  }
+
+  stored.forEach((item) => {
+    const fixedKey = codeMap[item.code];
+    if (fixedKey) {
+      const definition = SKILL_DEFINITIONS[fixedKey];
+      const option = document.querySelector(`.skill-option[data-skill="${fixedKey}"]`);
+      if (definition && item.id) definition.id = item.id;
+      if (definition && item.name) definition.name = item.name;
+      if (definition && item.userPrompt) {
+        definition.prompt = item.userPrompt === LEGACY_DEFAULT_SKILL_PROMPTS[item.code]
+          ? SKILL_DEFINITIONS[fixedKey].prompt
+          : item.userPrompt;
+      }
+      if (definition) {
+        definition.executionPrompt = item.executionPrompt || "";
+        definition.reportPrompt = item.reportPrompt || "";
+        definition.reportTemplate = item.reportTemplate || null;
+      }
+      if (option) {
+        option.classList.toggle("hidden", !item.enabled);
+        const name = option.querySelector(".skill-option-main strong");
+        const desc = option.querySelector(".skill-option-main em");
+        if (name && item.name) name.textContent = item.name;
+        if (desc && item.desc) desc.textContent = item.desc;
+      }
+      return;
+    }
+    if (!item.enabled || !optionList) return;
+    const managedKey = `managed_${String(item.id || item.code || Date.now()).replace(/[^a-zA-Z0-9_]/g, "_")}`;
+    SKILL_DEFINITIONS[managedKey] = {
+      key: managedKey,
+      id: item.id || item.code || managedKey,
+      name: item.name || "自定义经营分析",
+      prompt: item.userPrompt || `请使用“${item.name || "当前技能"}”完成分析。你可以继续修改这段内容，补充时间、范围、重点和输出要求。`,
+      placeholder: `可补充“${item.name || "该技能"}”的分析重点和输出要求`,
+      executionPrompt: item.executionPrompt || "",
+      reportPrompt: item.reportPrompt || "",
+      reportTemplate: item.reportTemplate || null
+    };
+    optionList.insertAdjacentHTML("beforeend", `
+      <button type="button" class="skill-option" data-skill="${escapeHtml(managedKey)}" onclick="selectSkill('${escapeHtml(managedKey)}', event)">
+        <span class="skill-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/></svg></span>
+        <span class="skill-option-main"><strong>${escapeHtml(item.name || "自定义经营分析")}</strong><em>${escapeHtml(item.desc || "按后台配置的流程生成经营分析报告")}</em></span>
+        <span class="skill-option-tag">报告</span>
+        <span class="skill-option-check"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4L19 6"/></svg></span>
+      </button>`);
+  });
+
+  const enabledCount = stored.filter((item) => item.enabled).length;
+  const count = skillPicker?.querySelector(".skill-picker-count");
+  if (count) count.textContent = `${enabledCount} 项可用`;
+}
+
+function validateSelectedSkill() {
+  if (selectedSkillKey === "general") return true;
+  if (readQuestionEditorText()) return true;
+  questionInput?.focus();
+  showToast("请先补充技能提示内容");
+  return false;
+}
+
+function getActiveSkillRun() {
+  const defaultPrompt = SKILL_DEFINITIONS.monthly.prompt;
+  return activeSkillRun || { key: "monthly", skillId: "skill-monthly", prompt: defaultPrompt };
+}
+
+function getSkillAnswerTitle(run) {
+  const skill = SKILL_DEFINITIONS[run.key] || SKILL_DEFINITIONS.monthly;
+  return /报告$/.test(skill.name) ? skill.name : `${skill.name}报告`;
+}
+
+function getFinalSkillPrompt(run, inputText) {
+  const skill = SKILL_DEFINITIONS[run.key];
+  return String(inputText || run.prompt || skill?.prompt || "").trim();
+}
+
+function buildSkillReportProfile(run) {
+  const title = getSkillAnswerTitle(run);
+  if (run.key === "campaign") {
+    const activity = "本次营销活动";
+    return {
+      title,
+      section1: "一、活动执行概览",
+      section2: "二、活动目标完成情况",
+      section2Intro: "对齐活动目标，跟踪触达、转化、成交、投入产出和新客贡献等核心指标。",
+      section3: "三、渠道、人群与商品贡献",
+      section3Intro: `${activity}在渠道、人群和商品三个维度的主要贡献结构。`,
+      section4: "四、问题诊断与优化建议",
+      planTitle: "优化建议",
+      kpis: [
+        ["活动触达", "128.6", "万人", "目标 120 万 · 完成 107.2%", "同比 +24.8%"],
+        ["成交订单", "1.86", "万单", "目标 1.70 万 · 完成 109.4%", "同比 +31.5%"],
+        ["支付转化率", "3.42", "%", "目标 3.20% · 高 0.22pp", "环比 +0.36pp"],
+        ["活动 ROI", "5.6", "", "目标 5.0 · 完成 112.0%", "同比 +0.8"]
+      ],
+      progress: [["触达人数完成率", "107.2%", "100%"], ["成交订单完成率", "109.4%", "100%"], ["新客获取完成率", "96.8%", "96.8%"], ["活动 GMV 完成率", "111.6%", "100%"], ["活动 ROI 完成率", "112.0%", "100%"]],
+      contributions: [
+        ["渠道贡献 TOP3", [["线上自营", "46.2%"], ["私域商城", "31.5%"], ["线下门店", "22.3%"]]],
+        ["高转化人群 TOP3", [["老客会员", "38.7%"], ["近30日新客", "27.4%"], ["沉睡唤醒", "18.9%"]]],
+        ["商品贡献 TOP3", [["智能 Pro", "35.6%"], ["组合套装", "26.8%"], ["配件礼包", "17.5%"]]]
+      ],
+      tasks: {
+        summary: `${activity}整体超额完成目标：活动触达 128.6 万人，成交订单 1.86 万单，支付转化率 3.42%，活动 ROI 达 5.6。成交规模和投入产出表现突出，但新客获取与部分渠道转化仍有提升空间。`,
+        overview: `${activity}活动期累计实现活动 GMV 1,382 万元，较活动前同期提升 36.8%；线上自营与私域商城贡献 77.7%，老客会员仍是主要成交人群。活动节奏前稳后高，最后三天贡献 41.2% 成交额。`,
+        risks: ["新客获取完成率为 96.8%，低于整体成交目标完成度，增长仍偏依赖老客会员。", "线下门店触达充分但支付转化率仅 2.18%，需要复盘导购承接和权益说明。", "配件礼包退货率较日常提升 0.6pp，应核查组合规则与商品详情表达。"],
+        plans: ["沉淀高转化人群包与渠道投放组合，作为下一次大促的默认策略。", "针对新客补充首购权益和二次触达机制，提升首单转化及 30 日复购。", "按渠道复算边际 ROI，减少低效流量投入，将预算向私域和高转化商品倾斜。"]
+      },
+      steps: [["读取活动配置", `加载${activity}的目标、周期和活动范围。`], ["对齐活动口径", "统一触达、转化、成交、成本与 ROI 统计口径。"], ["拆解转化漏斗", "按渠道、人群和商品拆解活动转化路径。"], ["诊断目标差异", "识别未达目标指标和低效环节。"], ["生成复盘报告", "输出活动结论、贡献结构、问题和优化建议。"]]
+    };
+  }
+
+  if (run.key === "annual") {
+    const period = "本年度";
+    return {
+      title,
+      section1: "一、年度经营概览", section2: "二、年度目标完成情况", section2Intro: "对齐年度经营目标，跟踪规模、效率、质量和客户价值核心指标。", section3: "三、区域、渠道与产品结构", section3Intro: `${period}主要经营结构和增长贡献。`, section4: "四、年度问题与下一年度规划", planTitle: "下一年度规划",
+      kpis: [["年度销售额", "32,680", "万元", "目标 31,500 万 · 完成 103.7%", "同比 +21.6%"], ["年度订单量", "43.6", "万单", "目标 42.0 万 · 完成 103.8%", "同比 +17.2%"], ["年度客单价", "749", "元", "目标 740 元 · 完成 101.2%", "同比 +3.8%"], ["年度毛利率", "31.8", "%", "目标 31.0% · 高 0.8pp", "同比 +1.1pp"]],
+      progress: [["销售额完成率", "103.7%", "100%"], ["订单量完成率", "103.8%", "100%"], ["客单价完成率", "101.2%", "100%"], ["毛利率完成率", "102.6%", "100%"], ["复购率完成率", "98.5%", "98.5%"]],
+      contributions: [["区域贡献 TOP3", [["华东区", "36.4%"], ["华南区", "24.8%"], ["北区", "18.6%"]]], ["渠道贡献 TOP3", [["线上自营", "42.8%"], ["线下门店", "34.1%"], ["经销商", "23.1%"]]], ["产品贡献 TOP3", [["智能设备", "40.2%"], ["服务产品", "24.7%"], ["配件类", "19.8%"]]]],
+      tasks: { summary: `${period}经营总体稳中向好：销售额 32,680 万元，年度目标完成率 103.7%，同比增长 21.6%；订单量、客单价和毛利率同步改善，增长质量保持稳定。`, overview: `${period}公司在华东区和线上自营渠道带动下实现规模增长，新产品与服务产品贡献持续提升。全年四个季度均保持正增长，但复购率目标完成度为 98.5%，客户持续经营仍是下一年度重点。`, risks: ["北区年度目标完成率为 91.2%，区域增长差距仍然明显。", "经销商库存周转天数升至 44 天，渠道库存压力需要持续化解。", "年度复购率略低于目标，新增客户的持续价值尚未充分释放。"], plans: ["下一年度聚焦区域均衡增长，建立北区和重点城市专项提升机制。", "优化渠道库存与返利政策，将经销商周转天数控制在 38 天以内。", "完善新客首年运营旅程，推动复购率提升 2 个百分点。"] },
+      steps: [["汇总年度数据", `加载${period}完整经营数据和目标。`], ["校验年度口径", "统一全年指标、组织和数据版本。"], ["分析增长结构", "拆解季度、区域、渠道和产品贡献。"], ["识别年度问题", "定位目标差距、结构风险和持续性问题。"], ["生成年度总结", "形成年度成果、问题和下一年度规划。"]]
+    };
+  }
+
+  if (run.key === "quarterly") {
+    const period = "本季度";
+    return {
+      title,
+      section1: "一、季度经营概览", section2: "二、季度目标完成情况", section2Intro: "按季度目标对齐，跟踪经营规模、效率和质量指标。", section3: "三、区域与渠道贡献", section3Intro: `${period}区域、渠道和产品三个维度的主要贡献。`, section4: "四、重点问题与下季度行动", planTitle: "下季度行动",
+      kpis: [["季度销售额", "8,946", "万元", "目标 8,600 万 · 完成 104.0%", "同比 +28.4%"], ["季度订单量", "12.04", "万单", "目标 11.70 万 · 完成 102.9%", "同比 +22.7%"], ["季度客单价", "743", "元", "目标 735 元 · 完成 101.1%", "同比 +4.6%"], ["季度毛利率", "32.1", "%", "目标 31.2% · 高 0.9pp", "环比 +0.7pp"]],
+      progress: [["销售额完成率", "104.0%", "100%"], ["订单量完成率", "102.9%", "100%"], ["客单价完成率", "101.1%", "100%"], ["毛利率完成率", "102.9%", "100%"], ["复购率完成率", "101.8%", "100%"]],
+      contributions: [["区域贡献 TOP3", [["华东区", "35.8%"], ["华南区", "24.5%"], ["北区", "18.2%"]]], ["渠道贡献 TOP3", [["线上自营", "43.2%"], ["线下门店", "34.8%"], ["经销商", "22.0%"]]], ["产品贡献 TOP3", [["智能设备", "39.7%"], ["配件类", "27.1%"], ["服务类", "18.4%"]]]],
+      tasks: { summary: `${period}整体经营表现优于目标：销售额 8,946 万元，季度目标完成率 104.0%，同比增长 28.4%；订单量和毛利率同步提升，经营质量保持向好。`, overview: `${period}销售增长主要由华东区、线上自营和智能设备产品带动。季度内 4 月增速最高，5—6 月延续增长但增幅趋稳；北区目标差距和经销商库存是下季度需要优先处理的问题。`, risks: ["北区季度目标完成率仅 86.4%，连续两个月低于整体水平。", "经销商库存周转放慢至 41 天，影响渠道补货积极性。", "部分头部客户采购集中度上升，需关注单一客户波动风险。"], plans: ["启动北区重点城市补强专项，明确月度目标与渠道责任人。", "优化经销商库存结构，推动慢动商品联合促销和调拨。", "对 TOP20 客户建立复购预警和季度经营回访机制。"] },
+      steps: [["读取季度目标", `加载${period}经营目标和实际完成数据。`], ["统一指标口径", "对齐季度累计、同比和环比统计规则。"], ["拆解经营结构", "按区域、渠道、产品和客户分析贡献。"], ["定位目标差距", "识别未达目标和异常波动环节。"], ["生成季度复盘", "输出季度结论、问题和下季度行动。"]]
+    };
+  }
+
+  const period = "本月";
+  return {
+    title,
+    section1: "一、月度业绩概述", section2: "二、核心指标完成情况", section2Intro: "按月度目标对齐，跟踪 5 项核心指标的完成度，颜色越深完成度越高。", section3: "三、区域与渠道贡献", section3Intro: `${period}区域、渠道、产品三个维度 TOP 贡献排名。`, section4: "四、风险预警与下月计划", planTitle: "下月计划",
+    kpis: [["销售额", "3,248", "万元", "目标 3,100 万 · 完成 104.8%", "同比 +31.2%"], ["订单量", "4.36", "万单", "目标 4.20 万单 · 完成 103.8%", "同比 +26.4%"], ["客单价", "745", "元", "目标 738 元 · 完成 100.9%", "同比 +3.9%"], ["毛利率", "32.6", "%", "目标 31.5% · 高 1.1pp", "环比 +0.5pp"]],
+    progress: [["销售额完成率", "104.8%", "100%"], ["订单量完成率", "103.8%", "100%"], ["客单价完成率", "100.9%", "100%"], ["毛利率完成率", "103.5%", "100%"], ["复购率完成率", "106.4%", "100%"]],
+    contributions: [["区域贡献 TOP3", [["上海", "32.8%"], ["苏州", "21.4%"], ["杭州", "15.7%"]]], ["渠道贡献 TOP3", [["线上自营", "42.1%"], ["线下门店", "35.9%"], ["经销商", "22.0%"]]], ["产品贡献 TOP3", [["智能设备", "39.1%"], ["配件类", "27.9%"], ["服务类", "17.2%"]]]],
+    tasks: { summary: `${period}经营表现稳健：销售额 3,248 万元，月度目标完成率 104.8%，同比增长 31.2%；订单量、客单价和毛利率均达到目标，整体延续高质量增长态势。`, overview: `${period}销售额 3,248 万元，同比 +31.2%、环比 +4.5%；订单量 4.36 万单，同比 +26.4%；客单价 745 元，同比 +3.9%；毛利率 32.6%，较目标高 1.1 个百分点。华东重点城市和线上自营仍是主要增长来源。`, risks: ["二三线城市客单价增速放缓，需要关注价格敏感型客户的转化变化。", "经销商库存周转放慢至 39 天，应主动调整发货和促销节奏。", "智能配件品类退货率小幅上升，需复盘商品质量和详情表达。"], plans: ["延续重点城市增长节奏，补充二线城市新客获取活动。", "优化经销商库存结构，将库存周转控制在 36 天以内。", "升级会员分层运营，推动下月复购率再提升 1 个百分点。"] },
+    steps: [["识别报告需求", `识别用户需要生成${period}经营分析报告。`], ["匹配数据口径", "对齐销售额、订单量、客单价等核心指标。"], ["提取月度数据", `按${period}抽取区域、渠道、产品和客户数据。`], ["生成报告章节", "生成业绩概述、指标完成、结构贡献、风险和计划。"], ["格式化与校对", "校对术语、数据单位与同环比口径，输出最终报告。"]]
+  };
+}
+
+function applySkillReportProfile(profile) {
+  if (!templateResult || !profile) return;
+  if (templateReportTitle) templateReportTitle.textContent = profile.title;
+  const setText = (selector, value) => {
+    const el = templateResult.querySelector(selector);
+    if (el) el.textContent = value;
+  };
+  setText('[data-template-block="1"] h5', profile.section1);
+  setText('[data-template-block="2"] h5', profile.section2);
+  setText('[data-template-block="2"] .template-block-intro', profile.section2Intro);
+  setText('[data-template-block="3"] h5', profile.section3);
+  setText('[data-template-block="3"] .template-block-intro', profile.section3Intro);
+  setText('[data-template-block="4"] h5', profile.section4);
+  setText('[data-template-block="4"] .template-plan-card.next strong', profile.planTitle);
+
+  templateResult.querySelectorAll(".template-kpi-card").forEach((card, index) => {
+    const item = profile.kpis[index];
+    if (!item) return;
+    const label = card.querySelector(".template-kpi-label");
+    const value = card.querySelector(".template-kpi-value");
+    const metas = card.querySelectorAll(".template-kpi-meta span");
+    if (label) label.textContent = item[0];
+    if (value) value.innerHTML = `${escapeHtml(item[1])}<span>${escapeHtml(item[2])}</span>`;
+    if (metas[0]) metas[0].textContent = item[3];
+    if (metas[1]) metas[1].textContent = item[4];
+  });
+
+  templateResult.querySelectorAll(".template-progress-list li").forEach((row, index) => {
+    const item = profile.progress[index];
+    if (!item) return;
+    const name = row.querySelector(".template-progress-name");
+    const fill = row.querySelector(".template-progress-fill");
+    const value = row.querySelector(".template-progress-value");
+    if (name) name.textContent = item[0];
+    if (fill) fill.style.setProperty("--w", item[2]);
+    if (value) value.textContent = item[1];
+  });
+
+  templateResult.querySelectorAll(".template-contribution-card").forEach((card, cardIndex) => {
+    const group = profile.contributions[cardIndex];
+    if (!group) return;
+    const head = card.querySelector(".template-contribution-head");
+    if (head) head.textContent = group[0];
+    card.querySelectorAll("li").forEach((row, rowIndex) => {
+      const item = group[1][rowIndex];
+      if (!item) return;
+      const name = row.querySelector(".template-contribution-name");
+      const fill = row.querySelector(".template-contribution-bar > span");
+      const value = row.querySelector(".template-contribution-value");
+      if (name) name.textContent = item[0];
+      if (fill) fill.style.setProperty("--w", item[1]);
+      if (value) value.textContent = item[1];
+    });
+  });
+}
+
 function renderThinkingTimeline(mode = "qa") {
   const timeline = thinkingBox?.querySelector(".timeline");
   if (!timeline) return;
@@ -860,7 +1359,7 @@ function renderThinkingTimeline(mode = "qa") {
   else if (mode === "attribution") steps = attributionThinkingSteps;
   else if (mode === "trend") steps = trendThinkingSteps;
   else if (mode === "comparison") steps = comparisonThinkingSteps;
-  else if (mode === "template") steps = templateThinkingSteps;
+  else if (mode === "template") steps = buildSkillReportProfile(getActiveSkillRun()).steps || templateThinkingSteps;
   else steps = qaThinkingSteps;
   timeline.innerHTML = steps.map(([title, desc]) => (
     `<div class="step"><div class="step-dot loading">·</div><div><strong>${title}</strong><span>${desc}</span></div></div>`
@@ -1001,9 +1500,7 @@ function generateAnswerTitle(userInput, mode) {
         ? `${region}${time}${subject}对比分析`
         : `${region}${subject}对比分析`;
     case "template":
-      return time
-        ? `${time}${subject}分析月报`
-        : `${subject}分析月报`;
+      return getSkillAnswerTitle(getActiveSkillRun());
     default:
       return `${region}${subject}分析`;
   }
@@ -1011,7 +1508,7 @@ function generateAnswerTitle(userInput, mode) {
 
 function runQuestion() {
   archiveCurrentMessageIfNeeded();
-  const inputText = questionInput.value.trim();
+  const inputText = readQuestionEditorText();
   const ctx = pendingFollowupContext;
 
   let submittedQuestion;
@@ -1028,9 +1525,27 @@ function runQuestion() {
     else if (ctx.action === "template") mode = "template";
     else mode = "qa";
     answerTitle = generateAnswerTitle(actionText, mode);
+  } else if (selectedSkillKey !== "general") {
+    if (!validateSelectedSkill()) return;
+    const skillPrompt = inputText || SKILL_DEFINITIONS[selectedSkillKey]?.prompt || "";
+    const selectedSkill = SKILL_DEFINITIONS[selectedSkillKey];
+    activeSkillRun = {
+      key: selectedSkillKey,
+      skillId: selectedSkill?.id || selectedSkillKey,
+      prompt: skillPrompt,
+      executionPrompt: selectedSkill?.executionPrompt || "",
+      reportPrompt: selectedSkill?.reportPrompt || "",
+      reportTemplate: selectedSkill?.reportTemplate || null
+    };
+    mode = "template";
+    submittedQuestion = getFinalSkillPrompt(activeSkillRun, skillPrompt);
+    answerTitle = getSkillAnswerTitle(activeSkillRun);
   } else {
     submittedQuestion = inputText || "近6个月华东区销售额趋势如何？";
     mode = detectModeFromText(submittedQuestion);
+    activeSkillRun = mode === "template"
+      ? { key: "monthly", skillId: null, prompt: submittedQuestion }
+      : null;
     answerTitle = generateAnswerTitle(submittedQuestion, mode);
   }
 
@@ -1040,7 +1555,7 @@ function runQuestion() {
   welcomeBlock.classList.add("hidden");
   answerBlock.classList.remove("hidden");
   mainPanel.classList.remove("initial-state");
-  questionInput.value = "";
+  setQuestionEditorContent("");
   clearFollowupContext();
   startAnswerSimulation({
     mode,
@@ -1067,9 +1582,11 @@ function resetChat() {
   answerBlock.classList.add("hidden");
   if (conversationHistory) conversationHistory.innerHTML = "";
   mainPanel.classList.add("initial-state");
-  questionInput.value = "";
+  setQuestionEditorContent("");
   suggestPop.classList.add("hidden");
   clearFollowupContext();
+  activeSkillRun = null;
+  selectSkill("general", null, true);
   resetAnswerSimulation();
   closeModal();
   closeDrawer();
@@ -2719,15 +3236,16 @@ function revealTemplateFooter() {
 }
 
 function startTemplateReportTypewriter() {
+  const profile = buildSkillReportProfile(getActiveSkillRun());
   const tasks = [
-    { id: "templateSummary", text: "5 月华东区销售业绩亮眼：销售额 3,108 万元（达成率 105.0%、同比 +33.6%），订单量 4.18 万单，客单价 743 元，毛利率 32.5%。月度核心指标全部达标，整体延续高质量增长态势。", block: 0 },
-    { id: "templateOverview", text: "5 月华东区销售额 3,108 万元，同比 +33.6%、环比 +4.1%；订单量 4.18 万单，同比 +28.2%；客单价 743 元，同比 +4.2%；毛利率 32.5%，较目标高 1.5 个百分点；复购率 26.8%，较 4 月提升 2.1pp。整体延续 4 月增长态势，月度销售额目标达成 105.0%，超额完成 4.96 个百分点。", block: 1 },
-    { id: "templateRisk1", text: "客单价微降的二三线城市，需关注价格敏感型客户流失，启动定向留存运营。", block: 4 },
-    { id: "templateRisk2", text: "经销商库存周转放慢至 38 天，存在压货风险，建议主动调整发货节奏。", block: 4 },
-    { id: "templateRisk3", text: "智能配件品类退货率上升 0.4pp，需复盘上市批次质量与售后口径。", block: 4 },
-    { id: "templatePlan1", text: "6 月延续大促节奏（6·18 + 私域返场），重点提升二线城市覆盖与新客获取。", block: 4 },
-    { id: "templatePlan2", text: "新增 2 场区域专项活动，目标 ROI ≥ 5，覆盖南通、宁波、温州三地。", block: 4 },
-    { id: "templatePlan3", text: "升级私域用户运营，5 月复购率 +2.1pp 基础上，目标 6 月复购率再 +1pp。", block: 4 }
+    { id: "templateSummary", text: profile.tasks.summary, block: 0 },
+    { id: "templateOverview", text: profile.tasks.overview, block: 1 },
+    { id: "templateRisk1", text: profile.tasks.risks[0], block: 4 },
+    { id: "templateRisk2", text: profile.tasks.risks[1], block: 4 },
+    { id: "templateRisk3", text: profile.tasks.risks[2], block: 4 },
+    { id: "templatePlan1", text: profile.tasks.plans[0], block: 4 },
+    { id: "templatePlan2", text: profile.tasks.plans[1], block: 4 },
+    { id: "templatePlan3", text: profile.tasks.plans[2], block: 4 }
   ];
 
   const revealedBlocks = new Set();
@@ -2822,6 +3340,8 @@ function startTemplateReportTypewriter() {
 }
 
 function startTemplateReportSimulation() {
+  const profile = buildSkillReportProfile(getActiveSkillRun());
+  applySkillReportProfile(profile);
   aiConclusion.textContent = "";
   aiConclusion.classList.remove("typing-cursor");
   insightBox?.classList.add("hidden");
@@ -2834,9 +3354,6 @@ function startTemplateReportSimulation() {
   attributionResult?.classList.add("hidden");
   trendResult?.classList.add("hidden");
   comparisonResult?.classList.add("hidden");
-  if (templateReportTitle) {
-    templateReportTitle.textContent = `${currentAnswerTitle} · 5 月份销售分析月报`;
-  }
   templateResult?.classList.remove("hidden");
   scrollToAnswerBottom();
   setTimeout(startTemplateReportTypewriter, 240);
@@ -4165,7 +4682,6 @@ const FOLLOWUP_PLACEHOLDERS = {
   comparison: "请输入您要对比分析的要求，例如对比维度、关注的差异点等",
   template: "请输入您要模板分析的要求，例如套用模板的范围、目标月份等"
 };
-let defaultQuestionPlaceholder = null;
 
 function askFollowup(type) {
   hideAskMenu();
@@ -4178,6 +4694,7 @@ function askFollowup(type) {
 function setFollowupContext(ctx) {
   const action = ctx.action || "qa";
   pendingFollowupContext = { title: ctx.title, action };
+  syncSkillInputMode();
   if (followupChipTitle) followupChipTitle.textContent = ctx.title;
   followupContextChip?.classList.remove("hidden");
   const prefixText = FOLLOWUP_PREFIXES[action];
@@ -4191,21 +4708,14 @@ function setFollowupContext(ctx) {
     }
   }
   if (questionInput) {
-    if (defaultQuestionPlaceholder === null) {
-      defaultQuestionPlaceholder = questionInput.getAttribute("placeholder") || "";
-    }
     const customPlaceholder = FOLLOWUP_PLACEHOLDERS[action];
-    questionInput.setAttribute(
-      "placeholder",
-      customPlaceholder || defaultQuestionPlaceholder
-    );
+    const placeholder = customPlaceholder || SKILL_DEFINITIONS[selectedSkillKey]?.placeholder || BASE_QUESTION_PLACEHOLDER;
+    questionInput.dataset.placeholder = placeholder;
+    questionInput.setAttribute("aria-placeholder", placeholder);
     questionInput.classList.toggle("has-followup-prefix", Boolean(prefixText));
-    questionInput.value = ctx.prefill || "";
-    questionInput.focus();
-    if (ctx.prefill) {
-      const pos = ctx.prefill.length;
-      questionInput.setSelectionRange(pos, pos);
-    }
+    setQuestionEditorContent(ctx.prefill || "");
+    focusQuestionComposer();
+    placeQuestionCaretAtEnd();
     handleQuestionInput();
   }
   suggestPop?.classList.add("hidden");
@@ -4222,10 +4732,9 @@ function clearFollowupContext() {
   }
   if (questionInput) {
     questionInput.classList.remove("has-followup-prefix");
-    if (defaultQuestionPlaceholder !== null) {
-      questionInput.setAttribute("placeholder", defaultQuestionPlaceholder);
-    }
+    syncSkillQuestionPlaceholder();
   }
+  syncSkillInputMode();
 }
 
 function startTrendAnalysis() {
@@ -4248,7 +4757,7 @@ function startTrendAnalysis() {
 if (questionInput) {
   questionInput.addEventListener("input", handleQuestionInput);
   questionInput.addEventListener("focus", () => {
-    if (questionInput.value.trim()) handleQuestionInput();
+    if (readQuestionEditorText()) handleQuestionInput();
   });
   questionInput.addEventListener("keydown", (event) => {
     if (event.isComposing || event.keyCode === 229) return;
@@ -4300,6 +4809,13 @@ document.addEventListener("click", (event) => {
   if (!event.target.closest("#themeSelectDropdown")) {
     closeThemeDropdown();
   }
+  if (!event.target.closest("#skillSelectWrap")) {
+    closeSkillPicker();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeSkillPicker();
 });
 
 if (modalMask) {
@@ -4321,12 +4837,19 @@ if (fileUploadInput) {
   });
 }
 
+hydrateSkillsFromAdminStore();
+syncSkillPickerSelection();
+syncSkillQuestionPlaceholder();
+syncQuestionEditorEmptyState();
+
 document.querySelectorAll(".chip").forEach((chip) => {
   chip.addEventListener("click", () => {
     const text = chip.textContent.trim();
     if (!text) return;
-    questionInput.value = questionInput.value.trim() ? `${questionInput.value.trim()} ${text}` : text;
-    questionInput.focus();
+    const currentText = readQuestionEditorText();
+    setQuestionEditorContent(currentText ? `${currentText} ${text}` : text);
+    focusQuestionComposer();
+    placeQuestionCaretAtEnd();
     handleQuestionInput();
   });
 });

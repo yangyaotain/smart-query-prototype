@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>技能管理 - 智能问数管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/admin.css" />
+  <link rel="stylesheet" href="../../assets/css/knowledge-skill.css?v=20260719-unified-fonts" />
+</head>
+<body>
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
+      <div class="admin-brand"><div class="logo">管</div><span>智能问数管理后台</span></div>
+      <nav class="admin-menu"></nav>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <strong>技能管理</strong>
+        <div class="toolbar">
+          <button class="secondary-btn icon-btn" onclick="goTo('../business/smart-query.html')">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/>
+              <path d="M5.6 5.6l2.1 2.1"/><path d="M16.3 16.3l2.1 2.1"/>
+              <path d="M5.6 18.4l2.1-2.1"/><path d="M16.3 7.7l2.1-2.1"/>
+              <circle cx="12" cy="12" r="3.4"/>
+            </svg>
+            智能问数
+          </button>
+          <button class="user-trigger" type="button">
+            <div class="avatar">张</div><strong>张三</strong><span class="dropdown-arrow"></span>
+          </button>
+        </div>
+      </header>
+
+      <section class="admin-content ks-page">
+        <div class="ks-page-head">
+          <div>
+            <div class="ks-title-line">
+              <span class="ks-title-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3z"/><path d="M18.5 14l1 2.5L22 17.5l-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5z"/></svg>
+              </span>
+              <div><h1>技能管理</h1><p>定义业务端可选择的分析技能，统一维护自然语言提示、执行指令和报告模板。</p></div>
+            </div>
+          </div>
+          <button type="button" class="primary-btn ks-icon-btn" id="ksBtnNew">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            新增技能
+          </button>
+        </div>
+
+        <div class="ks-summary-grid">
+          <div class="ks-summary-card">
+            <span class="ks-summary-icon is-blue"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8"/><path d="M8 13h5"/></svg></span>
+            <div><span>技能总数</span><strong id="ksTotalCount">4</strong><em>经营报告类技能</em></div>
+          </div>
+          <div class="ks-summary-card">
+            <span class="ks-summary-icon is-green"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4L19 6"/></svg></span>
+            <div><span>已启用</span><strong id="ksEnabledCount">4</strong><em>业务端当前可选择</em></div>
+          </div>
+          <div class="ks-summary-card">
+            <span class="ks-summary-icon is-purple"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V8"/><path d="M10 19V4"/><path d="M16 19v-7"/><path d="M22 19H2"/></svg></span>
+            <div><span>本月调用</span><strong>128</strong><em>较上月增长 18.5%</em></div>
+          </div>
+        </div>
+
+        <div class="ks-list-card">
+          <div class="ks-filter-bar">
+            <div class="ks-search">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+              <input type="text" id="ksKeyword" placeholder="搜索技能名称 / 编码" />
+            </div>
+            <select class="ks-select" id="ksCategoryFilter" title="按技能分类筛选">
+              <option value="">全部分类</option>
+              <option value="经营报告">经营报告</option>
+              <option value="专项分析">专项分析</option>
+            </select>
+            <select class="ks-select" id="ksThemeFilter" title="按适用主题筛选">
+              <option value="">全部分析主题</option>
+              <option value="成交与节资">成交与节资</option>
+              <option value="采购方式与品类">采购方式与品类</option>
+              <option value="供应商管理">供应商管理</option>
+              <option value="采购效能与闲废">采购效能与闲废</option>
+              <option value="销售分析">销售分析</option>
+              <option value="客户分析">客户分析</option>
+              <option value="库存分析">库存分析</option>
+              <option value="活动分析">活动分析</option>
+            </select>
+            <select class="ks-select" id="ksStatusFilter" title="按状态筛选">
+              <option value="">全部状态</option>
+              <option value="enabled">启用</option>
+              <option value="disabled">停用</option>
+            </select>
+            <button type="button" class="ghost-btn ks-icon-btn" id="ksBtnReset">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v6h6"/><path d="M20 20v-6h-6"/><path d="M5.5 15a7.5 7.5 0 0 0 12.8 2.7L20 14"/><path d="M4 10l1.7-3.7A7.5 7.5 0 0 1 18.5 9"/></svg>
+              重置
+            </button>
+          </div>
+
+          <div class="ks-table-wrap">
+            <table class="ks-table">
+              <thead>
+                <tr>
+                  <th style="width:18%;">技能名称</th>
+                  <th style="width:8%;">分类</th>
+                  <th style="width:13%;">适用分析主题</th>
+                  <th style="width:9%;">配置状态</th>
+                  <th style="width:10%;">测试状态</th>
+                  <th style="width:9%;">报告模板</th>
+                  <th style="width:7%;">状态</th>
+                  <th style="width:9%;">更新时间</th>
+                  <th style="width:17%;">操作</th>
+                </tr>
+              </thead>
+              <tbody id="ksTableBody"></tbody>
+            </table>
+            <div class="ks-empty hidden" id="ksEmpty">
+              <span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>
+              <strong>暂无匹配技能</strong><p>请调整筛选条件后重试。</p>
+            </div>
+          </div>
+          <div class="ks-list-foot"><span id="ksListCount">共 4 项技能</span><span>技能停用后，将从业务端技能选择中隐藏。</span></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-mask hidden" id="ksConfirmMask"></div>
+  <section class="modal small hidden" id="ksConfirmModal" role="dialog" aria-modal="true" aria-labelledby="ksConfirmTitle">
+    <div class="modal-head"><div><h3 id="ksConfirmTitle">删除技能</h3><p id="ksConfirmSubtitle">删除后该技能将从业务端移除。</p></div><button class="close" id="ksConfirmClose">×</button></div>
+    <div class="modal-body"><div class="ks-confirm-message" id="ksConfirmMessage"></div></div>
+    <div class="modal-foot"><button class="ghost-btn" id="ksConfirmCancel">取消</button><button class="primary-btn ks-danger-btn" id="ksConfirmOk">确认删除</button></div>
+  </section>
+
+  <script src="../../assets/js/common.js?v=20260717-natural-prompt"></script>
+  <script src="../../assets/js/skill-catalog.js?v=20260717-split-report-prompts"></script>
+  <script src="../../assets/js/knowledge-skill.js?v=20260719-config-test-split"></script>
+</body>
+</html>

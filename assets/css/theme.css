@@ -30,6 +30,11 @@
   --primary-shadow: rgba(var(--primary-rgb), 0.20);
   --primary-shadow-strong: rgba(var(--primary-rgb), 0.28);
   --primary-shadow-soft: rgba(var(--primary-rgb), 0.10);
+  --font-size-caption: 11px;
+  --font-size-secondary: 12px;
+  --font-size-body: 13px;
+  --font-size-control: 13px;
+  --font-size-section: 14px;
 }
 
 :root[data-theme="green"] {

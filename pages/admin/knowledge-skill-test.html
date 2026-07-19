@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>测试执行 - 智能问数管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/admin.css" />
+  <link rel="stylesheet" href="../../assets/css/knowledge-skill.css?v=20260719-unified-fonts" />
+  <link rel="stylesheet" href="../../assets/css/knowledge-skill-test.css?v=20260719-save-full-width-global-fonts" />
+</head>
+<body>
+  <div class="admin-shell kst-admin-shell">
+    <aside class="admin-sidebar">
+      <div class="admin-brand"><div class="logo">管</div><span>智能问数管理后台</span></div>
+      <nav class="admin-menu"></nav>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <strong>测试执行</strong>
+        <div class="toolbar">
+          <button class="secondary-btn icon-btn" type="button" id="kstEditSkill">
+            <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+            编辑配置
+          </button>
+          <button class="user-trigger" type="button"><div class="avatar">张</div><strong>张三</strong><span class="dropdown-arrow"></span></button>
+        </div>
+      </header>
+
+      <section class="admin-content kst-page">
+        <div class="kst-page-head">
+          <div class="kst-skill-summary">
+            <span class="kst-skill-icon"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3z"/><path d="M18.5 14l1 2.5L22 17.5l-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5z"/></svg></span>
+            <div><span>当前测试技能</span><strong id="kstSkillName">月度采购快报</strong></div>
+            <i id="kstVersionBadge">正式版本</i>
+          </div>
+          <div class="kst-head-state">
+            <span class="kst-test-state is-pending" id="kstTestState"><i></i>待测试</span>
+            <em id="kstLastTest">尚无测试记录</em>
+          </div>
+          <button type="button" class="kst-back-btn" id="kstBack">
+            <svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg>返回技能管理
+          </button>
+        </div>
+
+        <div class="kst-workspace">
+          <section class="kst-chat-panel">
+            <div class="kst-chat-scroll" id="kstChatScroll">
+              <div class="kst-intro" id="kstIntro">
+                <span class="kst-ai-orb">AI</span>
+                <h1>验证技能的真实执行效果</h1>
+                <p>已加载当前技能配置。默认任务可自由修改，执行过程和结果体验与业务端智能问数保持一致。</p>
+                <div class="kst-intro-cards">
+                  <span><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/></svg><b>当前模板</b><em id="kstIntroTemplate">已加载</em></span>
+                  <span><svg viewBox="0 0 24 24"><path d="M4 19V8"/><path d="M10 19V4"/><path d="M16 19v-7"/><path d="M22 19H2"/></svg><b>配置规则</b><em>4 类提示词</em></span>
+                  <span><svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg><b>测试范围</b><em id="kstIntroThemes">授权主题</em></span>
+                </div>
+              </div>
+              <div class="kst-conversation" id="kstConversation"></div>
+            </div>
+
+            <div class="kst-composer-shell">
+              <div class="kst-composer input-card">
+                <div class="kst-composer-main input-main">
+                  <div class="theme-line">当前技能：<strong id="kstComposerSkill">月度采购快报</strong></div>
+                  <div class="kst-attachment-list attachment-preview-list hidden" id="kstAttachmentList"></div>
+                  <div class="textarea-row">
+                    <div
+                      class="kst-prompt-editor question-editor has-skill-prompt"
+                      id="kstPromptEditor"
+                      contenteditable="true"
+                      role="textbox"
+                      aria-multiline="true"
+                      aria-label="请输入本次测试任务"
+                      aria-placeholder="修改默认任务，或输入对测试结果的追问"
+                      data-placeholder="修改默认任务，或输入对测试结果的追问"
+                      data-empty="true"
+                      spellcheck="true"
+                    ></div>
+                  </div>
+                  <div class="kst-composer-tools input-tools">
+                    <div class="kst-skill-select-wrap skill-select-wrap" id="kstSkillSelectWrap">
+                      <button type="button" class="kst-skill-select-trigger skill-select-trigger has-skill" id="kstSkillSelectTrigger" aria-haspopup="dialog" aria-expanded="false" title="选择测试技能">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3z"/><path d="M18.5 14l1 2.5L22 17.5l-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5z"/></svg>
+                        <span id="kstSkillSelectText">月度采购快报</span>
+                        <svg class="kst-skill-select-caret skill-select-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+                      </button>
+                      <div class="kst-skill-picker skill-picker hidden" id="kstSkillPicker" role="dialog" aria-label="选择测试技能">
+                        <div class="kst-skill-picker-head skill-picker-head">
+                          <div><strong>选择技能</strong><span>切换后进入对应技能的测试执行页</span></div>
+                          <span class="kst-skill-picker-count skill-picker-count" id="kstSkillPickerCount">0 项可用</span>
+                        </div>
+                        <div class="kst-skill-picker-list skill-picker-list" id="kstSkillPickerList"></div>
+                        <div class="kst-skill-picker-foot skill-picker-foot">技能标签保持选中；除标签外的提示内容均可自由修改。</div>
+                      </div>
+                    </div>
+                    <button type="button" id="kstUploadImage"><svg viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5z"/><path d="M7 16l3.2-3.3 2.2 2.2 2.5-3.1L18 16H7z"/></svg>图片</button>
+                    <button type="button" id="kstUploadFile"><svg viewBox="0 0 24 24"><path d="M9 12.8l5.7-5.7a3 3 0 0 1 4.2 4.2l-7.1 7.1a5 5 0 0 1-7.1-7.1l7.4-7.4"/></svg>附件</button>
+                  </div>
+                </div>
+                <button type="button" class="kst-send-btn send-btn" id="kstRun" title="执行测试">
+                  <svg class="kst-send-icon" viewBox="0 0 24 24"><path d="M4.5 19.2L20.2 4.8M20.2 4.8L14.8 20.4L11.4 13.1L4.5 9.8L20.2 4.8Z"/></svg>
+                  <svg class="kst-stop-icon" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2.2"/></svg>
+                </button>
+              </div>
+              <p class="kst-test-note">测试模式仅验证技能执行效果，不会把结果写入正式报告、看板或仪表盘。</p>
+              <input type="file" id="kstImageInput" accept="image/*" hidden />
+              <input type="file" id="kstFileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" hidden />
+            </div>
+          </section>
+
+          <aside class="kst-context-panel">
+            <div class="kst-context-head"><div><strong>当前测试配置</strong><span>与业务端执行使用同一组技能数据</span></div><i>只读</i></div>
+
+            <div class="kst-context-scroll">
+              <section class="kst-context-card">
+                <div class="kst-context-title"><span class="is-blue"><svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h5"/></svg></span><div><strong>模板文件</strong><em id="kstTemplateName">尚未上传模板</em></div></div>
+                <div class="kst-context-meta"><span id="kstTemplateType">—</span><span id="kstTemplateStatus">等待配置</span></div>
+              </section>
+
+              <section class="kst-context-card">
+                <div class="kst-card-label">适用分析主题</div>
+                <div class="kst-theme-list" id="kstThemeList"></div>
+              </section>
+
+              <section class="kst-context-card">
+                <div class="kst-card-label">执行配置</div>
+                <div class="kst-rule-list">
+                  <div><i>1</i><span><strong>业务端预置提示词</strong><em id="kstUserPromptCount">0 字</em></span></div>
+                  <div><i>2</i><span><strong>系统执行指令</strong><em id="kstExecutionCount">0 字</em></span></div>
+                  <div><i>3</i><span><strong>内容提示词</strong><em id="kstContentCount">0 字</em></span></div>
+                  <div><i>4</i><span><strong>文档格式提示词</strong><em id="kstFormatCount">0 字</em></span></div>
+                </div>
+              </section>
+
+              <section class="kst-context-card is-status">
+                <div class="kst-card-label">本次测试</div>
+                <div class="kst-test-detail"><span>测试版本</span><strong id="kstDetailVersion">正式版本</strong></div>
+                <div class="kst-test-detail"><span>执行状态</span><strong id="kstDetailState">等待执行</strong></div>
+                <div class="kst-test-detail"><span>结果版本</span><strong id="kstResultVersion">尚未生成</strong></div>
+              </section>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../../assets/js/common.js?v=20260717-natural-prompt"></script>
+  <script src="../../assets/js/skill-catalog.js?v=20260719-config-test-split"></script>
+  <script src="../../assets/js/knowledge-skill-test.js?v=20260719-save-change-detail"></script>
+</body>
+</html>

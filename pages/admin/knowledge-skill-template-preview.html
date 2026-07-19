@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>模板预览 - 智能问数管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body { height: 100vh; margin: 0; overflow: hidden; color: #334155; background: #eef2f7; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; }
+    button, a { font-family: inherit; }
+    .ktp-shell { height: 100vh; display: grid; grid-template-rows: 58px minmax(0,1fr); }
+    .ktp-topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 0 18px; background: rgba(255,255,255,.97); border-bottom: 1px solid #dce3ec; box-shadow: 0 5px 16px rgba(15,23,42,.05); backdrop-filter: blur(10px); }
+    .ktp-file { min-width: 0; display: grid; grid-template-columns: 34px minmax(0,1fr); align-items: center; gap: 10px; }
+    .ktp-file-icon { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; color: #2563eb; background: #eaf2ff; border-radius: 9px; }
+    .ktp-file-icon svg, .ktp-btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .ktp-file strong, .ktp-file span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ktp-file strong { color: #1e293b; font-size: 13px; }
+    .ktp-file span { margin-top: 2px; color: #94a3b8; font-size: var(--font-size-caption, 11px); }
+    .ktp-actions { display: flex; align-items: center; gap: 7px; }
+    .ktp-btn { height: 31px; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; color: #64748b; background: #fff; border: 1px solid #dce3ec; border-radius: 8px; font-size: var(--font-size-secondary, 12px); font-weight: 700; text-decoration: none; cursor: pointer; }
+    .ktp-btn:hover { color: var(--primary); background: var(--primary-hover-bg); border-color: var(--primary-border); }
+    .ktp-main { min-height: 0; display: grid; grid-template-columns: 220px minmax(0,1fr); }
+    .ktp-outline { min-height: 0; padding: 14px; overflow-y: auto; background: #fff; border-right: 1px solid #dce3ec; }
+    .ktp-outline-head { padding: 3px 5px 12px; border-bottom: 1px solid #edf1f5; }
+    .ktp-outline-head strong { display: block; color: #334155; font-size: 12px; }
+    .ktp-outline-head span { display: block; margin-top: 3px; color: #94a3b8; font-size: var(--font-size-caption, 11px); }
+    .ktp-outline-list { display: grid; gap: 4px; margin-top: 10px; }
+    .ktp-outline-list button { width: 100%; min-height: 34px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 8px; color: #64748b; background: transparent; border: 0; border-radius: 7px; font-size: var(--font-size-secondary, 12px); text-align: left; cursor: pointer; }
+    .ktp-outline-list button:hover, .ktp-outline-list button.active { color: var(--primary); background: var(--primary-panel-bg); }
+    .ktp-outline-list em { color: #a3adbb; font-size: var(--font-size-caption, 11px); font-style: normal; }
+    .ktp-view { min-width: 0; min-height: 0; display: grid; grid-template-rows: 43px minmax(0,1fr); }
+    .ktp-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 0 14px; background: #f8fafc; border-bottom: 1px solid #dce3ec; }
+    .ktp-toolbar-group { display: flex; align-items: center; gap: 6px; color: #64748b; font-size: var(--font-size-caption, 11px); }
+    .ktp-tool { width: 27px; height: 27px; display: inline-flex; align-items: center; justify-content: center; color: #64748b; background: #fff; border: 1px solid #dce3ec; border-radius: 7px; cursor: pointer; }
+    .ktp-tool:hover { color: var(--primary); border-color: var(--primary-border); }
+    .ktp-tool svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .ktp-zoom { min-width: 56px; text-align: center; }
+    .ktp-canvas-wrap { min-height: 0; padding: 24px; overflow: auto; }
+    .ktp-canvas { width: min(920px, 100%); min-height: 100%; margin: 0 auto; transform-origin: top center; transition: transform .18s ease; }
+    .ktp-page { width: 760px; min-height: 1010px; margin: 0 auto 24px; padding: 72px 72px 64px; background: #fff; box-shadow: 0 14px 38px rgba(15,23,42,.14); }
+    .ktp-doc-cover { min-height: 255px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; border-bottom: 1px solid #e2e8f0; }
+    .ktp-doc-cover span { color: var(--primary); font-size: 11px; font-weight: 800; letter-spacing: .18em; }
+    .ktp-doc-cover h1 { max-width: 560px; margin: 17px 0 8px; color: #172033; font-size: 30px; line-height: 1.45; }
+    .ktp-doc-cover p { color: #94a3b8; font-size: 12px; }
+    .ktp-doc-section { margin-top: 34px; }
+    .ktp-doc-section h2 { margin: 0 0 13px; color: #1e3a5f; font-size: 19px; }
+    .ktp-doc-section p { margin: 8px 0; color: #475569; font-size: 12px; line-height: 1.85; text-align: justify; }
+    .ktp-kpis { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin: 16px 0; }
+    .ktp-kpi { padding: 13px; background: #f8fbff; border: 1px solid #dce8f8; border-radius: 8px; }
+    .ktp-kpi span, .ktp-kpi strong { display: block; }
+    .ktp-kpi span { color: #7b8799; font-size: var(--font-size-caption, 11px); }
+    .ktp-kpi strong { margin-top: 6px; color: #1e3a5f; font-size: 18px; }
+    .ktp-table { width: 100%; margin-top: 14px; border-collapse: collapse; font-size: var(--font-size-secondary, 12px); }
+    .ktp-table th, .ktp-table td { padding: 8px; border: 1px solid #dce3ec; text-align: center; }
+    .ktp-table th { color: #fff; background: #356b9f; }
+    .ktp-bars { display: flex; align-items: flex-end; gap: 16px; height: 150px; margin-top: 18px; padding: 14px 20px 0; border-left: 1px solid #cbd5e1; border-bottom: 1px solid #cbd5e1; }
+    .ktp-bars span { flex: 1; height: var(--h); background: linear-gradient(180deg,#6ba5dd,#356b9f); border-radius: 5px 5px 0 0; }
+    .ktp-sheet { min-width: 980px; background: #fff; border: 1px solid #cfd8e5; box-shadow: 0 12px 34px rgba(15,23,42,.12); }
+    .ktp-sheet-tabs { display: flex; gap: 2px; padding: 8px 10px 0; background: #f1f5f9; }
+    .ktp-sheet-tabs span { padding: 7px 15px; color: #64748b; background: #e8edf4; border-radius: 6px 6px 0 0; font-size: var(--font-size-caption, 11px); }
+    .ktp-sheet-tabs span:first-child { color: #047857; background: #fff; font-weight: 700; }
+    .ktp-grid { display: grid; grid-template-columns: 42px repeat(8, minmax(110px,1fr)); }
+    .ktp-cell { min-height: 31px; display: flex; align-items: center; padding: 6px 8px; color: #475569; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; font-size: var(--font-size-caption, 11px); }
+    .ktp-cell.head { justify-content: center; color: #fff; background: #2f7d5b; font-weight: 700; }
+    .ktp-cell.index { justify-content: center; color: #64748b; background: #f8fafc; }
+    .ktp-slide { aspect-ratio: 16/9; width: min(1000px,100%); margin: 0 auto; padding: 58px 66px; background: linear-gradient(145deg,#fff,#f4f8fd); box-shadow: 0 16px 42px rgba(15,23,42,.16); }
+    .ktp-slide h1 { margin: 0; color: #17375e; font-size: 32px; }
+    .ktp-slide p { color: #7b8799; font-size: 13px; }
+    .ktp-slide-body { display: grid; grid-template-columns: 1.1fr .9fr; gap: 26px; margin-top: 38px; }
+    .ktp-slide-card { padding: 20px; background: #fff; border: 1px solid #dce6f2; border-radius: 12px; box-shadow: 0 8px 20px rgba(15,23,42,.06); }
+    .ktp-slide-card strong { color: #1e3a5f; font-size: 16px; }
+    .ktp-slide-card ul { margin: 16px 0 0; padding-left: 20px; color: #64748b; font-size: 12px; line-height: 2; }
+    .ktp-image { max-width: 100%; max-height: calc(100vh - 150px); display: block; margin: 0 auto; background: #fff; box-shadow: 0 14px 38px rgba(15,23,42,.15); }
+    .ktp-pdf { width: 100%; height: calc(100vh - 130px); background: #fff; border: 0; box-shadow: 0 14px 38px rgba(15,23,42,.14); }
+    body.ktp-embed .ktp-shell { grid-template-rows: minmax(0,1fr); }
+    body.ktp-embed .ktp-topbar,
+    body.ktp-embed .ktp-outline,
+    body.ktp-embed .ktp-toolbar { display: none; }
+    body.ktp-embed .ktp-main { grid-template-columns: minmax(0,1fr); }
+    body.ktp-embed .ktp-view { grid-template-rows: minmax(0,1fr); }
+    body.ktp-embed .ktp-canvas-wrap { padding: 14px; }
+    body.ktp-embed .ktp-pdf { height: calc(100vh - 28px); min-height: 520px; }
+    body.ktp-embed .ktp-image { max-height: calc(100vh - 28px); }
+    .hidden { display: none !important; }
+    @media (max-width: 850px) { .ktp-main { grid-template-columns: 1fr; } .ktp-outline { display: none; } .ktp-topbar { padding: 0 10px; } .ktp-btn span { display: none; } .ktp-page { width: 680px; } }
+  </style>
+</head>
+<body>
+  <div class="ktp-shell">
+    <header class="ktp-topbar">
+      <div class="ktp-file">
+        <span class="ktp-file-icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h5"/></svg></span>
+        <div><strong id="ktpFileName">报告模板.docx</strong><span id="ktpFileMeta">模板预览 · 已完成解析</span></div>
+      </div>
+      <div class="ktp-actions">
+        <a class="ktp-btn" id="ktpDownload" href="#" download><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg><span>下载原文件</span></a>
+        <button class="ktp-btn" type="button" onclick="window.close()"><svg viewBox="0 0 24 24"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg><span>关闭预览</span></button>
+      </div>
+    </header>
+
+    <main class="ktp-main">
+      <aside class="ktp-outline">
+        <div class="ktp-outline-head"><strong>模板结构</strong><span id="ktpOutlineMeta">已识别 6 个结构区域</span></div>
+        <div class="ktp-outline-list" id="ktpOutlineList"></div>
+      </aside>
+
+      <section class="ktp-view">
+        <div class="ktp-toolbar">
+          <div class="ktp-toolbar-group"><span id="ktpViewLabel">文档预览</span><span>·</span><span>只读模式</span></div>
+          <div class="ktp-toolbar-group">
+            <button class="ktp-tool" id="ktpZoomOut" type="button" aria-label="缩小"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+            <span class="ktp-zoom" id="ktpZoomText">100%</span>
+            <button class="ktp-tool" id="ktpZoomIn" type="button" aria-label="放大"><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+          </div>
+        </div>
+        <div class="ktp-canvas-wrap">
+          <div class="ktp-canvas" id="ktpCanvas">
+            <div class="ktp-page" id="ktpDocument">
+              <div class="ktp-doc-cover"><span>经营分析报告模板</span><h1 id="ktpDocTitle">月度采购快报</h1><p>模板结构与版式预览</p></div>
+              <section class="ktp-doc-section"><h2>一、报告摘要</h2><p>本区域用于呈现报告期间内的核心结论、重要指标变化和管理层需要重点关注的问题。正式生成时将根据授权数据自动填充。</p><div class="ktp-kpis"><div class="ktp-kpi"><span>成交金额</span><strong>12.68 亿元</strong></div><div class="ktp-kpi"><span>节资率</span><strong>8.4%</strong></div><div class="ktp-kpi"><span>采购项目</span><strong>286 项</strong></div></div></section>
+              <section class="ktp-doc-section"><h2>二、核心指标分析</h2><table class="ktp-table"><thead><tr><th>指标</th><th>本期值</th><th>环比</th><th>年度累计</th></tr></thead><tbody><tr><td>成交金额</td><td>12.68 亿元</td><td>+6.8%</td><td>68.42 亿元</td></tr><tr><td>节资金额</td><td>1.06 亿元</td><td>+3.2%</td><td>5.87 亿元</td></tr><tr><td>公开采购率</td><td>92.6%</td><td>+1.4pp</td><td>91.8%</td></tr></tbody></table><div class="ktp-bars"><span style="--h:48%"></span><span style="--h:64%"></span><span style="--h:58%"></span><span style="--h:76%"></span><span style="--h:82%"></span><span style="--h:91%"></span></div></section>
+            </div>
+
+            <div class="ktp-sheet hidden" id="ktpSheet">
+              <div class="ktp-sheet-tabs"><span>核心指标</span><span>采购明细</span><span>供应商分析</span><span>口径说明</span></div>
+              <div class="ktp-grid" id="ktpGrid"></div>
+            </div>
+
+            <div class="ktp-slide hidden" id="ktpSlide">
+              <h1 id="ktpSlideTitle">经营分析汇报模板</h1><p>核心指标、结构变化与行动建议</p>
+              <div class="ktp-slide-body"><div class="ktp-slide-card"><strong>本期核心结论</strong><ul><li>核心业务指标保持稳定增长</li><li>重点区域贡献持续提升</li><li>结构优化带动经营效率改善</li></ul></div><div class="ktp-slide-card"><strong>关键指标</strong><div class="ktp-kpis" style="grid-template-columns:1fr;margin-top:15px"><div class="ktp-kpi"><span>目标完成率</span><strong>105.2%</strong></div><div class="ktp-kpi"><span>同比增长</span><strong>18.6%</strong></div></div></div></div>
+            </div>
+
+            <img class="ktp-image hidden" id="ktpImage" alt="模板图片预览" />
+            <iframe class="ktp-pdf hidden" id="ktpPdf" title="PDF 模板预览"></iframe>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+      const params = new URLSearchParams(window.location.search);
+      const fileName = params.get("name") || "报告模板.docx";
+      const type = (params.get("type") || fileName.split(".").pop() || "DOCX").toUpperCase();
+      const src = params.get("src") || "";
+      const download = params.get("download") || src || "#";
+      const embed = params.get("embed") === "1";
+      const isSheet = ["XLS", "XLSX"].includes(type);
+      const isSlide = ["PPT", "PPTX"].includes(type);
+      const isImage = ["PNG", "JPG", "JPEG", "SVG"].includes(type);
+      const isPdf = type === "PDF";
+      const outlineMap = {
+        sheet: ["核心指标", "采购明细", "供应商分析", "汇总透视", "图表看板", "口径说明"],
+        slide: ["封面", "核心结论", "指标概览", "结构分析", "风险提示", "行动建议"],
+        image: ["主视觉", "标题区域", "指标信息", "图表区域", "说明信息"],
+        document: ["封面", "报告摘要", "核心指标", "结构分析", "效能分析", "风险与建议"]
+      };
+      const viewType = isSheet ? "sheet" : (isSlide ? "slide" : (isImage ? "image" : "document"));
+      const outlines = outlineMap[viewType];
+      let zoom = 100;
+
+      document.body.classList.toggle("ktp-embed", embed);
+      document.title = `${fileName} - 模板预览`;
+      document.getElementById("ktpFileName").textContent = fileName;
+      document.getElementById("ktpFileMeta").textContent = `${type} 模板预览 · 已完成解析`;
+      document.getElementById("ktpDownload").href = download;
+      document.getElementById("ktpDownload").setAttribute("download", fileName);
+      document.getElementById("ktpOutlineMeta").textContent = `已识别 ${outlines.length} 个结构区域`;
+      document.getElementById("ktpOutlineList").innerHTML = outlines.map((item, index) => `<button type="button" class="${index === 0 ? "active" : ""}"><span>${item}</span><em>${index + 1}</em></button>`).join("");
+      document.getElementById("ktpDocTitle").textContent = fileName.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ");
+      document.getElementById("ktpSlideTitle").textContent = fileName.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ");
+
+      document.getElementById("ktpDocument").classList.toggle("hidden", isSheet || isSlide || isImage || isPdf);
+      document.getElementById("ktpSheet").classList.toggle("hidden", !isSheet);
+      document.getElementById("ktpSlide").classList.toggle("hidden", !isSlide);
+      document.getElementById("ktpImage").classList.toggle("hidden", !isImage);
+      document.getElementById("ktpPdf").classList.toggle("hidden", !isPdf);
+      document.getElementById("ktpViewLabel").textContent = isSheet ? "工作簿预览" : (isSlide ? "演示文稿预览" : (isImage ? "图片预览" : (isPdf ? "PDF 预览" : "文档预览")));
+
+      if (isImage && src) document.getElementById("ktpImage").src = src;
+      if (isPdf && src) document.getElementById("ktpPdf").src = src;
+
+      const grid = document.getElementById("ktpGrid");
+      const headers = ["", "指标名称", "本期值", "环比", "同比", "目标值", "完成率", "责任部门", "备注"];
+      const rows = [
+        ["1", "成交金额", "12.68亿元", "+6.8%", "+18.2%", "12.00亿元", "105.7%", "采购管理部", "正常"],
+        ["2", "节资金额", "1.06亿元", "+3.2%", "+12.5%", "0.95亿元", "111.6%", "采购管理部", "正常"],
+        ["3", "公开采购率", "92.6%", "+1.4pp", "+2.1pp", "90.0%", "102.9%", "各事业部", "达标"],
+        ["4", "供应商集中度", "38.4%", "-0.8pp", "-2.5pp", "≤40%", "达标", "供应链部", "正常"],
+        ["5", "平均采购周期", "18.6天", "-1.2天", "-2.4天", "≤20天", "达标", "采购运营", "改善"]
+      ];
+      if (grid) grid.innerHTML = headers.map((item) => `<div class="ktp-cell head">${item}</div>`).join("") + rows.flatMap((row) => row.map((item, index) => `<div class="ktp-cell${index === 0 ? " index" : ""}">${item}</div>`)).join("");
+
+      function updateZoom() {
+        document.getElementById("ktpCanvas").style.transform = `scale(${zoom / 100})`;
+        document.getElementById("ktpZoomText").textContent = `${zoom}%`;
+      }
+      document.getElementById("ktpZoomOut").addEventListener("click", () => { zoom = Math.max(70, zoom - 10); updateZoom(); });
+      document.getElementById("ktpZoomIn").addEventListener("click", () => { zoom = Math.min(140, zoom + 10); updateZoom(); });
+      document.getElementById("ktpOutlineList").addEventListener("click", (event) => {
+        const button = event.target.closest("button");
+        if (!button) return;
+        document.querySelectorAll("#ktpOutlineList button").forEach((item) => item.classList.toggle("active", item === button));
+      });
+    })();
+  </script>
+</body>
+</html>

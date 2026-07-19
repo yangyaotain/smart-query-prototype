@@ -110,6 +110,15 @@
           ["admin.industry.create", "新增"],
           ["admin.industry.edit", "编辑"],
           ["admin.industry.delete", "删除"]
+        ]),
+        menu("admin.skill", "技能管理", [
+          ["admin.skill.view", "查看"],
+          ["admin.skill.create", "新增技能"],
+          ["admin.skill.edit", "编辑技能"],
+          ["admin.skill.copy", "复制技能"],
+          ["admin.skill.enable", "启用 / 停用"],
+          ["admin.skill.test", "测试执行"],
+          ["admin.skill.delete", "删除"]
         ])
       ]
     },

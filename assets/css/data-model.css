@@ -229,7 +229,7 @@
   height: 18px;
   padding: 0 7px;
   border-radius: 999px;
-  font-size: 10.5px;
+  font-size: var(--font-size-caption, 11px);
   font-weight: 700;
   letter-spacing: .2px;
 }
@@ -562,7 +562,7 @@
 
 /* 边缘标签字号也跟着小一号 */
 .dm-edge-label {
-  font-size: 10px;
+  font-size: var(--font-size-caption, 11px);
 }
 
 /* —— 聚焦模式：返回整体视图 按钮 —— */
@@ -811,7 +811,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 10.5px;
+  font-size: var(--font-size-caption, 11px);
   font-weight: 400;
   opacity: .8;
 }
@@ -872,7 +872,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   color: #94a3b8;
-  font-size: 10px;
+  font-size: var(--font-size-caption, 11px);
   font-weight: 400;
 }
 
@@ -883,7 +883,7 @@
 .dm-node-empty {
   padding: 10px 8px;
   color: #9ca3af;
-  font-size: 10.5px;
+  font-size: var(--font-size-caption, 11px);
   text-align: center;
   font-style: italic;
 }
@@ -1259,7 +1259,7 @@
   padding: 0 6px;
   margin-right: 4px;
   border-radius: 4px;
-  font-size: 10.5px;
+  font-size: var(--font-size-caption, 11px);
   font-weight: 700;
 }
 

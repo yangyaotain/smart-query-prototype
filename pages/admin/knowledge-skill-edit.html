@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>编辑技能 - 智能问数管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/admin.css" />
+  <link rel="stylesheet" href="../../assets/css/knowledge-skill.css?v=20260719-unified-fonts" />
+  <link rel="stylesheet" href="../../assets/css/knowledge-skill-edit.css?v=20260719-common-markdown-editor" />
+  <link rel="stylesheet" href="../../assets/css/markdown-editor.css?v=20260719-common-editor" />
+</head>
+<body>
+  <div class="admin-shell kse-admin-shell">
+    <aside class="admin-sidebar">
+      <div class="admin-brand"><div class="logo">管</div><span>智能问数管理后台</span></div>
+      <nav class="admin-menu"></nav>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <strong id="kseTopTitle">编辑技能</strong>
+        <div class="toolbar">
+          <button class="secondary-btn icon-btn" type="button" onclick="goTo('../business/smart-query.html')">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M5.6 5.6l2.1 2.1"/><path d="M16.3 16.3l2.1 2.1"/><circle cx="12" cy="12" r="3.4"/></svg>
+            智能问数
+          </button>
+          <button class="user-trigger" type="button"><div class="avatar">张</div><strong>张三</strong><span class="dropdown-arrow"></span></button>
+        </div>
+      </header>
+
+      <section class="admin-content kse-page">
+        <div class="kse-editor-main">
+          <div class="kse-scroll" id="kseScroll">
+            <div class="kse-config-grid">
+              <div class="kse-config-column is-left">
+                <section class="kse-card kse-template-card">
+                  <div class="kse-card-head">
+                    <div>
+                      <span class="kse-section-kicker">模板结构</span>
+                      <h2>上传并解析报告模板</h2>
+                      <p>支持 Word、PDF、Excel、PPT 和图片模板；编辑页只展示文件与解析结构，不内嵌文档预览。</p>
+                    </div>
+                    <div class="kse-head-actions">
+                      <input
+                        type="file"
+                        id="ksTemplateFile"
+                        class="hidden"
+                        accept=".doc,.docx,.pdf,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.svg"
+                      />
+                      <button type="button" class="ghost-btn ks-icon-btn hidden" id="ksBtnReplaceTemplate">
+                        <svg viewBox="0 0 24 24"><path d="M4 4v6h6"/><path d="M5.5 15a7.5 7.5 0 1 0 .2-8.7L4 10"/></svg>替换模板
+                      </button>
+                    </div>
+                  </div>
+
+                  <button type="button" class="kse-upload-empty" id="ksTemplateEmpty">
+                    <span class="kse-upload-icon"><svg viewBox="0 0 24 24"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M5 14v5h14v-5"/></svg></span>
+                    <strong>上传模板文件</strong>
+                    <em>拖拽文件到此处，或点击选择 Word、PDF、Excel、PPT、图片模板</em>
+                    <i>单个文件不超过 50 MB</i>
+                  </button>
+
+                  <div class="kse-template-file hidden" id="ksTemplateFileCard">
+                    <span class="kse-file-icon" id="ksTemplateTypeIcon">
+                      <svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h5"/></svg>
+                    </span>
+                    <div class="kse-file-main">
+                      <strong id="ksTemplateName">报告模板.docx</strong>
+                      <span><em id="ksTemplateMeta">DOCX · 576 KB</em><i id="ksTemplateStatus">等待解析</i></span>
+                    </div>
+                    <div class="kse-file-actions">
+                      <button type="button" class="ghost-btn ks-icon-btn" id="ksTemplatePreview">
+                        <svg viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="2.5"/></svg>预览
+                      </button>
+                      <a class="ghost-btn ks-icon-btn kse-download-link" id="ksTemplateDownload" href="#" download>
+                        <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>下载
+                      </a>
+                      <button type="button" class="ghost-btn ks-icon-btn kse-remove-btn" id="ksBtnRemoveTemplate">
+                        <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V3h6v3"/></svg>移除
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="kse-parsing hidden" id="ksTemplateParsing" aria-live="polite">
+                    <div class="kse-parsing-head">
+                      <span class="kse-ai-mark"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3z"/><path d="M18.5 14l1 2.5L22 17.5l-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5z"/></svg></span>
+                      <div><strong id="ksParsingTitle">正在智能解析模板</strong><p id="ksParsingText">正在读取文件并识别模板类型…</p></div>
+                      <div class="kse-parsing-meta">
+                        <em><b id="ksParsingStepCount">1 / 6</b> · <span id="ksParsingPercent">0%</span> · <span id="ksParsingElapsed">用时 0.0s</span></em>
+                        <button type="button" id="ksParsingToggle" aria-expanded="false">展开步骤<svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg></button>
+                      </div>
+                    </div>
+                    <div class="kse-parsing-progress"><i id="ksParsingProgress"></i></div>
+                    <div class="kse-parse-steps hidden" id="ksParsingSteps">
+                      <div class="kse-parse-step" data-parse-step="0"><i>1</i><div><strong>读取并校验文件</strong><span data-parse-step-detail>等待 AI 处理</span></div></div>
+                      <div class="kse-parse-step" data-parse-step="1"><i>2</i><div><strong>提取模板结构</strong><span data-parse-step-detail>等待 AI 处理</span></div></div>
+                      <div class="kse-parse-step" data-parse-step="2"><i>3</i><div><strong>理解业务内容</strong><span data-parse-step-detail>等待 AI 处理</span></div></div>
+                      <div class="kse-parse-step" data-parse-step="3"><i>4</i><div><strong>生成报告提示词</strong><span data-parse-step-detail>等待 AI 处理</span></div></div>
+                      <div class="kse-parse-step" data-parse-step="4"><i>5</i><div><strong>生成技能配置</strong><span data-parse-step-detail>等待 AI 处理</span></div></div>
+                      <div class="kse-parse-step" data-parse-step="5"><i>6</i><div><strong>校验并自动回填</strong><span data-parse-step-detail>等待 AI 处理</span></div></div>
+                    </div>
+                  </div>
+
+                  <div class="kse-structure hidden" id="ksTemplateSummary">
+                    <button type="button" class="kse-structure-bar" id="ksStructureToggle" aria-expanded="false">
+                      <span class="kse-structure-check"><svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg></span>
+                      <div><strong>模板解析完成</strong><span id="ksTemplateSummaryText">7 个章节 · 14 个表格 · 11 个图表 · 36 条规则</span></div>
+                      <em>查看详情<svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg></em>
+                    </button>
+                    <div class="kse-structure-detail hidden" id="ksStructureDetail">
+                      <div class="kse-complete-process">
+                        <div class="kse-complete-process-head">
+                          <span><i>AI</i><strong>AI 模板解析过程</strong></span>
+                          <em id="ksCompleteParsingElapsed">解析已完成</em>
+                        </div>
+                        <div class="kse-complete-timeline">
+                          <div data-complete-parse-step="0"><i>✓</i><div><strong>读取并校验文件</strong><span data-complete-parse-detail>文件基础校验通过</span></div></div>
+                          <div data-complete-parse-step="1"><i>✓</i><div><strong>提取模板结构</strong><span data-complete-parse-detail>已完成章节、表格和图表对象识别</span></div></div>
+                          <div data-complete-parse-step="2"><i>✓</i><div><strong>理解业务内容</strong><span data-complete-parse-detail>已完成业务主题、指标和数据范围识别</span></div></div>
+                          <div data-complete-parse-step="3"><i>✓</i><div><strong>生成报告提示词</strong><span data-complete-parse-detail>已生成内容与文档格式提示词</span></div></div>
+                          <div data-complete-parse-step="4"><i>✓</i><div><strong>生成技能配置</strong><span data-complete-parse-detail>已生成基础信息与执行配置</span></div></div>
+                          <div data-complete-parse-step="5"><i>✓</i><div><strong>校验并自动回填</strong><span data-complete-parse-detail>全部配置已通过校验并完成回填</span></div></div>
+                        </div>
+                      </div>
+                      <div class="kse-structure-metrics">
+                        <span>结构统计</span>
+                        <div><strong id="ksStructureSectionCount">7</strong><span>章节层级</span></div>
+                        <div><strong id="ksStructureTableCount">14</strong><span>表格区域</span></div>
+                        <div><strong id="ksStructureChartCount">11</strong><span>图表对象</span></div>
+                        <div><strong id="ksStructureRuleCount">36</strong><span>格式规则</span></div>
+                      </div>
+                      <div class="kse-outline">
+                        <span>结构摘要</span>
+                        <div id="ksStructureOutline">
+                          <i>封面</i><i>报告摘要</i><i>核心指标</i><i>结构分析</i><i>风险与建议</i>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="kse-card kse-prompt-card">
+                  <div class="kse-tab-row">
+                    <div class="kse-prompt-tabs" role="tablist" aria-label="提示词配置">
+                      <button type="button" class="is-active" id="ksContentPromptTab" data-prompt-tab="content" role="tab" aria-selected="true" aria-controls="ksContentPromptPanel">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>
+                        <span><strong>内容提示词</strong><em>定义报告写什么</em></span>
+                      </button>
+                      <button type="button" id="ksFormatPromptTab" data-prompt-tab="format" role="tab" aria-selected="false" aria-controls="ksFormatPromptPanel" tabindex="-1">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8 8h8"/><path d="M8 12h5"/><path d="M8 16h8"/></svg>
+                        <span><strong>文档格式提示词</strong><em>定义文档怎么呈现</em></span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="kse-prompt-panel" id="ksContentPromptPanel" data-prompt-panel="content" role="tabpanel" aria-labelledby="ksContentPromptTab">
+                    <div class="kse-prompt-panel-head">
+                      <p>配置报告章节、核心指标、分析重点、结论和建议要求。</p>
+                      <div class="kse-prompt-actions">
+                        <span class="kse-source-tag" id="ksContentPromptSource">系统默认</span>
+                        <button type="button" class="ghost-btn ks-icon-btn kse-ai-optimize-btn" id="ksBtnOptimizeContentPrompt"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3z"/></svg>智能优化</button>
+                        <button type="button" class="ghost-btn ks-icon-btn" id="ksBtnResetContentPrompt"><svg viewBox="0 0 24 24"><path d="M4 4v6h6"/><path d="M5.5 15a7.5 7.5 0 1 0 .2-8.7L4 10"/></svg>恢复解析版本</button>
+                      </div>
+                    </div>
+                    <div class="ks-field kse-textarea-field">
+                      <textarea id="ksFormReportContentPrompt" maxlength="4800" aria-label="内容提示词" placeholder="# 任务目标&#10;&#10;使用 Markdown 说明报告章节、核心指标、结论和建议要求"></textarea>
+                      <small><b id="ksReportContentPromptCount">0</b> / 4800</small>
+                    </div>
+                    <div class="kse-field-note"><strong>内容优先级</strong><span>用户最终任务要求优先；固定月份、示例数值和临时测试条件不写入长期提示词。</span></div>
+                  </div>
+
+                  <div class="kse-prompt-panel hidden" id="ksFormatPromptPanel" data-prompt-panel="format" role="tabpanel" aria-labelledby="ksFormatPromptTab">
+                    <div class="kse-prompt-panel-head">
+                      <p>配置页面、标题、表格、图表、题注和分页等输出规则。</p>
+                      <div class="kse-prompt-actions">
+                        <span class="kse-source-tag" id="ksFormatPromptSource">系统默认</span>
+                        <button type="button" class="ghost-btn ks-icon-btn kse-ai-optimize-btn" id="ksBtnOptimizeFormatPrompt"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3z"/></svg>智能优化</button>
+                        <button type="button" class="ghost-btn ks-icon-btn" id="ksBtnResetFormatPrompt"><svg viewBox="0 0 24 24"><path d="M4 4v6h6"/><path d="M5.5 15a7.5 7.5 0 1 0 .2-8.7L4 10"/></svg>恢复解析版本</button>
+                      </div>
+                    </div>
+                    <div class="ks-field kse-textarea-field">
+                      <textarea id="ksFormReportFormatPrompt" maxlength="4800" aria-label="文档格式提示词" placeholder="# 页面设置&#10;&#10;使用 Markdown 说明标题、表格、图表和页面布局要求"></textarea>
+                      <small><b id="ksReportFormatPromptCount">0</b> / 4800</small>
+                    </div>
+                    <div class="kse-field-note"><strong>格式优先级</strong><span>上传模板作为默认格式；用户明确调整篇幅或呈现方式时，以用户最终要求为准。</span></div>
+                  </div>
+                </section>
+              </div>
+
+              <div class="kse-config-column is-right">
+                <section class="kse-card kse-basic-card">
+                  <div class="kse-card-head">
+                    <div><span class="kse-section-kicker">基础信息</span><h2>业务端展示信息</h2><p>解析完成后自动生成，可人工校正后保存。</p></div>
+                    <span class="kse-source-tag" id="ksBasicSource">系统默认</span>
+                  </div>
+                  <div class="kse-basic-grid">
+                    <label class="ks-field"><span>技能名称 <em>*</em></span><input id="ksFormName" maxlength="30" placeholder="例如：月度采购快报" /></label>
+                    <label class="ks-field"><span>技能分类 <em>*</em></span><select id="ksFormCategory"><option>经营报告</option><option>专项分析</option></select></label>
+                  </div>
+
+                  <div class="kse-subsection">
+                    <div class="kse-subsection-head"><strong>适用分析主题 <em>*</em></strong><span>限定技能可读取和分析的主题范围</span></div>
+                    <div class="kse-theme-select" id="ksThemeChecks">
+                      <button type="button" class="kse-theme-trigger" id="ksThemeTrigger" aria-haspopup="listbox" aria-expanded="false">
+                        <svg class="kse-theme-trigger-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h7"/></svg>
+                        <span id="ksThemeSelectedText">请选择适用分析主题</span>
+                        <em class="hidden" id="ksThemeSelectedCount">已选 0 项</em>
+                        <svg class="kse-theme-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+                      </button>
+                      <div class="kse-theme-dropdown hidden" id="ksThemeDropdown">
+                        <label class="kse-theme-search">
+                          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M16 16l4 4"/></svg>
+                          <input type="search" id="ksThemeSearch" placeholder="搜索分析主题" autocomplete="off" />
+                        </label>
+                        <div class="kse-theme-options" role="listbox" aria-multiselectable="true">
+                          <label class="kse-theme-option" data-theme-option role="option"><input type="checkbox" value="成交与节资" /><i><svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg></i><span>成交与节资</span></label>
+                          <label class="kse-theme-option" data-theme-option role="option"><input type="checkbox" value="采购方式与品类" /><i><svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg></i><span>采购方式与品类</span></label>
+                          <label class="kse-theme-option" data-theme-option role="option"><input type="checkbox" value="供应商管理" /><i><svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg></i><span>供应商管理</span></label>
+                          <label class="kse-theme-option" data-theme-option role="option"><input type="checkbox" value="采购效能与闲废" /><i><svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg></i><span>采购效能与闲废</span></label>
+                          <label class="kse-theme-option" data-theme-option role="option"><input type="checkbox" value="销售分析" /><i><svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg></i><span>销售分析</span></label>
+                          <label class="kse-theme-option" data-theme-option role="option"><input type="checkbox" value="客户分析" /><i><svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg></i><span>客户分析</span></label>
+                          <label class="kse-theme-option" data-theme-option role="option"><input type="checkbox" value="库存分析" /><i><svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg></i><span>库存分析</span></label>
+                          <label class="kse-theme-option" data-theme-option role="option"><input type="checkbox" value="活动分析" /><i><svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg></i><span>活动分析</span></label>
+                          <div class="kse-theme-empty hidden" id="ksThemeEmpty">未找到匹配的分析主题</div>
+                        </div>
+                        <div class="kse-theme-dropdown-foot"><span>已选择 <b id="ksThemeDropdownCount">0</b> 项</span><button type="button" id="ksThemeClear">清空</button></div>
+                      </div>
+                    </div>
+                  </div>
+
+                </section>
+
+                <section class="kse-card kse-runtime-card">
+                  <div class="kse-tab-row">
+                    <div class="kse-prompt-tabs kse-runtime-tabs" role="tablist" aria-label="执行配置">
+                      <button type="button" class="is-active" id="ksBusinessPromptTab" data-runtime-tab="business" role="tab" aria-selected="true" aria-controls="ksBusinessPromptPanel">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v11H9l-4 4z"/><path d="M9 9h6"/><path d="M9 12h4"/></svg>
+                        <span><strong>业务端预置提示词</strong><em>业务端可见</em></span>
+                      </button>
+                      <button type="button" id="ksExecutionPromptTab" data-runtime-tab="execution" role="tab" aria-selected="false" aria-controls="ksExecutionPromptPanel" tabindex="-1">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8"/><path d="M9 3v3"/><path d="M15 3v3"/><rect x="4" y="6" width="16" height="14" rx="2"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>
+                        <span><strong>系统执行指令</strong><em>仅系统使用</em></span>
+                      </button>
+                    </div>
+                    <span class="kse-source-tag" id="ksRuntimeSource">系统默认</span>
+                  </div>
+
+                  <div class="kse-runtime-panel" id="ksBusinessPromptPanel" data-runtime-panel="business" role="tabpanel" aria-labelledby="ksBusinessPromptTab">
+                    <div class="kse-runtime-head">
+                      <div><strong>业务端预置提示词 <em>*</em></strong><span>技能选中后自动填入，整段自然语言均可编辑</span></div>
+                      <div class="kse-runtime-head-actions">
+                        <i>业务端可见</i>
+                        <button type="button" class="ghost-btn ks-icon-btn kse-ai-optimize-btn" id="ksBtnOptimizeBusinessPrompt"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3z"/></svg>智能优化</button>
+                      </div>
+                    </div>
+                    <div class="kse-hint-tools" id="ksUserPromptHintTools"></div>
+                    <div
+                      id="ksFormUserPrompt"
+                      class="kse-prompt-editor"
+                      contenteditable="true"
+                      role="textbox"
+                      aria-multiline="true"
+                      data-placeholder="用完整自然语言描述用户选择技能后的默认任务"
+                      spellcheck="true"
+                    ></div>
+                    <div class="kse-count"><b id="ksUserPromptCount">0</b> / 1200</div>
+                    <div class="kse-field-note is-blue"><strong>自然语言体验</strong><span>浅蓝内容只作为填写提示，不拆成固定参数框，用户可以修改、删除或完全重写。</span></div>
+                  </div>
+
+                  <div class="kse-runtime-panel hidden" id="ksExecutionPromptPanel" data-runtime-panel="execution" role="tabpanel" aria-labelledby="ksExecutionPromptTab">
+                    <div class="kse-runtime-head">
+                      <div><strong>系统执行指令 <em>*</em></strong><span>定义分析方式、数据边界和质量要求</span></div>
+                      <div class="kse-runtime-head-actions">
+                        <i>仅系统使用</i>
+                        <button type="button" class="ghost-btn ks-icon-btn kse-ai-optimize-btn" id="ksBtnOptimizeExecutionPrompt"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3z"/></svg>智能优化</button>
+                      </div>
+                    </div>
+                    <div class="ks-field kse-execution-field">
+                      <textarea id="ksFormExecutionPrompt" maxlength="4800" aria-label="系统执行指令" placeholder="# 角色&#10;&#10;使用 Markdown 定义执行优先级、数据边界和质量要求"></textarea>
+                      <small><b id="ksExecutionPromptCount">0</b> / 4800</small>
+                    </div>
+                  </div>
+
+                </section>
+              </div>
+            </div>
+
+            <div class="kse-action-bar">
+              <div class="kse-action-buttons">
+                <button type="button" class="ghost-btn ks-icon-btn" id="kseCancel"><svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg>返回</button>
+                <button type="button" class="secondary-btn ks-icon-btn" id="kseSaveDraft"><svg viewBox="0 0 24 24"><path d="M5 4h12l2 2v14H5z"/><path d="M8 4v6h8V4"/><path d="M8 20v-6h8v6"/></svg>保存草稿</button>
+                <button type="button" class="primary-btn ks-icon-btn" id="kseSave"><svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg>保存</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-mask hidden" id="kseOptimizeMask"></div>
+  <section class="modal kse-optimize-modal hidden" id="kseOptimizeModal" role="dialog" aria-modal="true" aria-labelledby="kseOptimizeTitle">
+    <div class="modal-head">
+      <div><h3 id="kseOptimizeTitle">智能优化提示词</h3><p id="kseOptimizeSubtitle">正在理解当前提示词并生成优化结果。</p></div>
+      <button type="button" class="close" id="kseOptimizeClose" aria-label="关闭">×</button>
+    </div>
+    <div class="modal-body kse-optimize-body">
+      <div class="kse-optimize-progress" id="kseOptimizeProgress" aria-live="polite">
+        <div class="kse-ai-process-shell">
+          <div class="kse-ai-process-head">
+            <span class="kse-ai-process-mark"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3z"/><path d="M18.5 14l1 2.5L22 17.5l-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5z"/></svg></span>
+            <div><strong id="kseOptimizeStatus">正在理解提示词</strong><p id="kseOptimizeStatusDetail">识别任务目标、使用场景和约束边界。</p></div>
+            <span class="kse-ai-process-elapsed" id="kseOptimizeElapsed">用时 0.0s</span>
+          </div>
+          <div class="kse-ai-process-timeline">
+            <div data-optimize-step><i>1</i><div><strong>理解任务目标</strong><span data-optimize-finding>等待 AI 处理</span></div></div>
+            <div data-optimize-step><i>2</i><div><strong>检查提示词质量</strong><span data-optimize-finding>等待 AI 处理</span></div></div>
+            <div data-optimize-step><i>3</i><div><strong>形成调整方案</strong><span data-optimize-finding>等待 AI 处理</span></div></div>
+            <div data-optimize-step><i>4</i><div><strong>生成对比结果</strong><span data-optimize-finding>等待 AI 处理</span></div></div>
+          </div>
+          <div class="kse-ai-process-foot">
+            <span>AI 正在处理，请稍候</span>
+            <em id="kseOptimizeProgressText">0%</em>
+          </div>
+          <div class="kse-optimize-bar"><i id="kseOptimizeBar"></i></div>
+        </div>
+      </div>
+
+      <div class="kse-optimize-result hidden" id="kseOptimizeResult">
+        <div class="kse-optimize-result-head">
+          <span><svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg></span>
+          <div><strong>智能优化已完成</strong><p id="kseOptimizeSummary">已补充任务边界、表达重点和质量要求，请确认优化结果。</p></div>
+        </div>
+        <div class="kse-optimize-review">
+          <section class="kse-optimize-diff-panel is-before">
+            <header><strong>优化前</strong><span><i></i>删除或替换前</span></header>
+            <div class="kse-optimize-diff-content" id="kseOptimizeOriginal"></div>
+          </section>
+          <section class="kse-optimize-diff-panel is-after">
+            <header><strong>智能优化结果</strong><span><i></i>新增或替换后</span></header>
+            <div class="kse-optimize-diff-content" id="kseOptimizeOutput"></div>
+          </section>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot kse-optimize-foot">
+      <span id="kseOptimizeFootNote">优化过程中不会修改当前内容</span>
+      <div><button type="button" class="ghost-btn" id="kseOptimizeCancel">取消返回</button><button type="button" class="primary-btn" id="kseOptimizeConfirm" disabled>确认替换</button></div>
+    </div>
+  </section>
+
+  <div class="modal-mask hidden" id="kseLeaveMask"></div>
+  <section class="modal small hidden" id="kseLeaveModal" role="dialog" aria-modal="true" aria-labelledby="kseLeaveTitle">
+    <div class="modal-head"><div><h3 id="kseLeaveTitle">放弃未保存修改？</h3><p>返回列表后，本次修改将不会保留。</p></div><button class="close" id="kseLeaveClose">×</button></div>
+    <div class="modal-body"><div class="ks-confirm-message">当前技能存在未保存内容，确定直接返回技能管理列表吗？</div></div>
+    <div class="modal-foot"><button class="ghost-btn" id="kseLeaveCancel">继续编辑</button><button class="primary-btn ks-danger-btn" id="kseLeaveOk">放弃修改并返回</button></div>
+  </section>
+
+  <script src="../../assets/js/common.js?v=20260717-natural-prompt"></script>
+  <script src="../../assets/js/skill-catalog.js?v=20260719-config-test-split"></script>
+  <script src="../../assets/js/markdown-editor.js?v=20260719-editor-modes"></script>
+  <script src="../../assets/js/knowledge-skill-edit.js?v=20260719-hide-markdown-split"></script>
+</body>
+</html>

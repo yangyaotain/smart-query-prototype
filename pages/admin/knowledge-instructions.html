@@ -6,14 +6,17 @@
   <title>自定义指令 - 智能问数管理后台</title>
   <link rel="stylesheet" href="../../assets/css/theme.css" />
   <link rel="stylesheet" href="../../assets/css/admin.css" />
+  <link rel="stylesheet" href="../../assets/css/markdown-editor.css?v=20260719-common-editor" />
   <style>
     .instruction-page {
       display: flex;
       flex-direction: column;
       gap: 16px;
+      overflow: hidden;
     }
 
     .instruction-head {
+      flex: 0 0 auto;
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
@@ -62,18 +65,24 @@
     }
 
     .instruction-grid {
-      display: block;
+      min-height: 0;
+      flex: 1 1 auto;
     }
 
     .instruction-card {
+      height: 100%;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
       background: #fff;
       border: 1px solid #e5e7eb;
       border-radius: 12px;
       box-shadow: 0 8px 24px rgba(15,23,42,.05);
-      overflow: hidden;
     }
 
     .instruction-card-head {
+      flex: 0 0 auto;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -82,45 +91,59 @@
       border-bottom: 1px solid #eef2f7;
     }
 
+    .instruction-card-title {
+      min-width: 0;
+    }
+
     .instruction-card-head h2 {
       margin: 0;
       color: #0f172a;
       font-size: 16px;
     }
 
-    .instruction-card-head span {
+    .instruction-card-head p {
+      margin: 5px 0 0;
+      color: #94a3b8;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .instruction-card-meta {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .instruction-card-meta > span {
       color: #94a3b8;
       font-size: 12px;
       font-variant-numeric: tabular-nums;
     }
 
+    .instruction-card-meta .instruction-format {
+      display: inline-flex;
+      align-items: center;
+      height: 24px;
+      padding: 0 8px;
+      color: var(--primary);
+      background: var(--primary-soft);
+      border: 1px solid var(--primary-border-soft);
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
     .instruction-editor {
+      min-height: 0;
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
       padding: 18px;
     }
 
-    .instruction-editor textarea {
-      width: 100%;
-      min-height: 420px;
-      padding: 14px 15px;
-      color: #1f2937;
-      background: #fbfdff;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      resize: vertical;
-      outline: none;
-      font-family: inherit;
-      font-size: 13px;
-      line-height: 1.75;
-      transition: border-color .15s, box-shadow .15s, background .15s;
-    }
-
-    .instruction-editor textarea:focus {
-      background: #fff;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(var(--primary-rgb), .14);
-    }
-
     .instruction-actions {
+      flex: 0 0 auto;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -138,12 +161,6 @@
       display: inline-flex;
       gap: 8px;
       flex: 0 0 auto;
-    }
-
-    @media (max-width: 1080px) {
-      .instruction-grid {
-        display: block;
-      }
     }
   </style>
 </head>
@@ -185,13 +202,19 @@
         <div class="instruction-grid">
           <div class="instruction-card">
             <div class="instruction-card-head">
-              <h2>指令内容</h2>
-              <span id="instructionCount">0 / 4000</span>
+              <div class="instruction-card-title">
+                <h2>指令内容</h2>
+                <p>使用 Markdown 编写指令，支持语法高亮、快捷格式化和效果预览。</p>
+              </div>
+              <div class="instruction-card-meta">
+                <span class="instruction-format">Markdown</span>
+                <span id="instructionCount">0 / 4000</span>
+              </div>
             </div>
             <div class="instruction-editor">
-              <textarea id="instructionInput" maxlength="4000" spellcheck="false"></textarea>
+              <textarea id="instructionInput" maxlength="4000" spellcheck="false" aria-label="Markdown 格式的自定义指令" placeholder="# 自定义指令&#10;&#10;使用 Markdown 编写长期指令内容"></textarea>
               <div class="instruction-actions">
-                <div class="instruction-hint">保存后，该说明会作为智能问数回答时的长期上下文参与演示。</div>
+                <div class="instruction-hint">支持常用 Markdown 语法、列表自动续行及 Ctrl+B / Ctrl+I / Ctrl+K / Ctrl+S 快捷键。</div>
                 <div class="instruction-buttons">
                   <button type="button" class="ghost-btn" id="instructionReset">恢复常用要求</button>
                   <button type="button" class="primary-btn" id="instructionSave">保存</button>
@@ -205,48 +228,51 @@
   </div>
 
   <script src="../../assets/js/common.js?v=20260519-system-config"></script>
+  <script src="../../assets/js/markdown-editor.js?v=20260719-editor-modes"></script>
   <script>
     (function () {
       var STORE_KEY = 'smart-query-custom-instructions';
       var STORE_VERSION_KEY = STORE_KEY + '-version';
-      var CURRENT_VERSION = '20260520-common-instructions-v2';
+      var CURRENT_VERSION = '20260719-markdown-instructions-v3';
       var DEFAULT_TEXT = [
+        '# 智能问数回答指令',
+        '',
         '回答智能问数问题时，请遵循以下常用指令要求，保持口径准确、表达清晰、结论先行。',
         '',
-        '一、角色与业务口径',
+        '## 1. 角色与业务口径',
         '- 你是企业智能问数助手，回答时优先使用知识库中已维护的指标名称、指标口径、同义词和数据模型。',
         '- 不自行创造指标，不把样例数据、预测值或估算值表述为真实数据。',
         '- 当前重点关注收入、服务费、CA 证书收入、非招成交金额、客户转化效率、订单、客户、渠道等经营类指标。',
         '- 当用户问题存在多个可能口径时，先说明采用的默认口径；如口径差异会影响结论，应提示用户确认。',
         '',
-        '二、数值与格式',
+        '## 2. 数值与格式',
         '- 金额默认使用“万元”展示；金额、均值、比例、增长率等数值默认保留小数点后两位。',
         '- 百分比按 12.34% 这种格式展示，不展示为 0.1234。',
         '- 大额金额可使用“亿元”，但同一回答中的单位必须保持一致。',
         '- 排名、占比、同比、环比结果需说明计算口径；差异分析同时给出绝对差值和相对变化率。',
         '- 数值为 0、为空或无数据时要明确说明，不要省略或猜测。',
         '',
-        '三、时间范围与对比',
+        '## 3. 时间范围与对比',
         '- 用户未指定时间范围时，默认按最近 30 日理解，并在回答中说明该时间假设。',
         '- 用户提到“本月”“上月”“本季度”“今年”时，默认按自然时间周期理解。',
         '- 涉及同比时，对比去年同期；涉及环比时，对比上一相邻周期。',
         '- 如果当前周期数据未完整，要提示“当前周期数据可能未完整”。',
         '',
-        '四、回答结构',
+        '## 4. 回答结构',
         '- 先给结论，再补充关键数据、变化趋势和必要的口径说明。',
         '- 面向业务人员表达，避免直接暴露 SQL、物理表名、物理字段名或技术实现细节。',
         '- 趋势类问题说明上升、下降或持平，并指出关键变化点。',
         '- 排名类问题默认展示 Top 10，除非用户指定数量。',
         '- 异常类问题需要指出异常时间、异常对象、异常幅度和可能原因。',
         '',
-        '五、图表与展示建议',
+        '## 5. 图表与展示建议',
         '- 时间趋势优先建议折线图。',
         '- 分类对比优先建议柱状图。',
         '- 占比结构优先建议饼图或环形图。',
         '- 明细列表优先建议表格。',
         '- 地域分布优先建议地图或区域排行表。',
         '',
-        '六、风险与边界',
+        '## 6. 风险与边界',
         '- 对不确定的数据口径、缺失的筛选条件或可能存在歧义的问法，要提示需要确认。',
         '- 不编造数据来源、统计周期或不存在的指标。',
         '- 涉及权限、敏感客户、个人信息时，只给汇总分析，不输出手机号、证件号、客户明细等隐私数据。',
@@ -256,54 +282,75 @@
         '回答智能问数问题时，请优先使用公司内部指标体系中的标准名称和口径。',
         '回答智能问数问题时，请遵循以下常用指令要求：'
       ];
+      var LEGACY_MARKDOWN_HEADINGS = {
+        '一、角色与业务口径': '## 1. 角色与业务口径',
+        '二、数值与格式': '## 2. 数值与格式',
+        '三、时间范围与对比': '## 3. 时间范围与对比',
+        '四、回答结构': '## 4. 回答结构',
+        '五、图表与展示建议': '## 5. 图表与展示建议',
+        '六、风险与边界': '## 6. 风险与边界'
+      };
 
       var input = document.getElementById('instructionInput');
       var count = document.getElementById('instructionCount');
       var status = document.getElementById('instructionStatus');
       var saveBtn = document.getElementById('instructionSave');
       var resetBtn = document.getElementById('instructionReset');
+      var savedValue = '';
+      var editor;
 
       function isLegacyDefaultValue(value) {
         if (!value) return true;
-        if (value.indexOf('二、数值与格式') >= 0 && value.indexOf('五、图表与展示建议') >= 0) return false;
         return LEGACY_DEFAULT_MARKERS.some(function (marker) {
           return value.indexOf(marker) >= 0;
         });
+      }
+
+      function migrateLegacyMarkdown(value) {
+        var migrated = value || '';
+        var firstLine = '回答智能问数问题时，请遵循以下常用指令要求，保持口径准确、表达清晰、结论先行。';
+        if (migrated.indexOf(firstLine) !== 0 || migrated.indexOf('一、角色与业务口径') < 0) return migrated;
+        migrated = '# 智能问数回答指令\n\n' + migrated;
+        Object.keys(LEGACY_MARKDOWN_HEADINGS).forEach(function (heading) {
+          migrated = migrated.replace('\n' + heading + '\n', '\n' + LEGACY_MARKDOWN_HEADINGS[heading] + '\n');
+        });
+        return migrated;
       }
 
       function loadValue() {
         try {
           var saved = localStorage.getItem(STORE_KEY);
           var version = localStorage.getItem(STORE_VERSION_KEY);
+          var migrated;
           if (!saved) {
             localStorage.setItem(STORE_VERSION_KEY, CURRENT_VERSION);
             return DEFAULT_TEXT;
+          }
+          if (version !== CURRENT_VERSION) {
+            migrated = migrateLegacyMarkdown(saved);
+            if (migrated !== saved) {
+              localStorage.setItem(STORE_KEY, migrated);
+              localStorage.setItem(STORE_VERSION_KEY, CURRENT_VERSION);
+              return migrated;
+            }
           }
           if (version !== CURRENT_VERSION && isLegacyDefaultValue(saved)) {
             localStorage.setItem(STORE_KEY, DEFAULT_TEXT);
             localStorage.setItem(STORE_VERSION_KEY, CURRENT_VERSION);
             return DEFAULT_TEXT;
           }
+          if (version !== CURRENT_VERSION) localStorage.setItem(STORE_VERSION_KEY, CURRENT_VERSION);
           return saved;
         } catch (e) {
           return DEFAULT_TEXT;
         }
       }
 
-      function updateCount() {
+      function updateStatus() {
+        var isSaved = input.value === savedValue;
+        status.textContent = isSaved ? '已保存' : '未保存';
+        status.classList.toggle('is-dirty', !isSaved);
         count.textContent = String((input.value || '').length) + ' / 4000';
-      }
-
-      function markDirty() {
-        status.textContent = '未保存';
-        status.classList.add('is-dirty');
-        updateCount();
-      }
-
-      function markSaved() {
-        status.textContent = '已保存';
-        status.classList.remove('is-dirty');
-        updateCount();
       }
 
       function saveValue() {
@@ -311,22 +358,31 @@
           localStorage.setItem(STORE_KEY, input.value || '');
           localStorage.setItem(STORE_VERSION_KEY, CURRENT_VERSION);
         } catch (e) {}
-        markSaved();
+        savedValue = input.value || '';
+        updateStatus();
         if (typeof showToast === 'function') showToast('自定义指令已保存');
       }
 
-      function fillValue(text) {
-        input.value = text || '';
-        markDirty();
-        input.focus();
-      }
+      editor = window.MarkdownEditor.mount(input, {
+        variant: 'full',
+        onSave: saveValue
+      });
+      editor.setValue(loadValue(), {
+        dispatchInput: false,
+        recordHistory: false,
+        resetHistory: true
+      });
+      savedValue = input.value || '';
+      updateStatus();
 
-      input.value = loadValue();
-      markSaved();
-
-      input.addEventListener('input', markDirty);
+      input.addEventListener('input', updateStatus);
       saveBtn.addEventListener('click', saveValue);
-      resetBtn.addEventListener('click', function () { fillValue(DEFAULT_TEXT); });
+      resetBtn.addEventListener('click', function () {
+        editor.setValue(DEFAULT_TEXT, {
+          selectionStart: 0,
+          selectionEnd: 0
+        }).focus();
+      });
     })();
   </script>
 </body>
