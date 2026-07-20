@@ -127,7 +127,6 @@
       const skillThemes = editing.themes || [];
       const themes = skillThemes.slice(0, 2).map((theme) => `<span class="ks-tag">${escapeHTML(theme)}</span>`).join("")
         + (skillThemes.length > 2 ? `<span class="ks-tag">+${skillThemes.length - 2}</span>` : "");
-      const templateText = editing.reportTemplate?.source === "uploaded" ? "自定义模板" : "系统默认";
       return `
         <tr data-id="${escapeHTML(item.id)}">
           <td><div class="ks-skill-cell"><span class="ks-skill-icon${iconClass(editing.kind)}">${skillIcon(editing.kind)}</span><div><strong title="${escapeHTML(editing.name)}">${escapeHTML(editing.name)}</strong><span title="${escapeHTML(editing.code)}">${escapeHTML(editing.code)}</span></div></div></td>
@@ -135,7 +134,6 @@
           <td><div class="ks-tag-list">${themes}</div></td>
           <td><span class="ks-param-count${workflow.className}">${workflow.label}</span></td>
           <td><span class="ks-param-count${testState.className}">${testState.label}</span></td>
-          <td><span class="ks-type-tag" title="${escapeHTML(editing.reportTemplate?.name || "系统默认报告样式")}">${templateText}</span></td>
           <td>
             <button type="button" class="ks-status-switch${item.enabled ? " is-on" : ""}" data-action="toggle" data-id="${escapeHTML(item.id)}" role="switch" aria-checked="${item.enabled ? "true" : "false"}" aria-label="${item.enabled ? "停用" : "启用"}${escapeHTML(editing.name)}">
               <i aria-hidden="true"></i><span>${item.enabled ? "启用" : "停用"}</span>
