@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="../../assets/css/admin.css" />
   <link rel="stylesheet" href="../../assets/css/knowledge-skill.css?v=20260719-unified-fonts" />
   <link rel="stylesheet" href="../../assets/css/knowledge-skill-test.css?v=20260719-save-full-width-global-fonts" />
+  <link rel="stylesheet" href="../../assets/css/skill-picker.css?v=20260720-unified" />
 </head>
 <body>
   <div class="admin-shell kst-admin-shell">
@@ -33,11 +34,6 @@
           <div class="kst-skill-summary">
             <span class="kst-skill-icon"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3z"/><path d="M18.5 14l1 2.5L22 17.5l-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5z"/></svg></span>
             <div><span>当前测试技能</span><strong id="kstSkillName">月度采购快报</strong></div>
-            <i id="kstVersionBadge">正式版本</i>
-          </div>
-          <div class="kst-head-state">
-            <span class="kst-test-state is-pending" id="kstTestState"><i></i>待测试</span>
-            <em id="kstLastTest">尚无测试记录</em>
           </div>
           <button type="button" class="kst-back-btn" id="kstBack">
             <svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg>返回技能管理
@@ -89,7 +85,7 @@
                       <div class="kst-skill-picker skill-picker hidden" id="kstSkillPicker" role="dialog" aria-label="选择测试技能">
                         <div class="kst-skill-picker-head skill-picker-head">
                           <div><strong>选择技能</strong><span>切换后进入对应技能的测试执行页</span></div>
-                          <span class="kst-skill-picker-count skill-picker-count" id="kstSkillPickerCount">0 项可用</span>
+                          <span class="kst-skill-picker-count skill-picker-count" id="kstSkillPickerCount">0 个技能</span>
                         </div>
                         <div class="kst-skill-picker-list skill-picker-list" id="kstSkillPickerList"></div>
                         <div class="kst-skill-picker-foot skill-picker-foot">技能标签保持选中；除标签外的提示内容均可自由修改。</div>
@@ -134,12 +130,6 @@
                 </div>
               </section>
 
-              <section class="kst-context-card is-status">
-                <div class="kst-card-label">本次测试</div>
-                <div class="kst-test-detail"><span>测试版本</span><strong id="kstDetailVersion">正式版本</strong></div>
-                <div class="kst-test-detail"><span>执行状态</span><strong id="kstDetailState">等待执行</strong></div>
-                <div class="kst-test-detail"><span>结果版本</span><strong id="kstResultVersion">尚未生成</strong></div>
-              </section>
             </div>
           </aside>
         </div>
@@ -149,6 +139,7 @@
 
   <script src="../../assets/js/common.js?v=20260717-natural-prompt"></script>
   <script src="../../assets/js/skill-catalog.js?v=20260719-config-test-split"></script>
-  <script src="../../assets/js/knowledge-skill-test.js?v=20260719-save-change-detail"></script>
+  <script src="../../assets/js/skill-picker.js?v=20260720-unified"></script>
+  <script src="../../assets/js/knowledge-skill-test.js?v=20260720-unified-skill-picker"></script>
 </body>
 </html>

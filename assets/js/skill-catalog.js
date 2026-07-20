@@ -302,6 +302,17 @@
     return JSON.parse(JSON.stringify(value));
   }
 
+  function withoutTestStatus(config) {
+    if (!config) return null;
+    const {
+      testStatus: _testStatus,
+      lastTestAt: _lastTestAt,
+      lastTestVersion: _lastTestVersion,
+      ...rest
+    } = config;
+    return rest;
+  }
+
   function combineReportPrompts(contentPrompt, formatPrompt) {
     return `# 内容提示词\n\n${contentPrompt}\n\n# 文档格式提示词\n\n${formatPrompt}`;
   }
@@ -336,7 +347,15 @@
 
   function normalizeSkill(item, index) {
     const source = item || {};
-    const { params: _legacyParams, steps: _legacySteps, sections: _legacySections, ...base } = source;
+    const {
+      params: _legacyParams,
+      steps: _legacySteps,
+      sections: _legacySections,
+      testStatus: _testStatus,
+      lastTestAt: _lastTestAt,
+      lastTestVersion: _lastTestVersion,
+      ...base
+    } = source;
     const matchedDefault = DEFAULT_SKILLS.find((skill) => skill.code === source.code);
     const reportContentPrompt = source.reportContentPrompt || source.reportPrompt || matchedDefault?.reportPrompt || legacyReportPrompt(source);
     const reportFormatPrompt = source.reportFormatPrompt || matchedDefault?.reportFormatPrompt || PROCUREMENT_FORMAT_PROMPT;
@@ -364,9 +383,8 @@
         format: generatedSource,
         ...(source.configSources || {})
       },
-      testStatus: source.testStatus || (enabled ? "passed" : "untested"),
       workflowStatus: source.workflowStatus || (enabled ? "published" : "draft"),
-      draftConfig: source.draftConfig || null,
+      draftConfig: withoutTestStatus(source.draftConfig),
       enabled,
       sort: Number(source.sort) || (index + 1) * 10,
       updated: source.updated || "2026-07-17"
@@ -456,7 +474,6 @@
       reportFormatPrompt: PROCUREMENT_FORMAT_PROMPT,
       reportTemplate: null,
       configSources: { basic: "system", runtime: "system", content: "system", format: "system" },
-      testStatus: "untested",
       workflowStatus: "draft",
       enabled: true, sort: sort || 10, updated: "2026-07-17"
     }, 0);

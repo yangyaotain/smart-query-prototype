@@ -95,9 +95,9 @@ const SKILL_DEFINITIONS = {
   monthly: {
     key: "monthly",
     id: "skill-monthly",
-    name: "月度经营分析",
-    prompt: "请生成一份关于【报告月份】【分析范围】的经营分析报告，重点分析销售目标、渠道贡献和经营风险，并给出下月建议。",
-    placeholder: "请继续描述本次月度经营分析要求"
+    name: "月度采购快报",
+    prompt: "请生成一份【报告月份】【采购主体范围】的月度采购快报，重点分析成交与节资表现、采购结构、供应商情况、采购效能和闲废处置业务，并给出改进建议。",
+    placeholder: "请继续描述本次月度采购快报要求"
   },
   quarterly: {
     key: "quarterly",
@@ -1076,7 +1076,9 @@ function syncSkillPickerSelection() {
     skillSelectTrigger.title = `当前技能：${skill.name}，点击切换`;
   }
   document.querySelectorAll(".skill-option[data-skill]").forEach((option) => {
-    option.classList.toggle("selected", option.dataset.skill === selectedSkillKey);
+    const selected = option.dataset.skill === selectedSkillKey;
+    option.classList.toggle("selected", selected);
+    option.setAttribute("aria-selected", String(selected));
   });
 }
 
@@ -1128,75 +1130,66 @@ function hydrateSkillsFromAdminStore() {
     report_annual: "annual",
     analysis_campaign: "campaign"
   };
-  let stored;
-  try {
-    stored = JSON.parse(localStorage.getItem("smart-query-skill-catalog-v1") || "null");
-  } catch (error) {
-    return;
-  }
-  if (!Array.isArray(stored)) return;
-
-  const fixedKeys = Object.values(codeMap);
-  fixedKeys.forEach((key) => {
-    document.querySelector(`.skill-option[data-skill="${key}"]`)?.classList.add("hidden");
-  });
-
-  const customEnabled = stored.filter((item) => item.enabled && !codeMap[item.code]);
+  const Store = window.SkillCatalogStore;
+  const Picker = window.SkillPicker;
   const optionList = skillPicker?.querySelector(".skill-picker-list");
-  if (customEnabled.length && optionList) {
-    optionList.insertAdjacentHTML("beforeend", '<div class="skill-picker-group" data-managed-skill-group>自定义技能</div>');
-  }
+  if (!Store || !Picker || !optionList) return;
 
-  stored.forEach((item) => {
+  const availableSkills = Store.load()
+    .filter((item) => item.enabled !== false)
+    .sort((a, b) => Number(a.sort || 0) - Number(b.sort || 0));
+
+  const pickerItems = availableSkills.map((item, index) => {
     const fixedKey = codeMap[item.code];
+    const managedKey = fixedKey || `managed_${String(item.id || item.code || index).replace(/[^a-zA-Z0-9_]/g, "_")}`;
     if (fixedKey) {
       const definition = SKILL_DEFINITIONS[fixedKey];
-      const option = document.querySelector(`.skill-option[data-skill="${fixedKey}"]`);
+      const fallbackPrompt = definition.prompt;
       if (definition && item.id) definition.id = item.id;
       if (definition && item.name) definition.name = item.name;
       if (definition && item.userPrompt) {
         definition.prompt = item.userPrompt === LEGACY_DEFAULT_SKILL_PROMPTS[item.code]
-          ? SKILL_DEFINITIONS[fixedKey].prompt
+          ? fallbackPrompt
           : item.userPrompt;
       }
       if (definition) {
+        definition.placeholder = `请继续描述本次${item.name || "技能"}要求`;
         definition.executionPrompt = item.executionPrompt || "";
         definition.reportPrompt = item.reportPrompt || "";
         definition.reportTemplate = item.reportTemplate || null;
       }
-      if (option) {
-        option.classList.toggle("hidden", !item.enabled);
-        const name = option.querySelector(".skill-option-main strong");
-        const desc = option.querySelector(".skill-option-main em");
-        if (name && item.name) name.textContent = item.name;
-        if (desc && item.desc) desc.textContent = item.desc;
-      }
-      return;
+    } else {
+      SKILL_DEFINITIONS[managedKey] = {
+        key: managedKey,
+        id: item.id || item.code || managedKey,
+        name: item.name || "自定义经营分析",
+        prompt: item.userPrompt || `请使用“${item.name || "当前技能"}”完成分析。你可以继续修改这段内容，补充时间、范围、重点和输出要求。`,
+        placeholder: `可补充“${item.name || "该技能"}”的分析重点和输出要求`,
+        executionPrompt: item.executionPrompt || "",
+        reportPrompt: item.reportPrompt || "",
+        reportTemplate: item.reportTemplate || null
+      };
     }
-    if (!item.enabled || !optionList) return;
-    const managedKey = `managed_${String(item.id || item.code || Date.now()).replace(/[^a-zA-Z0-9_]/g, "_")}`;
-    SKILL_DEFINITIONS[managedKey] = {
-      key: managedKey,
-      id: item.id || item.code || managedKey,
-      name: item.name || "自定义经营分析",
-      prompt: item.userPrompt || `请使用“${item.name || "当前技能"}”完成分析。你可以继续修改这段内容，补充时间、范围、重点和输出要求。`,
-      placeholder: `可补充“${item.name || "该技能"}”的分析重点和输出要求`,
-      executionPrompt: item.executionPrompt || "",
-      reportPrompt: item.reportPrompt || "",
-      reportTemplate: item.reportTemplate || null
-    };
-    optionList.insertAdjacentHTML("beforeend", `
-      <button type="button" class="skill-option" data-skill="${escapeHtml(managedKey)}" onclick="selectSkill('${escapeHtml(managedKey)}', event)">
-        <span class="skill-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/></svg></span>
-        <span class="skill-option-main"><strong>${escapeHtml(item.name || "自定义经营分析")}</strong><em>${escapeHtml(item.desc || "按后台配置的流程生成经营分析报告")}</em></span>
-        <span class="skill-option-tag">报告</span>
-        <span class="skill-option-check"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4L19 6"/></svg></span>
-      </button>`);
+    return { ...item, pickerKey: managedKey };
   });
 
-  const enabledCount = stored.filter((item) => item.enabled).length;
+  Picker.render({
+    container: optionList,
+    items: pickerItems,
+    selectedKey: selectedSkillKey,
+    general: {
+      pickerKey: "general",
+      kind: "general",
+      name: "通用问数",
+      desc: "自由提问，系统自动识别合适的分析方式",
+      category: "默认模式",
+      pickerTag: "默认"
+    },
+    ariaLabel: "业务端可用技能"
+  });
+
   const count = skillPicker?.querySelector(".skill-picker-count");
-  if (count) count.textContent = `${enabledCount} 项可用`;
+  if (count) count.textContent = `${availableSkills.length} 个技能`;
 }
 
 function validateSelectedSkill() {
@@ -4836,6 +4829,12 @@ if (fileUploadInput) {
     event.target.value = "";
   });
 }
+
+skillPicker?.querySelector(".skill-picker-list")?.addEventListener("click", (event) => {
+  const option = event.target.closest(".skill-option[data-skill]");
+  if (!option) return;
+  selectSkill(option.dataset.skill, event);
+});
 
 hydrateSkillsFromAdminStore();
 syncSkillPickerSelection();

@@ -217,13 +217,8 @@
     renderHeaderState();
   }
 
-  function markTestStale() {
-    if (current.testStatus && current.testStatus !== "untested") current.testStatus = "stale";
-  }
-
   function markChanged(sourceType) {
     if (sourceType) markSource(sourceType, "manual");
-    markTestStale();
     setDirty(true);
   }
 
@@ -1362,7 +1357,6 @@
       reportTemplate: current.reportTemplate ? Store.clone(current.reportTemplate) : null,
       sampleVersion: current.sampleVersion || "",
       configSources: { ...ensureSources() },
-      testStatus: current.testStatus || "untested",
       workflowStatus: current.workflowStatus || "draft",
       enabled: isCreate ? false : current.enabled !== false,
       sort: Number(current.sort) || Math.max(...skills.map((item) => Number(item.sort) || 0), 0) + 10,

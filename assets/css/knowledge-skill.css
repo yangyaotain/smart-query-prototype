@@ -330,8 +330,6 @@
 .ks-param-count.is-ready { color: #2563eb; background: #eff6ff; border-color: #dbeafe; }
 .ks-param-count.is-stale { color: #b45309; background: #fff8e8; border-color: #f6dfad; }
 .ks-param-count.is-draft { color: #64748b; background: #f8fafc; border-color: #e2e8f0; }
-.ks-param-count.is-failed { color: #dc2626; background: #fff1f2; border-color: #fecdd3; }
-
 .ks-status-switch {
   display: inline-flex;
   align-items: center;

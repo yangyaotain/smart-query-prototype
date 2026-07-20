@@ -3,6 +3,7 @@
 
   const $ = (id) => document.getElementById(id);
   const Store = window.SkillCatalogStore;
+  const Picker = window.SkillPicker;
   const params = new URLSearchParams(window.location.search);
   const requestedId = params.get("id");
   const THINKING_STEPS = [
@@ -20,7 +21,7 @@
     ["复核优化结果", "校验优化内容与用户要求一致，准备保存为技能配置草稿。"]
   ];
 
-  if (!Store) {
+  if (!Store || !Picker) {
     showToast("技能配置加载失败，请返回列表重试");
     return;
   }
@@ -33,8 +34,7 @@
     return;
   }
 
-  let testingDraft = Boolean(storedSkill.draftConfig);
-  let skill = testingDraft
+  let skill = storedSkill.draftConfig
     ? {
         ...Store.clone(storedSkill),
         ...Store.clone(storedSkill.draftConfig),
@@ -43,7 +43,6 @@
     : Store.clone(storedSkill);
   let isRunning = false;
   let activeRun = null;
-  let runVersion = Number(skill.lastTestVersion || storedSkill.lastTestVersion || 0);
   let attachments = [];
   let optimizationHistory = [];
 
@@ -121,36 +120,14 @@
     syncPromptEmptyState();
   }
 
-  function setTestState(status, label) {
-    const state = $("kstTestState");
-    const detail = $("kstDetailState");
-    state.classList.remove("is-pending", "is-running", "is-passed", "is-stale");
-    const map = {
-      running: ["is-running", "测试执行中"],
-      passed: ["is-passed", "测试已通过"],
-      stale: ["is-stale", "配置更新待复测"],
-      failed: ["is-stale", "测试失败"],
-      untested: ["is-pending", "待测试"]
-    };
-    const meta = map[status] || map.untested;
-    state.classList.add(meta[0]);
-    state.innerHTML = `<i></i>${escapeHTML(label || meta[1])}`;
-    if (detail) detail.textContent = label || meta[1];
-  }
-
   function populatePage() {
-    const versionLabel = testingDraft ? "草稿版本" : "正式版本";
     const template = skill.reportTemplate;
-    const status = skill.testStatus || "untested";
 
     document.title = `测试执行 · ${skill.name} - 智能问数管理后台`;
     $("kstSkillName").textContent = skill.name || "未命名技能";
     $("kstComposerSkill").textContent = skill.name || "当前技能";
     $("kstSkillSelectText").textContent = skill.name || "当前技能";
     $("kstSkillSelectTrigger").title = `当前技能：${skill.name || "未命名技能"}，点击切换`;
-    $("kstVersionBadge").textContent = versionLabel;
-    $("kstVersionBadge").classList.toggle("is-draft", testingDraft);
-    $("kstDetailVersion").textContent = versionLabel;
     $("kstIntroTemplate").textContent = template?.name || "尚未上传模板";
     $("kstIntroThemes").textContent = `${(skill.themes || []).length} 个授权主题`;
     $("kstTemplateName").textContent = template?.name || "尚未上传模板";
@@ -162,40 +139,22 @@
     $("kstExecutionCount").textContent = `${String(skill.executionPrompt || "").length} 字`;
     $("kstContentCount").textContent = `${String(skill.reportContentPrompt || skill.reportPrompt || "").length} 字`;
     $("kstFormatCount").textContent = `${String(skill.reportFormatPrompt || "").length} 字`;
-    $("kstLastTest").textContent = skill.lastTestAt || storedSkill.lastTestAt
-      ? `最近测试：${skill.lastTestAt || storedSkill.lastTestAt}`
-      : "尚无测试记录";
-    $("kstResultVersion").textContent = runVersion ? `测试结果 v${runVersion}` : "尚未生成";
     renderSkillPicker();
     writePrompt(skill.userPrompt || `请使用“${skill.name || "当前技能"}”完成分析并生成报告。`);
-    setTestState(status);
   }
 
   function renderSkillPicker() {
     const availableSkills = skills
-      .filter((item) => item.enabled !== false || item.id === storedSkill.id)
+      .filter((item) => item.enabled !== false)
       .sort((a, b) => Number(a.sort || 0) - Number(b.sort || 0));
-    const groups = new Map();
-    availableSkills.forEach((item) => {
-      const group = item.category || "其他技能";
-      if (!groups.has(group)) groups.set(group, []);
-      groups.get(group).push(item);
-    });
 
-    $("kstSkillPickerCount").textContent = `${availableSkills.length} 项可用`;
-    $("kstSkillPickerList").innerHTML = Array.from(groups.entries()).map(([group, items]) => `
-      <div class="kst-skill-picker-group">${escapeHTML(group)}</div>
-      ${items.map((item) => `
-        <button type="button" class="kst-skill-option skill-option${item.id === storedSkill.id ? " selected" : ""}" data-skill-id="${escapeHTML(item.id)}">
-          <span class="kst-skill-option-icon skill-option-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/></svg>
-          </span>
-          <span class="kst-skill-option-main skill-option-main"><strong>${escapeHTML(item.name || "未命名技能")}</strong><em>${escapeHTML(item.desc || "使用已配置的提示词与模板执行测试")}</em></span>
-          <span class="kst-skill-option-tag skill-option-tag">${item.reportTemplate?.name ? "模板" : "技能"}</span>
-          <span class="kst-skill-option-check skill-option-check"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4L19 6"/></svg></span>
-        </button>
-      `).join("")}
-    `).join("");
+    $("kstSkillPickerCount").textContent = `${availableSkills.length} 个技能`;
+    Picker.render({
+      container: $("kstSkillPickerList"),
+      items: availableSkills.map((item) => ({ ...item, pickerKey: item.id })),
+      selectedKey: storedSkill.id,
+      ariaLabel: "测试执行可用技能"
+    });
   }
 
   function closeSkillPicker() {
@@ -459,7 +418,6 @@
         savedAt: formatTime(new Date())
       }))
     ];
-    draft.testStatus = "stale";
     draft.workflowStatus = stored.workflowStatus === "draft" && stored.enabled === false ? "draft" : stored.workflowStatus;
     draft.updated = "2026-07-19";
 
@@ -483,17 +441,12 @@
     else skills.push(savedRecord);
     skills = Store.save(skills);
     storedSkill = skills.find((item) => item.id === savedRecord.id) || savedRecord;
-    testingDraft = true;
     skill = {
       ...Store.clone(storedSkill),
       ...Store.clone(storedSkill.draftConfig || draft),
       id: storedSkill.id
     };
     candidates.forEach((item) => { item.saved = true; });
-    $("kstVersionBadge").textContent = "草稿版本";
-    $("kstVersionBadge").classList.add("is-draft");
-    $("kstDetailVersion").textContent = "草稿版本";
-    setTestState("stale", "优化已保存，待复测");
     syncSaveButtons();
     return changes;
   }
@@ -696,14 +649,14 @@
     `;
   }
 
-  function createReportHTML(version, optimization) {
+  function createReportHTML(optimization) {
     const themeLabel = (skill.themes || []).slice(0, 2).join("、") || "采购经营分析";
     return `
       <article class="result-card kst-result-card">
         <div class="result-head">
           <div class="result-title">
             <h2>华润建材科技月度采购快报</h2>
-            <p>分析主题：${escapeHTML(themeLabel)} · 报告日期：2026年7月16日 · 数据来源：华润守正采购交易平台 · 测试结果 v${version}</p>
+            <p>分析主题：${escapeHTML(themeLabel)} · 报告日期：2026年7月16日 · 数据来源：华润守正采购交易平台</p>
           </div>
         </div>
         <div class="result-body">
@@ -981,37 +934,7 @@
     run.timers = [];
   }
 
-  function markTestPassed() {
-    const timestamp = formatTime(new Date());
-    runVersion += 1;
-    const index = skills.findIndex((item) => item.id === storedSkill.id);
-    const record = index >= 0 ? skills[index] : storedSkill;
-    if (testingDraft && record.draftConfig) {
-      record.draftConfig = {
-        ...record.draftConfig,
-        testStatus: "passed",
-        lastTestAt: timestamp,
-        lastTestVersion: runVersion
-      };
-    } else {
-      record.testStatus = "passed";
-      record.lastTestAt = timestamp;
-      record.lastTestVersion = runVersion;
-    }
-    record.lastTestAt = timestamp;
-    record.lastTestVersion = runVersion;
-    if (index >= 0) skills[index] = record;
-    skills = Store.save(skills);
-    storedSkill = skills.find((item) => item.id === record.id) || record;
-    skill.testStatus = "passed";
-    skill.lastTestAt = timestamp;
-    skill.lastTestVersion = runVersion;
-    $("kstLastTest").textContent = `最近测试：${timestamp}`;
-    $("kstResultVersion").textContent = `测试结果 v${runVersion}`;
-    setTestState("passed");
-  }
-
-  function completeRun(run, prompt) {
+  function completeRun(run) {
     clearRunTimers(run);
     run.steps.forEach((step) => {
       const dot = step.querySelector(".step-dot");
@@ -1022,12 +945,10 @@
     run.thinking.querySelector("[data-thinking-toggle]").setAttribute("aria-expanded", "false");
     run.thinking.querySelector("[data-thinking-title]").textContent = "思考过程";
     run.elapsed.textContent = `(用时${((Date.now() - run.startedAt) / 1000).toFixed(1)}s)`;
-    markTestPassed();
-    run.reportSlot.innerHTML = createReportHTML(runVersion, run.optimization);
+    run.reportSlot.innerHTML = createReportHTML(run.optimization);
     isRunning = false;
     activeRun = null;
     $("kstRun").classList.remove("is-running");
-    $("kstDetailState").textContent = "测试已通过";
     syncSaveButtons();
     showToast(`${skill.name}测试执行完成`);
     scrollToBottom();
@@ -1042,8 +963,7 @@
     isRunning = false;
     activeRun = null;
     $("kstRun").classList.remove("is-running");
-    setTestState(skill.testStatus || "untested");
-    showToast("已停止本次测试，不更新测试状态");
+    showToast("已停止本次测试");
   }
 
   function runTest() {
@@ -1069,8 +989,6 @@
     activeRun = run;
     isRunning = true;
     $("kstRun").classList.add("is-running");
-    setTestState("running");
-    $("kstDetailState").textContent = "正在执行";
     writePrompt("");
     attachments = [];
     renderAttachments();
@@ -1084,7 +1002,7 @@
       const timer = window.setTimeout(() => updateThinkingStep(run, index), 600 * index + 90);
       run.timers.push(timer);
     });
-    run.timers.push(window.setTimeout(() => completeRun(run, prompt), 3000));
+    run.timers.push(window.setTimeout(() => completeRun(run), 3000));
   }
 
   $("kstRun").addEventListener("click", runTest);
@@ -1103,9 +1021,9 @@
   });
   $("kstSkillSelectTrigger").addEventListener("click", toggleSkillPicker);
   $("kstSkillPickerList").addEventListener("click", (event) => {
-    const option = event.target.closest("[data-skill-id]");
+    const option = event.target.closest("[data-skill]");
     if (!option) return;
-    const nextId = option.dataset.skillId;
+    const nextId = option.dataset.skill;
     closeSkillPicker();
     if (!nextId || nextId === storedSkill.id) return;
     window.location.href = `knowledge-skill-test.html?id=${encodeURIComponent(nextId)}`;

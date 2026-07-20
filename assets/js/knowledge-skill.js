@@ -81,15 +81,6 @@
     return { label: "已发布", className: " is-passed" };
   }
 
-  function testStatusMeta(item) {
-    const editing = editableSkill(item);
-    const status = editing?.testStatus || "untested";
-    if (status === "failed") return { label: "测试失败", className: " is-failed" };
-    if (status === "stale") return { label: "配置更新待复测", className: " is-stale" };
-    if (status === "passed") return { label: "测试已通过", className: " is-passed" };
-    return { label: "待测试", className: " is-draft" };
-  }
-
   function navigateToEditor(id) {
     saveFilters();
     window.location.href = id
@@ -123,7 +114,6 @@
     $("ksTableBody").innerHTML = rows.map((item) => {
       const editing = editableSkill(item);
       const workflow = configStatusMeta(item);
-      const testState = testStatusMeta(item);
       const skillThemes = editing.themes || [];
       const themes = skillThemes.slice(0, 2).map((theme) => `<span class="ks-tag">${escapeHTML(theme)}</span>`).join("")
         + (skillThemes.length > 2 ? `<span class="ks-tag">+${skillThemes.length - 2}</span>` : "");
@@ -133,7 +123,6 @@
           <td><span class="ks-tag">${escapeHTML(editing.category)}</span></td>
           <td><div class="ks-tag-list">${themes}</div></td>
           <td><span class="ks-param-count${workflow.className}">${workflow.label}</span></td>
-          <td><span class="ks-param-count${testState.className}">${testState.label}</span></td>
           <td>
             <button type="button" class="ks-status-switch${item.enabled ? " is-on" : ""}" data-action="toggle" data-id="${escapeHTML(item.id)}" role="switch" aria-checked="${item.enabled ? "true" : "false"}" aria-label="${item.enabled ? "停用" : "启用"}${escapeHTML(editing.name)}">
               <i aria-hidden="true"></i><span>${item.enabled ? "启用" : "停用"}</span>
@@ -179,7 +168,6 @@
     while (skills.some((item) => item.code === code)) code = `${source.code}_copy${suffix++}`;
     copy.code = code;
     copy.enabled = false;
-    copy.testStatus = "untested";
     copy.workflowStatus = "draft";
     copy.sort = Math.max(...skills.map((item) => item.sort), 0) + 10;
     copy.updated = "2026-07-17";

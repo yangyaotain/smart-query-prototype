@@ -6,6 +6,7 @@
   <title>智能问数 - 业务端</title>
   <link rel="stylesheet" href="../../assets/css/theme.css" />
   <link rel="stylesheet" href="../../assets/css/business.css?v=20260719-persistent-hints-unified-fonts" />
+  <link rel="stylesheet" href="../../assets/css/skill-picker.css?v=20260720-unified" />
 </head>
 <body>
   <header class="topbar">
@@ -993,41 +994,9 @@
                 <div class="skill-picker hidden" id="skillPicker" role="dialog" aria-label="选择问数技能">
                   <div class="skill-picker-head">
                     <div><strong>选择技能</strong><span>选择后插入技能标签和可自由修改的自然语言提示</span></div>
-                    <span class="skill-picker-count">4 项可用</span>
+                    <span class="skill-picker-count">0 个技能</span>
                   </div>
-                  <div class="skill-picker-list">
-                    <button type="button" class="skill-option selected" data-skill="general" onclick="selectSkill('general', event)">
-                      <span class="skill-option-icon is-general"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v11H9l-4 4V5z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg></span>
-                      <span class="skill-option-main"><strong>通用问数</strong><em>自由提问，系统自动识别合适的分析方式</em></span>
-                      <span class="skill-option-tag">默认</span>
-                      <span class="skill-option-check"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4L19 6"/></svg></span>
-                    </button>
-                    <div class="skill-picker-group">经营报告</div>
-                    <button type="button" class="skill-option" data-skill="monthly" onclick="selectSkill('monthly', event)">
-                      <span class="skill-option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4"/><path d="M16 3v4"/><path d="M4 10h16"/><path d="M8 14h3"/></svg></span>
-                      <span class="skill-option-main"><strong>月度经营分析</strong><em>月度目标、同环比、结构贡献、风险与下月计划</em></span>
-                      <span class="skill-option-tag">报告</span>
-                      <span class="skill-option-check"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4L19 6"/></svg></span>
-                    </button>
-                    <button type="button" class="skill-option" data-skill="quarterly" onclick="selectSkill('quarterly', event)">
-                      <span class="skill-option-icon is-purple"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/></svg></span>
-                      <span class="skill-option-main"><strong>季度经营复盘</strong><em>季度目标完成、结构变化、问题归因和改进建议</em></span>
-                      <span class="skill-option-tag">报告</span>
-                      <span class="skill-option-check"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4L19 6"/></svg></span>
-                    </button>
-                    <button type="button" class="skill-option" data-skill="annual" onclick="selectSkill('annual', event)">
-                      <span class="skill-option-icon is-green"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V8"/><path d="M10 19V4"/><path d="M16 19v-7"/><path d="M22 19H2"/></svg></span>
-                      <span class="skill-option-main"><strong>年度经营总结</strong><em>年度目标、增长结构、重点成果与下年度规划</em></span>
-                      <span class="skill-option-tag">报告</span>
-                      <span class="skill-option-check"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4L19 6"/></svg></span>
-                    </button>
-                    <button type="button" class="skill-option" data-skill="campaign" onclick="selectSkill('campaign', event)">
-                      <span class="skill-option-icon is-orange"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h3l9 5V6l-9 5H4v2z"/><path d="M7 13l1 6h3"/><path d="M19 9c1.3 1.7 1.3 4.3 0 6"/></svg></span>
-                      <span class="skill-option-main"><strong>营销活动复盘</strong><em>活动目标、转化漏斗、ROI、客群商品表现与建议</em></span>
-                      <span class="skill-option-tag">报告</span>
-                      <span class="skill-option-check"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4L19 6"/></svg></span>
-                    </button>
-                  </div>
+                  <div class="skill-picker-list"></div>
                   <div class="skill-picker-foot"><span>技能标签保持选中；除标签外的提示内容均可自由修改。</span></div>
                 </div>
               </div>
@@ -1458,6 +1427,8 @@
 
   <script src="../../assets/js/echarts.min.js"></script>
   <script src="../../assets/js/common.js"></script>
-  <script src="../../assets/js/smart-query.js?v=20260717-persistent-hints"></script>
+  <script src="../../assets/js/skill-catalog.js?v=20260720-unified-picker"></script>
+  <script src="../../assets/js/skill-picker.js?v=20260720-unified"></script>
+  <script src="../../assets/js/smart-query.js?v=20260720-unified-skill-picker"></script>
 </body>
 </html>
