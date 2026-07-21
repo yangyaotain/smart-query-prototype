@@ -115,7 +115,7 @@
       const editor = window.MarkdownEditor.mount(field, {
         variant: "compact",
         allowSplit: false,
-        onSave: () => saveSkill("draft")
+        onSave: saveSkill
       });
       if (editor) markdownEditors.set(id, editor);
     });
@@ -1399,58 +1399,34 @@
     return true;
   }
 
-  function saveSkill(mode) {
-    const publish = mode === "publish";
+  function saveSkill() {
     const data = collectCurrent();
-    if (publish && !validateForPublish(data)) return;
-
-    if (!data.name) {
-      data.name = current.reportTemplate?.name ? inferTemplateName(current.reportTemplate.name) : "未命名技能草稿";
-      $("ksFormName").value = data.name;
-    }
+    if (!validateForPublish(data)) return;
 
     let savedRecord;
     if (isCreate) {
       data.id = `skill-${Date.now()}`;
-      savedRecord = publish
-        ? { ...data, workflowStatus: "published", draftConfig: null }
-        : { ...data, enabled: false, workflowStatus: "draft", draftConfig: Store.clone(data) };
+      savedRecord = { ...data, workflowStatus: "published", draftConfig: null };
       skills.push(savedRecord);
       isCreate = false;
       window.history.replaceState({}, "", `knowledge-skill-edit.html?id=${encodeURIComponent(data.id)}`);
     } else {
       const index = skills.findIndex((item) => item.id === current.id);
-      const stored = index >= 0 ? skills[index] : (persistedRecord || {});
-      if (publish) {
-        savedRecord = { ...data, id: current.id, workflowStatus: "published", draftConfig: null };
-      } else if (stored.workflowStatus === "draft" && !stored.enabled) {
-        savedRecord = { ...data, id: current.id, enabled: false, workflowStatus: "draft", draftConfig: Store.clone(data) };
-      } else {
-        savedRecord = {
-          ...stored,
-          id: current.id,
-          draftConfig: Store.clone(data),
-          updated: data.updated
-        };
-      }
+      savedRecord = { ...data, id: current.id, workflowStatus: "published", draftConfig: null };
       if (index >= 0) skills[index] = savedRecord;
       else skills.push(savedRecord);
     }
 
     skills = Store.save(skills);
     persistedRecord = Store.clone(skills.find((item) => item.id === data.id) || savedRecord);
-    current = publish
-      ? Store.clone(persistedRecord)
-      : { ...Store.clone(data), id: persistedRecord.id, draftConfig: Store.clone(data) };
+    current = Store.clone(persistedRecord);
     contentPromptSnapshot = current.reportTemplate?.generatedContentPrompt || current.reportContentPrompt;
     formatPromptSnapshot = current.reportTemplate?.generatedFormatPrompt || current.reportFormatPrompt;
     setDirty(false);
     renderTemplate();
     renderSources();
     updateCounts();
-    showToast(publish
-      ? `技能“${data.name}”已保存`
-      : `技能“${data.name}”草稿已保存，正式版本未变更`);
+    showToast(`技能“${data.name}”已保存`);
   }
 
   function openLeaveModal() {
@@ -1606,8 +1582,7 @@
   $("kseOptimizeMask").addEventListener("click", closePromptOptimization);
   $("kseOptimizeConfirm").addEventListener("click", confirmPromptOptimization);
   $("kseCancel").addEventListener("click", returnToList);
-  $("kseSaveDraft").addEventListener("click", () => saveSkill("draft"));
-  $("kseSave").addEventListener("click", () => saveSkill("publish"));
+  $("kseSave").addEventListener("click", saveSkill);
   $("kseLeaveClose").addEventListener("click", closeLeaveModal);
   $("kseLeaveCancel").addEventListener("click", closeLeaveModal);
   $("kseLeaveMask").addEventListener("click", closeLeaveModal);
