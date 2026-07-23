@@ -4579,24 +4579,6 @@ textarea {
   overflow: auto;
 }
 
-.tree-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 10px 11px;
-  color: #374151;
-  border-radius: 12px;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.tree-item.active,
-.tree-item:hover {
-  color: var(--primary);
-  background: var(--primary-hover-bg);
-}
-
 .tree-count {
   color: var(--weak);
   font-size: 12px;

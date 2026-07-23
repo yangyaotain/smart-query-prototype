@@ -334,7 +334,7 @@
     {
       id: 'i_total_income', groupId: 'g_rev_sale', type: 'derived',
       name: '总收入', synonyms: '总收入',
-      desc: '招标平台服务费 + 非招服务费 + CA证书收入 + 销售金额 * 0.015',
+      desc: '统计周期内平台各项业务收入的合计金额，用于反映整体经营收入规模。',
       srcId: 'ds_metric',
       formula: '招标平台服务费 + 非招服务费 + CA证书收入 + 销售金额 * 0.015',
       unit: '元',
@@ -343,7 +343,7 @@
     {
       id: 'i_arpu', groupId: 'g_eff_conv', type: 'derived',
       name: '客单价', synonyms: 'ARPU,人均客单',
-      desc: '总收入 / 成交客户数',
+      desc: '统计周期内每位成交客户贡献的平均收入金额。',
       srcId: 'ds_metric',
       formula: '总收入 / 成交客户数',
       unit: '元',
@@ -874,7 +874,7 @@
         +   '<div class="ki-view-value" style="font-family:ui-monospace,Consolas,monospace;background:#f8fafc;padding:10px 12px;border-radius:8px;">'
         +     escapeHTML(d.formula || '—')
         +   '</div>'
-        +   '<div class="ki-form-hint">公式中的标识符必须是系统中已定义的原子指标名</div>'
+        +   '<div class="ki-form-hint">直接使用指标名称和运算符配置计算公式</div>'
         + '</div>';
       if (d.unit) {
         html += '<div class="ki-view-section"><h4>单位</h4>' + v(d.unit) + '</div>';
@@ -1290,7 +1290,7 @@
       + '</div>'
       + '<div class="ki-form-row">'
       +   '<label class="ki-form-label">描述</label>'
-      +   '<textarea class="ki-textarea" data-bind="desc" maxlength="500" rows="4">' + escapeHTML(d.desc) + '</textarea>'
+      +   '<textarea class="ki-textarea" data-bind="desc" maxlength="500" rows="4" placeholder="请输入该指标的业务口径、业务含义等相关描述">' + escapeHTML(d.desc) + '</textarea>'
       + '</div>';
 
     var typeBlock = '';
@@ -1330,7 +1330,8 @@
     return ''
       + '<div class="ki-form-row">'
       +   '<label class="ki-form-label">计算公式</label>'
-      +   formulaBuilderHTML(d)
+      +   '<textarea class="ki-textarea ki-natural-formula-input" data-bind="formula" maxlength="500" rows="5" placeholder="例如：招标平台服务费 + 非招服务费 + CA证书收入 + 销售金额 * 0.015">' + escapeHTML(d.formula || '') + '</textarea>'
+      +   '<div class="ki-form-hint">直接输入中文指标名称，并使用 +、-、*、/ 和括号组合计算公式。</div>'
       + '</div>'
       + '<div class="ki-form-row">'
       +   '<label class="ki-form-label">单位</label>'
@@ -2377,6 +2378,9 @@
         return;
       }
       syncAtomFunctionExpr(d);
+    } else if (!(d.formula || '').trim()) {
+      if (typeof showToast === 'function') showToast('请输入计算公式');
+      return;
     }
     if (state.drawer.mode === 'create') {
       d.id = uid('i');
@@ -2699,7 +2703,7 @@
         type: 'derived',
         name: '导入-商机成交转化率',
         synonyms: '商机转化率, 线索转化',
-        desc: '成交客户数 / 有效商机数，用于观察销售漏斗效率。',
+        desc: '用于观察销售漏斗从有效商机到成交客户的转化效率。',
         srcId: 'ds_metric',
         table: '',
         field: '',

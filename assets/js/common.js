@@ -150,7 +150,7 @@ function goTo(path) {
 /* ============================================================
  * 用户下拉菜单 + 个人信息修改 / 密码修改 弹窗（全局公共能力）
  * - 适用所有引入了 common.js 且 topbar 中含 .user-trigger 的页面
- * - 自动接管旧版 .user-trigger 的 click 行为（如 onclick="goTo('profile.html')"）
+ * - 自动接管页面中 .user-trigger 的旧 click 行为
  * - 自动注入 user-menu DOM、个人信息弹窗、密码修改弹窗
  * ============================================================ */
 (function setupUserMenuModule() {
@@ -512,9 +512,9 @@ function goTo(path) {
       title: "数据管理",
       icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5V12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V5.5"/><path d="M5 12v6.5c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V12"/></svg>',
       children: [
-        { name: "数据源", href: "data-source.html", match: ["data-source", "data-source-edit", "data-source-preview", "data-source-preview-refresh", "data-source-tables", "data-source-ops"] },
-        { name: "数据模型", href: "data-model.html", match: ["data-model", "data-model-topology"] },
-        { name: "分析主题", href: "theme.html", match: ["theme", "theme-edit"] }
+        { name: "数据源", href: "data-source.html", match: ["data-source"] },
+        { name: "数据模型", href: "data-model.html", match: ["data-model"] },
+        { name: "分析主题", href: "theme.html", match: ["theme"] }
       ]
     },
     {
@@ -522,7 +522,7 @@ function goTo(path) {
       title: "知识库管理",
       icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h11v16H6a2 2 0 0 0-2 2V5z"/><path d="M17 3l3 1.6V21l-3-1.6"/><path d="M8 8h6"/><path d="M8 12h6"/></svg>',
       children: [
-        { name: "指标体系", href: "knowledge-indicator.html", match: ["knowledge.html", "knowledge-indicator", "knowledge-indicator-create"] },
+        { name: "指标体系", href: "knowledge-indicator.html", match: ["knowledge-indicator"] },
         { name: "示例库", href: "knowledge-example.html", match: ["knowledge-example"] },
         { name: "行业知识", href: "knowledge-faq.html", match: ["knowledge-faq"] },
         { name: "技能管理", href: "knowledge-skill.html", match: ["knowledge-skill", "knowledge-skill-edit", "knowledge-skill-test"] },
@@ -534,7 +534,7 @@ function goTo(path) {
       title: "运营管理",
       icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v17a1 1 0 0 0 1 1h17"/><path d="M7 15l4-4 3 3 5-6"/><path d="M16 8h3v3"/></svg>',
       children: [
-        { name: "反馈管理", href: "operation-feedback.html", match: ["operation.html", "operation-feedback"] },
+        { name: "反馈管理", href: "operation-feedback.html", match: ["operation-feedback"] },
         { name: "指标沉淀", href: "operation-indicator.html", match: ["operation-indicator"] }
       ]
     },
@@ -543,8 +543,8 @@ function goTo(path) {
       title: "系统管理",
       icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="18" cy="6" r="1.5"/></svg>',
       children: [
-        { name: "用户管理", href: "users.html", match: ["users", "user-edit", "user-disable"] },
-        { name: "角色管理", href: "roles.html", match: ["roles", "role-edit"] },
+        { name: "用户管理", href: "users.html", match: ["users"] },
+        { name: "角色管理", href: "roles.html", match: ["roles"] },
         { name: "系统配置", href: "system-config.html", match: ["system-config"] }
       ]
     }

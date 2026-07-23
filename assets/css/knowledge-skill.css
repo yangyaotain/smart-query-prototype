@@ -4,8 +4,7 @@
   gap: 16px;
 }
 
-.ks-page button,
-.ks-test-modal button {
+.ks-page button {
   font-family: inherit;
 }
 
@@ -45,9 +44,7 @@
 .ks-summary-icon svg,
 .ks-search svg,
 .ks-action svg,
-.ks-empty svg,
-.ks-dashed-btn svg,
-.ks-test-skill svg {
+.ks-empty svg {
   width: 17px;
   height: 17px;
   fill: none;
@@ -202,9 +199,7 @@
 .ks-select:focus,
 .ks-field input:focus,
 .ks-field textarea:focus,
-.ks-field select:focus,
-.ks-config-row input:focus,
-.ks-config-row select:focus {
+.ks-field select:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(var(--primary-rgb), .12);
 }
@@ -301,7 +296,6 @@
 }
 
 .ks-tag,
-.ks-type-tag,
 .ks-param-count {
   display: inline-flex;
   align-items: center;
@@ -315,19 +309,12 @@
   white-space: nowrap;
 }
 
-.ks-type-tag {
-  color: var(--primary);
-  background: var(--primary-panel-bg);
-  border-color: var(--primary-border-soft);
-}
-
 .ks-param-count {
   color: #7c3aed;
   background: #f6f0ff;
   border-color: #eadcff;
 }
 .ks-param-count.is-passed { color: #047857; background: #ecfdf5; border-color: #c8f3df; }
-.ks-param-count.is-ready { color: #2563eb; background: #eff6ff; border-color: #dbeafe; }
 .ks-param-count.is-stale { color: #b45309; background: #fff8e8; border-color: #f6dfad; }
 .ks-param-count.is-draft { color: #64748b; background: #f8fafc; border-color: #e2e8f0; }
 .ks-status-switch {
@@ -505,33 +492,6 @@
 .ks-empty strong { margin-top: 12px; color: #64748b; font-size: 13px; }
 .ks-empty p { margin: 5px 0 0; font-size: 11.5px; }
 
-.ks-form-section {
-  padding: 17px;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, .03);
-}
-
-.ks-form-section-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 15px;
-}
-
-.ks-form-section-head h3 { margin: 0; color: #1e293b; font-size: 14px; }
-.ks-form-section-head p { margin: 5px 0 0; color: #94a3b8; font-size: 11px; line-height: 1.55; }
-
-.ks-form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 13px;
-}
-
-.ks-span-2 { grid-column: 1 / -1; }
-
 .ks-field {
   position: relative;
   display: flex;
@@ -543,9 +503,7 @@
 .ks-field > span em { color: #ef4444; font-style: normal; }
 .ks-field input,
 .ks-field textarea,
-.ks-field select,
-.ks-config-row input,
-.ks-config-row select {
+.ks-field select {
   width: 100%;
   color: #273449;
   background: #fff;
@@ -562,141 +520,11 @@
 .ks-field small { position: absolute; right: 8px; bottom: 7px; color: #a3afbf; font-size: 9.5px; }
 .ks-field small b { font-weight: 500; }
 
-.ks-check-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 9px;
-}
-
-.ks-check-grid label {
-  display: grid;
-  grid-template-columns: 16px minmax(0, 1fr);
-  align-items: flex-start;
-  gap: 8px;
-  padding: 10px;
-  background: #fafcfe;
-  border: 1px solid #e5eaf1;
-  border-radius: 9px;
-  cursor: pointer;
-}
-
-.ks-check-grid label:has(input:checked) { background: var(--primary-panel-bg); border-color: var(--primary-border-soft); }
-.ks-check-grid input { margin: 2px 0 0; accent-color: var(--primary); }
-.ks-check-grid strong, .ks-check-grid em { display: block; }
-.ks-check-grid strong { color: #334155; font-size: 11.5px; }
-.ks-check-grid em { margin-top: 3px; color: #94a3b8; font-size: 9.5px; font-style: normal; line-height: 1.45; }
-
-.ks-switch-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  cursor: pointer;
-}
-
-.ks-switch-row strong, .ks-switch-row em { display: block; }
-.ks-switch-row strong { color: #334155; font-size: 12px; }
-.ks-switch-row em { margin-top: 4px; color: #94a3b8; font-size: 10.5px; font-style: normal; }
-.ks-switch-row input { position: absolute; opacity: 0; pointer-events: none; }
-.ks-switch-row i { position: relative; width: 42px; height: 23px; flex: 0 0 auto; background: #cbd5e1; border-radius: 999px; transition: background .18s; }
-.ks-switch-row i::after { content: ""; position: absolute; left: 3px; top: 3px; width: 17px; height: 17px; background: #fff; border-radius: 50%; box-shadow: 0 2px 5px rgba(15,23,42,.2); transition: transform .18s; }
-.ks-switch-row input:checked + i { background: var(--primary); }
-.ks-switch-row input:checked + i::after { transform: translateX(19px); }
-
-.ks-config-table { overflow: hidden; border: 1px solid #e4eaf1; border-radius: 9px; }
-.ks-config-row { display: grid; grid-template-columns: 1.15fr .8fr 1fr 58px 68px; align-items: center; gap: 8px; min-height: 45px; padding: 6px 9px; border-bottom: 1px solid #edf1f5; }
-.ks-config-row:last-child { border-bottom: 0; }
-.ks-config-row.ks-config-head { min-height: 34px; color: #7b8798; background: #f8fafc; font-size: 10.5px; font-weight: 650; }
-.ks-config-row input, .ks-config-row select { height: 30px; padding: 0 7px; }
-.ks-config-row input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--primary); }
-.ks-row-delete { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; color: #94a3b8; background: #fff; border: 1px solid #e2e8f0; border-radius: 7px; cursor: pointer; }
-.ks-row-delete:hover { color: #dc2626; background: #fff1f2; border-color: #fecdd3; }
-.ks-row-delete svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.ks-config-empty { padding: 26px; color: #94a3b8; background: #fafcfe; border: 1px dashed #dbe3ec; border-radius: 9px; font-size: 11.5px; text-align: center; }
-
-.ks-process-list,
-.ks-section-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
-
-.ks-process-row {
-  display: grid;
-  grid-template-columns: 30px minmax(0, 1fr) 30px;
-  align-items: center;
-  gap: 9px;
-  padding: 9px;
-  background: #fafcfe;
-  border: 1px solid #e5eaf1;
-  border-radius: 9px;
-}
-
-.ks-process-index { width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; color: var(--primary); background: var(--primary-soft); border-radius: 8px; font-size: 11px; font-weight: 750; }
-.ks-process-row input { width: 100%; height: 31px; padding: 0 8px; color: #334155; background: #fff; border: 1px solid #dbe3ed; border-radius: 7px; outline: none; font-family: inherit; font-size: 11.5px; }
-
-.ks-dashed-btn {
-  width: 100%;
-  height: 38px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin-top: 10px;
-  color: var(--primary);
-  background: var(--primary-panel-bg);
-  border: 1px dashed var(--primary-border);
-  border-radius: 9px;
-  font-size: 11.5px;
-  font-weight: 650;
-  cursor: pointer;
-}
-
-.ks-dashed-btn:hover { background: var(--primary-soft); }
-
-.ks-section-row {
-  display: grid;
-  grid-template-columns: 28px 30px minmax(0, 1fr) auto 30px;
-  align-items: center;
-  gap: 8px;
-  padding: 9px;
-  background: #fafcfe;
-  border: 1px solid #e5eaf1;
-  border-radius: 9px;
-}
-
-.ks-section-drag { color: #a3afbf; font-size: 17px; letter-spacing: -2px; cursor: grab; }
-.ks-section-row input { width: 100%; height: 31px; padding: 0 8px; color: #334155; background: #fff; border: 1px solid #dbe3ed; border-radius: 7px; outline: none; font-family: inherit; font-size: 11.5px; }
-.ks-section-meta { color: #94a3b8; font-size: 9.5px; white-space: nowrap; }
-
 .ks-danger-btn { background: #dc2626 !important; border-color: #dc2626 !important; }
 .ks-confirm-message { padding: 12px 14px; color: #475569; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 9px; font-size: 12.5px; line-height: 1.65; }
 
 #ksConfirmMask { z-index: 110; }
 #ksConfirmModal { z-index: 111; }
-
-.ks-test-modal { width: min(680px, calc(100vw - 40px)); }
-.ks-test-skill { display: grid; grid-template-columns: 42px minmax(0,1fr) auto; align-items: center; gap: 11px; padding: 13px; background: linear-gradient(135deg, var(--primary-panel-bg), #fff); border: 1px solid var(--primary-border-soft); border-radius: 11px; }
-.ks-test-skill > span { width: 42px; height: 42px; display: inline-flex; align-items: center; justify-content: center; color: #fff; background: linear-gradient(135deg,var(--primary),var(--primary-accent)); border-radius: 12px; }
-.ks-test-skill em, .ks-test-skill strong { display: block; }
-.ks-test-skill em { color: #8491a4; font-size: 10px; font-style: normal; }
-.ks-test-skill strong { margin-top: 4px; color: #1e293b; font-size: 14px; }
-.ks-test-skill > i { padding: 4px 8px; color: var(--primary); background: #fff; border: 1px solid var(--primary-border-soft); border-radius: 999px; font-size: 10px; font-style: normal; font-weight: 700; }
-.ks-test-params { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 13px; }
-.ks-test-param { padding: 9px 10px; background: #fafcfe; border: 1px solid #e4eaf1; border-radius: 9px; }
-.ks-test-param span, .ks-test-param strong { display: block; }
-.ks-test-param span { color: #94a3b8; font-size: 9.5px; }
-.ks-test-param strong { margin-top: 4px; color: #334155; font-size: 11.5px; }
-.ks-test-param.ks-test-prompt strong {
-  display: -webkit-box;
-  overflow: hidden;
-  line-height: 1.6;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-}
-.ks-test-preview { margin-top: 13px; overflow: hidden; border: 1px solid #e4eaf1; border-radius: 10px; }
-.ks-test-preview-head { display: flex; justify-content: space-between; padding: 10px 12px; color: #475569; background: #f8fafc; border-bottom: 1px solid #e4eaf1; font-size: 11.5px; font-weight: 700; }
-.ks-test-preview-head em { color: var(--primary); font-size: 10px; font-style: normal; }
-.ks-test-section { display: grid; grid-template-columns: 24px minmax(0,1fr); align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid #edf1f5; }
-.ks-test-section:last-child { border-bottom: 0; }
-.ks-test-section span { width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; color: var(--primary); background: var(--primary-soft); border-radius: 6px; font-size: 9.5px; font-weight: 700; }
-.ks-test-section strong { color: #475569; font-size: 11.5px; line-height: 1.55; }
 
 /* Keep skill-management typography aligned with the shared desktop scale. */
 .ks-page {
@@ -708,33 +536,13 @@
 .ks-more-menu button,
 .ks-list-foot,
 .ks-empty p,
-.ks-form-section-head p,
-.ks-field > span,
-.ks-check-grid strong,
-.ks-config-row.ks-config-head,
-.ks-config-empty,
-.ks-process-row input,
-.ks-dashed-btn,
-.ks-section-row input,
-.ks-test-param strong,
-.ks-test-preview-head,
-.ks-test-section strong {
+.ks-field > span {
   font-size: var(--font-size-secondary, 12px);
 }
 
 .ks-tag,
-.ks-type-tag,
 .ks-param-count,
-.ks-field small,
-.ks-check-grid em,
-.ks-switch-row em,
-.ks-process-index,
-.ks-section-meta,
-.ks-test-skill em,
-.ks-test-skill > i,
-.ks-test-param span,
-.ks-test-preview-head em,
-.ks-test-section span {
+.ks-field small {
   font-size: var(--font-size-caption, 11px);
 }
 
@@ -751,6 +559,4 @@
 
 @media (max-width: 900px) {
   .ks-summary-grid { grid-template-columns: 1fr; }
-  .ks-form-grid, .ks-check-grid, .ks-test-params { grid-template-columns: 1fr; }
-  .ks-span-2 { grid-column: auto; }
 }
