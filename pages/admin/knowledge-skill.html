@@ -6,7 +6,7 @@
   <title>技能管理 - 智能问数管理后台</title>
   <link rel="stylesheet" href="../../assets/css/theme.css" />
   <link rel="stylesheet" href="../../assets/css/admin.css" />
-  <link rel="stylesheet" href="../../assets/css/knowledge-skill.css?v=20260719-unified-fonts" />
+  <link rel="stylesheet" href="../../assets/css/knowledge-skill.css?v=20260724-status-confirm" />
 </head>
 <body>
   <div class="admin-shell">
@@ -102,12 +102,11 @@
             <table class="ks-table">
               <thead>
                 <tr>
-                  <th style="width:22%;">技能名称</th>
-                  <th style="width:9%;">分类</th>
-                  <th style="width:18%;">适用分析主题</th>
-                  <th style="width:11%;">配置状态</th>
-                  <th style="width:8%;">状态</th>
-                  <th style="width:11%;">更新时间</th>
+                  <th style="width:24%;">技能名称</th>
+                  <th style="width:10%;">分类</th>
+                  <th style="width:22%;">适用分析主题</th>
+                  <th style="width:10%;">状态</th>
+                  <th style="width:13%;">更新时间</th>
                   <th style="width:21%;">操作</th>
                 </tr>
               </thead>
@@ -126,13 +125,13 @@
 
   <div class="modal-mask hidden" id="ksConfirmMask"></div>
   <section class="modal small hidden" id="ksConfirmModal" role="dialog" aria-modal="true" aria-labelledby="ksConfirmTitle">
-    <div class="modal-head"><div><h3 id="ksConfirmTitle">删除技能</h3><p id="ksConfirmSubtitle">删除后该技能将从业务端移除。</p></div><button class="close" id="ksConfirmClose">×</button></div>
+    <div class="modal-head"><div><h3 id="ksConfirmTitle">操作确认</h3><p id="ksConfirmSubtitle">请确认是否继续执行当前操作。</p></div><button type="button" class="close" id="ksConfirmClose" aria-label="关闭">×</button></div>
     <div class="modal-body"><div class="ks-confirm-message" id="ksConfirmMessage"></div></div>
-    <div class="modal-foot"><button class="ghost-btn" id="ksConfirmCancel">取消</button><button class="primary-btn ks-danger-btn" id="ksConfirmOk">确认删除</button></div>
+    <div class="modal-foot"><button type="button" class="ghost-btn" id="ksConfirmCancel">取消</button><button type="button" class="primary-btn" id="ksConfirmOk">确认</button></div>
   </section>
 
   <script src="../../assets/js/common.js?v=20260717-natural-prompt"></script>
   <script src="../../assets/js/skill-catalog.js?v=20260717-split-report-prompts"></script>
-  <script src="../../assets/js/knowledge-skill.js?v=20260720-remove-template-column"></script>
+  <script src="../../assets/js/knowledge-skill.js?v=20260724-status-confirm"></script>
 </body>
 </html>

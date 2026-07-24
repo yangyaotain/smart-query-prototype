@@ -295,8 +295,7 @@
   gap: 4px;
 }
 
-.ks-tag,
-.ks-param-count {
+.ks-tag {
   display: inline-flex;
   align-items: center;
   height: 23px;
@@ -308,15 +307,6 @@
   font-size: 10.5px;
   white-space: nowrap;
 }
-
-.ks-param-count {
-  color: #7c3aed;
-  background: #f6f0ff;
-  border-color: #eadcff;
-}
-.ks-param-count.is-passed { color: #047857; background: #ecfdf5; border-color: #c8f3df; }
-.ks-param-count.is-stale { color: #b45309; background: #fff8e8; border-color: #f6dfad; }
-.ks-param-count.is-draft { color: #64748b; background: #f8fafc; border-color: #e2e8f0; }
 .ks-status-switch {
   display: inline-flex;
   align-items: center;
@@ -541,7 +531,6 @@
 }
 
 .ks-tag,
-.ks-param-count,
 .ks-field small {
   font-size: var(--font-size-caption, 11px);
 }

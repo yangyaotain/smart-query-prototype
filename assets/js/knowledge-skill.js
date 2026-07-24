@@ -13,7 +13,7 @@
   };
 
   let skills = Store.load();
-  let pendingDeleteId = null;
+  let confirmCallback = null;
 
   function escapeHTML(value) {
     return String(value == null ? "" : value).replace(/[&<>"']/g, (char) => ({
@@ -71,16 +71,6 @@
       : item;
   }
 
-  function configStatusMeta(item) {
-    if (item.workflowStatus === "draft" && !item.enabled) {
-      return { label: "配置未完成", className: " is-draft" };
-    }
-    if (item.draftConfig) {
-      return { label: "有草稿", className: " is-stale" };
-    }
-    return { label: "已发布", className: " is-passed" };
-  }
-
   function navigateToEditor(id) {
     saveFilters();
     window.location.href = id
@@ -113,7 +103,6 @@
     const rows = getFilteredSkills();
     $("ksTableBody").innerHTML = rows.map((item) => {
       const editing = editableSkill(item);
-      const workflow = configStatusMeta(item);
       const skillThemes = editing.themes || [];
       const themes = skillThemes.slice(0, 2).map((theme) => `<span class="ks-tag">${escapeHTML(theme)}</span>`).join("")
         + (skillThemes.length > 2 ? `<span class="ks-tag">+${skillThemes.length - 2}</span>` : "");
@@ -122,7 +111,6 @@
           <td><div class="ks-skill-cell"><span class="ks-skill-icon${iconClass(editing.kind)}">${skillIcon(editing.kind)}</span><div><strong title="${escapeHTML(editing.name)}">${escapeHTML(editing.name)}</strong><span title="${escapeHTML(editing.code)}">${escapeHTML(editing.code)}</span></div></div></td>
           <td><span class="ks-tag">${escapeHTML(editing.category)}</span></td>
           <td><div class="ks-tag-list">${themes}</div></td>
-          <td><span class="ks-param-count${workflow.className}">${workflow.label}</span></td>
           <td>
             <button type="button" class="ks-status-switch${item.enabled ? " is-on" : ""}" data-action="toggle" data-id="${escapeHTML(item.id)}" role="switch" aria-checked="${item.enabled ? "true" : "false"}" aria-label="${item.enabled ? "停用" : "启用"}${escapeHTML(editing.name)}">
               <i aria-hidden="true"></i><span>${item.enabled ? "启用" : "停用"}</span>
@@ -177,7 +165,40 @@
     showToast(`已复制技能：${copy.name}`);
   }
 
-  function toggleSkill(id) {
+  function applySkillStatus(id, enabled) {
+    const item = getSkill(id);
+    if (!item) return;
+    item.enabled = enabled;
+    item.updated = "2026-07-17";
+    Store.save(skills);
+    renderSkills();
+    showToast(`${item.name}已${item.enabled ? "启用" : "停用"}`);
+  }
+
+  function showConfirm(options) {
+    confirmCallback = options.onConfirm || null;
+    $("ksConfirmTitle").textContent = options.title || "操作确认";
+    $("ksConfirmSubtitle").textContent = options.subtitle || "请确认是否继续执行当前操作。";
+    $("ksConfirmMessage").innerHTML = options.message || "确定执行该操作吗？";
+    $("ksConfirmOk").textContent = options.okText || "确认";
+    $("ksConfirmOk").classList.toggle("ks-danger-btn", Boolean(options.danger));
+    $("ksConfirmMask").classList.remove("hidden");
+    $("ksConfirmModal").classList.remove("hidden");
+  }
+
+  function closeConfirm() {
+    confirmCallback = null;
+    $("ksConfirmMask").classList.add("hidden");
+    $("ksConfirmModal").classList.add("hidden");
+  }
+
+  function confirmCurrentAction() {
+    const callback = confirmCallback;
+    closeConfirm();
+    if (typeof callback === "function") callback();
+  }
+
+  function openStatusConfirm(id) {
     const item = getSkill(id);
     if (!item) return;
     if (!item.enabled && item.workflowStatus === "draft") {
@@ -185,36 +206,37 @@
       navigateToEditor(id);
       return;
     }
-    item.enabled = !item.enabled;
-    item.updated = "2026-07-17";
-    Store.save(skills);
-    renderSkills();
-    showToast(`${item.name}已${item.enabled ? "启用" : "停用"}`);
+
+    const willEnable = !item.enabled;
+    const actionText = willEnable ? "启用" : "停用";
+    showConfirm({
+      title: `${actionText}技能`,
+      subtitle: willEnable
+        ? "启用后，该技能将在业务端恢复可选。"
+        : "停用后，该技能将从业务端技能选择中隐藏。",
+      message: `确定${actionText}“<strong>${escapeHTML(item.name)}</strong>”吗？${willEnable ? "启用后，业务端用户可选择并使用该技能。" : "历史报告不受影响，可随时再次启用。"}`,
+      okText: `确认${actionText}`,
+      danger: !willEnable,
+      onConfirm: () => applySkillStatus(id, willEnable)
+    });
   }
 
   function openDelete(id) {
     const item = getSkill(id);
     if (!item) return;
-    pendingDeleteId = id;
-    $("ksConfirmMessage").innerHTML = `确定删除“<strong>${escapeHTML(item.name)}</strong>”吗？删除后业务端将无法继续选择该技能，历史报告不受影响。`;
-    $("ksConfirmMask").classList.remove("hidden");
-    $("ksConfirmModal").classList.remove("hidden");
-  }
-
-  function closeDelete() {
-    pendingDeleteId = null;
-    $("ksConfirmMask").classList.add("hidden");
-    $("ksConfirmModal").classList.add("hidden");
-  }
-
-  function confirmDelete() {
-    const item = getSkill(pendingDeleteId);
-    if (!item) return closeDelete();
-    skills = skills.filter((skill) => skill.id !== pendingDeleteId);
-    Store.save(skills);
-    closeDelete();
-    renderSkills();
-    showToast(`已删除技能：${item.name}`);
+    showConfirm({
+      title: "删除技能",
+      subtitle: "删除后该技能将从业务端移除。",
+      message: `确定删除“<strong>${escapeHTML(item.name)}</strong>”吗？删除后业务端将无法继续选择该技能，历史报告不受影响。`,
+      okText: "确认删除",
+      danger: true,
+      onConfirm: () => {
+        skills = skills.filter((skill) => skill.id !== id);
+        Store.save(skills);
+        renderSkills();
+        showToast(`已删除技能：${item.name}`);
+      }
+    });
   }
 
   $("ksTableBody").addEventListener("click", (event) => {
@@ -235,7 +257,7 @@
     if (action === "edit") navigateToEditor(id);
     if (action === "test") navigateToTest(id);
     if (action === "copy") copySkill(id);
-    if (action === "toggle") toggleSkill(id);
+    if (action === "toggle") openStatusConfirm(id);
     if (action === "delete") openDelete(id);
   });
 
@@ -250,17 +272,17 @@
     renderSkills();
   });
 
-  $("ksConfirmClose").addEventListener("click", closeDelete);
-  $("ksConfirmCancel").addEventListener("click", closeDelete);
-  $("ksConfirmMask").addEventListener("click", closeDelete);
-  $("ksConfirmOk").addEventListener("click", confirmDelete);
+  $("ksConfirmClose").addEventListener("click", closeConfirm);
+  $("ksConfirmCancel").addEventListener("click", closeConfirm);
+  $("ksConfirmMask").addEventListener("click", closeConfirm);
+  $("ksConfirmOk").addEventListener("click", confirmCurrentAction);
   document.addEventListener("click", (event) => {
     if (!event.target.closest(".ks-actions")) closeMoreMenus();
   });
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
     closeMoreMenus();
-    if (!$("ksConfirmModal").classList.contains("hidden")) closeDelete();
+    if (!$("ksConfirmModal").classList.contains("hidden")) closeConfirm();
   });
 
   restoreFilters();
