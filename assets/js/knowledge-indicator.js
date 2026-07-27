@@ -1331,7 +1331,7 @@
       + '<div class="ki-form-row">'
       +   '<label class="ki-form-label">计算公式</label>'
       +   '<textarea class="ki-textarea ki-natural-formula-input" data-bind="formula" maxlength="500" rows="5" placeholder="例如：招标平台服务费 + 非招服务费 + CA证书收入 + 销售金额 * 0.015">' + escapeHTML(d.formula || '') + '</textarea>'
-      +   '<div class="ki-form-hint">直接输入中文指标名称，并使用 +、-、*、/ 和括号组合计算公式。</div>'
+      +   '<div class="ki-form-hint">直接输入中文指标名称，支持使用 +、-、*、/、括号及 ROUND、ABS、SQRT、LOG 等常用函数组合计算公式。</div>'
       + '</div>'
       + '<div class="ki-form-row">'
       +   '<label class="ki-form-label">单位</label>'
