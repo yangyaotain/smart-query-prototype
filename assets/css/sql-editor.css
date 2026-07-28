@@ -1,0 +1,254 @@
+/* ======================================================================
+ * 公共 SQL 编辑器
+ * 由 assets/js/sql-editor.js 生成，可在各业务页面中复用。
+ * ====================================================================== */
+.sq-sql-editor {
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #0f172a;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .03);
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+
+.sq-sql-editor:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), .14);
+}
+
+.sq-sql-editor.is-readonly:focus-within {
+  border-color: #cbd5e1;
+  box-shadow: none;
+}
+
+.sq-sql-toolbar {
+  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  color: #cbd5e1;
+  background: #111827;
+  border-bottom: 1px solid rgba(148, 163, 184, .22);
+}
+
+.sq-sql-toolbar strong {
+  margin-left: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #e5e7eb;
+}
+
+.sq-sql-dot {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 9px;
+  border-radius: 50%;
+  background: #ef4444;
+}
+
+.sq-sql-dot:nth-child(2) { background: #f59e0b; }
+.sq-sql-dot:nth-child(3) { background: #22c55e; }
+
+.sq-sql-toolbar-spacer {
+  flex: 1;
+}
+
+.sq-sql-action {
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 9px;
+  border: 1px solid rgba(var(--primary-rgb), .34);
+  border-radius: 6px;
+  color: var(--primary-border);
+  background: rgba(var(--primary-rgb), .14);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color .16s ease, background .16s ease, border-color .16s ease;
+}
+
+.sq-sql-action svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sq-sql-action:hover {
+  color: #fff;
+  background: rgba(var(--primary-rgb), .3);
+}
+
+.sq-sql-action:focus-visible {
+  outline: 2px solid rgba(var(--primary-rgb), .34);
+  outline-offset: 2px;
+}
+
+.sq-sql-body {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  min-height: 152px;
+}
+
+.sq-sql-lines {
+  position: relative;
+  overflow: hidden;
+  padding: 12px 8px;
+  color: #64748b;
+  background: #0b1120;
+  border-right: 1px solid rgba(148, 163, 184, .18);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.7;
+  text-align: right;
+  user-select: none;
+}
+
+.sq-sql-lines-inner {
+  display: block;
+  will-change: transform;
+}
+
+.sq-sql-lines span {
+  display: block;
+  height: 21.25px;
+}
+
+.sq-sql-code {
+  position: relative;
+  min-width: 0;
+  min-height: 152px;
+  overflow: hidden;
+}
+
+.sq-sql-highlight {
+  position: absolute;
+  inset: 0;
+  min-width: max-content;
+  min-height: 100%;
+  margin: 0;
+  padding: 12px 14px;
+  color: var(--primary-border-soft);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.7;
+  white-space: pre;
+  pointer-events: none;
+  tab-size: 2;
+  will-change: transform;
+}
+
+.sq-sql-input {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-height: 152px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 0;
+  outline: 0;
+  resize: vertical;
+  color: transparent;
+  background: transparent;
+  caret-color: var(--primary-border-soft);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.7;
+  white-space: pre;
+  tab-size: 2;
+}
+
+.sq-sql-input::selection {
+  color: transparent;
+  background: rgba(var(--primary-rgb), .42);
+}
+
+.sq-sql-input::placeholder {
+  color: #64748b;
+}
+
+.sq-sql-editor.is-readonly .sq-sql-input {
+  resize: none;
+  cursor: default;
+}
+
+.sq-sql-kw {
+  color: var(--primary-accent);
+  font-weight: 800;
+}
+
+.sq-sql-fn {
+  color: #c084fc;
+  font-weight: 700;
+}
+
+.sq-sql-str { color: #86efac; }
+.sq-sql-num { color: #fbbf24; }
+.sq-sql-comment { color: #64748b; font-style: italic; }
+
+.sq-sql-editor.is-light {
+  border-color: #cbd5e1;
+  background: #fff;
+  box-shadow: none;
+}
+
+.sq-sql-editor.is-light .sq-sql-toolbar {
+  color: #475569;
+  background: #f8fafc;
+  border-bottom-color: #e2e8f0;
+}
+
+.sq-sql-editor.is-light .sq-sql-toolbar strong {
+  color: #0f172a;
+}
+
+.sq-sql-editor.is-light .sq-sql-action {
+  color: var(--primary-dark);
+  background: var(--primary-hover-bg);
+  border-color: var(--primary-border);
+}
+
+.sq-sql-editor.is-light .sq-sql-action:hover {
+  color: var(--primary-dark);
+  background: var(--primary-border-soft);
+}
+
+.sq-sql-editor.is-light .sq-sql-lines {
+  color: #94a3b8;
+  background: #f8fafc;
+  border-right-color: #e2e8f0;
+}
+
+.sq-sql-editor.is-light .sq-sql-highlight {
+  color: #334155;
+}
+
+.sq-sql-editor.is-light .sq-sql-input {
+  caret-color: #0f172a;
+}
+
+.sq-sql-editor.is-light .sq-sql-kw { color: var(--primary-dark); }
+.sq-sql-editor.is-light .sq-sql-fn { color: #7c3aed; }
+.sq-sql-editor.is-light .sq-sql-str { color: #047857; }
+.sq-sql-editor.is-light .sq-sql-num { color: #b45309; }
+.sq-sql-editor.is-light .sq-sql-comment { color: #94a3b8; }
+
+@media (max-width: 720px) {
+  .sq-sql-toolbar {
+    gap: 5px;
+  }
+
+  .sq-sql-action {
+    padding: 0 7px;
+  }
+
+  .sq-sql-body {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+}

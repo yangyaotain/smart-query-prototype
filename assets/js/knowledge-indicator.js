@@ -280,6 +280,7 @@
       field: 'deal_amount_10k_yuan',
       agg: 'SUM',
       timeField: 'deal_notice_sent_date',
+      defaultFilterSql: "procurement_method = '非招标'\nAND deal_notice_sent_date IS NOT NULL",
       unit: '万元',
       updatedAt: '2026-05-04'
     },
@@ -292,6 +293,7 @@
       field: 'bidding_amount',
       agg: 'SUM',
       timeField: 'service_fee_collection_time',
+      defaultFilterSql: 'service_fee_collection_time IS NOT NULL',
       unit: '万元',
       updatedAt: '2026-05-03'
     },
@@ -304,6 +306,7 @@
       field: 'service_fee_amount',
       agg: 'SUM',
       timeField: 'service_fee_collection_time',
+      defaultFilterSql: 'service_fee_collection_time IS NOT NULL',
       unit: '元',
       updatedAt: '2026-05-02'
     },
@@ -316,6 +319,7 @@
       field: 'service_fee_amount',
       agg: 'SUM',
       timeField: 'service_fee_payment_time',
+      defaultFilterSql: "procurement_method = '非招标'\nAND service_fee_payment_time IS NOT NULL",
       unit: '元',
       updatedAt: '2026-04-29'
     },
@@ -328,6 +332,7 @@
       field: 'ca_fee_amount',
       agg: 'SUM',
       timeField: 'payment_time',
+      defaultFilterSql: 'payment_time IS NOT NULL',
       unit: '元',
       updatedAt: '2026-04-25'
     },
@@ -773,6 +778,7 @@
       agg: 'SUM',
       functionExpr: '',
       timeField: '',
+      defaultFilterSql: '',
       unit: '万元',
       formula: '',
       modifier: '',
@@ -841,6 +847,24 @@
   }
 
   // ---------- 8a) 抽屉 - 查看模式 HTML ----------
+  function defaultFilterEditorHTML(d, readonly) {
+    var value = d.defaultFilterSql || '';
+    if (window.SmartQuerySqlEditor && typeof window.SmartQuerySqlEditor.render === 'function') {
+      return window.SmartQuerySqlEditor.render({
+        value: value,
+        bind: readonly ? '' : 'defaultFilterSql',
+        readonly: !!readonly,
+        minLines: readonly ? 4 : 6,
+        title: 'SQL Editor',
+        ariaLabel: '默认过滤条件 SQL',
+        placeholder: readonly ? '未配置默认过滤条件' : "例如：status = '已完成'\nAND is_deleted = 0"
+      });
+    }
+    return '<textarea class="ki-textarea" data-bind="defaultFilterSql" rows="6"'
+      + (readonly ? ' readonly' : '')
+      + ' placeholder="请输入默认过滤条件">' + escapeHTML(value) + '</textarea>';
+  }
+
   function renderViewBody(d) {
     function v(x) { return (x == null || x === '') ? '<span class="ki-view-value empty">—</span>' : '<div class="ki-view-value">' + escapeHTML(x) + '</div>'; }
     var srcN = dsName(d.srcId);
@@ -864,6 +888,7 @@
         +     '<div class="ki-view-cell"><div class="ki-view-label">字段选择</div>' + v(d.field) + '</div>'
         +     '<div class="ki-view-cell"><div class="ki-view-label">聚合方式</div>' + v(aggLabel(d.agg)) + '</div>'
         +     '<div class="ki-view-cell full"><div class="ki-view-label">函数表达式</div>' + v(atomFunctionExpr(d)) + '</div>'
+        +     '<div class="ki-view-cell full"><div class="ki-view-label">默认过滤条件</div>' + defaultFilterEditorHTML(d, true) + '</div>'
         +     '<div class="ki-view-cell"><div class="ki-view-label">单位</div>' + v(d.unit) + '</div>'
         +   '</div>'
         + '</div>';
@@ -1318,6 +1343,11 @@
       +   '<label class="ki-form-label">函数表达式</label>'
       +   '<input class="ki-input" data-bind="functionExpr" value="' + escapeHTML(atomFunctionExpr(d)) + '" placeholder="' + (d.agg === CUSTOM_AGG_KEY ? '请输入自定义函数表达式' : '选择字段后自动生成') + '"' + (d.agg === CUSTOM_AGG_KEY ? '' : ' readonly') + ' />'
       +   '<div class="ki-form-hint">' + (d.agg === CUSTOM_AGG_KEY ? '自定义时可填写完整聚合函数或 SQL 片段。' : '随聚合方式和字段自动生成，不支持手动修改。') + '</div>'
+      + '</div>'
+      + '<div class="ki-form-row">'
+      +   '<label class="ki-form-label">默认过滤条件<span class="ki-form-tip" title="指标查询时自动追加的 SQL 条件">?</span></label>'
+      +   defaultFilterEditorHTML(d, false)
+      +   '<div class="ki-form-hint">用于指标查询时自动追加过滤条件，仅填写 WHERE 后的条件表达式；不配置时不做默认过滤。</div>'
       + '</div>'
       + '<div class="ki-form-row">'
       +   '<label class="ki-form-label">单位<span class="ki-form-tip" title="可点选预设，也可在下方文本框自定义">?</span></label>'
@@ -2291,6 +2321,7 @@
       d.timeTplKey = '';
       d.mappings = [];
       d.filterValues = [];
+      if (typeof d.defaultFilterSql !== 'string') d.defaultFilterSql = '';
       if (!d.agg) d.agg = 'SUM';
       if (!d.modelRef && d.srcId && d.table) d.modelRef = makeModelRef(d.srcId, d.table);
       syncAtomFunctionExpr(d);
@@ -2308,6 +2339,7 @@
       d.timeTplKey = '';
       d.mappings = [];
       d.filterValues = [];
+      d.defaultFilterSql = '';
     } else {
       d.formula = '';
       d.modelRef = '';
@@ -2321,6 +2353,7 @@
       d.timeTplKey = '';
       d.mappings = [];
       d.filterValues = [];
+      d.defaultFilterSql = '';
     }
   }
 
