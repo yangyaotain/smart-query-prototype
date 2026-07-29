@@ -222,6 +222,7 @@
     const hasChildren = Boolean(node.children && node.children.length);
     const active = state.activeOrgId === node.id ? " is-active" : "";
     const collapsed = state.collapsed.has(node.id) && !keyword ? " is-collapsed" : "";
+    const nodeType = level === 0 ? " is-root" : (hasChildren ? " has-children" : " is-leaf");
     const childrenHTML = hasChildren
       ? '<div class="um-tree-children">' + node.children.map(function (child) {
           return renderTreeNode(child, level + 1, keyword);
@@ -229,9 +230,10 @@
       : "";
 
     return [
-      '<div class="um-tree-group' + collapsed + '" data-org-group="' + escapeAttr(node.id) + '">',
-      '<div class="um-tree-row' + active + '" data-org-id="' + escapeAttr(node.id) + '" style="padding-left:' + (8 + level * 18) + 'px">',
+      '<div class="um-tree-group' + collapsed + '" data-org-group="' + escapeAttr(node.id) + '" data-org-level="' + level + '">',
+      '<div class="um-tree-row' + active + nodeType + '" data-org-id="' + escapeAttr(node.id) + '" style="padding-left:' + (8 + level * 18) + 'px">',
       '<span class="chev" data-org-toggle="' + escapeAttr(node.id) + '">' + (hasChildren ? chevronHTML() : "") + "</span>",
+      '<span class="um-tree-icon" aria-hidden="true"></span>',
       '<span class="um-tree-name" title="' + escapeAttr(node.name) + '">' + escapeHTML(node.name) + "</span>",
       '<span class="um-tree-count">' + countUsersInOrg(node.id) + "</span>",
       "</div>",
@@ -299,11 +301,11 @@
     return [
       "<tr>",
       '<td><input type="checkbox" data-user-check="' + escapeAttr(item.id) + '"' + (state.selected.has(item.id) ? " checked" : "") + " /></td>",
-      '<td><span class="um-main-text" title="' + escapeAttr(item.account) + '">' + escapeHTML(item.account) + "</span></td>",
-      '<td><span class="um-main-text" title="' + escapeAttr(item.name) + '">' + escapeHTML(item.name) + "</span></td>",
+      '<td><span class="um-main-text um-user-account" title="' + escapeAttr(item.account) + '">' + escapeHTML(item.account) + "</span></td>",
+      '<td><span class="um-main-text um-user-name" title="' + escapeAttr(item.name) + '">' + escapeHTML(item.name) + "</span></td>",
       '<td><span class="um-main-text" title="' + escapeAttr(item.dept) + '">' + escapeHTML(item.dept) + "</span></td>",
-      '<td><span class="um-main-text" title="' + escapeAttr(item.phone || "-") + '">' + escapeHTML(item.phone || "-") + "</span></td>",
-      '<td><span class="um-main-text" title="' + escapeAttr(item.email || "-") + '">' + escapeHTML(item.email || "-") + "</span></td>",
+      '<td><span class="um-main-text um-user-contact" title="' + escapeAttr(item.phone || "-") + '">' + escapeHTML(item.phone || "-") + "</span></td>",
+      '<td><span class="um-main-text um-user-contact" title="' + escapeAttr(item.email || "-") + '">' + escapeHTML(item.email || "-") + "</span></td>",
       '<td><span class="um-status ' + statusClass + '">' + statusText + "</span></td>",
       '<td><span class="um-role-list">' + roleList(item).map(function (role) {
         return '<span class="um-role-tag">' + escapeHTML(role) + "</span>";
@@ -826,20 +828,23 @@
     if ($("umConfirmOk")) $("umConfirmOk").addEventListener("click", runConfirm);
     if ($("umDrawerMask")) $("umDrawerMask").addEventListener("click", closeDrawer);
 
-    const orgAddBtn = $("umOrgAddBtn");
-    if (orgAddBtn) orgAddBtn.addEventListener("click", function () { addOrg(null); });
-
     const tree = $("umOrgTree");
     if (tree) {
       tree.addEventListener("contextmenu", function (event) {
         const row = event.target.closest(".um-tree-row[data-org-id]");
-        if (!row || row.getAttribute("data-org-id") === "all") return;
+        if (!row) return;
         event.preventDefault();
         hideOrgMenu();
         row.classList.add("context-active");
         state.ctxOrgId = row.getAttribute("data-org-id");
         const menu = $("umOrgCtxMenu");
         if (!menu) return;
+        const isRoot = state.ctxOrgId === "all";
+        const newLabel = $("umOrgNewLabel");
+        if (newLabel) newLabel.textContent = isRoot ? "新增一级组织" : "新增子组织";
+        menu.querySelectorAll('[data-act="org-rename"], [data-act="org-delete"], .um-ctx-sep').forEach(function (item) {
+          item.classList.toggle("hidden", isRoot);
+        });
         menu.style.left = Math.min(event.clientX, window.innerWidth - 170) + "px";
         menu.style.top = Math.min(event.clientY, window.innerHeight - 130) + "px";
         menu.classList.remove("hidden");
