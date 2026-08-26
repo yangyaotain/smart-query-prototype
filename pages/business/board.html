@@ -381,7 +381,7 @@
       <button class="menu-item active">我的看板</button>
       <button class="menu-item" onclick="goTo('report.html')">我的报告</button>
     </nav>
-    <div class="top-actions"><button class="admin-link icon-btn" onclick="goTo('../admin/data-source.html')"><span class="btn-icon">⚙</span>管理后台</button><button class="user-trigger" type="button"><div class="avatar">张</div><strong>张三</strong><span class="dropdown-arrow"></span></button></div>
+    <div class="top-actions"><a class="requirements-link icon-btn" href="requirements.html" target="_blank" rel="noopener noreferrer" aria-label="新窗口打开需求说明"><span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"></path><path d="M15 3v4h4"></path><path d="M9 12h6"></path><path d="M9 16h6"></path></svg></span><span>需求说明</span></a><button class="admin-link icon-btn" onclick="goTo('../admin/data-source.html')"><span class="btn-icon">⚙</span>管理后台</button><button class="user-trigger" type="button"><div class="avatar">张</div><strong>张三</strong><span class="dropdown-arrow"></span></button></div>
   </header>
 
   <main class="business-page">
@@ -517,6 +517,10 @@
           <p id="boardMeta" style="margin:6px 0 0;color:#6b7280;font-size:13px;">来源：智能问数 + 我的仪表盘 · 最近更新：今日 09:30</p>
         </div>
         <div class="toolbar">
+          <button class="action-dropdown-btn" type="button" onclick="createBoardFromToolbar()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><path d="M16.5 14v6"></path><path d="M13.5 17h6"></path></svg>
+            <span>新建看板</span>
+          </button>
           <button class="action-dropdown-btn" type="button" id="boardDataUpdateBtn" onclick="startBoardDataUpdate()">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.5 6.2"></path><path d="M3 12A9 9 0 0 1 18.5 5.8"></path><path d="M18 2v5h-5"></path><path d="M6 22v-5h5"></path></svg>
             <span>数据更新</span>
@@ -581,14 +585,6 @@
             <div class="widget-chart" id="chartProductMix"></div>
           </div>
 
-          <!-- AI 看板解读 -->
-          <div class="canvas-widget wide insight-widget">
-            <h3>AI 看板解读</h3>
-            <p id="boardInsight">本月华东区销售趋势继续上行，线上渠道贡献较高。建议重点关注 4 月异常增长原因，并评估促销策略是否可复制到其他区域。整体目标完成率 86%，距离季度目标尚有 14%，TOP3 客户贡献集中，建议下沉中长尾客户激活动作。</p>
-            <div class="insight-tags" id="boardInsightTags">
-              <span>趋势上行</span><span>线上渠道领跑</span><span>TOP3客户高集中度</span><span>目标差距 14%</span>
-            </div>
-          </div>
         </div>
       </div>
       <!-- 数据更新执行遮罩：只覆盖右侧看板内容区 -->
@@ -601,7 +597,7 @@
               </div>
               <div>
                 <h3 id="boardUpdateTitle">数据更新中</h3>
-                <p id="boardUpdateSubtitle">AI 正在刷新看板数据、校验图表指标并重新生成解读</p>
+                <p id="boardUpdateSubtitle">正在刷新看板数据并校验图表指标</p>
               </div>
             </div>
             <div class="board-update-badge" id="boardUpdateBadge">运行中</div>
@@ -624,13 +620,13 @@
             <div class="board-update-progress"><span id="boardUpdateProgressBar"></span></div>
             <div class="board-update-process">
               <div class="board-update-process-head">
-                <h4>AI 思考与数据执行过程</h4>
+                <h4>数据刷新与校验过程</h4>
                 <span id="boardUpdateStepSummary">0 / 6 已完成</span>
               </div>
               <div class="board-update-timeline" id="boardUpdateTimeline">
                 <div class="board-update-step" data-step="0">
                   <div class="board-update-step-dot">1</div>
-                  <div><strong>识别看板组件</strong><p>读取 KPI 卡片、趋势图、区域图、渠道图和 AI 解读模块。</p></div>
+                  <div><strong>识别看板组件</strong><p>读取 KPI 卡片、趋势图、区域图、渠道图和客户贡献图。</p></div>
                 </div>
                 <div class="board-update-step" data-step="1">
                   <div class="board-update-step-dot">2</div>
@@ -646,7 +642,7 @@
                 </div>
                 <div class="board-update-step" data-step="4">
                   <div class="board-update-step-dot">5</div>
-                  <div><strong>重新生成解读</strong><p>计算趋势、区域贡献、渠道变化和客户集中度，生成风险提示。</p></div>
+                  <div><strong>汇总刷新结果</strong><p>汇总趋势、区域贡献、渠道变化和客户集中度的最新数据。</p></div>
                 </div>
                 <div class="board-update-step" data-step="5">
                   <div class="board-update-step-dot">6</div>
@@ -727,7 +723,7 @@
   </div>
 
   <!-- AI 机器人浮动入口 -->
-  <button class="ai-bot-launcher" id="aiBotLauncher" type="button" aria-label="打开 AI 看板助手">
+  <button class="ai-bot-launcher hidden" id="aiBotLauncher" type="button" aria-label="AI 看板助手已迁移至智能问数" aria-hidden="true" tabindex="-1">
     <span class="bot-spark">✦</span>
     <svg class="bot-svg" viewBox="0 0 24 24" aria-hidden="true">
       <rect x="4" y="7.5" width="16" height="11" rx="3"></rect>
@@ -1094,11 +1090,11 @@
       const BOARD_UPDATE_KEY = 'smart-query-board-update-task';
       const BOARD_UPDATE_DURATION = 10000;
       const BOARD_UPDATE_STEPS = [
-        { at: 0, phase: 'AI 思考过程', desc: '正在识别当前看板组件、指标口径和数据刷新范围。' },
+        { at: 0, phase: '读取看板配置', desc: '正在识别当前看板组件、指标口径和数据刷新范围。' },
         { at: 1600, phase: '指标口径确认', desc: '正在匹配销售额、订单量、目标完成率、客户贡献等核心指标。' },
         { at: 3200, phase: '数据更新执行', desc: '正在同步 KPI、趋势图、区域图、渠道图和客户贡献数据。' },
         { at: 5000, phase: '图表质量校验', desc: '正在检查异常波动、缺失值、峰值和组件间口径差异。' },
-        { at: 6800, phase: '数据分析过程', desc: '正在重新计算趋势、区域贡献、渠道变化和客户集中度。' },
+        { at: 6800, phase: '指标重新计算', desc: '正在重新计算趋势、区域贡献、渠道变化和客户集中度。' },
         { at: 8400, phase: '结果汇总', desc: '正在整理最新数据摘要，准备恢复看板查看状态。' }
       ];
       let boardUpdateTimer = null;
@@ -1197,14 +1193,14 @@
 
         boardUpdateEls.title.textContent = isFinished ? '数据更新完成' : '数据更新中';
         boardUpdateEls.subtitle.textContent = isFinished
-          ? '已完成看板数据刷新、图表校验和解读汇总'
-          : 'AI 正在刷新看板数据、校验图表指标并重新生成解读';
+          ? '已完成看板数据刷新和图表指标校验'
+          : '正在刷新看板数据并校验图表指标';
         boardUpdateEls.badge.textContent = isFinished ? '已完成' : '运行中';
         boardUpdateEls.percent.textContent = percent + '%';
         boardUpdateEls.ring.style.setProperty('--update-progress', percent + '%');
         boardUpdateEls.progressBar.style.width = percent + '%';
         boardUpdateEls.phase.textContent = isFinished ? '更新完成' : currentStep.phase;
-        boardUpdateEls.desc.textContent = isFinished ? '最新看板数据已完成同步，AI 解读已汇总。' : currentStep.desc;
+        boardUpdateEls.desc.textContent = isFinished ? '最新看板数据已完成同步，所有图表指标已更新。' : currentStep.desc;
         boardUpdateEls.boardName.textContent = task.boardName || '当前看板';
         boardUpdateEls.elapsed.textContent = (elapsed / 1000).toFixed(1) + 's';
         boardUpdateEls.stepSummary.textContent = completedCount + ' / ' + BOARD_UPDATE_STEPS.length + ' 已完成';
@@ -1510,11 +1506,9 @@
           }
         });
 
-        // 标题/解读
+        // 标题
         document.getElementById('boardTitle').textContent = data.title;
         document.getElementById('boardMeta').textContent = data.meta;
-        document.getElementById('boardInsight').textContent = data.insight;
-        document.getElementById('boardInsightTags').innerHTML = data.tags.map((t) => '<span>' + t + '</span>').join('');
 
         // 同步 AI 助手副标题
         const sub = document.getElementById('aiChatSubtitle');
@@ -1529,8 +1523,6 @@
           // 新建看板：清空并显示占位
           document.getElementById('boardTitle').textContent = fallbackName || '未命名看板';
           document.getElementById('boardMeta').textContent = '新建看板，尚未配置数据来源';
-          document.getElementById('boardInsight').textContent = '该看板暂未配置 AI 解读，请在编辑看板中添加图表与解读内容。';
-          document.getElementById('boardInsightTags').innerHTML = '';
         }
         syncBoardUpdateMask();
       }
@@ -1788,6 +1780,17 @@
         });
       }
 
+      window.createBoardFromToolbar = function () {
+        const activeBoard = tree.querySelector('.tree-node[data-type="board"] > .tree-row.active')?.parentElement;
+        const firstCategory = tree.querySelector('.tree-node[data-type="category"]');
+        const target = activeBoard || firstCategory;
+        if (!target) {
+          showToast('请先新增看板分类');
+          return;
+        }
+        addBoard(target);
+      };
+
       function renameNode(node) {
         const labelEl = node.querySelector(':scope > .tree-row > .tree-label');
         const before = labelEl.textContent;
@@ -2034,11 +2037,9 @@
       let isThinking = false;
 
       function openChat() {
-        pane.classList.remove('hidden', 'minimized');
-        pane.setAttribute('aria-hidden', 'false');
+        pane.classList.add('hidden');
+        pane.setAttribute('aria-hidden', 'true');
         launcher.classList.add('hidden');
-        // 打开后重排所有图表，避免 0px 时未渲染
-        setTimeout(resizeAllCharts, 50);
       }
       function closeChat() {
         pane.classList.add('hidden');
@@ -2053,7 +2054,7 @@
         pane.style.width = '';
         // 重置最大化按钮图标
         maxIcon.innerHTML = '<rect x="4" y="4" width="16" height="16" rx="2"></rect>';
-        launcher.classList.remove('hidden');
+        launcher.classList.add('hidden');
         setTimeout(resizeAllCharts, 50);
       }
       function toggleMinimize() {

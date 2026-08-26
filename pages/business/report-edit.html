@@ -2003,7 +2003,7 @@
       <!-- 顶部一行小提示 -->
       <div class="editor-tip">
         <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
-        <span><strong>提示：</strong>选中正文后右键，可对内容进行<strong> 改写 / 扩写 / 仿写 / 润色 / 缩写 / 续写 / 深度写作 </strong>等 AI 操作。</span>
+        <span><strong>提示：</strong>可使用顶部工具栏调整内容与格式；保存后将生成一个新的报告版本。</span>
       </div>
 
       <!-- 富文本编辑画布 -->
@@ -2238,7 +2238,7 @@
   </div>
 
   <!-- =================== AI 机器人浮动入口（同看板） =================== -->
-  <button class="ai-bot-launcher" id="aiBotLauncher" type="button" aria-label="打开 AI 编辑助手">
+  <button class="ai-bot-launcher hidden" id="aiBotLauncher" type="button" aria-label="AI 编辑助手已整合到智能问数" aria-hidden="true" tabindex="-1">
     <span class="bot-spark">✦</span>
     <svg class="bot-svg" viewBox="0 0 24 24" aria-hidden="true">
       <rect x="4" y="7.5" width="16" height="11" rx="3"></rect>
@@ -3136,18 +3136,13 @@
       });
 
       // ====================================================================
-      // 4. 右键 AI 写作菜单
+      // 4. 编辑区右键保留浏览器默认能力；AI 编辑已整合到智能问数
       // ====================================================================
       const writeMenu = document.getElementById('aiWriteMenu');
       const writeMenuTip = document.getElementById('aiWriteMenuTip');
 
-      article.addEventListener('contextmenu', function (e) {
-        const sel = window.getSelection();
-        const text = (sel && sel.toString()) || '';
-        e.preventDefault();
-        // 暂存当前选区，防止后续点击丢失
-        rememberSelection();
-        showWriteMenuAt(e.clientX, e.clientY, text);
+      article.addEventListener('contextmenu', function () {
+        hideWriteMenu();
       });
 
       function showWriteMenuAt(x, y, selectedText) {
@@ -3312,10 +3307,9 @@
       applyAIWidth(readAIWidth(), false);
 
       function openChat() {
-        applyAIWidth(readAIWidth(), false);
-        pane.classList.remove('hidden', 'minimized');
-        pane.setAttribute('aria-hidden', 'false');
-        document.body.classList.add('ai-assistant-open');
+        pane.classList.add('hidden');
+        pane.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('ai-assistant-open');
         launcher.classList.add('hidden');
       }
       function closeChat() {
@@ -3326,7 +3320,7 @@
         pane.style.left = pane.style.top = pane.style.right = pane.style.bottom = '';
         pane.style.height = pane.style.width = '';
         maxIcon.innerHTML = '<rect x="4" y="4" width="16" height="16" rx="2"></rect>';
-        launcher.classList.remove('hidden');
+        launcher.classList.add('hidden');
         clearTargetCard();
       }
       function toggleMinimize() {
@@ -4066,7 +4060,7 @@
       // 8. 顶部"保存报告"
       // ====================================================================
       document.getElementById('btnSaveReport').addEventListener('click', function () {
-        showToast('已保存报告');
+        showToast('已保存报告，并生成新版本');
         setTimeout(() => goTo('report.html'), 600);
       });
 

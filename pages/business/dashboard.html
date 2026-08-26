@@ -393,6 +393,7 @@
       <button class="menu-item" onclick="goTo('report.html')">我的报告</button>
     </nav>
     <div class="top-actions">
+      <a class="requirements-link icon-btn" href="requirements.html" target="_blank" rel="noopener noreferrer" aria-label="新窗口打开需求说明"><span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"></path><path d="M15 3v4h4"></path><path d="M9 12h6"></path><path d="M9 16h6"></path></svg></span><span>需求说明</span></a>
       <button class="admin-link icon-btn" onclick="goTo('../admin/data-source.html')"><span class="btn-icon">⚙</span>管理后台</button>
       <button class="user-trigger" type="button"><div class="avatar">张</div><strong>张三</strong><span class="dropdown-arrow"></span></button>
     </div>
@@ -661,7 +662,7 @@
     </section>
   </main>
 
-  <!-- 预览抽屉（取智能问数普通问答的结果结构） -->
+  <!-- 仪表盘资产预览抽屉（单个图表或单个表格） -->
   <div class="drawer-mask hidden" id="previewMask"></div>
   <aside class="drawer preview-drawer hidden" id="previewDrawer">
     <div class="drawer-head">
@@ -679,12 +680,6 @@
     </div>
 
     <div class="drawer-body">
-      <section class="insight-box">
-        <h3>分析结论</h3>
-        <p id="previewConclusion"></p>
-        <div class="tag-row" id="previewTags"></div>
-      </section>
-
       <section class="chart-card preview-chart-card" id="previewChartCard">
         <div class="chart-top">
           <h3 id="previewChartTitle">趋势图</h3>
@@ -693,30 +688,15 @@
         <div class="preview-chart-area" id="previewChartArea"></div>
       </section>
 
-      <section class="preview-table-card">
+      <section class="preview-table-card hidden" id="previewTableCard">
         <div class="chart-top">
-          <h3>明细数据</h3>
-          <span class="chart-meta">单位：万元</span>
+          <h3 id="previewTableTitle">明细数据</h3>
+          <span class="chart-meta" id="previewTableMeta">近 30 天数据</span>
         </div>
         <div class="inline-table">
           <table id="previewTable"></table>
         </div>
       </section>
-
-      <div class="preview-action-bar">
-        <div class="answer-action-left">
-          <span class="answer-action-title">这个回答准确吗？</span>
-          <button class="answer-action-btn" type="button" title="喜欢">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="action-icon"><path d="M7 10v12"></path><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88z"></path></svg>
-          </button>
-          <button class="answer-action-btn" type="button" title="不喜欢">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="action-icon"><path d="M17 14V2"></path><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88z"></path></svg>
-          </button>
-          <button class="answer-action-btn" type="button" title="反馈">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="action-icon"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg>
-          </button>
-        </div>
-      </div>
 
       <div class="preview-update-mask hidden" id="previewUpdateMask" role="dialog" aria-modal="true" aria-labelledby="previewUpdateTitle">
         <section class="preview-update-panel">
@@ -727,7 +707,7 @@
               </div>
               <div>
                 <h3 id="previewUpdateTitle">数据更新中</h3>
-                <p id="previewUpdateSubtitle">AI 正在刷新当前预览数据、图表和明细表</p>
+                <p id="previewUpdateSubtitle">AI 正在刷新当前仪表盘资产数据</p>
               </div>
             </div>
             <div class="preview-update-badge" id="previewUpdateBadge">运行中</div>
@@ -739,7 +719,7 @@
               </div>
               <div class="preview-update-summary">
                 <h4 id="previewUpdatePhase">准备更新</h4>
-                <p id="previewUpdateDesc">正在读取当前预览的仪表盘、分析主题和数据更新时间。</p>
+                <p id="previewUpdateDesc">正在读取当前仪表盘资产类型和数据更新时间。</p>
                 <div class="preview-update-metrics">
                   <span class="preview-update-metric">当前仪表盘 <strong id="previewUpdateName">近6个月销售额趋势</strong></span>
                   <span class="preview-update-metric">已用时间 <strong id="previewUpdateElapsed">0.0s</strong></span>
@@ -756,7 +736,7 @@
               <div class="preview-update-timeline" id="previewUpdateTimeline">
                 <div class="preview-update-step" data-step="0">
                   <div class="preview-update-step-dot">1</div>
-                  <div><strong>识别预览内容</strong><p>读取仪表盘名称、分析主题、图表类型和明细表结构。</p></div>
+                  <div><strong>识别资产内容</strong><p>读取仪表盘名称、分析主题和资产类型。</p></div>
                 </div>
                 <div class="preview-update-step" data-step="1">
                   <div class="preview-update-step-dot">2</div>
@@ -764,19 +744,19 @@
                 </div>
                 <div class="preview-update-step" data-step="2">
                   <div class="preview-update-step-dot">3</div>
-                  <div><strong>刷新图表数据</strong><p>同步当前图表所需的数据切片，并准备重绘图形。</p></div>
+                  <div><strong>刷新资产数据</strong><p>同步当前图表或表格所需的数据切片。</p></div>
                 </div>
                 <div class="preview-update-step" data-step="3">
                   <div class="preview-update-step-dot">4</div>
-                  <div><strong>校验明细数据</strong><p>检查明细表中的缺失值、异常波动和统计口径差异。</p></div>
+                  <div><strong>校验更新结果</strong><p>检查缺失值、异常波动和统计口径差异。</p></div>
                 </div>
                 <div class="preview-update-step" data-step="4">
                   <div class="preview-update-step-dot">5</div>
-                  <div><strong>重新生成结论</strong><p>结合最新数据生成分析结论、标签和风险提示。</p></div>
+                  <div><strong>重新生成预览</strong><p>使用最新数据重新绘制图表或更新表格。</p></div>
                 </div>
                 <div class="preview-update-step" data-step="5">
                   <div class="preview-update-step-dot">6</div>
-                  <div><strong>汇总更新结果</strong><p>整理更新时间和预览摘要，准备恢复抽屉内容。</p></div>
+                  <div><strong>完成数据更新</strong><p>记录更新时间，准备恢复资产预览。</p></div>
                 </div>
               </div>
             </div>
@@ -794,8 +774,6 @@
 
     <div class="drawer-foot">
       <button class="ghost-btn" data-act="close">关闭</button>
-      <button class="secondary-btn">加入看板</button>
-      <button class="secondary-btn">加入报告</button>
     </div>
   </aside>
 
@@ -897,60 +875,25 @@
         return buildBars();
       }
 
-      // ---- 预览抽屉数据模板（参考智能问数普通问答结果） ----
+      // ---- 预览抽屉数据模板（单个图表或单个表格） ----
       const PREVIEW_TPL = {
         line: {
           subject: '销售分析',
-          conclusion: '近 6 个月销售额持续增长，6 月达到 3248 万元，较 1 月提升 49.0%。其中 4 月至 6 月增长明显，整体趋势稳定向上，业务动能增强。',
-          tags: ['持续增长', '6月达到峰值', '4-6月增长明显'],
           chartTitle: '月度销售额趋势',
-          chartMeta: '单位：万元 · 数据更新：今日 08:00',
-          headers: ['月份', '销售额（万元）', '环比增长', '订单量', '客单价'],
-          rows: [
-            ['1月', '2,180', '-', '12,430', '1,754'],
-            ['2月', '2,360', '+8.3%', '13,180', '1,790'],
-            ['3月', '2,510', '+6.4%', '14,050', '1,786'],
-            ['4月', '2,890', '+15.1%', '15,920', '1,815'],
-            ['5月', '3,120', '+8.0%', '16,880', '1,848'],
-            ['6月', '3,248', '+4.1%', '17,260', '1,882'],
-          ],
+          chartMeta: '单位：万元 · 数据更新：今日 08:00'
         },
         bars: {
           subject: '销售分析',
-          conclusion: '各分组销售额差异显著，TOP3 合计贡献 62.5% 销售额。整体分布呈头部集中态势，建议持续加大对头部分组的资源投入。',
-          tags: ['TOP3占62.5%', '头部集中', '尾部待提升'],
           chartTitle: '分组销售额对比',
-          chartMeta: '单位：万元 · 数据更新：今日 08:00',
-          headers: ['分组', '销售额（万元）', '占比', '同比', '环比'],
-          rows: [
-            ['华东大区', '4,820', '28.6%', '+18.2%', '+5.6%'],
-            ['华南大区', '3,560', '21.1%', '+12.4%', '+3.8%'],
-            ['华北大区', '2,180', '13.0%', '+8.6%', '+2.1%'],
-            ['西南大区', '1,920', '11.4%', '+6.2%', '+1.7%'],
-            ['华中大区', '1,640', '9.8%', '+4.8%', '+0.9%'],
-            ['东北大区', '1,210', '7.2%', '+3.6%', '+0.4%'],
-          ],
+          chartMeta: '单位：万元 · 数据更新：今日 08:00'
         },
         pie: {
           subject: '客户分析',
-          conclusion: '客户主要集中在电子产品（32%）和快消品（24%）行业，合计占比超过 55%。前 3 大行业贡献度达 74%，行业集中度较高。',
-          tags: ['电子产品占首位', 'TOP3占74%', '行业集中度高'],
           chartTitle: '行业分布占比',
-          chartMeta: '统计周期：近 6 个月',
-          headers: ['行业', '客户数', '占比', '同比变化'],
-          rows: [
-            ['电子产品', '486', '32.0%', '+5.2%'],
-            ['快消品', '364', '24.0%', '+3.8%'],
-            ['服装服饰', '273', '18.0%', '+2.6%'],
-            ['家居家装', '212', '14.0%', '+1.5%'],
-            ['食品生鲜', '120', '7.9%', '+0.8%'],
-            ['其他', '62', '4.1%', '-0.4%'],
-          ],
+          chartMeta: '统计周期：近 6 个月'
         },
         table: {
           subject: '销售运营',
-          conclusion: '当前共 6 条核心明细记录，TOP1 城市订单量为 18,520 单，环比增长 12.4%。整体数据健康，建议关注尾部城市的订单波动。',
-          tags: ['整体健康', 'TOP1环比+12.4%', '关注尾部'],
           chartTitle: '明细汇总',
           chartMeta: '近 30 天数据',
           headers: ['城市', '订单量', '销售额（万元）', '环比', '同比'],
@@ -1080,12 +1023,12 @@
       const PREVIEW_UPDATE_KEY = 'smart-query-dashboard-preview-update-task';
       const PREVIEW_UPDATE_DURATION = 10000;
       const PREVIEW_UPDATE_STEPS = [
-        { at: 0, phase: 'AI 思考过程', desc: '正在识别当前仪表盘、分析主题、图表类型和明细表结构。' },
+        { at: 0, phase: '资产识别', desc: '正在识别当前仪表盘名称、分析主题和资产类型。' },
         { at: 1600, phase: '指标口径确认', desc: '正在匹配销售额、订单量、环比、同比和客单价等核心指标。' },
-        { at: 3200, phase: '图表数据刷新', desc: '正在同步当前图表所需的数据切片，并准备重绘图形。' },
-        { at: 5000, phase: '明细数据校验', desc: '正在检查明细表中的缺失值、异常波动和统计口径差异。' },
-        { at: 6800, phase: '数据分析过程', desc: '正在结合最新数据生成分析结论、标签和风险提示。' },
-        { at: 8400, phase: '结果汇总', desc: '正在整理更新时间和预览摘要，准备恢复抽屉内容。' }
+        { at: 3200, phase: '资产数据刷新', desc: '正在同步当前图表或表格所需的数据切片。' },
+        { at: 5000, phase: '更新结果校验', desc: '正在检查缺失值、异常波动和统计口径差异。' },
+        { at: 6800, phase: '资产预览生成', desc: '正在使用最新数据重新生成当前资产预览。' },
+        { at: 8400, phase: '更新完成', desc: '正在记录更新时间，准备恢复资产预览。' }
       ];
       let previewUpdateTimer = null;
       let previewUpdateTask = null;
@@ -1162,6 +1105,7 @@
         const tpl = PREVIEW_TPL[item.thumb] || PREVIEW_TPL.line;
         document.getElementById('previewMeta').textContent = buildPreviewMetaText(item, tpl);
         document.getElementById('previewChartMeta').textContent = buildPreviewChartMetaText(item, tpl);
+        document.getElementById('previewTableMeta').textContent = buildPreviewChartMetaText(item, tpl);
       }
 
       function setPreviewUpdateVisible(visible) {
@@ -1185,14 +1129,14 @@
 
         previewUpdateEls.title.textContent = isFinished ? '数据更新完成' : '数据更新中';
         previewUpdateEls.subtitle.textContent = isFinished
-          ? '已完成预览数据刷新、明细校验和分析结论汇总'
-          : 'AI 正在刷新当前预览数据、图表和明细表';
+          ? '已完成当前仪表盘资产数据刷新和结果校验'
+          : 'AI 正在刷新当前仪表盘资产数据';
         previewUpdateEls.badge.textContent = isFinished ? '已完成' : '运行中';
         previewUpdateEls.percent.textContent = percent + '%';
         previewUpdateEls.ring.style.setProperty('--update-progress', percent + '%');
         previewUpdateEls.progressBar.style.width = percent + '%';
         previewUpdateEls.phase.textContent = isFinished ? '更新完成' : currentStep.phase;
-        previewUpdateEls.desc.textContent = isFinished ? '最新预览数据已完成同步，分析结论已汇总。' : currentStep.desc;
+        previewUpdateEls.desc.textContent = isFinished ? '最新资产数据已完成同步，预览已更新。' : currentStep.desc;
         previewUpdateEls.name.textContent = task.dashboardName || '当前仪表盘';
         previewUpdateEls.elapsed.textContent = (elapsed / 1000).toFixed(1) + 's';
         previewUpdateEls.stepSummary.textContent = completedCount + ' / ' + PREVIEW_UPDATE_STEPS.length + ' 已完成';
@@ -1318,32 +1262,34 @@
       function openPreview(item) {
         currentPreviewItem = item;
         const tpl = PREVIEW_TPL[item.thumb] || PREVIEW_TPL.line;
-        document.getElementById('previewTitle').textContent = item.name + ' · 分析结果';
+        document.getElementById('previewTitle').textContent = item.name + ' · 预览';
         document.getElementById('previewMeta').textContent = buildPreviewMetaText(item, tpl);
-        document.getElementById('previewConclusion').textContent = tpl.conclusion;
-        document.getElementById('previewTags').innerHTML = tpl.tags.map((t) => '<span>' + t + '</span>').join('');
         document.getElementById('previewChartTitle').textContent = tpl.chartTitle;
         document.getElementById('previewChartMeta').textContent = buildPreviewChartMetaText(item, tpl);
+        document.getElementById('previewTableTitle').textContent = tpl.chartTitle;
+        document.getElementById('previewTableMeta').textContent = buildPreviewChartMetaText(item, tpl);
 
         const chartArea = document.getElementById('previewChartArea');
         const chartCard = document.getElementById('previewChartCard');
+        const tableCard = document.getElementById('previewTableCard');
         if (item.thumb === 'table') {
           chartCard.classList.add('hidden');
+          tableCard.classList.remove('hidden');
+          const tableEl = document.getElementById('previewTable');
+          tableEl.innerHTML =
+            '<thead><tr>' + tpl.headers.map((h, i) => '<th' + (i > 0 ? ' class="num"' : '') + '>' + h + '</th>').join('') + '</tr></thead>' +
+            '<tbody>' + tpl.rows.map((row) => (
+              '<tr>' + row.map((c, i) => {
+                if (i === 0) return '<td>' + c + '</td>';
+                const cls = /^\+/.test(c) ? 'num up' : (/^-/.test(c) ? 'num down' : 'num');
+                return '<td class="' + cls + '">' + c + '</td>';
+              }).join('') + '</tr>'
+            )).join('') + '</tbody>';
         } else {
           chartCard.classList.remove('hidden');
+          tableCard.classList.add('hidden');
           chartArea.innerHTML = renderPreviewChart(item.thumb);
         }
-
-        const tableEl = document.getElementById('previewTable');
-        tableEl.innerHTML =
-          '<thead><tr>' + tpl.headers.map((h, i) => '<th' + (i > 0 ? ' class="num"' : '') + '>' + h + '</th>').join('') + '</tr></thead>' +
-          '<tbody>' + tpl.rows.map((row) => (
-            '<tr>' + row.map((c, i) => {
-              if (i === 0) return '<td>' + c + '</td>';
-              const cls = /^\+/.test(c) ? 'num up' : (/^-/.test(c) ? 'num down' : 'num');
-              return '<td class="' + cls + '">' + c + '</td>';
-            }).join('') + '</tr>'
-          )).join('') + '</tbody>';
 
         previewMask.classList.remove('hidden');
         previewDrawer.classList.remove('hidden');

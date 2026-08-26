@@ -23,6 +23,8 @@ const analysisReportTitle = document.getElementById("analysisReportTitle");
 const resultViewToolbar = document.getElementById("resultViewToolbar");
 const chartResult = document.getElementById("chartResult");
 const tableResult = document.getElementById("tableResult");
+const defaultQaTableHTML = tableResult?.querySelector("table")?.innerHTML || "";
+const defaultQaTagsHTML = conclusionTags?.innerHTML || "";
 const feedbackDetailPanel = document.getElementById("feedbackDetailPanel");
 const chartArea = document.getElementById("chartArea");
 const modalMask = document.getElementById("modalMask");
@@ -36,6 +38,24 @@ const comparisonResult = document.getElementById("comparisonResult");
 const comparisonReportTitle = document.getElementById("comparisonReportTitle");
 const templateResult = document.getElementById("templateResult");
 const templateReportTitle = document.getElementById("templateReportTitle");
+const fileResult = document.getElementById("fileResult");
+const fileResultAnswerTitle = document.getElementById("fileResultAnswerTitle");
+const fileResultSummary = document.getElementById("fileResultSummary");
+const generatedFileIcon = document.getElementById("generatedFileIcon");
+const generatedFileName = document.getElementById("generatedFileName");
+const generatedFileMeta = document.getElementById("generatedFileMeta");
+const generatedFileStatus = document.getElementById("generatedFileStatus");
+const generatedFileActions = document.getElementById("generatedFileActions");
+const referenceConversationResult = document.getElementById("referenceConversationResult");
+const referenceResultIcon = document.getElementById("referenceResultIcon");
+const referenceResultBadge = document.getElementById("referenceResultBadge");
+const referenceResultHeading = document.getElementById("referenceResultHeading");
+const referenceResultSummary = document.getElementById("referenceResultSummary");
+const referenceResultDetails = document.getElementById("referenceResultDetails");
+const referenceExecutionFeedback = document.getElementById("referenceExecutionFeedback");
+const referenceFeedbackTitle = document.getElementById("referenceFeedbackTitle");
+const referenceFeedbackDesc = document.getElementById("referenceFeedbackDesc");
+const referenceFeedbackMeta = document.getElementById("referenceFeedbackMeta");
 const deleteModal = document.getElementById("deleteModal");
 const uploadModal = document.getElementById("uploadModal");
 const exportMenu = document.getElementById("exportMenu");
@@ -48,6 +68,14 @@ const favoriteContextMenu = document.getElementById("favoriteContextMenu");
 const imageUploadInput = document.getElementById("imageUploadInput");
 const fileUploadInput = document.getElementById("fileUploadInput");
 const attachmentPreviewList = document.getElementById("attachmentPreviewList");
+const referencePreviewList = document.getElementById("referencePreviewList");
+const referencePickerTriggerText = document.getElementById("referencePickerTriggerText");
+const referenceModalMask = document.getElementById("referenceModalMask");
+const referenceModal = document.getElementById("referenceModal");
+const referencePickerSearch = document.getElementById("referencePickerSearch");
+const referencePickerTree = document.getElementById("referencePickerTree");
+const referencePickerEmpty = document.getElementById("referencePickerEmpty");
+const referenceSelectedCount = document.getElementById("referenceSelectedCount");
 const themeName = document.getElementById("themeName");
 const themeDesc = document.getElementById("themeDesc");
 const themeBadge = document.getElementById("themeBadge");
@@ -81,8 +109,44 @@ let currentQuestionText = "近6个月华东区销售额趋势如何？";
 let currentAnswerTitle = "华东区近6个月销售额趋势分析";
 let selectedSkillKey = "general";
 let activeSkillRun = null;
+let activeReferenceRun = null;
+let currentReferenceTab = "board";
+let selectedReferences = [];
+let pendingReferenceKeys = new Set();
+const reportVersionCounters = new Map([["report:r1", 13], ["report:r2", 6], ["report:r3", 3]]);
 
 const BASE_QUESTION_PLACEHOLDER = questionInput?.dataset.placeholder || "请输入你想了解的业务问题";
+
+const REFERENCE_CATALOG = {
+  board: [
+    { category: "销售经营", items: [
+      { key: "board:b1", kind: "board", label: "看板", name: "销售经营总览", meta: "销售经营 / 最近更新：今日 09:30" },
+      { key: "board:b2", kind: "board", label: "看板", name: "区域销售看板", meta: "销售经营 / 最近更新：昨日 18:20" },
+      { key: "board:b3", kind: "board", label: "看板", name: "渠道经营看板", meta: "销售经营 / 最近更新：昨日 17:45" }
+    ] },
+    { category: "客户运营", items: [
+      { key: "board:b4", kind: "board", label: "看板", name: "客户画像看板", meta: "客户运营 / 最近更新：05-08 16:30" },
+      { key: "board:b5", kind: "board", label: "看板", name: "客户复购看板", meta: "客户运营 / 最近更新：05-08 15:10" }
+    ] },
+    { category: "管理层汇报", items: [
+      { key: "board:b6", kind: "board", label: "看板", name: "关键经营指标看板", meta: "管理层汇报 / 最近更新：05-07 09:00" }
+    ] }
+  ],
+  report: [
+    { category: "销售经营", items: [
+      { key: "report:r1", kind: "report", fileType: "word", label: "报告", name: "二季度销售复盘报告", meta: "Word · 销售经营 / 最新版本 V13" },
+      { key: "report:r2", kind: "report", fileType: "pdf", label: "报告", name: "5月份销售分析月报", meta: "PDF · 销售经营 / 最新版本 V6" },
+      { key: "report:r3", kind: "report", fileType: "excel", label: "报告", name: "华东区销售增长专项分析", meta: "Excel · 销售经营 / 最新版本 V3" }
+    ] },
+    { category: "客户运营", items: [
+      { key: "report:r4", kind: "report", fileType: "pdf", label: "报告", name: "重点客户复购分析报告", meta: "PDF · 客户运营 / 最新版本 V5" },
+      { key: "report:r5", kind: "report", fileType: "word", label: "报告", name: "客户流失风险分析", meta: "Word · 客户运营 / 最新版本 V4" }
+    ] },
+    { category: "管理层汇报", items: [
+      { key: "report:r6", kind: "report", fileType: "pdf", label: "报告", name: "2026年经营分析报告", meta: "PDF · 管理层汇报 / 最新版本 V8" }
+    ] }
+  ]
+};
 
 const SKILL_DEFINITIONS = {
   general: {
@@ -137,7 +201,8 @@ let comparisonChart = null;
 let currentResultView = "line";
 let lastWordExportScope = null;
 let currentSaveType = "";
-let currentReportSaveMode = "new";
+let currentDashboardAssetType = "chart";
+let activeDashboardAssetButton = null;
 let activeReportPicker = "";
 
 const resultChartData = [
@@ -464,6 +529,146 @@ const templateThinkingSteps = [
   ["格式化与校对", "校对术语、数据单位与同环比口径，输出最终月报。"]
 ];
 
+const fileThinkingSteps = [
+  ["识别文件需求", "识别文件类型、报告月份和业务分析范围。"],
+  ["汇总分析结果", "汇总销售表现、结构变化、风险提示与经营建议。"],
+  ["生成报告文件", "按销售月报结构生成 Word 文档并完成版式整理。"],
+  ["校验文件内容", "校验数据口径、章节完整性和文件可用性。"]
+];
+
+const referenceThinkingSteps = [
+  ["读取引用内容", "加载当前对话引用的看板或报告内容。"],
+  ["识别对话要求", "判断本次请求是引用分析、修改报告还是写入报告。"],
+  ["组织处理结果", "结合引用内容生成分析结论或执行报告处理。"],
+  ["反馈执行状态", "返回处理范围、写入位置和最新报告版本。"]
+];
+
+const HISTORY_SCENARIOS = {
+  normal: { question: "近6个月华东区销售额趋势如何？", mode: "qa" },
+  free: { question: "再按城市拆分看看", mode: "qa", followup: true },
+  interpret: { question: "对这6个月的销售趋势进行整体解读", mode: "analysis", followup: true },
+  attribution: { question: "4月销售额为什么增长明显？", mode: "attribution", followup: true },
+  trend: { question: "预测未来3个月的销售趋势", mode: "trend", followup: true },
+  comparison: {
+    question: "与去年同期数据进行对比分析",
+    mode: "comparison",
+    followup: true,
+    attachment: { name: "2025年1-6月华东区销售明细.xlsx", meta: "Excel 文件 · 2.4 MB" }
+  },
+  template: { question: "按销售月报模板分析5月份经营情况", mode: "template", followup: true },
+  file: {
+    question: "请生成5月份销售分析月报Word文件",
+    mode: "file",
+    answerTitle: "2026年5月销售分析月报",
+    artifact: {
+      type: "word",
+      name: "2026年5月销售分析月报.docx",
+      meta: "Word 文档 · 2.8 MB",
+      title: "Word 月报已生成",
+      summary: "已根据 5 月份销售数据生成 Word 销售分析月报，包含经营摘要、核心指标、结构分析、风险提示与下月建议。"
+    }
+  },
+  filePdf: {
+    question: "请生成5月份销售分析月报PDF文件",
+    mode: "file",
+    answerTitle: "2026年5月销售分析月报",
+    artifact: {
+      type: "pdf",
+      name: "2026年5月销售分析月报.pdf",
+      meta: "PDF 文档 · 1.9 MB",
+      title: "PDF 月报已生成",
+      summary: "已生成适合直接分发和归档的 PDF 销售分析月报，页面包含经营摘要、趋势图表、风险提示与行动建议。"
+    }
+  },
+  fileExcel: {
+    question: "请生成5月份销售明细Excel文件",
+    mode: "file",
+    answerTitle: "2026年5月销售分析明细",
+    artifact: {
+      type: "excel",
+      name: "2026年5月销售分析明细.xlsx",
+      meta: "Excel 工作簿 · 3.6 MB",
+      title: "Excel 明细已生成",
+      summary: "已生成 5 月份销售分析 Excel 工作簿，包含销售明细、区域汇总、渠道结构、产品贡献和异常数据五个工作表。"
+    }
+  },
+  boardReferenceAnalysis: {
+    question: "分析一下“销售经营总览”看板，重点看看目标完成情况和区域差异。",
+    mode: "reference",
+    answerTitle: "销售经营总览看板分析",
+    reference: { kind: "board", label: "看板", name: "销售经营总览", meta: "管理层汇报 / 最近更新：今日 09:30" },
+    result: {
+      badge: "引用看板分析",
+      title: "看板分析完成",
+      summary: "销售经营总览整体保持增长，但目标达成和区域贡献仍存在明显差异，当前看板更适合重点关注目标缺口、区域分化和客户集中度。",
+      details: [
+        "目标完成率为 86%，距离季度目标仍有 14%，需要继续跟踪后续订单和回款节奏。",
+        "华东区贡献最高且增长稳定，华北、东北的完成率相对偏低，是当前主要区域差距来源。",
+        "TOP3 客户贡献集中，建议结合客户续约、订单频次和流失预警进一步分析。"
+      ]
+    }
+  },
+  reportReferenceAnalysis: {
+    question: "分析《二季度销售复盘报告》，总结主要结论和需要重点关注的问题。",
+    mode: "reference",
+    answerTitle: "二季度销售复盘报告分析",
+    reference: { kind: "report", fileType: "word", label: "报告", name: "二季度销售复盘报告", meta: "Word · 销售经营 / 当前版本 V11" },
+    result: {
+      badge: "引用报告分析",
+      title: "报告主要结论与风险",
+      summary: "报告显示二季度销售规模和经营质量同步改善，增长主要来自华东区域、线上渠道和重点客户，但目标缺口、库存周转和客户集中度仍需重点关注。",
+      details: [
+        "销售额同比增长 12.4%，线上渠道和新品是主要增量来源。",
+        "华北、东北目标完成率偏低，区域经营动作仍需进一步拆解。",
+        "库存周转天数上升，叠加 TOP10 客户集中度较高，可能影响后续毛利和收入稳定性。"
+      ]
+    }
+  },
+  reportRevision: {
+    question: "把《二季度销售复盘报告》第四章“问题与风险”重新整理，并补充库存风险说明。",
+    mode: "reference",
+    answerTitle: "二季度销售复盘报告修改结果",
+    reference: { kind: "report", fileType: "word", label: "报告", name: "二季度销售复盘报告", meta: "Word · 销售经营 / 修改前版本 V11" },
+    result: {
+      badge: "对话修改报告",
+      title: "已按要求完成报告修改",
+      summary: "第四章已重新组织为区域达成、库存周转、客户集中度和毛利风险四部分，并补充了库存积压对现金流和毛利率的影响说明。",
+      details: [
+        "重新整理原有风险顺序，优先呈现影响经营目标的关键问题。",
+        "新增长尾 SKU 周转超过 90 天、库存资金占用和促销清理压力说明。",
+        "保留原报告数据和结论口径，未修改其他章节。"
+      ],
+      feedback: {
+        title: "报告修改已完成",
+        desc: "已根据对话要求完成处理并保存最新版本",
+        meta: [["目标报告", "二季度销售复盘报告"], ["修改范围", "四、问题与风险"], ["最新版本", "V12"], ["版本来源", "智能问数修改"]]
+      }
+    }
+  },
+  reportAppend: {
+    question: "把刚才关于华东区销售增长的分析结论添加到《二季度销售复盘报告》的“经营建议”章节。",
+    mode: "reference",
+    answerTitle: "分析结论添加报告结果",
+    followup: true,
+    reference: { kind: "report", fileType: "word", label: "报告", name: "二季度销售复盘报告", meta: "Word · 销售经营 / 修改前版本 V12" },
+    result: {
+      badge: "对话添加报告",
+      title: "当前分析内容已写入报告",
+      summary: "已将本次对话中关于华东区销售增长、城市贡献和后续经营动作的结论整理后，添加到“经营建议”章节末尾。",
+      details: [
+        "写入内容包括华东区持续增长结论、重点城市贡献和线上渠道表现。",
+        "新增区域打法复制、重点客户跟进和库存保障三项行动建议。",
+        "本次仅追加当前对话相关内容，未覆盖原有章节。"
+      ],
+      feedback: {
+        title: "对话内容添加完成",
+        desc: "相关内容已写入指定章节并保存最新版本",
+        meta: [["目标报告", "二季度销售复盘报告"], ["写入位置", "五、经营建议"], ["最新版本", "V13"], ["版本来源", "智能问数添加"]]
+      }
+    }
+  }
+};
+
 const analysisReportTasks = [
   { id: "reportCoreConclusion", text: "华东区近6个月销售额保持持续增长，6月达到3248万元，较1月提升49.0%。4月后增长速度明显加快，整体趋势稳定向上。", block: 0 },
   { id: "reportMetric1", text: "销售额：1月 2180 万提升至 6月 3248 万，规模增长清晰。", block: 1 },
@@ -476,6 +681,60 @@ const analysisReportTasks = [
   { id: "reportAdvice2", text: "活动归因：按活动类型和渠道评估ROI，沉淀可复制增长策略。", block: 3 },
   { id: "reportAdvice3", text: "客户分层：结合新客/复购结构，验证增长可持续性与质量。", block: 3 }
 ];
+
+const attributionReportTasks = [
+  { id: "attributionCoreConclusion", text: "4月华东区销售额 2890 万元，环比 +15.1%，显著超出近 6 个月平均环比增速（+6.7%）+8.4pct，属于结构性异常增长。增量 380 万元主要来自线上渠道大促 + 重点客户集中下单 + 高端新品首销。", block: 0, embedChart: true },
+  { id: "attributionDriver1", text: "4·25 线上大促：活动期间 GMV 同比 +38%，线上渠道占比由 35% 提升至 42%。", block: 2 },
+  { id: "attributionDriver2", text: "A 系列高端新品上市：4 月首销贡献订单 110 万元，单价高于均值 28%，拉升整体客单价。", block: 2 },
+  { id: "attributionDriver3", text: "大客户集中放量：客户 X、Y 的季度采购在 4 月统一落账，单月增量 95 万元。", block: 2 },
+  { id: "attributionDriver4", text: "履约能力提升：4 月平均交付周期由 6 天缩短至 4 天，订单兑付率显著改善。", block: 2 },
+  { id: "attributionSustain1", text: "大客户订单一次性：X、Y 为季度集中采购，5 月预计回落 60~80 万元。", block: 3 },
+  { id: "attributionSustain2", text: "大促效应不可持续：4·25 大促拉动集中在 4 月，5 月需求会回归常态。", block: 3 },
+  { id: "attributionSustain3", text: "新品后劲较强：A 系列在 5、6 月仍有补货预期，月均贡献 80~100 万元。", block: 3 },
+  { id: "attributionAction1", text: "5 月剔除促销影响后跟踪线上自然销，评估真实需求增量。", block: 4 },
+  { id: "attributionAction2", text: "与 X、Y 协商分月供货节奏，平滑大客户波动。", block: 4 },
+  { id: "attributionAction3", text: "提前为 A 系列新品备货 + 营销侧重，承接 5、6 月需求。", block: 4 }
+];
+
+const trendReportTasks = [
+  { id: "trendOverview", text: "近 6 个月销售额从 1 月 2180 万元持续增长到 6 月 3248 万元（+49.0%）。基于历史趋势 + 季节性 + 业务节奏修正，未来 3 个月（7-9 月）预计为 3380、3520、3680 万元，环比保持 +4~4.5%，第三季度合计 10580 万元，同比 +28.1%。", block: 0, embedChart: true },
+  { id: "trendModelIntro", text: "预测以近 6 个月销售时序为底层数据，采用 Holt-Winters 三参数指数平滑（α=0.62、β=0.18、γ=0.30），叠加 4·25 大促与 9 月双节季节性修正，并按业务规则对新品上市与大客户节奏进行权重调整。", block: 2 },
+  { id: "trendRiskUp1", text: "9 月双节叠加旺季，节奏与活动有望进一步放大销售增速。", block: 3 },
+  { id: "trendRiskUp2", text: "A 系列高端新品渠道铺货持续扩张，对客单价具备拉升空间。", block: 3 },
+  { id: "trendRiskUp3", text: "重点大客户 Q3 续约与新签订单可能带来额外增量。", block: 3 },
+  { id: "trendRiskDown1", text: "Q3 高基数效应使同比增速可能逐月走弱，需警惕环比放缓。", block: 3 },
+  { id: "trendRiskDown2", text: "原材料成本与渠道返利波动，可能挤压主推产品毛利。", block: 3 },
+  { id: "trendRiskDown3", text: "若 7 月线上自然销不及预期，需向下重新校准 8-9 月预测。", block: 3 },
+  { id: "trendActionPace", text: "按 7 月 +4.1% / 8 月 +4.1% / 9 月 +4.5% 制定团队 KPI 与回款节奏，9 月双节按上限冲刺。", block: 4 },
+  { id: "trendActionStock", text: "A 系列新品按预测上限（≈9% 上浮）备货；老品按中位预测备货，避免库存积压。", block: 4 },
+  { id: "trendActionMonitor", text: "周度跟踪订单转化率、客单价与库存周转；若任一指标连续 2 周偏离基线 ±3%，触发预测重校准。", block: 4 }
+];
+
+const comparisonReportTasks = [
+  { id: "comparisonOverview", text: "基于上传的 2025 年 1-6 月华东区销售明细（约 7.5 万行）与当前查询的 2026 年同期数据进行同比对比：销售额 16,308 万 vs 12,640 万，同比 +29.0%；订单量 +14.9%、客单价 +12.3%；复购率 +4.2pp、退货率 -0.9pp、毛利率 +2.3pp。规模拉动 + 量价齐升 + 客户粘性改善 + 盈利质量提升，四重驱动支撑同期业绩高质量增长。", block: 0, embedChart: true },
+  { id: "comparisonDriverM1", text: "2026 年新增 4·25 大促与 6·18 升级 2 场年中活动，新增订单贡献占总增量的 21%。", block: 3 },
+  { id: "comparisonDriverM2", text: "直播带货 GMV 占比由 2025 年的 5% 提升至 2026 年的 12%，是新增量的主要来源。", block: 3 },
+  { id: "comparisonDriverC1", text: "线上自营渠道占比由 2025 年的 35% 提升至 2026 年的 41%，规模效应放大。", block: 3 },
+  { id: "comparisonDriverC2", text: "私域复购贡献同比提升 4 个百分点，留存型增量稳健。", block: 3 },
+  { id: "comparisonDriverS1", text: "高端系列与主推新品上量，带动客单价同比 +12.3%，结构升级显著。", block: 3 },
+  { id: "comparisonDriverS2", text: "户外 / 出行品类同比 +28%，与销售结构改善方向吻合。", block: 3 },
+  { id: "comparisonAction1", text: "沿用 2026 营销节奏与渠道组合，巩固已验证的 +29% 同比增速与高 ROI 模式。", block: 4 },
+  { id: "comparisonAction2", text: "识别 2026 高增长贡献区域，反向复制到 2025 同期表现偏弱的城市与渠道。", block: 4 },
+  { id: "comparisonAction3", text: "周度跟踪销售额、客单价、退货率三项核心指标，同比波动 ±5% 触发预警与干预。", block: 4 }
+];
+
+function getTemplateReportTasks(profile = buildSkillReportProfile(getActiveSkillRun())) {
+  return [
+    { id: "templateSummary", text: profile.tasks.summary, block: 0 },
+    { id: "templateOverview", text: profile.tasks.overview, block: 1 },
+    { id: "templateRisk1", text: profile.tasks.risks[0], block: 4 },
+    { id: "templateRisk2", text: profile.tasks.risks[1], block: 4 },
+    { id: "templateRisk3", text: profile.tasks.risks[2], block: 4 },
+    { id: "templatePlan1", text: profile.tasks.plans[0], block: 4 },
+    { id: "templatePlan2", text: profile.tasks.plans[1], block: 4 },
+    { id: "templatePlan3", text: profile.tasks.plans[2], block: 4 }
+  ];
+}
 
 // 用户下拉菜单的开关由 common.js 接管，这里只在它打开时关闭其他下拉。
 document.addEventListener("user-menu-open", function () {
@@ -669,6 +928,156 @@ function formatFileSize(size) {
   if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))}KB`;
   return `${(size / 1024 / 1024).toFixed(1)}MB`;
 }
+
+function getAllReferenceItems() {
+  return Object.values(REFERENCE_CATALOG).flatMap((groups) => groups.flatMap((group) => group.items));
+}
+
+function getReferenceItem(key) {
+  return getAllReferenceItems().find((item) => item.key === key) || null;
+}
+
+function getReferenceFileType(item) {
+  return ["word", "pdf", "excel"].includes(item?.fileType) ? item.fileType : "word";
+}
+
+function getReferenceFileTypeLabel(item) {
+  return ({ word: "W", pdf: "PDF", excel: "X" })[getReferenceFileType(item)];
+}
+
+function applyReferenceResultIcon(reference) {
+  if (!referenceResultIcon) return;
+  referenceResultIcon.classList.remove("is-board", "is-word", "is-pdf", "is-excel");
+  if (reference?.kind === "report") {
+    const fileType = getReferenceFileType(reference);
+    referenceResultIcon.classList.add(`is-${fileType}`);
+    referenceResultIcon.textContent = getReferenceFileTypeLabel(reference);
+    return;
+  }
+  referenceResultIcon.classList.add("is-board");
+  referenceResultIcon.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h7v6H4z"></path><path d="M13 5h7v4h-7z"></path><path d="M4 13h7v6H4z"></path><path d="M13 11h7v8h-7z"></path></svg>';
+}
+
+function updateReferenceSelectedCount() {
+  if (referenceSelectedCount) referenceSelectedCount.textContent = String(pendingReferenceKeys.size);
+}
+
+function renderReferencePicker(keyword = "") {
+  if (!referencePickerTree) return;
+  const query = String(keyword || "").trim().toLowerCase();
+  referencePickerTree.replaceChildren();
+  let visibleCount = 0;
+  (REFERENCE_CATALOG[currentReferenceTab] || []).forEach((group) => {
+    const categoryMatched = group.category.toLowerCase().includes(query);
+    const items = group.items.filter((item) => !query || categoryMatched || item.name.toLowerCase().includes(query));
+    if (!items.length) return;
+    visibleCount += items.length;
+    const section = document.createElement("section");
+    section.className = "reference-tree-group";
+    const heading = document.createElement("div");
+    heading.className = "reference-tree-group-title";
+    heading.innerHTML = `<span>${group.category}</span><em>${items.length}</em>`;
+    section.appendChild(heading);
+    items.forEach((item) => {
+      const row = document.createElement("label");
+      row.className = `reference-tree-item${pendingReferenceKeys.has(item.key) ? " selected" : ""}`;
+      row.dataset.referenceKey = item.key;
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.checked = pendingReferenceKeys.has(item.key);
+      input.addEventListener("change", () => {
+        if (input.checked) pendingReferenceKeys.add(item.key);
+        else pendingReferenceKeys.delete(item.key);
+        row.classList.toggle("selected", input.checked);
+        updateReferenceSelectedCount();
+      });
+      const icon = document.createElement("span");
+      const fileType = item.kind === "report" ? getReferenceFileType(item) : "";
+      icon.className = `reference-tree-icon is-${item.kind}${fileType ? ` is-${fileType}` : ""}`;
+      icon.innerHTML = item.kind === "board"
+        ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h7v6H4z"></path><path d="M13 5h7v4h-7z"></path><path d="M4 13h7v6H4z"></path><path d="M13 11h7v8h-7z"></path></svg>'
+        : `<b class="reference-file-type-mark">${getReferenceFileTypeLabel(item)}</b>`;
+      const main = document.createElement("span");
+      main.className = "reference-tree-main";
+      main.innerHTML = `<strong>${item.name}</strong><em>${item.meta}</em>`;
+      const check = document.createElement("span");
+      check.className = "reference-tree-check";
+      check.textContent = "✓";
+      row.append(input, icon, main, check);
+      section.appendChild(row);
+    });
+    referencePickerTree.appendChild(section);
+  });
+  referencePickerEmpty?.classList.toggle("hidden", visibleCount > 0);
+  updateReferenceSelectedCount();
+}
+
+function openReferencePicker() {
+  closeModal();
+  pendingReferenceKeys = new Set(selectedReferences.map((item) => item.key));
+  referenceModalMask?.classList.remove("hidden");
+  referenceModal?.classList.remove("hidden");
+  if (referencePickerSearch) referencePickerSearch.value = "";
+  switchReferenceTab(currentReferenceTab, document.querySelector(`[data-reference-tab="${currentReferenceTab}"]`));
+}
+
+function closeReferencePicker() {
+  referenceModalMask?.classList.add("hidden");
+  referenceModal?.classList.add("hidden");
+}
+
+function switchReferenceTab(tab, button) {
+  currentReferenceTab = tab === "report" ? "report" : "board";
+  document.querySelectorAll("[data-reference-tab]").forEach((item) => {
+    item.classList.toggle("active", item === button || item.dataset.referenceTab === currentReferenceTab);
+  });
+  if (referencePickerSearch) {
+    referencePickerSearch.value = "";
+    referencePickerSearch.placeholder = currentReferenceTab === "report" ? "搜索报告名称" : "搜索看板名称";
+  }
+  renderReferencePicker();
+}
+
+function filterReferencePicker(keyword) {
+  renderReferencePicker(keyword);
+}
+
+function renderReferencePreview() {
+  if (!referencePreviewList) return;
+  referencePreviewList.replaceChildren();
+  selectedReferences.forEach((item) => {
+    const chip = document.createElement("div");
+    chip.className = `reference-chip is-${item.kind}`;
+    const typeClass = item.kind === "report" ? ` is-${getReferenceFileType(item)}` : "";
+    const typeText = item.kind === "report" ? getReferenceFileTypeLabel(item) : item.label;
+    chip.innerHTML = `<span class="reference-chip-type${typeClass}">${typeText}</span><strong>${item.name}</strong>`;
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.textContent = "×";
+    remove.setAttribute("aria-label", `移除引用“${item.name}”`);
+    remove.addEventListener("click", () => removeSelectedReference(item.key));
+    chip.appendChild(remove);
+    referencePreviewList.appendChild(chip);
+  });
+  referencePreviewList.classList.toggle("hidden", selectedReferences.length === 0);
+  if (referencePickerTriggerText) {
+    referencePickerTriggerText.textContent = selectedReferences.length ? `引用 ${selectedReferences.length}` : "引用";
+  }
+}
+
+function confirmReferenceSelection() {
+  selectedReferences = Array.from(pendingReferenceKeys).map(getReferenceItem).filter(Boolean);
+  renderReferencePreview();
+  closeReferencePicker();
+  showToast(selectedReferences.length ? `已引用 ${selectedReferences.length} 项内容` : "已清空引用内容");
+}
+
+function removeSelectedReference(key) {
+  selectedReferences = selectedReferences.filter((item) => item.key !== key);
+  renderReferencePreview();
+}
+
+referenceModalMask?.addEventListener("click", closeReferencePicker);
 
 function readQuestionEditorText() {
   if (!questionInput) return "";
@@ -1353,6 +1762,8 @@ function renderThinkingTimeline(mode = "qa") {
   else if (mode === "trend") steps = trendThinkingSteps;
   else if (mode === "comparison") steps = comparisonThinkingSteps;
   else if (mode === "template") steps = buildSkillReportProfile(getActiveSkillRun()).steps || templateThinkingSteps;
+  else if (mode === "file") steps = fileThinkingSteps;
+  else if (mode === "reference") steps = referenceThinkingSteps;
   else steps = qaThinkingSteps;
   timeline.innerHTML = steps.map(([title, desc]) => (
     `<div class="step"><div class="step-dot loading">·</div><div><strong>${title}</strong><span>${desc}</span></div></div>`
@@ -1404,6 +1815,7 @@ const SMART_MODE_RULES = [
 function detectModeFromText(text) {
   if (!text) return "qa";
   const lower = String(text).toLowerCase();
+  if (/(word|pdf|excel|ppt|文件|文档)/i.test(lower) && /(生成|制作|输出|导出)/.test(lower)) return "file";
   for (const rule of SMART_MODE_RULES) {
     if (rule.patterns.some((p) => lower.includes(p.toLowerCase()))) return rule.mode;
   }
@@ -1471,7 +1883,11 @@ function getCurrentThemeSubject() {
 }
 
 function generateAnswerTitle(userInput, mode) {
-  if (mode === "qa") return "华东区近6个月销售额趋势分析";
+  if (mode === "qa") {
+    return /城市|拆分/.test(userInput || "")
+      ? "华东区城市销售额拆分"
+      : "华东区近6个月销售额趋势分析";
+  }
 
   const region = extractRegionKeyword(userInput) || "华东区";
   const subject = extractSubjectKeyword(userInput) || getCurrentThemeSubject();
@@ -1494,15 +1910,108 @@ function generateAnswerTitle(userInput, mode) {
         : `${region}${subject}对比分析`;
     case "template":
       return getSkillAnswerTitle(getActiveSkillRun());
+    case "file":
+      return "2026年5月销售分析月报";
     default:
       return `${region}${subject}分析`;
   }
+}
+
+function resolveReferencedReport(question, references) {
+  const reports = references.filter((item) => item.kind === "report");
+  return reports.find((item) => question.includes(item.name)) || (reports.length === 1 ? reports[0] : null);
+}
+
+function getNextReportVersion(report) {
+  const current = reportVersionCounters.get(report.key)
+    || Number((report.meta.match(/V(\d+)/) || [])[1])
+    || 1;
+  const next = current + 1;
+  reportVersionCounters.set(report.key, next);
+  report.meta = report.meta.replace(/V\d+/, `V${next}`);
+  return `V${next}`;
+}
+
+function buildReferenceRun(question, references) {
+  const refs = references.map((item) => ({ ...item }));
+  const targetReport = resolveReferencedReport(question, refs);
+  const wantsAppend = /(添加到|加入到|写入|插入到|追加到).*(报告|章节)|把.*(添加到|加入到|写入|插入到|追加到)/.test(question);
+  const wantsModify = /(修改|改写|重写|重新整理|调整|更新|补充|删除|替换)/.test(question);
+  let answerTitle = "引用内容分析";
+  let result;
+
+  if ((wantsAppend || wantsModify) && !targetReport) {
+    result = {
+      badge: "需要明确目标",
+      title: "请明确需要处理的报告",
+      summary: "当前对话没有唯一可识别的目标报告。请引用一个报告，或在问题中明确写出报告名称后再发送处理要求。",
+      details: ["引用多个报告时，需要在对话中说明目标报告。", "如需写入指定章节，请同时说明章节名称。"]
+    };
+    answerTitle = "报告处理信息确认";
+  } else if (wantsAppend) {
+    const version = getNextReportVersion(targetReport);
+    const sectionMatch = question.match(/[“\"]([^”\"]+)[”\"]章节/);
+    const section = sectionMatch ? sectionMatch[1] : "相关章节";
+    result = {
+      badge: "对话添加报告",
+      title: "当前对话内容已写入报告",
+      summary: `已根据对话要求整理当前分析结论，并添加到《${targetReport.name}》的“${section}”章节。`,
+      details: ["已提取当前对话中的核心结论、关键数据和行动建议。", "本次采用追加方式写入，未覆盖原有报告内容。", "报告已自动保存为最新版本。"],
+      feedback: {
+        title: "对话内容添加完成",
+        desc: "相关内容已写入指定报告并保存最新版本",
+        meta: [["目标报告", targetReport.name], ["写入位置", section], ["最新版本", version], ["版本来源", "智能问数添加"]]
+      }
+    };
+    answerTitle = `${targetReport.name}内容添加结果`;
+  } else if (wantsModify) {
+    const version = getNextReportVersion(targetReport);
+    const chapterMatch = question.match(/第[一二三四五六七八九十\d]+章[^，。]*/);
+    const scope = chapterMatch ? chapterMatch[0].replace(/[“”]/g, "") : "对话指定内容";
+    result = {
+      badge: "对话修改报告",
+      title: "已按要求完成报告修改",
+      summary: `已根据对话要求修改《${targetReport.name}》，并保留未涉及章节的原有内容。`,
+      details: ["已识别并修改对话中明确指定的报告范围。", "修改结果已按原报告结构和表达风格完成整理。", "报告已自动保存为最新版本。"],
+      feedback: {
+        title: "报告修改已完成",
+        desc: "已根据对话要求完成处理并保存最新版本",
+        meta: [["目标报告", targetReport.name], ["修改范围", scope], ["最新版本", version], ["版本来源", "智能问数修改"]]
+      }
+    };
+    answerTitle = `${targetReport.name}修改结果`;
+  } else {
+    const boardRefs = refs.filter((item) => item.kind === "board");
+    const reportRefs = refs.filter((item) => item.kind === "report");
+    const primary = refs[0];
+    answerTitle = primary ? `${primary.name}分析` : "引用内容分析";
+    result = {
+      badge: boardRefs.length && reportRefs.length ? "跨内容引用分析" : boardRefs.length ? "引用看板分析" : "引用报告分析",
+      title: "引用内容分析完成",
+      summary: boardRefs.length
+        ? "引用看板整体经营趋势向好，但目标达成、区域差异和客户集中度仍是当前需要重点关注的问题。"
+        : "引用报告显示经营规模和质量同步改善，同时仍需关注目标缺口、库存周转和重点客户风险。",
+      details: boardRefs.length
+        ? ["核心指标整体保持增长，当前目标完成率仍存在提升空间。", "华东区域贡献领先，低完成率区域需要继续拆解原因。", "建议结合客户贡献和库存变化进一步追问。"]
+        : ["报告核心结论与数据口径保持一致，主要增长来源清晰。", "区域达成、库存周转和客户集中度是主要风险。", "本次仅进行引用分析，没有修改报告内容，也不会产生新版本。"]
+    };
+  }
+
+  return {
+    question,
+    mode: "reference",
+    answerTitle,
+    reference: refs[0] || null,
+    references: refs,
+    result
+  };
 }
 
 function runQuestion() {
   archiveCurrentMessageIfNeeded();
   const inputText = readQuestionEditorText();
   const ctx = pendingFollowupContext;
+  activeReferenceRun = null;
 
   let submittedQuestion;
   let answerTitle;
@@ -1518,6 +2027,12 @@ function runQuestion() {
     else if (ctx.action === "template") mode = "template";
     else mode = "qa";
     answerTitle = generateAnswerTitle(actionText, mode);
+  } else if (selectedReferences.length) {
+    submittedQuestion = inputText || "请分析当前引用内容，并总结主要结论和需要关注的问题。";
+    activeReferenceRun = buildReferenceRun(submittedQuestion, selectedReferences);
+    mode = "reference";
+    answerTitle = activeReferenceRun.answerTitle;
+    activeSkillRun = null;
   } else if (selectedSkillKey !== "general") {
     if (!validateSelectedSkill()) return;
     const skillPrompt = inputText || SKILL_DEFINITIONS[selectedSkillKey]?.prompt || "";
@@ -1553,8 +2068,288 @@ function runQuestion() {
   startAnswerSimulation({
     mode,
     questionText: submittedQuestion,
-    answerTitle
+    answerTitle,
+    references: activeReferenceRun?.references || []
   });
+}
+
+function appendQuestionReference(reference) {
+  if (!userQuestionBubble || !reference) return;
+  const card = document.createElement("div");
+  card.className = `history-question-reference is-${reference.kind || "report"}`;
+  const icon = reference.kind === "board"
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h7v6H4z"></path><path d="M13 5h7v4h-7z"></path><path d="M4 13h7v6H4z"></path><path d="M13 11h7v8h-7z"></path></svg>'
+    : `<span class="history-reference-file-icon is-${getReferenceFileType(reference)}"><b>${getReferenceFileTypeLabel(reference)}</b></span>`;
+  card.innerHTML = `${icon}<div><span>${reference.label || "引用"}</span><strong>${reference.name}</strong><em>${reference.meta || "已引用"}</em></div>`;
+  userQuestionBubble.appendChild(card);
+}
+
+function setCompletedHistoryQuestion(scenario) {
+  if (!userQuestionBubble) return;
+  userQuestionBubble.textContent = scenario.question;
+  if (scenario.reference) appendQuestionReference(scenario.reference);
+  if (!scenario.attachment) return;
+  const attachment = document.createElement("div");
+  attachment.className = "history-question-attachment";
+  attachment.innerHTML = ''
+    + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 14h6"></path><path d="M9 17h4"></path></svg>'
+    + `<div><strong>${scenario.attachment.name}</strong><span>${scenario.attachment.meta}</span></div>`;
+  userQuestionBubble.appendChild(attachment);
+}
+
+function prepareCompletedHistoryTurn(scenario) {
+  currentAnswerMode = scenario.mode;
+  currentQuestionText = scenario.question;
+  activeSkillRun = scenario.mode === "template"
+    ? { key: "monthly", skillId: null, prompt: scenario.question }
+    : null;
+  currentAnswerTitle = scenario.answerTitle || generateAnswerTitle(scenario.question, scenario.mode);
+  resetAnswerSimulation();
+  setCompletedHistoryQuestion(scenario);
+  if (resultTitle) resultTitle.textContent = currentAnswerTitle;
+  if (resultTitle?.nextElementSibling) {
+    if (scenario.mode === "reference") {
+      const operation = scenario.result?.feedback ? "已执行对话指令" : "基于引用内容分析";
+      resultTitle.nextElementSibling.textContent = `${operation} · ${scenario.reference?.label || "引用"}：${scenario.reference?.name || "-"} · 历史对话`;
+    } else {
+      const historyModeLabels = {
+        qa: "交互问数",
+        analysis: "数据解读",
+        attribution: "归因分析",
+        trend: "趋势分析",
+        comparison: "对比分析",
+        template: "模板分析",
+        file: "文件生成任务"
+      };
+      resultTitle.nextElementSibling.textContent = `${historyModeLabels[scenario.mode] || "智能问数"} · 历史对话直接展示`;
+    }
+  }
+  welcomeBlock?.classList.add("hidden");
+  answerBlock?.classList.remove("hidden");
+  mainPanel?.classList.remove("initial-state");
+  thinkingBox?.classList.add("hidden");
+  resultCard?.classList.remove("hidden");
+  isAnswering = false;
+  updateSendButton();
+}
+
+function renderCompletedQaHistory(scenario, options = {}) {
+  const profile = applyQaResultProfile(scenario.question);
+  insightBox?.classList.remove("hidden");
+  if (aiConclusion) aiConclusion.textContent = profile.text;
+  conclusionTags?.classList.remove("hidden");
+  tableResult?.classList.remove("hidden");
+  answerActionBar?.classList.remove("hidden");
+  if (profile.isCityBreakdown) {
+    resultViewToolbar?.classList.add("hidden");
+    chartResult?.classList.add("hidden");
+    return;
+  }
+  currentResultView = "line";
+  resultViewToolbar?.classList.remove("hidden");
+  chartResult?.classList.remove("hidden");
+  if (!options.skipChartRender) setResultView("line", false);
+}
+
+function getCompletedReportConfig(mode) {
+  const configs = {
+    analysis: {
+      section: analysisResult,
+      title: analysisReportTitle,
+      suffix: "数据分析报告",
+      tasks: analysisReportTasks,
+      embeddedChart: document.getElementById("reportEmbeddedChart"),
+      footer: document.getElementById("reportFooter"),
+      renderChart: ensureReportChart
+    },
+    attribution: {
+      section: attributionResult,
+      title: attributionReportTitle,
+      suffix: "归因分析报告",
+      tasks: attributionReportTasks,
+      embeddedChart: document.getElementById("attributionEmbeddedChart"),
+      footer: document.getElementById("attributionFooter"),
+      renderChart: ensureAttributionChart
+    },
+    trend: {
+      section: trendResult,
+      title: trendReportTitle,
+      suffix: "趋势分析报告",
+      tasks: trendReportTasks,
+      embeddedChart: document.getElementById("trendEmbeddedChart"),
+      footer: document.getElementById("trendFooter"),
+      renderChart: ensureTrendChart
+    },
+    comparison: {
+      section: comparisonResult,
+      title: comparisonReportTitle,
+      suffix: "对比分析报告",
+      tasks: comparisonReportTasks,
+      embeddedChart: document.getElementById("comparisonEmbeddedChart"),
+      footer: document.getElementById("comparisonFooter"),
+      renderChart: ensureComparisonChart
+    }
+  };
+  return configs[mode];
+}
+
+function renderCompletedReportHistory(scenario) {
+  insightBox?.classList.add("hidden");
+  answerActionBar?.classList.add("hidden");
+  if (scenario.mode === "template") {
+    const profile = buildSkillReportProfile(getActiveSkillRun());
+    applySkillReportProfile(profile);
+    getTemplateReportTasks(profile).forEach((task) => {
+      const target = document.getElementById(task.id);
+      if (target) target.textContent = task.text;
+    });
+    templateResult?.querySelectorAll(".analysis-report-block").forEach((block) => {
+      block.classList.remove("report-block-pending");
+      block.classList.add("report-block-revealed");
+    });
+    templateResult?.classList.remove("hidden");
+    document.getElementById("templateFooter")?.classList.add("revealed");
+    return;
+  }
+
+  const config = getCompletedReportConfig(scenario.mode);
+  if (!config) return;
+  if (config.title) config.title.textContent = `${currentAnswerTitle} · ${config.suffix}`;
+  config.tasks.forEach((task) => {
+    const target = document.getElementById(task.id);
+    if (target) target.textContent = task.text;
+  });
+  config.section?.querySelectorAll(".analysis-report-block").forEach((block) => {
+    block.classList.remove("report-block-pending");
+    block.classList.add("report-block-revealed");
+  });
+  config.section?.classList.remove("hidden");
+  config.embeddedChart?.classList.add("revealed");
+  config.footer?.classList.add("revealed");
+  requestAnimationFrame(() => config.renderChart?.());
+}
+
+const DEFAULT_GENERATED_FILE = {
+  type: "word",
+  name: "2026年5月销售分析月报.docx",
+  meta: "Word 文档 · 2.8 MB",
+  title: "Word 月报已生成",
+  generatingTitle: "正在生成 Word 月报",
+  summary: "已根据 5 月份销售数据生成 Word 销售分析月报，包含经营摘要、核心指标、结构分析、风险提示与下月建议。"
+};
+let activeGeneratedFile = { ...DEFAULT_GENERATED_FILE };
+
+function getGeneratedFileProfile(question, artifact) {
+  if (artifact) return { ...DEFAULT_GENERATED_FILE, ...artifact };
+  const text = String(question || "").toLowerCase();
+  if (/excel|xlsx|xls/.test(text)) {
+    return {
+      type: "excel",
+      name: "2026年5月销售分析明细.xlsx",
+      meta: "Excel 工作簿 · 3.6 MB",
+      title: "Excel 明细已生成",
+      generatingTitle: "正在生成 Excel 明细",
+      summary: "已生成 5 月份销售分析 Excel 工作簿，包含销售明细、区域汇总、渠道结构、产品贡献和异常数据五个工作表。"
+    };
+  }
+  if (/pdf/.test(text)) {
+    return {
+      type: "pdf",
+      name: "2026年5月销售分析月报.pdf",
+      meta: "PDF 文档 · 1.9 MB",
+      title: "PDF 月报已生成",
+      generatingTitle: "正在生成 PDF 月报",
+      summary: "已生成适合直接分发和归档的 PDF 销售分析月报，页面包含经营摘要、趋势图表、风险提示与行动建议。"
+    };
+  }
+  return { ...DEFAULT_GENERATED_FILE };
+}
+
+function applyGeneratedFileProfile(profile, completed) {
+  activeGeneratedFile = { ...DEFAULT_GENERATED_FILE, ...(profile || {}) };
+  if (fileResultAnswerTitle) {
+    fileResultAnswerTitle.textContent = completed
+      ? activeGeneratedFile.title
+      : (activeGeneratedFile.generatingTitle || `正在生成 ${activeGeneratedFile.type.toUpperCase()} 文件`);
+  }
+  if (fileResultSummary) fileResultSummary.textContent = activeGeneratedFile.summary;
+  if (generatedFileName) generatedFileName.textContent = activeGeneratedFile.name;
+  if (generatedFileMeta) generatedFileMeta.textContent = activeGeneratedFile.meta;
+  if (generatedFileIcon) {
+    generatedFileIcon.classList.remove("is-word", "is-pdf", "is-excel");
+    generatedFileIcon.classList.add(`is-${activeGeneratedFile.type}`);
+    generatedFileIcon.textContent = ({ word: "W", pdf: "PDF", excel: "X" })[activeGeneratedFile.type] || "文";
+  }
+}
+
+function renderCompletedFileHistory(scenario) {
+  insightBox?.classList.add("hidden");
+  answerActionBar?.classList.add("hidden");
+  applyGeneratedFileProfile(getGeneratedFileProfile(scenario?.question, scenario?.artifact), true);
+  fileResult?.classList.remove("hidden");
+  if (generatedFileStatus) {
+    generatedFileStatus.classList.remove("is-generating");
+    generatedFileStatus.classList.add("is-complete");
+    const statusText = generatedFileStatus.querySelector("span");
+    if (statusText) statusText.textContent = "已生成";
+  }
+  generatedFileActions?.classList.remove("hidden");
+}
+
+function renderCompletedReferenceHistory(scenario) {
+  const result = scenario.result;
+  if (!result || !referenceConversationResult) return;
+  applyReferenceResultIcon(scenario.reference);
+  insightBox?.classList.add("hidden");
+  answerActionBar?.classList.add("hidden");
+  referenceConversationResult.classList.remove("hidden");
+  referenceResultBadge.textContent = result.badge || "引用分析";
+  referenceResultBadge.classList.toggle("is-executed", Boolean(result.feedback));
+  referenceResultHeading.textContent = result.title || "引用内容分析完成";
+  referenceResultSummary.textContent = result.summary || "";
+  referenceResultDetails.replaceChildren();
+  (result.details || []).forEach((detail) => {
+    const item = document.createElement("li");
+    item.textContent = detail;
+    referenceResultDetails.appendChild(item);
+  });
+  referenceExecutionFeedback.classList.toggle("hidden", !result.feedback);
+  referenceFeedbackMeta.replaceChildren();
+  if (!result.feedback) return;
+  referenceFeedbackTitle.textContent = result.feedback.title;
+  referenceFeedbackDesc.textContent = result.feedback.desc;
+  result.feedback.meta.forEach(([label, value]) => {
+    const row = document.createElement("div");
+    const dt = document.createElement("dt");
+    const dd = document.createElement("dd");
+    dt.textContent = label;
+    dd.textContent = value;
+    row.append(dt, dd);
+    referenceFeedbackMeta.appendChild(row);
+  });
+}
+
+function renderCompletedHistoryTurn(scenario, options = {}) {
+  prepareCompletedHistoryTurn(scenario);
+  if (scenario.mode === "qa") renderCompletedQaHistory(scenario, options);
+  else if (scenario.mode === "file") renderCompletedFileHistory(scenario);
+  else if (scenario.mode === "reference") renderCompletedReferenceHistory(scenario);
+  else renderCompletedReportHistory(scenario);
+}
+
+function loadHistoryScenario(key, item) {
+  const scenario = HISTORY_SCENARIOS[key];
+  if (!scenario) return;
+  resetChat();
+  document.querySelectorAll("#historyList .history-item").forEach((historyItem) => {
+    historyItem.classList.toggle("active", historyItem === item);
+  });
+  if (scenario.followup) {
+    renderCompletedHistoryTurn(HISTORY_SCENARIOS.normal, { skipChartRender: true });
+    archiveCurrentMessageIfNeeded();
+  }
+  renderCompletedHistoryTurn(scenario);
+  requestAnimationFrame(scrollToAnswerBottom);
 }
 
 function resetChat() {
@@ -1579,6 +2374,10 @@ function resetChat() {
   suggestPop.classList.add("hidden");
   clearFollowupContext();
   activeSkillRun = null;
+  activeReferenceRun = null;
+  selectedReferences = [];
+  renderReferencePreview();
+  closeReferencePicker();
   selectSkill("general", null, true);
   resetAnswerSimulation();
   closeModal();
@@ -1631,7 +2430,12 @@ function startAnswerSimulation(options = {}) {
   currentQuestionText = options.questionText || currentQuestionText;
   currentAnswerTitle = options.answerTitle || currentAnswerTitle;
   userQuestionBubble.textContent = currentQuestionText;
+  (options.references || []).forEach(appendQuestionReference);
   if (resultTitle) resultTitle.textContent = currentAnswerTitle;
+  if (resultTitle?.nextElementSibling && currentAnswerMode === "reference") {
+    const firstReference = options.references?.[0];
+    resultTitle.nextElementSibling.textContent = `基于引用内容处理 · ${firstReference?.label || "引用"}：${firstReference?.name || "-"} · 当前对话`;
+  }
   renderThinkingTimeline(currentAnswerMode);
   resetAnswerSimulation();
   answerBlock.classList.remove("hidden");
@@ -1689,6 +2493,15 @@ function startAnswerSimulation(options = {}) {
       startTemplateReportSimulation();
       return;
     }
+    if (currentAnswerMode === "file") {
+      startFileResultSimulation();
+      return;
+    }
+    if (currentAnswerMode === "reference") {
+      renderCompletedReferenceHistory(activeReferenceRun || {});
+      finishAnswerSimulation();
+      return;
+    }
     startTypewriterConclusion();
   }, thinkingDurationMs);
 }
@@ -1714,6 +2527,17 @@ function resetAnswerSimulation() {
   trendResult?.classList.add("hidden");
   comparisonResult?.classList.add("hidden");
   templateResult?.classList.add("hidden");
+  fileResult?.classList.add("hidden");
+  referenceConversationResult?.classList.add("hidden");
+  referenceExecutionFeedback?.classList.add("hidden");
+  applyGeneratedFileProfile(DEFAULT_GENERATED_FILE, false);
+  generatedFileActions?.classList.add("hidden");
+  if (generatedFileStatus) {
+    generatedFileStatus.classList.add("is-generating");
+    generatedFileStatus.classList.remove("is-complete");
+    const statusText = generatedFileStatus.querySelector("span");
+    if (statusText) statusText.textContent = "生成中";
+  }
   feedbackDetailPanel?.classList.add("hidden");
   if (feedbackDetailPanel) feedbackDetailPanel.innerHTML = "";
   answerActionBar?.classList.add("hidden");
@@ -1722,6 +2546,12 @@ function resetAnswerSimulation() {
   answerVote = "";
   document.querySelectorAll(".answer-action-btn[data-vote]").forEach((button) => {
     button.classList.remove("active");
+  });
+  document.querySelectorAll(".current-chat-message .dashboard-asset-btn").forEach((button) => {
+    button.classList.remove("is-added");
+    button.disabled = false;
+    const label = button.querySelector(".asset-action-label");
+    if (label) label.textContent = "添加仪表盘";
   });
   document.querySelectorAll("#resultViewToolbar [data-view]").forEach((button) => {
     button.classList.toggle("active", button.dataset.view === "line");
@@ -1846,8 +2676,36 @@ function stopThinkingElapsedTimer() {
   thinkingElapsedTimer = null;
 }
 
+function applyQaResultProfile(questionText = currentQuestionText) {
+  const isCityBreakdown = /城市|拆分/.test(questionText || "");
+  const profile = {
+    isCityBreakdown,
+    text: isCityBreakdown
+      ? "按城市拆分后，上海、杭州、南京贡献了华东区近六成销售额。其中杭州环比增长 12.8%，增速最高；苏州销售规模稳定，可继续关注重点客户订单转化。"
+      : "近6个月华东区销售额整体呈持续上升趋势，6月销售额达到3248万元，较1月增长约49.0%。其中4月至6月增长明显，主要受渠道促销活动和重点客户订单增长影响。"
+  };
+  if (conclusionTags) {
+    conclusionTags.innerHTML = isCityBreakdown
+      ? "<span>上海贡献最高</span><span>杭州增速领先</span><span>核心城市贡献近六成</span>"
+      : defaultQaTagsHTML;
+  }
+  const qaTable = tableResult?.querySelector("table");
+  if (qaTable) {
+    qaTable.innerHTML = isCityBreakdown
+      ? '<thead><tr><th>城市</th><th class="num">销售额（万元）</th><th class="num">占比</th><th class="num">环比增长</th><th class="num">订单量</th></tr></thead>'
+        + '<tbody><tr><td>上海</td><td class="num">728</td><td class="num">22.4%</td><td class="num up">+8.6%</td><td class="num">3,860</td></tr>'
+        + '<tr><td>杭州</td><td class="num">642</td><td class="num">19.8%</td><td class="num up">+12.8%</td><td class="num">3,420</td></tr>'
+        + '<tr><td>南京</td><td class="num">558</td><td class="num">17.2%</td><td class="num up">+7.4%</td><td class="num">2,980</td></tr>'
+        + '<tr><td>苏州</td><td class="num">486</td><td class="num">15.0%</td><td class="num up">+5.1%</td><td class="num">2,610</td></tr>'
+        + '<tr><td>其他城市</td><td class="num">834</td><td class="num">25.6%</td><td class="num up">+3.8%</td><td class="num">4,390</td></tr></tbody>'
+      : defaultQaTableHTML;
+  }
+  return profile;
+}
+
 function startTypewriterConclusion() {
-  const text = "近6个月华东区销售额整体呈持续上升趋势，6月销售额达到3248万元，较1月增长约49.0%。其中4月至6月增长明显，主要受渠道促销活动和重点客户订单增长影响。";
+  const qaProfile = applyQaResultProfile(currentQuestionText);
+  const { isCityBreakdown, text } = qaProfile;
   let index = 0;
   aiConclusion.textContent = "";
   aiConclusion.classList.add("typing-cursor");
@@ -1878,9 +2736,11 @@ function startTypewriterConclusion() {
       }, 760);
       setTimeout(() => {
         if (!isAnswering) return;
-        resultViewToolbar.classList.remove("hidden");
-        chartResult.classList.remove("hidden");
-        setResultView(currentResultView || "line", false);
+        if (!isCityBreakdown) {
+          resultViewToolbar.classList.remove("hidden");
+          chartResult.classList.remove("hidden");
+          setResultView(currentResultView || "line", false);
+        }
         scrollToAnswerBottom();
       }, 1320);
       setTimeout(() => {
@@ -1891,6 +2751,67 @@ function startTypewriterConclusion() {
       }, 1420);
     }
   }, 34);
+}
+
+function startFileResultSimulation() {
+  const fileProfile = getGeneratedFileProfile(currentQuestionText);
+  applyGeneratedFileProfile(fileProfile, false);
+  insightBox?.classList.add("hidden");
+  conclusionTags?.classList.add("hidden");
+  tableResult?.classList.add("hidden");
+  chartResult?.classList.add("hidden");
+  resultViewToolbar?.classList.add("hidden");
+  answerActionBar?.classList.add("hidden");
+  analysisResult?.classList.add("hidden");
+  attributionResult?.classList.add("hidden");
+  trendResult?.classList.add("hidden");
+  comparisonResult?.classList.add("hidden");
+  templateResult?.classList.add("hidden");
+  fileResult?.classList.remove("hidden");
+  scrollToAnswerBottom();
+
+  setTimeout(() => {
+    if (!isAnswering) return;
+    if (generatedFileStatus) {
+      generatedFileStatus.classList.remove("is-generating");
+      generatedFileStatus.classList.add("is-complete");
+      const statusText = generatedFileStatus.querySelector("span");
+      if (statusText) statusText.textContent = "已生成";
+    }
+    applyGeneratedFileProfile(fileProfile, true);
+    generatedFileActions?.classList.remove("hidden");
+    scrollToAnswerBottom();
+    finishAnswerSimulation();
+  }, 1200);
+}
+
+function downloadGeneratedFile() {
+  showToast(`“${activeGeneratedFile.name}”下载已开始`);
+}
+
+function saveGeneratedFileToReport() {
+  openSave("report");
+  const reportNameInput = document.getElementById("reportNewName");
+  if (reportNameInput) reportNameInput.value = activeGeneratedFile.name.replace(/\.[^.]+$/, "");
+}
+
+function exportTableData(button) {
+  const title = button?.closest?.(".result-table-toolbar")?.querySelector("span")?.textContent?.trim() || "表格";
+  showToast(`${title}导出已开始`);
+}
+
+function addCurrentResultToDashboard(assetType, button) {
+  const isTable = assetType === "table";
+  const tableToolbar = button?.closest?.(".result-table-toolbar");
+  const chartHeader = button?.closest?.(".chart-top, .report-chart-head");
+  const title = isTable
+    ? tableToolbar?.querySelector(":scope > span")?.textContent?.trim()
+    : chartHeader?.querySelector("h3, h6")?.textContent?.trim();
+  openSave("dashboard", {
+    assetType: isTable ? "table" : "chart",
+    assetTitle: title,
+    triggerButton: button
+  });
 }
 
 function showFeedbackDetail(key) {
@@ -2471,19 +3392,7 @@ function buildAttributionChartOption() {
 }
 
 function startAttributionReportTypewriter() {
-  const tasks = [
-    { id: "attributionCoreConclusion", text: "4月华东区销售额 2890 万元，环比 +15.1%，显著超出近 6 个月平均环比增速（+6.7%）+8.4pct，属于结构性异常增长。增量 380 万元主要来自线上渠道大促 + 重点客户集中下单 + 高端新品首销。", block: 0, embedChart: true },
-    { id: "attributionDriver1", text: "4·25 线上大促：活动期间 GMV 同比 +38%，线上渠道占比由 35% 提升至 42%。", block: 2 },
-    { id: "attributionDriver2", text: "A 系列高端新品上市：4 月首销贡献订单 110 万元，单价高于均值 28%，拉升整体客单价。", block: 2 },
-    { id: "attributionDriver3", text: "大客户集中放量：客户 X、Y 的季度采购在 4 月统一落账，单月增量 95 万元。", block: 2 },
-    { id: "attributionDriver4", text: "履约能力提升：4 月平均交付周期由 6 天缩短至 4 天，订单兑付率显著改善。", block: 2 },
-    { id: "attributionSustain1", text: "大客户订单一次性：X、Y 为季度集中采购，5 月预计回落 60~80 万元。", block: 3 },
-    { id: "attributionSustain2", text: "大促效应不可持续：4·25 大促拉动集中在 4 月，5 月需求会回归常态。", block: 3 },
-    { id: "attributionSustain3", text: "新品后劲较强：A 系列在 5、6 月仍有补货预期，月均贡献 80~100 万元。", block: 3 },
-    { id: "attributionAction1", text: "5 月剔除促销影响后跟踪线上自然销，评估真实需求增量。", block: 4 },
-    { id: "attributionAction2", text: "与 X、Y 协商分月供货节奏，平滑大客户波动。", block: 4 },
-    { id: "attributionAction3", text: "提前为 A 系列新品备货 + 营销侧重，承接 5、6 月需求。", block: 4 }
-  ];
+  const tasks = attributionReportTasks;
 
   const revealedBlocks = new Set();
   let taskIndex = 0;
@@ -2792,19 +3701,7 @@ function buildTrendChartOption() {
 }
 
 function startTrendReportTypewriter() {
-  const tasks = [
-    { id: "trendOverview", text: "近 6 个月销售额从 1 月 2180 万元持续增长到 6 月 3248 万元（+49.0%）。基于历史趋势 + 季节性 + 业务节奏修正，未来 3 个月（7-9 月）预计为 3380、3520、3680 万元，环比保持 +4~4.5%，第三季度合计 10580 万元，同比 +28.1%。", block: 0, embedChart: true },
-    { id: "trendModelIntro", text: "预测以近 6 个月销售时序为底层数据，采用 Holt-Winters 三参数指数平滑（α=0.62、β=0.18、γ=0.30），叠加 4·25 大促与 9 月双节季节性修正，并按业务规则对新品上市与大客户节奏进行权重调整。", block: 2 },
-    { id: "trendRiskUp1", text: "9 月双节叠加旺季，节奏与活动有望进一步放大销售增速。", block: 3 },
-    { id: "trendRiskUp2", text: "A 系列高端新品渠道铺货持续扩张，对客单价具备拉升空间。", block: 3 },
-    { id: "trendRiskUp3", text: "重点大客户 Q3 续约与新签订单可能带来额外增量。", block: 3 },
-    { id: "trendRiskDown1", text: "Q3 高基数效应使同比增速可能逐月走弱，需警惕环比放缓。", block: 3 },
-    { id: "trendRiskDown2", text: "原材料成本与渠道返利波动，可能挤压主推产品毛利。", block: 3 },
-    { id: "trendRiskDown3", text: "若 7 月线上自然销不及预期，需向下重新校准 8-9 月预测。", block: 3 },
-    { id: "trendActionPace", text: "按 7 月 +4.1% / 8 月 +4.1% / 9 月 +4.5% 制定团队 KPI 与回款节奏，9 月双节按上限冲刺。", block: 4 },
-    { id: "trendActionStock", text: "A 系列新品按预测上限（≈9% 上浮）备货；老品按中位预测备货，避免库存积压。", block: 4 },
-    { id: "trendActionMonitor", text: "周度跟踪订单转化率、客单价与库存周转；若任一指标连续 2 周偏离基线 ±3%，触发预测重校准。", block: 4 }
-  ];
+  const tasks = trendReportTasks;
 
   const revealedBlocks = new Set();
   let taskIndex = 0;
@@ -3091,18 +3988,7 @@ function buildComparisonChartOption() {
 }
 
 function startComparisonReportTypewriter() {
-  const tasks = [
-    { id: "comparisonOverview", text: "基于上传的 2025 年 1-6 月华东区销售明细（约 7.5 万行）与当前查询的 2026 年同期数据进行同比对比：销售额 16,308 万 vs 12,640 万，同比 +29.0%；订单量 +14.9%、客单价 +12.3%；复购率 +4.2pp、退货率 -0.9pp、毛利率 +2.3pp。规模拉动 + 量价齐升 + 客户粘性改善 + 盈利质量提升，四重驱动支撑同期业绩高质量增长。", block: 0, embedChart: true },
-    { id: "comparisonDriverM1", text: "2026 年新增 4·25 大促与 6·18 升级 2 场年中活动，新增订单贡献占总增量的 21%。", block: 3 },
-    { id: "comparisonDriverM2", text: "直播带货 GMV 占比由 2025 年的 5% 提升至 2026 年的 12%，是新增量的主要来源。", block: 3 },
-    { id: "comparisonDriverC1", text: "线上自营渠道占比由 2025 年的 35% 提升至 2026 年的 41%，规模效应放大。", block: 3 },
-    { id: "comparisonDriverC2", text: "私域复购贡献同比提升 4 个百分点，留存型增量稳健。", block: 3 },
-    { id: "comparisonDriverS1", text: "高端系列与主推新品上量，带动客单价同比 +12.3%，结构升级显著。", block: 3 },
-    { id: "comparisonDriverS2", text: "户外 / 出行品类同比 +28%，与销售结构改善方向吻合。", block: 3 },
-    { id: "comparisonAction1", text: "沿用 2026 营销节奏与渠道组合，巩固已验证的 +29% 同比增速与高 ROI 模式。", block: 4 },
-    { id: "comparisonAction2", text: "识别 2026 高增长贡献区域，反向复制到 2025 同期表现偏弱的城市与渠道。", block: 4 },
-    { id: "comparisonAction3", text: "周度跟踪销售额、客单价、退货率三项核心指标，同比波动 ±5% 触发预警与干预。", block: 4 }
-  ];
+  const tasks = comparisonReportTasks;
 
   const revealedBlocks = new Set();
   let taskIndex = 0;
@@ -3230,16 +4116,7 @@ function revealTemplateFooter() {
 
 function startTemplateReportTypewriter() {
   const profile = buildSkillReportProfile(getActiveSkillRun());
-  const tasks = [
-    { id: "templateSummary", text: profile.tasks.summary, block: 0 },
-    { id: "templateOverview", text: profile.tasks.overview, block: 1 },
-    { id: "templateRisk1", text: profile.tasks.risks[0], block: 4 },
-    { id: "templateRisk2", text: profile.tasks.risks[1], block: 4 },
-    { id: "templateRisk3", text: profile.tasks.risks[2], block: 4 },
-    { id: "templatePlan1", text: profile.tasks.plans[0], block: 4 },
-    { id: "templatePlan2", text: profile.tasks.plans[1], block: 4 },
-    { id: "templatePlan3", text: profile.tasks.plans[2], block: 4 }
-  ];
+  const tasks = getTemplateReportTasks(profile);
 
   const revealedBlocks = new Set();
   let taskIndex = 0;
@@ -3452,7 +4329,7 @@ function archiveCurrentMessageIfNeeded() {
   archived.classList.remove("current-chat-message");
   archived.classList.add("archived-message");
   archived.querySelectorAll("[id]").forEach((el) => el.removeAttribute("id"));
-  const keepInteractive = ".action-dropdown-btn, .answer-action-btn, .chart-point";
+  const keepInteractive = ".action-dropdown-btn, .answer-action-btn, .chart-point, .table-export-btn, .dashboard-asset-btn, .file-result-action";
   archived.querySelectorAll("[onclick]").forEach((el) => {
     if (el.matches(keepInteractive)) return;
     el.removeAttribute("onclick");
@@ -3477,7 +4354,7 @@ function archiveCurrentMessageIfNeeded() {
 
   const archivedChartCard = archived.querySelector(".chart-card");
   const chartShown = archivedChartCard && !archivedChartCard.classList.contains("hidden");
-  if (archivedCanvas && resultChart && chartShown) {
+  if (archivedCanvas && chartShown) {
     const view = currentResultView || "line";
     requestAnimationFrame(() => renderArchivedChart(archivedCanvas, view));
   }
@@ -3485,28 +4362,28 @@ function archiveCurrentMessageIfNeeded() {
   const archivedAnalysisReport = archived.querySelector(".analysis-report-section");
   const analysisShown = archivedAnalysisReport && !archivedAnalysisReport.classList.contains("hidden");
   const archivedAnalysisCanvas = archivedAnalysisReport?.querySelector(".report-chart-canvas");
-  if (archivedAnalysisCanvas && reportChart && analysisShown) {
+  if (archivedAnalysisCanvas && analysisShown) {
     requestAnimationFrame(() => renderArchivedReportChart(archivedAnalysisCanvas));
   }
 
   const archivedAttributionReport = archived.querySelector(".attribution-report-section");
   const attributionShown = archivedAttributionReport && !archivedAttributionReport.classList.contains("hidden");
   const archivedAttributionCanvas = archivedAttributionReport?.querySelector(".report-chart-canvas");
-  if (archivedAttributionCanvas && attributionChart && attributionShown) {
+  if (archivedAttributionCanvas && attributionShown) {
     requestAnimationFrame(() => renderArchivedAttributionChart(archivedAttributionCanvas));
   }
 
   const archivedTrendReport = archived.querySelector(".trend-report-section");
   const trendShown = archivedTrendReport && !archivedTrendReport.classList.contains("hidden");
   const archivedTrendCanvas = archivedTrendReport?.querySelector(".report-chart-canvas");
-  if (archivedTrendCanvas && trendChart && trendShown) {
+  if (archivedTrendCanvas && trendShown) {
     requestAnimationFrame(() => renderArchivedTrendChart(archivedTrendCanvas));
   }
 
   const archivedComparisonReport = archived.querySelector(".comparison-report-section");
   const comparisonShown = archivedComparisonReport && !archivedComparisonReport.classList.contains("hidden");
   const archivedComparisonCanvas = archivedComparisonReport?.querySelector(".report-chart-canvas");
-  if (archivedComparisonCanvas && comparisonChart && comparisonShown) {
+  if (archivedComparisonCanvas && comparisonShown) {
     requestAnimationFrame(() => renderArchivedComparisonChart(archivedComparisonCanvas));
   }
 }
@@ -3917,36 +4794,11 @@ const DASHBOARD_DIR_TREE = [
   { id: 'n4', name: '财务分析' },
 ];
 
-const REPORT_SAVE_DIR_TREE = [
-  { id: 'c1', name: '销售经营', children: [
-    { id: 'r1', name: '二季度销售复盘报告', kind: 'report' },
-    { id: 'r2', name: '4月经营分析报告', kind: 'report' },
-    { id: 'r3', name: '华东区销售专题分析', kind: 'report' },
-  ]},
-  { id: 'c2', name: '渠道与产品', children: [
-    { id: 'r4', name: '渠道转化专项报告', kind: 'report' },
-    { id: 'r5', name: '产品线毛利分析报告', kind: 'report' },
-  ]},
-  { id: 'c3', name: '客户运营', children: [
-    { id: 'r6', name: '重点客户复购报告', kind: 'report' },
-    { id: 'r7', name: '客户分层运营报告', kind: 'report' },
-  ]},
-  { id: 'c4', name: '管理层汇报', children: [
-    { id: 'r8', name: '月度经营汇报', kind: 'report' },
-  ]},
-];
-
-const REPORT_SECTION_TREE = [
-  { id: 's1', name: '报告摘要', kind: 'section' },
-  { id: 's2', name: '核心指标表现', kind: 'section', children: [
-    { id: 's2-1', name: '销售额趋势', kind: 'section' },
-    { id: 's2-2', name: '目标完成情况', kind: 'section' },
-  ]},
-  { id: 's3', name: '区域销售表现', kind: 'section', children: [
-    { id: 's3-1', name: '华东区表现', kind: 'section' },
-    { id: 's3-2', name: '重点区域对比', kind: 'section' },
-  ]},
-  { id: 's4', name: '经营建议', kind: 'section' },
+const REPORT_SAVE_CATEGORIES = [
+  { id: 'c1', name: '销售经营' },
+  { id: 'c2', name: '渠道与产品' },
+  { id: 'c3', name: '客户运营' },
+  { id: 'c4', name: '管理层汇报' },
 ];
 
 function renderDirTree() {
@@ -4095,36 +4947,9 @@ function getReportPickerConfig(kind) {
       treeId: 'reportCategoryTree',
       textId: 'reportCategoryText',
       searchId: 'reportCategorySearch',
-      data: REPORT_SAVE_DIR_TREE.map((c) => ({ id: c.id, name: c.name, kind: 'category' })),
+      data: REPORT_SAVE_CATEGORIES.map((c) => ({ id: c.id, name: c.name, kind: 'category' })),
       selectable: ['category'],
       empty: '没有匹配的分类',
-    },
-    existing: {
-      pickerId: 'reportExistingPicker',
-      triggerId: 'reportExistingTrigger',
-      panelId: 'reportExistingPanel',
-      treeId: 'reportExistingTree',
-      textId: 'reportExistingText',
-      searchId: 'reportExistingSearch',
-      data: REPORT_SAVE_DIR_TREE.map((c) => ({
-        id: c.id,
-        name: c.name,
-        kind: 'category',
-        children: (c.children || []).map((r) => Object.assign({}, r, { kind: 'report' })),
-      })),
-      selectable: ['report'],
-      empty: '没有匹配的报告',
-    },
-    section: {
-      pickerId: 'reportSectionPicker',
-      triggerId: 'reportSectionTrigger',
-      panelId: 'reportSectionPanel',
-      treeId: 'reportSectionTree',
-      textId: 'reportSectionText',
-      searchId: 'reportSectionSearch',
-      data: REPORT_SECTION_TREE,
-      selectable: ['section'],
-      empty: '没有匹配的报告目录',
     },
   };
   return map[kind];
@@ -4286,7 +5111,7 @@ function onReportPickerReposition() {
 }
 
 function closeReportPickers() {
-  ['category', 'existing', 'section'].forEach((kind) => {
+  ['category'].forEach((kind) => {
     const cfg = getReportPickerConfig(kind);
     if (!cfg) return;
     const panel = document.getElementById(cfg.panelId);
@@ -4311,25 +5136,13 @@ function onDocClickCloseReportPicker(e) {
 }
 
 function renderReportSavePickers() {
-  ['category', 'existing', 'section'].forEach((kind) => {
+  ['category'].forEach((kind) => {
     const cfg = getReportPickerConfig(kind);
     const search = cfg ? document.getElementById(cfg.searchId) : null;
     if (search) search.value = '';
     renderReportPicker(kind);
   });
   document.getElementById('reportCategoryText').textContent = '销售经营';
-  document.getElementById('reportExistingText').textContent = '销售经营 / 二季度销售复盘报告';
-  document.getElementById('reportSectionText').textContent = '区域销售表现';
-}
-
-function switchReportSaveMode(mode) {
-  currentReportSaveMode = mode === 'existing' ? 'existing' : 'new';
-  document.querySelectorAll('#reportSaveSwitch [data-report-mode]').forEach((btn) => {
-    btn.classList.toggle('active', btn.dataset.reportMode === currentReportSaveMode);
-  });
-  document.getElementById('reportSaveNewForm').classList.toggle('hidden', currentReportSaveMode !== 'new');
-  document.getElementById('reportSaveExistingForm').classList.toggle('hidden', currentReportSaveMode !== 'existing');
-  closeReportPickers();
 }
 
 function getCurrentResultTitle() {
@@ -4337,20 +5150,12 @@ function getCurrentResultTitle() {
   return visibleTitle || currentAnswerTitle || currentQuestionText || '智能问数分析报告';
 }
 
-function setupContentPicker() {
-  const picker = document.getElementById('saveContentPicker');
-  if (!picker) return;
-  picker.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
-    const card = cb.closest('.content-card');
-    card.classList.toggle('checked', cb.checked);
-    cb.onchange = () => card.classList.toggle('checked', cb.checked);
-  });
-}
-
-function openSave(type) {
+function openSave(type, options = {}) {
   closeDrawer();
   closeModal();
   currentSaveType = type || "";
+  currentDashboardAssetType = options.assetType === "table" ? "table" : "chart";
+  activeDashboardAssetButton = type === "dashboard" ? (options.triggerButton || null) : null;
   modalMask.classList.remove("hidden");
   saveModal.classList.remove("hidden");
 
@@ -4359,21 +5164,19 @@ function openSave(type) {
   const dashMode = document.getElementById("saveModeDashboard");
   const otherMode = document.getElementById("saveModeOther");
   const reportMode = document.getElementById("saveModeReport");
-
+  const saveConfirmButton = document.getElementById("saveConfirmButton");
+  if (saveConfirmButton) saveConfirmButton.textContent = "确认添加";
   if (type === "dashboard") {
+    const assetLabel = currentDashboardAssetType === "table" ? "表格" : "图表";
     title.textContent = "添加到我的仪表盘";
-    sub.textContent = "AI 已为你推荐保存目录";
+    sub.textContent = `填写${assetLabel}名称并选择保存目录`;
     dashMode.classList.remove("hidden");
     otherMode.classList.add("hidden");
     if (reportMode) reportMode.classList.add("hidden");
-    document.getElementById("saveInputName").value = "华东区近6个月销售额趋势";
+    document.getElementById("saveInputNameLabel").textContent = `${assetLabel}名称`;
+    document.getElementById("saveInputName").value = options.assetTitle || `当前${assetLabel}`;
     document.getElementById("saveDirText").textContent = "销售分析 / 区域销售";
-    document.querySelectorAll('#saveContentPicker input[type="checkbox"]').forEach((cb) => {
-      cb.checked = (cb.value === "chart");
-      cb.closest('.content-card').classList.toggle('checked', cb.checked);
-    });
     renderDirTree();
-    setupContentPicker();
     return;
   }
 
@@ -4401,11 +5204,11 @@ function openSave(type) {
   }
 
   if (type === "report") {
-    title.textContent = "添加到我的报告";
-    sub.textContent = "请选择添加方式和报告位置";
-    document.getElementById("reportNewName").value = getCurrentResultTitle();
+    title.textContent = "新建报告";
+    sub.textContent = "文件内容将保存为一份新报告";
+    if (saveConfirmButton) saveConfirmButton.textContent = "确认新建";
+    document.getElementById("reportNewName").value = "2026年5月销售分析月报";
     renderReportSavePickers();
-    switchReportSaveMode("new");
   }
 }
 
@@ -4417,36 +5220,49 @@ function closeModal() {
   uploadModal.classList.add("hidden");
   if (typeof closeDirPicker === "function") closeDirPicker();
   if (typeof closeReportPickers === "function") closeReportPickers();
+  activeDashboardAssetButton = null;
 }
 
 function saveSuccess() {
+  if (currentSaveType === "dashboard") {
+    const assetLabel = currentDashboardAssetType === "table" ? "表格" : "图表";
+    const name = (document.getElementById("saveInputName").value || "").trim();
+    const directory = (document.getElementById("saveDirText").textContent || "").trim();
+    if (!name) {
+      showToast(`请填写${assetLabel}名称`);
+      return;
+    }
+    if (!directory) {
+      showToast("请选择保存目录");
+      return;
+    }
+    if (activeDashboardAssetButton) {
+      activeDashboardAssetButton.classList.add("is-added");
+      activeDashboardAssetButton.disabled = true;
+      const label = activeDashboardAssetButton.querySelector(".asset-action-label");
+      if (label) label.textContent = "已添加";
+    }
+    closeModal();
+    showToast(`“${name}”已添加到我的仪表盘`);
+    return;
+  }
   if (currentSaveType === "report") {
-    if (currentReportSaveMode === "new") {
-      const name = (document.getElementById("reportNewName").value || "").trim();
-      const category = (document.getElementById("reportCategoryText").textContent || "").trim();
-      if (!name) {
-        showToast("请填写报告名称");
-        return;
-      }
-      if (!category) {
-        showToast("请选择所属分类");
-        return;
-      }
-    } else {
-      const report = (document.getElementById("reportExistingText").textContent || "").trim();
-      const section = (document.getElementById("reportSectionText").textContent || "").trim();
-      if (!report) {
-        showToast("请选择报告");
-        return;
-      }
-      if (!section) {
-        showToast("请选择报告目录");
-        return;
-      }
+    const name = (document.getElementById("reportNewName").value || "").trim();
+    const category = (document.getElementById("reportCategoryText").textContent || "").trim();
+    if (!name) {
+      showToast("请填写报告名称");
+      return;
+    }
+    if (!category) {
+      showToast("请选择所属分类");
+      return;
     }
   }
+  const successMessage = currentSaveType === "report"
+    ? "报告已新建，可在我的报告中查看"
+    : "已添加成功，内容保留来源标识";
   closeModal();
-  showToast("已添加成功，内容保留来源标识");
+  showToast(successMessage);
 }
 
 function exportAction(type) {
@@ -4456,9 +5272,7 @@ function exportAction(type) {
     return;
   }
   const exportLabelMap = {
-    image: "导出图片",
-    pdf: "导出 PDF",
-    excel: "导出 Excel"
+    pdf: "导出 PDF"
   };
   showToast(`${exportLabelMap[type] || "导出"}已开始`);
 }
@@ -4509,7 +5323,6 @@ function toggleInlineAnalysisExport(event) {
 
 function exportAnalysisAction(type) {
   const exportLabelMap = {
-    image: "导出图片",
     pdf: "导出 PDF",
     word: "导出 Word"
   };
@@ -4645,11 +5458,6 @@ function toggleAskMenu(event) {
   }
   positionDropdownMenu(askMenu, event.currentTarget);
   askMenu.classList.remove("hidden");
-}
-
-function addToTarget(type) {
-  hideAddMenu();
-  openSave(type);
 }
 
 const followupActionPresets = {

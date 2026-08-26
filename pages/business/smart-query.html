@@ -21,6 +21,7 @@
       <button class="menu-item" onclick="goTo('report.html')">我的报告</button>
     </nav>
     <div class="top-actions">
+      <a class="requirements-link icon-btn" href="requirements.html" target="_blank" rel="noopener noreferrer" aria-label="新窗口打开需求说明"><span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"></path><path d="M15 3v4h4"></path><path d="M9 12h6"></path><path d="M9 16h6"></path></svg></span><span>需求说明</span></a>
       <button class="admin-link icon-btn" onclick="goTo('../admin/data-source.html')"><span class="btn-icon">⚙</span>管理后台</button>
       <button class="user-trigger" type="button">
         <div class="avatar">张</div>
@@ -42,41 +43,63 @@
       </div>
       <div id="historyList" class="history-list">
         <div class="group-title">今天</div>
-        <div class="history-item active pinned" onclick="runQuestion()" oncontextmenu="openSideMenu(event, 'history')">
+        <div class="history-item active pinned" onclick="loadHistoryScenario('normal', this)" oncontextmenu="openSideMenu(event, 'history')">
           <strong title="近6个月华东区销售额趋势如何？">近6个月华东区销售额趋势如何？</strong>
-          <span><em>销售分析</em><em>置顶 · 08:40</em></span>
+          <span><em>普通问数</em><em>置顶 · 08:40</em></span>
         </div>
-        <div class="history-item" oncontextmenu="openSideMenu(event, 'history')">
-          <strong title="本月各渠道订单转化率对比">本月各渠道订单转化率对比</strong>
-          <span><em>销售分析</em><em>昨天</em></span>
+        <div class="history-item" onclick="loadHistoryScenario('free', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="再按城市拆分看看">再按城市拆分看看</strong>
+          <span><em>自由追问</em><em>08:36</em></span>
         </div>
-        <div class="history-item" oncontextmenu="openSideMenu(event, 'history')">
-          <strong title="哪些产品库存周转偏慢？">哪些产品库存周转偏慢？</strong>
-          <span><em>库存分析</em><em>昨天</em></span>
+        <div class="history-item" onclick="loadHistoryScenario('interpret', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="对这6个月的销售趋势进行整体解读">对这6个月的销售趋势进行整体解读</strong>
+          <span><em>数据解读</em><em>08:31</em></span>
         </div>
-        <div class="history-item hidden" data-more-group="today" oncontextmenu="openSideMenu(event, 'history')">
-          <strong title="今日大客户订单异常波动是什么原因？">今日大客户订单异常波动是什么原因？</strong>
-          <span><em>销售分析</em><em>09:12</em></span>
+        <div class="history-item" onclick="loadHistoryScenario('attribution', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="4月销售额为什么增长明显？">4月销售额为什么增长明显？</strong>
+          <span><em>归因分析</em><em>08:25</em></span>
         </div>
-        <div class="history-item hidden" data-more-group="today" oncontextmenu="openSideMenu(event, 'history')">
-          <strong title="本周新客成交率是否达标？">本周新客成交率是否达标？</strong>
-          <span><em>客户分析</em><em>08:16</em></span>
+        <div class="history-item" onclick="loadHistoryScenario('trend', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="预测未来3个月的销售趋势">预测未来3个月的销售趋势</strong>
+          <span><em>趋势分析</em><em>08:18</em></span>
         </div>
-        <button class="more-link-btn" type="button" data-group="today" onclick="toggleHistoryMore(event)">更多...</button>
-        <div class="group-title">近 7 天</div>
-        <div class="history-item" oncontextmenu="openSideMenu(event, 'history')">
-          <strong title="华南区客户复购率下降原因">华南区客户复购率下降原因</strong>
-          <span><em>客户分析</em><em>04-25</em></span>
+        <div class="history-item" onclick="loadHistoryScenario('boardReferenceAnalysis', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="分析销售经营总览看板的目标完成和区域差异">分析销售经营总览看板的目标完成和区域差异</strong>
+          <span><em>看板引用分析</em><em>08:12</em></span>
         </div>
-        <div class="history-item hidden" data-more-group="week" oncontextmenu="openSideMenu(event, 'history')">
-          <strong title="4月各区域销售目标完成率对比">4月各区域销售目标完成率对比</strong>
-          <span><em>销售分析</em><em>04-24</em></span>
+        <div class="history-item" onclick="loadHistoryScenario('reportReferenceAnalysis', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="分析二季度销售复盘报告的主要结论和风险">分析二季度销售复盘报告的主要结论和风险</strong>
+          <span><em>报告引用分析</em><em>08:06</em></span>
         </div>
-        <div class="history-item hidden" data-more-group="week" oncontextmenu="openSideMenu(event, 'history')">
-          <strong title="库存预警商品近7天变化趋势">库存预警商品近7天变化趋势</strong>
-          <span><em>库存分析</em><em>04-23</em></span>
+        <div class="history-item" onclick="loadHistoryScenario('reportRevision', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="重新整理报告第四章并补充库存风险">重新整理报告第四章并补充库存风险</strong>
+          <span><em>对话修改报告</em><em>07:58</em></span>
         </div>
-        <button class="more-link-btn" type="button" data-group="week" onclick="toggleHistoryMore(event)">更多...</button>
+        <div class="history-item" onclick="loadHistoryScenario('reportAppend', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="把当前分析结论添加到报告经营建议章节">把当前分析结论添加到报告经营建议章节</strong>
+          <span><em>对话添加报告</em><em>07:50</em></span>
+        </div>
+        <div class="group-title">昨天</div>
+        <div class="history-item" onclick="loadHistoryScenario('comparison', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="与去年同期数据进行对比分析">与去年同期数据进行对比分析</strong>
+          <span><em>对比分析</em><em>昨天 16:42</em></span>
+        </div>
+        <div class="history-item" onclick="loadHistoryScenario('template', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="按销售月报模板分析5月份经营情况">按销售月报模板分析5月份经营情况</strong>
+          <span><em>模板分析</em><em>昨天 15:26</em></span>
+        </div>
+        <div class="history-item" onclick="loadHistoryScenario('file', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="请生成5月份销售分析月报Word文件">请生成5月份销售分析月报Word文件</strong>
+          <span><em>Word 文件结果</em><em>昨天 14:10</em></span>
+        </div>
+        <div class="history-item" onclick="loadHistoryScenario('filePdf', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="请生成5月份销售分析月报PDF文件">请生成5月份销售分析月报PDF文件</strong>
+          <span><em>PDF 文件结果</em><em>昨天 13:52</em></span>
+        </div>
+        <div class="history-item" onclick="loadHistoryScenario('fileExcel', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="请生成5月份销售明细Excel文件">请生成5月份销售明细Excel文件</strong>
+          <span><em>Excel 文件结果</em><em>昨天 13:35</em></span>
+        </div>
       </div>
       <div id="favoriteList" class="history-list feedback-list hidden">
         <div class="group-title">已处理</div>
@@ -157,6 +180,19 @@
                       <p id="aiConclusion"></p>
                       <div id="conclusionTags" class="tag-row hidden"><span>持续增长</span><span>6月达到峰值</span><span>4-6月增长明显</span></div>
                       <div id="tableResult" class="inline-table hidden">
+                        <div class="result-table-toolbar">
+                          <span>明细数据</span>
+                          <div class="result-table-actions">
+                            <button class="dashboard-asset-btn" type="button" onclick="addCurrentResultToDashboard('table', this)">
+                              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><path d="M16.5 14v6"></path><path d="M13.5 17h6"></path></svg>
+                              <span class="asset-action-label">添加仪表盘</span>
+                            </button>
+                            <button class="table-export-btn" type="button" onclick="exportTableData(this)">
+                              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"></path><path d="M8.5 10.5L12 14l3.5-3.5"></path><path d="M5 19h14"></path></svg>
+                              <span>导出数据</span>
+                            </button>
+                          </div>
+                        </div>
                         <table>
                           <thead><tr><th>月份</th><th class="num">销售额（万元）</th><th class="num">环比增长</th><th class="num">订单量</th><th class="num">客单价</th></tr></thead>
                           <tbody>
@@ -174,11 +210,17 @@
                     <section id="chartResult" class="chart-card hidden">
                       <div class="chart-top">
                         <h3>华东区销售额月度趋势</h3>
-                        <div id="resultViewToolbar" class="chart-switch hidden">
-                          <button class="active" data-view="line" onclick="setResultView('line')"><svg class="chart-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17l5-6 4 3 7-8"></path></svg><span>折线图</span></button>
-                          <button data-view="bar" onclick="setResultView('bar')"><svg class="chart-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V11"></path><path d="M12 19V7"></path><path d="M19 19V13"></path></svg><span>柱状图</span></button>
-                          <button data-view="area" onclick="setResultView('area')"><svg class="chart-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17l5-6 4 3 7-8v11H4z"></path></svg><span>面积图</span></button>
-                          <button data-view="pie" onclick="setResultView('pie')"><svg class="chart-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v8h8"></path><path d="M20 12a8 8 0 1 1-8-8"></path></svg><span>饼状图</span></button>
+                        <div class="chart-top-actions">
+                          <div id="resultViewToolbar" class="chart-switch hidden">
+                            <button class="active" data-view="line" onclick="setResultView('line')"><svg class="chart-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17l5-6 4 3 7-8"></path></svg><span>折线图</span></button>
+                            <button data-view="bar" onclick="setResultView('bar')"><svg class="chart-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V11"></path><path d="M12 19V7"></path><path d="M19 19V13"></path></svg><span>柱状图</span></button>
+                            <button data-view="area" onclick="setResultView('area')"><svg class="chart-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17l5-6 4 3 7-8v11H4z"></path></svg><span>面积图</span></button>
+                            <button data-view="pie" onclick="setResultView('pie')"><svg class="chart-tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v8h8"></path><path d="M20 12a8 8 0 1 1-8-8"></path></svg><span>饼状图</span></button>
+                          </div>
+                          <button class="dashboard-asset-btn" type="button" onclick="addCurrentResultToDashboard('chart', this)">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><path d="M16.5 14v6"></path><path d="M13.5 17h6"></path></svg>
+                            <span class="asset-action-label">添加仪表盘</span>
+                          </button>
                         </div>
                       </div>
                       <div id="chartArea" class="chart-area">
@@ -199,11 +241,6 @@
                         </button>
                       </div>
                       <div class="answer-action-right">
-                        <button class="action-dropdown-btn" type="button" onclick="toggleAddMenu(event)">
-                          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
-                          <span>添加</span>
-                          <svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
-                        </button>
                         <button class="action-dropdown-btn" type="button" onclick="toggleExport(event)">
                           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"></path><path d="M8.5 10.5L12 14l3.5-3.5"></path><path d="M5 19h14"></path></svg>
                           <span>导出</span>
@@ -225,7 +262,13 @@
                         <div id="trendEmbeddedChart" class="report-embedded-chart">
                           <div class="report-chart-head">
                             <h6>华东区销售额月度趋势 · 含未来3个月预测</h6>
-                            <span class="report-chart-tag trend-tag">实线为实际 · 虚线为预测 · 单位：万元</span>
+                            <div class="report-chart-actions">
+                              <span class="report-chart-tag trend-tag">实线为实际 · 虚线为预测 · 单位：万元</span>
+                              <button class="dashboard-asset-btn" type="button" onclick="addCurrentResultToDashboard('chart', this)">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><path d="M16.5 14v6"></path><path d="M13.5 17h6"></path></svg>
+                                <span class="asset-action-label">添加仪表盘</span>
+                              </button>
+                            </div>
                           </div>
                           <div class="report-chart-area">
                             <div id="trendChartCanvas" class="report-chart-canvas"></div>
@@ -236,6 +279,19 @@
                         <h5>二、预测明细与置信区间</h5>
                         <p class="trend-block-intro" id="trendForecastIntro">未来 3 个月按月给出预测值、同环比和 90% 置信区间。</p>
                         <div class="trend-forecast-table-wrap">
+                          <div class="result-table-toolbar compact">
+                            <span>预测明细</span>
+                            <div class="result-table-actions">
+                              <button class="dashboard-asset-btn" type="button" onclick="addCurrentResultToDashboard('table', this)">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><path d="M16.5 14v6"></path><path d="M13.5 17h6"></path></svg>
+                                <span class="asset-action-label">添加仪表盘</span>
+                              </button>
+                              <button class="table-export-btn" type="button" onclick="exportTableData(this)">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"></path><path d="M8.5 10.5L12 14l3.5-3.5"></path><path d="M5 19h14"></path></svg>
+                                <span>导出数据</span>
+                              </button>
+                            </div>
+                          </div>
                           <table class="trend-forecast-table">
                             <thead>
                               <tr><th>月份</th><th class="num">预测值（万元）</th><th class="num">同比</th><th class="num">环比</th><th class="num">置信区间</th></tr>
@@ -312,11 +368,6 @@
                           </button>
                         </div>
                         <div class="answer-action-right">
-                          <button class="action-dropdown-btn" type="button" onclick="toggleAddMenu(event)">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
-                            <span>添加</span>
-                            <svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
-                          </button>
                           <button class="action-dropdown-btn" type="button" onclick="toggleExport(event)">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"></path><path d="M8.5 10.5L12 14l3.5-3.5"></path><path d="M5 19h14"></path></svg>
                             <span>导出</span>
@@ -338,7 +389,13 @@
                         <div id="attributionEmbeddedChart" class="report-embedded-chart">
                           <div class="report-chart-head">
                             <h6>华东区销售额月度趋势 · 4月异常点</h6>
-                            <span class="report-chart-tag attribution-tag">异常点高亮 · 单位：万元</span>
+                            <div class="report-chart-actions">
+                              <span class="report-chart-tag attribution-tag">异常点高亮 · 单位：万元</span>
+                              <button class="dashboard-asset-btn" type="button" onclick="addCurrentResultToDashboard('chart', this)">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><path d="M16.5 14v6"></path><path d="M13.5 17h6"></path></svg>
+                                <span class="asset-action-label">添加仪表盘</span>
+                              </button>
+                            </div>
                           </div>
                           <div class="report-chart-area">
                             <div id="attributionChartCanvas" class="report-chart-canvas"></div>
@@ -414,11 +471,6 @@
                           </button>
                         </div>
                         <div class="answer-action-right">
-                          <button class="action-dropdown-btn" type="button" onclick="toggleAddMenu(event)">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
-                            <span>添加</span>
-                            <svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
-                          </button>
                           <button class="action-dropdown-btn" type="button" onclick="toggleExport(event)">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"></path><path d="M8.5 10.5L12 14l3.5-3.5"></path><path d="M5 19h14"></path></svg>
                             <span>导出</span>
@@ -440,7 +492,13 @@
                         <div id="reportEmbeddedChart" class="report-embedded-chart">
                           <div class="report-chart-head">
                             <h6>华东区销售额月度趋势</h6>
-                            <span class="report-chart-tag">折线图 · 单位：万元</span>
+                            <div class="report-chart-actions">
+                              <span class="report-chart-tag">折线图 · 单位：万元</span>
+                              <button class="dashboard-asset-btn" type="button" onclick="addCurrentResultToDashboard('chart', this)">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><path d="M16.5 14v6"></path><path d="M13.5 17h6"></path></svg>
+                                <span class="asset-action-label">添加仪表盘</span>
+                              </button>
+                            </div>
                           </div>
                           <div class="report-chart-area">
                             <div id="reportChartCanvas" class="report-chart-canvas"></div>
@@ -485,11 +543,6 @@
                           </button>
                         </div>
                         <div class="answer-action-right">
-                          <button class="action-dropdown-btn" type="button" onclick="toggleAddMenu(event)">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
-                            <span>添加</span>
-                            <svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
-                          </button>
                           <button class="action-dropdown-btn" type="button" onclick="toggleExport(event)">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"></path><path d="M8.5 10.5L12 14l3.5-3.5"></path><path d="M5 19h14"></path></svg>
                             <span>导出</span>
@@ -526,6 +579,19 @@
                         <h5>二、关键指标对比表</h5>
                         <p class="comparison-block-intro" id="comparisonTableIntro">从销售规模、运营效率、客户结构、盈利质量 6 个核心指标量化 2025 与 2026 同期差异，标注关键变化。</p>
                         <div class="comparison-table-wrap">
+                          <div class="result-table-toolbar compact">
+                            <span>同期对比明细</span>
+                            <div class="result-table-actions">
+                              <button class="dashboard-asset-btn" type="button" onclick="addCurrentResultToDashboard('table', this)">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><path d="M16.5 14v6"></path><path d="M13.5 17h6"></path></svg>
+                                <span class="asset-action-label">添加仪表盘</span>
+                              </button>
+                              <button class="table-export-btn" type="button" onclick="exportTableData(this)">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"></path><path d="M8.5 10.5L12 14l3.5-3.5"></path><path d="M5 19h14"></path></svg>
+                                <span>导出数据</span>
+                              </button>
+                            </div>
+                          </div>
                           <table class="comparison-table">
                             <thead>
                               <tr>
@@ -596,7 +662,13 @@
                         <div id="comparisonEmbeddedChart" class="report-embedded-chart">
                           <div class="report-chart-head">
                             <h6>2025 vs 2026 同期销售额月度对比</h6>
-                            <span class="report-chart-tag comparison-tag">双折线 + 同比柱 · 单位：万元 / %</span>
+                            <div class="report-chart-actions">
+                              <span class="report-chart-tag comparison-tag">双折线 + 同比柱 · 单位：万元 / %</span>
+                              <button class="dashboard-asset-btn" type="button" onclick="addCurrentResultToDashboard('chart', this)">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><path d="M16.5 14v6"></path><path d="M13.5 17h6"></path></svg>
+                                <span class="asset-action-label">添加仪表盘</span>
+                              </button>
+                            </div>
                           </div>
                           <div class="report-chart-area">
                             <div id="comparisonChartCanvas" class="report-chart-canvas"></div>
@@ -664,11 +736,6 @@
                           </button>
                         </div>
                         <div class="answer-action-right">
-                          <button class="action-dropdown-btn" type="button" onclick="toggleAddMenu(event)">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
-                            <span>添加</span>
-                            <svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
-                          </button>
                           <button class="action-dropdown-btn" type="button" onclick="toggleExport(event)">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"></path><path d="M8.5 10.5L12 14l3.5-3.5"></path><path d="M5 19h14"></path></svg>
                             <span>导出</span>
@@ -822,11 +889,6 @@
                           </button>
                         </div>
                         <div class="answer-action-right">
-                          <button class="action-dropdown-btn" type="button" onclick="toggleAddMenu(event)">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
-                            <span>添加</span>
-                            <svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
-                          </button>
                           <button class="action-dropdown-btn" type="button" onclick="toggleExport(event)">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"></path><path d="M8.5 10.5L12 14l3.5-3.5"></path><path d="M5 19h14"></path></svg>
                             <span>导出</span>
@@ -838,6 +900,71 @@
                             <svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
                           </button>
                         </div>
+                      </div>
+                    </section>
+                    <section id="referenceConversationResult" class="reference-conversation-result hidden">
+                      <div class="file-result-answer reference-result-answer">
+                        <span id="referenceResultIcon" class="file-result-answer-icon reference-result-type-icon is-board">
+                          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h7v6H4z"></path><path d="M13 5h7v4h-7z"></path><path d="M4 13h7v6H4z"></path><path d="M13 11h7v8h-7z"></path></svg>
+                        </span>
+                        <div>
+                          <span id="referenceResultBadge" class="reference-result-badge">引用分析</span>
+                          <h4 id="referenceResultHeading">引用内容分析完成</h4>
+                          <p id="referenceResultSummary"></p>
+                        </div>
+                      </div>
+                      <ul id="referenceResultDetails" class="reference-result-points"></ul>
+                      <div id="referenceExecutionFeedback" class="reference-execution-feedback hidden">
+                        <div class="reference-feedback-head">
+                          <span class="reference-feedback-icon">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m8 12 2.6 2.6L16.5 9"></path></svg>
+                          </span>
+                          <div><strong id="referenceFeedbackTitle">报告处理完成</strong><span id="referenceFeedbackDesc">已根据对话要求完成处理并保存最新版本</span></div>
+                        </div>
+                        <dl id="referenceFeedbackMeta" class="reference-feedback-meta"></dl>
+                      </div>
+                    </section>
+                    <section id="fileResult" class="file-result-section hidden">
+                      <div class="file-result-answer">
+                        <span class="file-result-answer-icon">
+                          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.2 5.2L19 10l-4.8 1.8L12 17l-2.2-5.2L5 10l4.8-1.8Z"></path></svg>
+                        </span>
+                        <div>
+                          <h4 id="fileResultAnswerTitle">正在生成月报文件</h4>
+                          <p id="fileResultSummary">已根据 5 月份销售数据生成销售分析月报，包含经营摘要、核心指标、结构分析、风险提示与下月建议。</p>
+                        </div>
+                      </div>
+                      <article class="generated-file-card">
+                        <div class="generated-file-main">
+                          <span id="generatedFileIcon" class="generated-file-icon is-word">W</span>
+                          <div class="generated-file-info">
+                            <strong id="generatedFileName">2026年5月销售分析月报.docx</strong>
+                            <span id="generatedFileMeta">Word 文档 · 2.8 MB</span>
+                          </div>
+                        </div>
+                        <span id="generatedFileStatus" class="generated-file-status is-generating"><i></i><span>生成中</span></span>
+                        <div id="generatedFileActions" class="generated-file-actions hidden">
+                          <button class="file-result-action" type="button" onclick="downloadGeneratedFile()">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"></path><path d="M8.5 10.5L12 14l3.5-3.5"></path><path d="M5 19h14"></path></svg>
+                            <span>下载</span>
+                          </button>
+                          <button class="file-result-action primary" type="button" onclick="saveGeneratedFileToReport()">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h7l4 4v12H7z"></path><path d="M14 4v4h4"></path><path d="M9 14h6"></path><path d="M9 17h4"></path></svg>
+                            <span>保存报告</span>
+                          </button>
+                        </div>
+                      </article>
+                      <div class="file-result-feedback">
+                        <span class="answer-action-title">这个回答准确吗？</span>
+                        <button class="answer-action-btn" type="button" data-tip="喜欢" data-vote="like" onclick="setAnswerVote('like')" aria-label="喜欢">
+                          <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10v12"></path><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88z"></path></svg>
+                        </button>
+                        <button class="answer-action-btn" type="button" data-tip="不喜欢" data-vote="dislike" onclick="setAnswerVote('dislike')" aria-label="不喜欢">
+                          <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 14V2"></path><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88z"></path></svg>
+                        </button>
+                        <button class="answer-action-btn" type="button" data-tip="反馈" onclick="openFeedback()" aria-label="反馈">
+                          <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg>
+                        </button>
                       </div>
                     </section>
                   </div>
@@ -960,6 +1087,7 @@
         <div class="input-card">
           <div class="input-main">
             <div class="theme-line">当前主题：<strong>销售分析</strong></div>
+            <div id="referencePreviewList" class="reference-preview-list hidden"></div>
             <div id="attachmentPreviewList" class="attachment-preview-list hidden"></div>
             <div id="followupContextChip" class="followup-chip hidden">
               <svg class="followup-chip-icon" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
@@ -1000,6 +1128,10 @@
                   <div class="skill-picker-foot"><span>技能标签保持选中；除标签外的提示内容均可自由修改。</span></div>
                 </div>
               </div>
+              <button type="button" id="referencePickerTrigger" onclick="openReferencePicker()" title="引用我的看板或报告">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 12h8"></path><path d="M12 8v8"></path><path d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"></path></svg>
+                <span id="referencePickerTriggerText">引用</span>
+              </button>
               <button type="button" onclick="triggerUpload('image')" title="上传图片">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5C4 5.1 5.1 4 6.5 4h11C18.9 4 20 5.1 20 6.5v11c0 1.4-1.1 2.5-2.5 2.5h-11C5.1 20 4 18.9 4 17.5v-11Z"/><path d="M7 16l3.2-3.3 2.2 2.2 2.5-3.1L18 16H7Z"/><path d="M8.5 8.8h.01"/></svg>
                 图片
@@ -1188,7 +1320,7 @@
       <section class="analysis-section"><h4>关键发现</h4><ol><li>销售额连续6个月增长，整体趋势向好。</li><li>4月环比增长15.1%，是近6个月增长最快月份。</li><li>6月销售额达到3248万元，为当前周期最高值。</li></ol></section>
       <section class="analysis-section"><h4>经营建议</h4><p>建议继续跟踪华东区高贡献渠道和重点客户订单变化，同时关注高增长产品线的库存保障。</p></section>
     </div>
-    <div class="drawer-foot"><button class="primary-btn" onclick="openSave('report')">添加到报告</button><button class="secondary-btn" onclick="goTo('query-export.html')">导出解读</button><button class="ghost-btn" onclick="closeDrawer()">关闭</button></div>
+    <div class="drawer-foot"><button class="secondary-btn" onclick="exportAction('word')">导出 Word</button><button class="secondary-btn" onclick="exportAction('pdf')">导出 PDF</button><button class="ghost-btn" onclick="closeDrawer()">关闭</button></div>
   </aside>
 
   <div id="modalMask" class="modal-mask hidden"></div>
@@ -1199,7 +1331,7 @@
       <div class="save-mode-dashboard" id="saveModeDashboard">
         <div class="form-grid">
           <div class="field full">
-            <label>图表名称</label>
+            <label id="saveInputNameLabel">图表名称</label>
             <input id="saveInputName" value="华东区近6个月销售额趋势" />
           </div>
           <div class="field full">
@@ -1220,49 +1352,6 @@
               </div>
             </div>
           </div>
-          <div class="field full">
-            <label>保存内容</label>
-            <div class="content-picker" id="saveContentPicker">
-              <label class="content-card">
-                <input type="checkbox" name="saveContent" value="text" />
-                <span class="content-check"></span>
-                <div class="content-thumb thumb-text">
-                  <span class="line line-1"></span>
-                  <span class="line line-2"></span>
-                  <span class="line line-3"></span>
-                  <span class="line line-4"></span>
-                </div>
-                <strong>文字</strong>
-                <em>分析结论与标签</em>
-              </label>
-              <label class="content-card">
-                <input type="checkbox" name="saveContent" value="chart" checked />
-                <span class="content-check"></span>
-                <div class="content-thumb thumb-chart">
-                  <span style="height:48%"></span>
-                  <span style="height:72%"></span>
-                  <span style="height:36%"></span>
-                  <span style="height:84%"></span>
-                  <span style="height:60%"></span>
-                </div>
-                <strong>图表</strong>
-                <em>可视化展示</em>
-              </label>
-              <label class="content-card">
-                <input type="checkbox" name="saveContent" value="table" />
-                <span class="content-check"></span>
-                <div class="content-thumb thumb-tbl">
-                  <span class="row head"></span>
-                  <span class="row"></span>
-                  <span class="row"></span>
-                  <span class="row"></span>
-                  <span class="row"></span>
-                </div>
-                <strong>表格数据</strong>
-                <em>明细数据列表</em>
-              </label>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -1276,17 +1365,9 @@
         </div>
       </div>
 
-      <!-- 报告模式（新版） -->
+      <!-- 文件结果：固定新建报告 -->
       <div class="save-mode-report hidden" id="saveModeReport">
-        <div class="field full">
-          <label>报告选择</label>
-          <div class="report-save-switch" id="reportSaveSwitch">
-            <button type="button" class="active" data-report-mode="new" onclick="switchReportSaveMode('new')">新建报告</button>
-            <button type="button" data-report-mode="existing" onclick="switchReportSaveMode('existing')">已有报告</button>
-          </div>
-        </div>
-
-        <div class="form-grid report-save-form" id="reportSaveNewForm">
+        <div class="form-grid" id="reportSaveNewForm">
           <div class="field full">
             <label>报告名称</label>
             <input id="reportNewName" value="华东区近6个月销售额趋势分析" />
@@ -1308,44 +1389,9 @@
             </div>
           </div>
         </div>
-
-        <div class="form-grid report-save-form hidden" id="reportSaveExistingForm">
-          <div class="field full">
-            <label>选择报告</label>
-            <div class="dir-picker report-picker" id="reportExistingPicker">
-              <button type="button" class="dir-picker-trigger" id="reportExistingTrigger" onclick="toggleReportPicker(event, 'existing')">
-                <span class="dir-picker-text" id="reportExistingText">销售经营 / 二季度销售复盘报告</span>
-                <svg class="dir-picker-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"></path></svg>
-              </button>
-              <div class="dir-picker-panel hidden" id="reportExistingPanel">
-                <div class="dir-picker-search">
-                  <span class="dir-search-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
-                  <input id="reportExistingSearch" placeholder="搜索目录 / 报告" oninput="filterReportPicker('existing', this.value)" />
-                </div>
-                <div class="dir-picker-tree" id="reportExistingTree"></div>
-              </div>
-            </div>
-          </div>
-          <div class="field full">
-            <label>报告目录</label>
-            <div class="dir-picker report-picker" id="reportSectionPicker">
-              <button type="button" class="dir-picker-trigger" id="reportSectionTrigger" onclick="toggleReportPicker(event, 'section')">
-                <span class="dir-picker-text" id="reportSectionText">区域销售表现</span>
-                <svg class="dir-picker-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"></path></svg>
-              </button>
-              <div class="dir-picker-panel hidden" id="reportSectionPanel">
-                <div class="dir-picker-search">
-                  <span class="dir-search-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
-                  <input id="reportSectionSearch" placeholder="搜索报告目录" oninput="filterReportPicker('section', this.value)" />
-                </div>
-                <div class="dir-picker-tree" id="reportSectionTree"></div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
-    <div class="modal-foot"><button class="ghost-btn" onclick="closeModal()">取消</button><button class="primary-btn" onclick="saveSuccess()">确认添加</button></div>
+    <div class="modal-foot"><button class="ghost-btn" onclick="closeModal()">取消</button><button id="saveConfirmButton" class="primary-btn" onclick="saveSuccess()">确认添加</button></div>
   </section>
 
   <section id="feedbackModal" class="modal hidden">
@@ -1395,15 +1441,36 @@
     </div>
   </section>
 
+  <div id="referenceModalMask" class="modal-mask hidden"></div>
+  <section id="referenceModal" class="modal large reference-picker-modal hidden" role="dialog" aria-modal="true" aria-labelledby="referenceModalTitle">
+    <div class="modal-head">
+      <div><h3 id="referenceModalTitle">引用看板或报告</h3><p>引用内容默认只用于当前对话分析；如在对话中明确要求修改或写入报告，将直接执行并反馈结果。</p></div>
+      <button class="close" type="button" onclick="closeReferencePicker()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="reference-picker-toolbar">
+        <div class="reference-picker-tabs" role="tablist">
+          <button class="active" type="button" data-reference-tab="board" onclick="switchReferenceTab('board', this)">我的看板</button>
+          <button type="button" data-reference-tab="report" onclick="switchReferenceTab('report', this)">我的报告</button>
+        </div>
+        <div class="reference-picker-search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+          <input id="referencePickerSearch" placeholder="搜索看板名称" oninput="filterReferencePicker(this.value)" />
+        </div>
+      </div>
+      <div id="referencePickerTree" class="reference-picker-tree"></div>
+      <div id="referencePickerEmpty" class="reference-picker-empty hidden">没有匹配的内容</div>
+    </div>
+    <div class="modal-foot">
+      <span class="reference-selected-count">已选 <strong id="referenceSelectedCount">0</strong> 项</span>
+      <button class="ghost-btn" type="button" onclick="closeReferencePicker()">取消</button>
+      <button class="primary-btn" type="button" onclick="confirmReferenceSelection()">完成引用</button>
+    </div>
+  </section>
+
   <div id="exportMenu" class="context-menu export-menu hidden">
-    <button onclick="exportAction('image')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M7 15l3-3 2.5 2.5 2.5-3 2 3.5"></path><path d="M9 9h.01"></path></svg><span>导出图片</span></button>
-    <button onclick="exportAction('pdf')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h7l4 4v12H7z"></path><path d="M14 4v4h4"></path><path d="M9 16h6"></path></svg><span>导出 PDF</span></button>
     <button onclick="exportAction('word')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M8 9l1.5 6L12 9l2.5 6L16 9"></path></svg><span>导出 Word</span></button>
-    <button onclick="exportAction('excel')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M9 9l6 6"></path><path d="M15 9l-6 6"></path></svg><span>导出 Excel</span></button>
-  </div>
-  <div id="addMenu" class="context-menu add-menu hidden">
-    <button onclick="addToTarget('dashboard')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><rect x="13" y="13" width="7" height="7" rx="1.5"></rect></svg><span>添加到仪表盘</span></button>
-    <button onclick="addToTarget('report')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h7l4 4v12H7z"></path><path d="M14 4v4h4"></path><path d="M9 14h6"></path><path d="M9 17h4"></path></svg><span>添加到报告</span></button>
+    <button onclick="exportAction('pdf')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h7l4 4v12H7z"></path><path d="M14 4v4h4"></path><path d="M9 16h6"></path></svg><span>导出 PDF</span></button>
   </div>
   <div id="askMenu" class="context-menu ask-menu hidden">
     <button onclick="askFollowup('free')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><path d="M12 8v6"></path><path d="M9 11h6"></path></svg><span>自由追问</span></button>
