@@ -9,6 +9,14 @@
     campaign: '<path d="M4 13h3l9 5V6l-9 5H4v2z"/><path d="M7 13l1 6h3"/><path d="M19 9c1.3 1.7 1.3 4.3 0 6"/>',
     default: '<path d="M5 4h14v16H5z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/>'
   };
+  const GENERAL_SKILL = Object.freeze({
+    pickerKey: "general",
+    kind: "general",
+    name: "通用问数",
+    desc: "自由提问，系统自动识别合适的分析方式",
+    category: "默认模式",
+    pickerTag: "默认"
+  });
 
   function escapeHTML(value) {
     return String(value == null ? "" : value).replace(/[&<>"']/g, (char) => ({
@@ -68,6 +76,7 @@
   }
 
   global.SkillPicker = {
-    render
+    render,
+    generalSkill: GENERAL_SKILL
   };
 })(window);

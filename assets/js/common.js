@@ -525,7 +525,7 @@ function goTo(path) {
         { name: "指标体系", href: "knowledge-indicator.html", match: ["knowledge-indicator"] },
         { name: "示例库", href: "knowledge-example.html", match: ["knowledge-example"] },
         { name: "行业知识", href: "knowledge-faq.html", match: ["knowledge-faq"] },
-        { name: "技能管理", href: "knowledge-skill.html", match: ["knowledge-skill", "knowledge-skill-edit", "knowledge-skill-test"] },
+        { name: "技能管理", href: "knowledge-skill.html", match: ["knowledge-skill", "knowledge-skill-edit"] },
         { name: "自定义指令", href: "knowledge-instructions.html", match: ["knowledge-instructions"] }
       ]
     },

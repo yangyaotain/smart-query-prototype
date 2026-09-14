@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>智能问数 - 业务端</title>
   <link rel="stylesheet" href="../../assets/css/theme.css" />
-  <link rel="stylesheet" href="../../assets/css/business.css?v=20260719-persistent-hints-unified-fonts" />
-  <link rel="stylesheet" href="../../assets/css/skill-picker.css?v=20260720-unified" />
+  <link rel="stylesheet" href="../../assets/css/business.css?v=20260914-history-active-state" />
+  <link rel="stylesheet" href="../../assets/css/skill-picker.css?v=20260914-skill-copy" />
+  <link rel="stylesheet" href="../../assets/css/scheduled-tasks.css?v=20260914-skill-copy" />
 </head>
 <body>
   <header class="topbar">
@@ -19,6 +20,7 @@
       <button class="menu-item" onclick="goTo('dashboard.html')">我的仪表盘</button>
       <button class="menu-item" onclick="goTo('board.html')">我的看板</button>
       <button class="menu-item" onclick="goTo('report.html')">我的报告</button>
+      <button class="menu-item" onclick="goTo('scheduled-tasks.html')">定时任务</button>
     </nav>
     <div class="top-actions">
       <a class="requirements-link icon-btn" href="requirements.html" target="_blank" rel="noopener noreferrer" aria-label="新窗口打开需求说明"><span class="btn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"></path><path d="M15 3v4h4"></path><path d="M9 12h6"></path><path d="M9 16h6"></path></svg></span><span>需求说明</span></a>
@@ -1128,6 +1130,10 @@
                   <div class="skill-picker-foot"><span>技能标签保持选中；除标签外的提示内容均可自由修改。</span></div>
                 </div>
               </div>
+              <button type="button" id="scheduledTaskCreateTrigger" onclick="openScheduledTaskComposer()" title="创建定时任务">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 7v5l3 2"></path></svg>
+                定时任务
+              </button>
               <button type="button" id="referencePickerTrigger" onclick="openReferencePicker()" title="引用我的看板或报告">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 12h8"></path><path d="M12 8v8"></path><path d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"></path></svg>
                 <span id="referencePickerTriggerText">引用</span>
@@ -1494,8 +1500,10 @@
 
   <script src="../../assets/js/echarts.min.js"></script>
   <script src="../../assets/js/common.js"></script>
-  <script src="../../assets/js/skill-catalog.js?v=20260720-unified-picker"></script>
-  <script src="../../assets/js/skill-picker.js?v=20260720-unified"></script>
-  <script src="../../assets/js/smart-query.js?v=20260720-unified-skill-picker"></script>
+  <script src="../../assets/js/skill-template-sample.js?v=20260911"></script>
+    <script src="../../assets/js/skill-workflow-store.js?v=20260914-sql-meta"></script>
+  <script src="../../assets/js/skill-picker.js?v=20260914-skill-copy"></script>
+  <script src="../../assets/js/scheduled-task-form.js?v=20260914-skill-copy"></script>
+  <script src="../../assets/js/smart-query.js?v=20260914-skill-copy"></script>
 </body>
 </html>

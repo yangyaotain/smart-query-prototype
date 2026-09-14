@@ -28,7 +28,8 @@ smart-query-prototype/
     │   ├── board.html            # 我的看板
     │   ├── board-edit.html       # 看板编辑
     │   ├── report.html           # 我的报告
-    │   └── report-edit.html      # 报告编辑
+    │   ├── report-edit.html      # 报告编辑
+    │   └── scheduled-tasks.html  # 定时任务管理、执行记录与结果查看
     └── admin/                    # 数据、知识库、运营和系统管理页面
 ```
 
@@ -39,6 +40,7 @@ smart-query-prototype/
 - PC 业务端我的仪表盘
 - PC 业务端我的看板与看板编辑
 - PC 业务端我的报告与报告编辑
+- PC 业务端智能问数快捷创建定时任务，以及统一任务配置工作区、试运行和执行记录
 - PC 管理后台数据源、数据模型、分析主题管理
 - PC 管理后台指标体系、示例库、行业知识、技能管理、自定义指令
 - PC 管理后台反馈管理、指标沉淀、用户管理、角色管理、系统配置

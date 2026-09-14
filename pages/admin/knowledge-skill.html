@@ -6,7 +6,8 @@
   <title>技能管理 - 智能问数管理后台</title>
   <link rel="stylesheet" href="../../assets/css/theme.css" />
   <link rel="stylesheet" href="../../assets/css/admin.css" />
-  <link rel="stylesheet" href="../../assets/css/knowledge-skill.css?v=20260724-status-confirm" />
+  <link rel="stylesheet" href="../../assets/css/knowledge-skill.css?v=20260914-table-fit" />
+  <link rel="stylesheet" href="../../assets/css/skill-workflow.css?v=20260914-status-link" />
 </head>
 <body>
   <div class="admin-shell">
@@ -41,7 +42,7 @@
               <span class="ks-title-icon">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3z"/><path d="M18.5 14l1 2.5L22 17.5l-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5z"/></svg>
               </span>
-              <div><h1>技能管理</h1><p>定义业务端可选择的分析技能，统一维护自然语言提示、执行指令和报告模板。</p></div>
+              <div><h1>技能管理</h1><p>导入 Word 模板，逐项配置与确认指标、图表及分析内容，按原模板生成业务报告。</p></div>
             </div>
           </div>
           <button type="button" class="primary-btn ks-icon-btn" id="ksBtnNew">
@@ -50,26 +51,11 @@
           </button>
         </div>
 
-        <div class="ks-summary-grid">
-          <div class="ks-summary-card">
-            <span class="ks-summary-icon is-blue"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8"/><path d="M8 13h5"/></svg></span>
-            <div><span>技能总数</span><strong id="ksTotalCount">4</strong><em>经营报告类技能</em></div>
-          </div>
-          <div class="ks-summary-card">
-            <span class="ks-summary-icon is-green"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4L19 6"/></svg></span>
-            <div><span>已启用</span><strong id="ksEnabledCount">4</strong><em>业务端当前可选择</em></div>
-          </div>
-          <div class="ks-summary-card">
-            <span class="ks-summary-icon is-purple"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V8"/><path d="M10 19V4"/><path d="M16 19v-7"/><path d="M22 19H2"/></svg></span>
-            <div><span>本月调用</span><strong>128</strong><em>较上月增长 18.5%</em></div>
-          </div>
-        </div>
-
         <div class="ks-list-card">
           <div class="ks-filter-bar">
             <div class="ks-search">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-              <input type="text" id="ksKeyword" placeholder="搜索技能名称 / 编码" />
+              <input type="text" id="ksKeyword" placeholder="搜索技能名称" />
             </div>
             <select class="ks-select" id="ksCategoryFilter" title="按技能分类筛选">
               <option value="">全部分类</option>
@@ -92,6 +78,7 @@
               <option value="enabled">启用</option>
               <option value="disabled">停用</option>
             </select>
+            <button type="button" class="primary-btn sw-button" id="ksBtnQuery"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M15 15l6 6"/></svg>查询</button>
             <button type="button" class="ghost-btn ks-icon-btn" id="ksBtnReset">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v6h6"/><path d="M20 20v-6h-6"/><path d="M5.5 15a7.5 7.5 0 0 0 12.8 2.7L20 14"/><path d="M4 10l1.7-3.7A7.5 7.5 0 0 1 18.5 9"/></svg>
               重置
@@ -100,14 +87,24 @@
 
           <div class="ks-table-wrap">
             <table class="ks-table">
+              <colgroup>
+                <col class="ks-col-skill" />
+                <col class="ks-col-category" />
+                <col class="ks-col-theme" />
+                <col class="ks-col-progress" />
+                <col class="ks-col-status" />
+                <col class="ks-col-updated" />
+                <col class="ks-col-actions" />
+              </colgroup>
               <thead>
                 <tr>
-                  <th style="width:24%;">技能名称</th>
-                  <th style="width:10%;">分类</th>
-                  <th style="width:22%;">适用分析主题</th>
-                  <th style="width:10%;">状态</th>
-                  <th style="width:13%;">更新时间</th>
-                  <th style="width:21%;">操作</th>
+                  <th>技能名称</th>
+                  <th>分类</th>
+                  <th>适用分析主题</th>
+                  <th>解析与确认进度</th>
+                  <th>启用状态</th>
+                  <th>更新时间</th>
+                  <th>操作</th>
                 </tr>
               </thead>
               <tbody id="ksTableBody"></tbody>
@@ -117,21 +114,18 @@
               <strong>暂无匹配技能</strong><p>请调整筛选条件后重试。</p>
             </div>
           </div>
-          <div class="ks-list-foot"><span id="ksListCount">共 4 项技能</span><span>技能停用后，将从业务端技能选择中隐藏。</span></div>
+          <div class="ks-list-foot"><span id="ksListCount">共 0 项技能</span><span>基本信息完整且全部内容确认后可启用；停用技能不在业务端展示。</span></div>
         </div>
       </section>
     </main>
   </div>
 
-  <div class="modal-mask hidden" id="ksConfirmMask"></div>
-  <section class="modal small hidden" id="ksConfirmModal" role="dialog" aria-modal="true" aria-labelledby="ksConfirmTitle">
-    <div class="modal-head"><div><h3 id="ksConfirmTitle">操作确认</h3><p id="ksConfirmSubtitle">请确认是否继续执行当前操作。</p></div><button type="button" class="close" id="ksConfirmClose" aria-label="关闭">×</button></div>
-    <div class="modal-body"><div class="ks-confirm-message" id="ksConfirmMessage"></div></div>
-    <div class="modal-foot"><button type="button" class="ghost-btn" id="ksConfirmCancel">取消</button><button type="button" class="primary-btn" id="ksConfirmOk">确认</button></div>
-  </section>
-
   <script src="../../assets/js/common.js?v=20260717-natural-prompt"></script>
-  <script src="../../assets/js/skill-catalog.js?v=20260717-split-report-prompts"></script>
-  <script src="../../assets/js/knowledge-skill.js?v=20260724-status-confirm"></script>
+  <script src="../../assets/js/skill-template-sample.js?v=20260911"></script>
+  <script src="../../assets/js/skill-workflow-store.js?v=20260914-sql-meta"></script>
+  <script src="../../assets/vendor/docx-preview/jszip.min.js"></script>
+  <script src="../../assets/js/skill-template-io.js?v=20260911"></script>
+  <script src="../../assets/js/skill-workflow-ui.js?v=20260911"></script>
+  <script src="../../assets/js/skill-workflow-list.js?v=20260914-table-fit"></script>
 </body>
 </html>

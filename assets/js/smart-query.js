@@ -1545,7 +1545,7 @@ function hydrateSkillsFromAdminStore() {
   if (!Store || !Picker || !optionList) return;
 
   const availableSkills = Store.load()
-    .filter((item) => item.enabled !== false)
+    .filter((item) => item.enabled !== false && Store.isReady(item))
     .sort((a, b) => Number(a.sort || 0) - Number(b.sort || 0));
 
   const pickerItems = availableSkills.map((item, index) => {
@@ -1563,8 +1563,7 @@ function hydrateSkillsFromAdminStore() {
       }
       if (definition) {
         definition.placeholder = `请继续描述本次${item.name || "技能"}要求`;
-        definition.executionPrompt = item.executionPrompt || "";
-        definition.reportPrompt = item.reportPrompt || "";
+        definition.contentParts = item.parts || [];
         definition.reportTemplate = item.reportTemplate || null;
       }
     } else {
@@ -1574,8 +1573,7 @@ function hydrateSkillsFromAdminStore() {
         name: item.name || "自定义经营分析",
         prompt: item.userPrompt || `请使用“${item.name || "当前技能"}”完成分析。你可以继续修改这段内容，补充时间、范围、重点和输出要求。`,
         placeholder: `可补充“${item.name || "该技能"}”的分析重点和输出要求`,
-        executionPrompt: item.executionPrompt || "",
-        reportPrompt: item.reportPrompt || "",
+        contentParts: item.parts || [],
         reportTemplate: item.reportTemplate || null
       };
     }
@@ -1586,14 +1584,7 @@ function hydrateSkillsFromAdminStore() {
     container: optionList,
     items: pickerItems,
     selectedKey: selectedSkillKey,
-    general: {
-      pickerKey: "general",
-      kind: "general",
-      name: "通用问数",
-      desc: "自由提问，系统自动识别合适的分析方式",
-      category: "默认模式",
-      pickerTag: "默认"
-    },
+    general: Picker.generalSkill,
     ariaLabel: "业务端可用技能"
   });
 
@@ -1603,6 +1594,15 @@ function hydrateSkillsFromAdminStore() {
 
 function validateSelectedSkill() {
   if (selectedSkillKey === "general") return true;
+  const selected = SKILL_DEFINITIONS[selectedSkillKey];
+  const managed = window.SkillCatalogStore?.load().find((item) => item.id === selected?.id);
+  if (!managed || !managed.enabled || !window.SkillCatalogStore.isReady(managed)) {
+    showToast("当前技能已停用或有待确认内容，请重新选择技能。");
+    hydrateSkillsFromAdminStore();
+    return false;
+  }
+  selected.contentParts = managed.parts;
+  selected.reportTemplate = managed.reportTemplate;
   if (readQuestionEditorText()) return true;
   questionInput?.focus();
   showToast("请先补充技能提示内容");
@@ -1626,6 +1626,32 @@ function getFinalSkillPrompt(run, inputText) {
 
 function buildSkillReportProfile(run) {
   const title = getSkillAnswerTitle(run);
+  if (run.contentParts?.length) {
+    const monthMatch = String(run.prompt).match(/(20\d{2})[年\-/](\d{1,2})/);
+    const month = monthMatch ? `${monthMatch[1]}-${monthMatch[2].padStart(2, '0')}` : new Date().toISOString().slice(0, 7);
+    const org = String(run.prompt).match(/(?:华东|华南|华北|西南|华中)(?:区域|地区|区)?/)?.[0] || '华润建材科技';
+    const results = run.contentParts.map((part) => {
+      try { return { part, result: window.SkillCatalogStore.runDemo(part, { month, org }, run.contentParts) }; }
+      catch (error) { return { part, result: { text: error.message, rows: [], ok: false } }; }
+    });
+    const metrics = results.filter((r) => r.part.type === 'metric').slice(0, 4);
+    const charts = results.filter((r) => r.part.type === 'chart').slice(0, 3);
+    const analyses = results.filter((r) => r.part.type === 'analysis');
+    return {
+      title, section1: '一、报告内容摘要', section2: '二、内容生成进度', section2Intro: '根据已确认的内容配置执行，结果使用示例数据演示。',
+      section3: '三、模板图表数据', section3Intro: '按模板绑定的分类和数值字段展示查询结果。', section4: '四、模板分析内容', planTitle: '后续分析',
+      kpis: metrics.map(({ part, result }) => [part.name, result.text, '', '原模板指标', '示例数据']),
+      progress: Object.entries({ metric: '指标', chart: '图表', analysis: '分析模块' }).map(([type, name]) => { const group = results.filter((r) => r.part.type === type); return [name, `${group.length ? Math.round(group.filter((r) => r.result.ok).length / group.length * 100) : 100}%`, '100%']; }),
+      contributions: charts.map(({ part, result }) => { const max = Math.max(...result.rows.map((row) => row.value), 1); return [part.name, result.rows.map((row) => [row.category, String(row.value), `${row.value / max * 100}%`])]; }),
+      tasks: {
+        summary: `已读取“${run.reportTemplate?.name || title}”及 ${run.contentParts.length} 项已确认配置。根据本次问题使用 ${month}、${org} 作为查询参数，以下为示例数据生成内容；Word 的原有格式由模板保留。`,
+        overview: analyses[0]?.result.text || metrics.map((r) => `${r.part.name}：${r.result.text}`).join('；'),
+        risks: [1, 2, 3].map((i) => analyses[i]?.result.text || '当前模板没有更多对应分析内容。'),
+        plans: [4, 5, 6].map((i) => analyses[i]?.result.text || '当前模板没有更多对应分析内容。')
+      },
+      steps: [['读取技能模板', '读取原 Word 模板、内容位置及已确认配置。'], ['识别查询参数', `将 ${month}、${org} 绑定到预置 SQL 参数。`], ['执行指标与图表查询', '按每个内容项的 SQL 获取示例结果并生成图表。'], ['生成模块分析', '依据引用数据和各模块提示词生成分析文字。'], ['回填模板内容', '按绑定位置回填内容，保留原 Word 样式与版式。']]
+    };
+  }
   if (run.key === "campaign") {
     const activity = "本次营销活动";
     return {
@@ -1714,6 +1740,7 @@ function applySkillReportProfile(profile) {
 
   templateResult.querySelectorAll(".template-kpi-card").forEach((card, index) => {
     const item = profile.kpis[index];
+    card.classList.toggle("hidden", !item);
     if (!item) return;
     const label = card.querySelector(".template-kpi-label");
     const value = card.querySelector(".template-kpi-value");
@@ -1726,6 +1753,7 @@ function applySkillReportProfile(profile) {
 
   templateResult.querySelectorAll(".template-progress-list li").forEach((row, index) => {
     const item = profile.progress[index];
+    row.classList.toggle("hidden", !item);
     if (!item) return;
     const name = row.querySelector(".template-progress-name");
     const fill = row.querySelector(".template-progress-fill");
@@ -1737,17 +1765,19 @@ function applySkillReportProfile(profile) {
 
   templateResult.querySelectorAll(".template-contribution-card").forEach((card, cardIndex) => {
     const group = profile.contributions[cardIndex];
+    card.classList.toggle("hidden", !group);
     if (!group) return;
     const head = card.querySelector(".template-contribution-head");
     if (head) head.textContent = group[0];
     card.querySelectorAll("li").forEach((row, rowIndex) => {
       const item = group[1][rowIndex];
+      row.classList.toggle("hidden", !item);
       if (!item) return;
       const name = row.querySelector(".template-contribution-name");
       const fill = row.querySelector(".template-contribution-bar > span");
       const value = row.querySelector(".template-contribution-value");
       if (name) name.textContent = item[0];
-      if (fill) fill.style.setProperty("--w", item[1]);
+      if (fill) fill.style.setProperty("--w", item[2] || item[1]);
       if (value) value.textContent = item[1];
     });
   });
@@ -2041,8 +2071,7 @@ function runQuestion() {
       key: selectedSkillKey,
       skillId: selectedSkill?.id || selectedSkillKey,
       prompt: skillPrompt,
-      executionPrompt: selectedSkill?.executionPrompt || "",
-      reportPrompt: selectedSkill?.reportPrompt || "",
+      contentParts: selectedSkill?.contentParts || [],
       reportTemplate: selectedSkill?.reportTemplate || null
     };
     mode = "template";
@@ -5645,6 +5674,9 @@ skillPicker?.querySelector(".skill-picker-list")?.addEventListener("click", (eve
 });
 
 hydrateSkillsFromAdminStore();
+window.addEventListener('storage', (event) => {
+  if (event.key === window.SkillCatalogStore?.key) hydrateSkillsFromAdminStore();
+});
 syncSkillPickerSelection();
 syncSkillQuestionPlaceholder();
 syncQuestionEditorEmptyState();
@@ -6245,3 +6277,127 @@ ${body}
 </body>
 </html>`;
 }
+
+// ============== 定时任务衔接 ==============
+const SCHEDULED_TASK_STORE_KEY = "smart-query-scheduled-tasks-v1";
+const SCHEDULED_CONVERSATION_KEY = "smart-query-scheduled-conversation";
+
+function getScheduledTaskDraft() {
+  const composerPrompt = readQuestionEditorText().trim();
+  const hasCurrentAnswer = answerBlock && !answerBlock.classList.contains("hidden");
+  const prompt = composerPrompt || (hasCurrentAnswer ? currentQuestionText : "");
+  const selectedSkill = selectedSkillKey !== "general" ? SKILL_DEFINITIONS[selectedSkillKey] : null;
+  const answerName = hasCurrentAnswer ? (resultTitle?.textContent?.trim() || currentAnswerTitle) : "";
+  const promptName = prompt.replace(/[，。！？；：\n].*$/, "").trim();
+  const name = (answerName || promptName).replace(/分析$/, "").trim();
+  return {
+    name: name.length > 32 ? name.slice(0, 32) : name,
+    theme: getSelectedThemeList()[0] || "销售分析",
+    skillId: selectedSkill?.id || "",
+    skill: selectedSkill?.name || "",
+    prompt,
+    frequency: "daily",
+    time: "09:00"
+  };
+}
+
+function saveScheduledTaskFromComposer(task) {
+  let tasks = [];
+  try {
+    const stored = JSON.parse(localStorage.getItem(SCHEDULED_TASK_STORE_KEY) || "[]");
+    tasks = Array.isArray(stored) ? stored : [];
+    tasks.unshift(task);
+    localStorage.setItem(SCHEDULED_TASK_STORE_KEY, JSON.stringify(tasks));
+  } catch (error) {}
+  const nextRun = task.nextRun ? task.nextRun.replace(/-/g, "/") : "待计算";
+  showToast(`定时任务“${task.name}”已创建，下次运行 ${nextRun}`);
+}
+
+function openScheduledTaskComposer() {
+  if (!window.ScheduledTaskForm) {
+    showToast("定时任务组件加载失败，请刷新页面后重试");
+    return;
+  }
+  window.ScheduledTaskForm.open({
+    mode: "create",
+    themes: themeOptionNames,
+    initial: getScheduledTaskDraft(),
+    onSave: saveScheduledTaskFromComposer
+  });
+}
+
+function findScheduledSkillKey(payload) {
+  return Object.keys(SKILL_DEFINITIONS).find((key) => {
+    if (key === "general") return false;
+    const skill = SKILL_DEFINITIONS[key];
+    return (payload.skillId && skill.id === payload.skillId) || (payload.skill && skill.name === payload.skill);
+  }) || "general";
+}
+
+function prependScheduledHistory(payload) {
+  const historyList = document.getElementById("historyList");
+  if (!historyList) return;
+  historyList.querySelectorAll(".history-item").forEach((item) => item.classList.remove("active"));
+  const item = document.createElement("div");
+  item.className = "history-item active";
+  item.innerHTML = `<strong title="${escapeHtml(payload.name || "定时任务会话")}">${escapeHtml(payload.name || "定时任务会话")}</strong><span><em>${payload.mode === "trial" ? "定时任务试运行" : "定时任务执行"}</em><em>刚刚</em></span>`;
+  const firstGroup = historyList.querySelector(".group-title");
+  if (firstGroup) firstGroup.insertAdjacentElement("afterend", item);
+  else historyList.prepend(item);
+}
+
+function insertScheduledConversationContext(payload) {
+  const aiContent = thinkingBox?.parentElement;
+  if (!aiContent) return;
+  aiContent.querySelector(".schedule-trial-context")?.remove();
+  const context = document.createElement("div");
+  context.className = "schedule-trial-context";
+  context.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 7v5l3 2"></path></svg>' +
+    `<span><strong>${payload.mode === "trial" ? "定时任务试运行" : "定时任务执行记录"}</strong> · ${escapeHtml(payload.name || "未命名任务")} · ${escapeHtml(payload.theme || "销售分析")}</span>`;
+  aiContent.insertBefore(context, thinkingBox);
+}
+
+function completeScheduledTrialRecord(payload) {
+  if (payload.mode !== "trial" || !payload.taskId || !payload.recordId) return;
+  window.setTimeout(() => {
+    try {
+      const tasks = JSON.parse(localStorage.getItem(SCHEDULED_TASK_STORE_KEY) || "[]");
+      if (!Array.isArray(tasks)) return;
+      const task = tasks.find((item) => item.id === payload.taskId);
+      const record = task?.records?.find((item) => item.id === payload.recordId);
+      if (!record || record.status !== "running") return;
+      record.status = "success";
+      record.endedAt = window.ScheduledTaskForm?.dateTimeText(new Date()) || "刚刚";
+      record.duration = "4秒";
+      record.summary = `${payload.name || "定时任务"}试运行完成，已在独立问数会话中生成分析结果。`;
+      localStorage.setItem(SCHEDULED_TASK_STORE_KEY, JSON.stringify(tasks));
+    } catch (error) {}
+  }, 4500);
+}
+
+(function restoreScheduledConversation() {
+  let payload = null;
+  try {
+    payload = JSON.parse(localStorage.getItem(SCHEDULED_CONVERSATION_KEY) || "null");
+    if (payload) localStorage.removeItem(SCHEDULED_CONVERSATION_KEY);
+  } catch (error) {}
+
+  const shouldOpenCreate = new URLSearchParams(window.location.search).get("createTask") === "1";
+  if (shouldOpenCreate) {
+    window.setTimeout(openScheduledTaskComposer, 0);
+  }
+  if (!payload || !questionInput) return;
+
+  resetChat();
+  handleThemeChange(payload.theme || "销售分析");
+  selectSkill(findScheduledSkillKey(payload), null, true);
+  setQuestionEditorContent(payload.prompt || "", { withHints: false });
+  handleQuestionInput();
+  prependScheduledHistory(payload);
+  window.setTimeout(() => {
+    runQuestion();
+    insertScheduledConversationContext(payload);
+    completeScheduledTrialRecord(payload);
+    showToast(payload.mode === "trial" ? "已创建独立会话并开始试运行" : "已打开定时任务执行会话");
+  }, 0);
+})();
