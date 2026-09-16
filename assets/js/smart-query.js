@@ -6308,9 +6308,11 @@ function saveScheduledTaskFromComposer(task) {
     tasks = Array.isArray(stored) ? stored : [];
     tasks.unshift(task);
     localStorage.setItem(SCHEDULED_TASK_STORE_KEY, JSON.stringify(tasks));
-  } catch (error) {}
-  const nextRun = task.nextRun ? task.nextRun.replace(/-/g, "/") : "待计算";
-  showToast(`定时任务“${task.name}”已创建，下次运行 ${nextRun}`);
+  } catch (error) {
+    showToast("定时任务创建失败，请稍后重试");
+    return;
+  }
+  window.location.href = "scheduled-tasks.html";
 }
 
 function openScheduledTaskComposer() {

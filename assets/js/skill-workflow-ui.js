@@ -137,6 +137,7 @@
     const Store = global.SkillCatalogStore;
     const skill = Store.load().find((s) => s.id === id);
     if (!skill || skill.parseStatus !== 'completed') return message('请等待模板解析完成。');
+    if (skill.enabled) return message('请先停用技能，再修改基本信息。');
     const form = `<form id="swBasicForm" class="sw-form"><div class="sw-note">以下配置由模板解析生成，可校正后保存。</div><label>技能名称 <em>*</em><input name="name" maxlength="60" required value="${esc(skill.name)}"></label><label>技能说明 <em>*</em><textarea name="desc" rows="3" maxlength="300" required>${esc(skill.desc)}</textarea></label><label>技能分类 <em>*</em><select name="category"><option ${skill.category === '经营报告' ? 'selected' : ''}>经营报告</option><option ${skill.category === '专项分析' ? 'selected' : ''}>专项分析</option></select></label><fieldset><legend>适用分析主题 <em>*</em></legend><input type="search" id="swThemeSearch" placeholder="搜索分析主题"><div class="sw-options">${Store.themes.map((t) => `<label data-theme="${esc(t)}"><input type="checkbox" name="themes" value="${esc(t)}" ${skill.themes.includes(t) ? 'checked' : ''}>${esc(t)}</label>`).join('')}</div><p class="hidden" id="swThemeEmpty">未找到匹配的分析主题</p></fieldset><div class="sw-prompt-field"><label id="swPromptLabel">业务端预置提示词 <em>*</em></label><div id="swPromptVariables" class="sw-prompt-variables" role="group" aria-label="插入提示词变量"></div><div id="swUserPrompt" class="sw-prompt-editor" contenteditable="true" tabindex="0" role="textbox" aria-multiline="true" aria-required="true" aria-labelledby="swPromptLabel" aria-describedby="swPromptHelp swPromptCount" data-placeholder="填写选中技能后自动填入的默认任务，可插入变量" spellcheck="true"></div><div id="swPromptCount" class="sw-prompt-count"></div><small id="swPromptHelp">浅蓝色变量可点击修改、删除，也可通过上方按钮插入。选中技能后整段填入业务端输入框，用户可以自由修改。</small></div></form>`;
     const { host, close } = modal('基本信息', skill.reportTemplate?.name || skill.name, form, button('back', '取消', 'data-close') + button('save', '保存配置', 'id="swBasicSave"', 'primary-btn'), { drawer: true });
     const prompt = promptEditor(host, skill.userPrompt);
@@ -153,6 +154,7 @@
       if (!prompt.validate()) return;
       try {
         Store.update(id, (s) => {
+          if (s.enabled) throw new Error('技能已启用，请先停用后再修改基本信息。');
           s.name = fd.get('name').trim(); s.desc = fd.get('desc').trim(); s.category = fd.get('category'); s.userPrompt = prompt.value();
           s.testParams = Store.normalizeTestParams(s, s.testParams);
           const changed = JSON.stringify(s.themes) !== JSON.stringify(selected);

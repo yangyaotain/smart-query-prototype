@@ -4,10 +4,112 @@
   const STATUS_SAMPLE_MARKER = `${KEY}-status-samples-20260914`;
   const STATUS_LAYOUT_MARKER = `${KEY}-status-layout-20260914`;
   const PUBLISHED_SAMPLE_MARKER = `${KEY}-published-samples-20260914`;
+  const FAILED_SAMPLE_TRIM_MARKER = `${KEY}-failed-samples-20260916`;
   const clone = (value) => JSON.parse(JSON.stringify(value));
+  let reloadResetHandled = false;
   const themes = ['成交与节资', '采购方式与品类', '供应商管理', '采购效能与闲废', '销售分析', '客户分析', '库存分析', '活动分析'];
   const today = () => new Date().toLocaleDateString('sv-SE');
   const parameterSQL = 'WHERE report_month = :report_month\n  AND org_name = :org_name';
+  const LEGACY_CHART_PROMPT = '按采购方式展示成交金额，按金额降序排列；沿用模板图表类型、配色和尺寸。';
+  const DEFAULT_CHART_PROMPT = `图表类型：纵向柱状图。
+X轴：采购方式名称，对应分类字段 category。
+Y轴：成交金额，对应数值字段 value，单位为万元，从 0 开始。
+数据范围：按成交金额从高到低排序，最多展示前 10 项；无数据分类不展示。
+数据标签：显示在柱体顶部，使用千分位并保留 2 位小数。
+样式：柱体使用蓝色 #2F6BFF，悬浮状态使用深蓝色 #1D4ED8；背景为白色，保留浅灰色横向网格线。
+图例与尺寸：单系列不显示图例；宽度占满内容区域，高度 320px；X轴名称过长时旋转 30° 并完整显示。
+空状态：查询无结果时显示“暂无图表数据”。`;
+  const chartPromptCatalog = {
+    'part-24': `图表类型：柱线组合图。
+X轴：事业大区或事业部名称，按成交金额从高到低排列。
+左Y轴：成交金额，单位为万元，从 0 开始；使用柱状系列。
+右Y轴：环比变化率，单位为 %，保留 2 位小数；使用折线系列并保留 0% 基准线。
+数据标签：柱顶显示成交金额，折线节点显示环比；负增长使用橙色标识。
+样式：成交金额柱使用 #2F6BFF，环比折线使用 #F59E0B；白色背景，保留浅灰横向网格线，图例置于顶部。
+尺寸：宽度占满内容区域，高度 340px；X轴名称过长时旋转 30°。
+空状态：无数据组织不展示，查询无结果时显示“暂无图表数据”。`,
+    'part-48': `图表类型：堆叠柱状图。
+X轴：事业大区或事业部名称。
+Y轴：成交金额，单位为万元，从 0 开始。
+系列：按公开招标、询比采购、竞争性谈判、单源直接采购等采购方式分组并堆叠。
+排序与标签：按各组织成交总额从高到低排列；柱顶显示总金额，悬浮时显示各采购方式金额及占比。
+样式：各采购方式使用固定区分色，图例置于顶部；白色背景，保留浅灰横向网格线。
+尺寸：宽度占满内容区域，高度 340px；X轴名称过长时旋转 30°。
+空状态：无数据系列不进入图例，查询无结果时显示“暂无图表数据”。`,
+    'part-50': `图表类型：环形图。
+分类维度：采购大类，包括货物、服务、工程及其他分类。
+数值：成交金额，单位为万元；扇区按成交金额从高到低排列。
+标签：显示“采购大类名称、成交金额、占比”，占比保留 2 位小数；小于 3% 的标签通过引导线显示。
+样式：货物类使用 #2F6BFF、服务类使用 #14B8A6、工程类使用 #F59E0B，其他分类使用 #94A3B8；圆环中心显示成交总额。
+图例与尺寸：图例置于右侧；宽度占满内容区域，高度 320px，内外半径比例为 55%/78%。
+空状态：金额为 0 的分类不展示，查询无结果时显示“暂无图表数据”。`,
+    'part-52': `图表类型：横向柱状图。
+Y轴：采购品类名称，按成交金额从高到低排列。
+X轴：成交金额，单位为万元，从 0 开始。
+数据范围：仅展示成交金额前 10 名品类。
+数据标签：显示在柱体右侧，使用千分位并保留 2 位小数；同时显示该品类成交金额占比。
+样式：柱体使用蓝色渐变 #2F6BFF 至 #60A5FA；不显示图例，保留浅灰纵向网格线。
+尺寸：宽度占满内容区域，高度 380px；品类名称最多显示两行，超长内容使用省略号并在悬浮时完整展示。
+空状态：查询无结果时显示“暂无图表数据”。`,
+    'part-54': `图表类型：堆叠柱状图。
+X轴：事业大区或事业部名称。
+Y轴：成交金额，单位为万元，从 0 开始。
+系列：按主要采购品类分组并堆叠，成交金额占比不足 3% 的品类合并为“其他”。
+排序与标签：按各组织成交总额从高到低排列；柱顶显示总金额，悬浮时显示品类金额及占比。
+样式：不同品类使用固定区分色，图例置于顶部并支持换行；白色背景，保留浅灰横向网格线。
+尺寸：宽度占满内容区域，高度 350px；X轴名称过长时旋转 30°。
+空状态：查询无结果时显示“暂无图表数据”。`,
+    'part-84': `图表类型：100% 堆叠柱状图。
+X轴：成交金额 TOP10 采购品类，按品类成交总额从高到低排列。
+Y轴：各采购方式金额占比，范围为 0% 至 100%。
+系列：公开招标、询比采购、竞争性谈判、单源直接采购等采购方式。
+数据标签：占比不低于 8% 的区段显示百分比，保留 1 位小数；悬浮时显示采购方式、成交金额及占比。
+样式：采购方式使用固定区分色，图例置于顶部；保留 0%、25%、50%、75%、100% 网格线。
+尺寸：宽度占满内容区域，高度 350px；X轴品类名称旋转 30°。
+空状态：无数据系列不进入图例，查询无结果时显示“暂无图表数据”。`,
+    'part-93': `图表类型：多系列折线图。
+X轴：统计月份，按时间从早到晚排列，格式为 YYYY-MM。
+Y轴：采购率，单位为 %，范围为 0% 至 100%。
+系列：公开采购率、集中采购率、电子采购率；各系列使用独立颜色和圆形节点。
+参考线：公开采购率和集中采购率显示 95% 目标线，使用灰色虚线并标注“目标值”。
+数据标签：默认显示最新月份数值，悬浮时显示全部系列当月数值，保留 2 位小数。
+样式：图例置于顶部；白色背景，保留浅灰横向网格线。
+尺寸：宽度占满内容区域，高度 330px；无数据月份保留断点，不使用 0 补齐。
+空状态：查询无结果时显示“暂无图表数据”。`,
+    'part-95': `图表类型：分组柱状图。
+X轴：事业大区或事业部名称。
+Y轴：采购率，单位为 %，范围为 0% 至 100%。
+系列：公开采购率、集中采购率、电子采购率，每个组织并列展示三根柱体。
+排序与标签：按公开采购率从高到低排列；柱顶显示百分比，保留 2 位小数。
+样式：公开采购率使用 #2F6BFF、集中采购率使用 #14B8A6、电子采购率使用 #8B5CF6；图例置于顶部，保留浅灰横向网格线。
+尺寸：宽度占满内容区域，高度 350px；X轴名称过长时旋转 30°。
+空状态：缺失指标不以 0 补齐，查询无结果时显示“暂无图表数据”。`,
+    'part-99': `图表类型：柱线组合图。
+X轴：采购大类名称，包括货物、服务、工程及其他分类。
+左Y轴：节资金额，单位为万元，从 0 开始；使用柱状系列。
+右Y轴：节资率，单位为 %，保留 2 位小数；使用折线系列。
+排序与标签：按节资金额从高到低排列；柱顶显示节资金额，折线节点显示节资率。
+样式：节资金额柱使用 #2F6BFF，节资率折线使用 #F59E0B；双轴标题和图例置于顶部，保留浅灰横向网格线。
+尺寸：宽度占满内容区域，高度 330px。
+空状态：缺失节资率不连接折线，查询无结果时显示“暂无图表数据”。`,
+    'part-100': `图表类型：柱线组合图。
+X轴：事业大区或事业部名称。
+左Y轴：节资金额，单位为万元，从 0 开始；使用柱状系列。
+右Y轴：节资率，单位为 %，保留 2 位小数；使用折线系列。
+排序与标签：按节资金额从高到低排列；柱顶显示节资金额，折线节点显示节资率，负值使用橙色标识。
+样式：节资金额柱使用 #2F6BFF，节资率折线使用 #14B8A6；图例置于顶部，白色背景并保留浅灰横向网格线。
+尺寸：宽度占满内容区域，高度 350px；X轴名称过长时旋转 30°。
+空状态：缺失节资率不连接折线，查询无结果时显示“暂无图表数据”。`,
+    'part-129': `图表类型：折线图。
+X轴：统计月份，按时间从早到晚排列，格式为 YYYY-MM。
+Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
+系列：仅展示项目采购成功率，使用圆形节点连接；同时显示 99.5% 参考线。
+数据标签：每个节点显示成功率，保留 2 位小数；悬浮时补充当月关闭项目数和异常关闭项目数。
+样式：折线使用 #2F6BFF，参考线使用 #F59E0B 橙色虚线；单系列不显示图例，保留浅灰横向网格线。
+尺寸：宽度占满内容区域，高度 300px。
+空状态：无数据月份保留断点，不使用 0 补齐；查询无结果时显示“暂无图表数据”。`
+  };
+  function chartPrompt(part) { return chartPromptCatalog[part?.id] || DEFAULT_CHART_PROMPT; }
   const tableCatalog = {
     procurement_transactions: { label: '采购交易明细', databaseName: '运营指标库', databaseType: 'ClickHouse' },
     non_bidding_project_info: { label: '非招项目信息', databaseName: '运营指标库', databaseType: 'ClickHouse' },
@@ -80,7 +182,7 @@
     const prepared = {
       id: part.id || `part-${index + 1}`, type, name: part.name || '待识别内容', theme: themes[0],
       definition: `按报告月份和组织范围统计${part.name || '当前指标'}。`, sql: type === 'analysis' ? '' : sql,
-      prompt: type === 'metric' ? '按 SQL 查询结果回填当前指标，沿用原文单位和数值格式，仅输出指标值。' : type === 'chart' ? '按采购方式展示成交金额，按金额降序排列；沿用模板图表类型、配色和尺寸。' : '结合当前内容前文已配置的指标和图表结果，解释本期采购表现、主要变化与需关注的问题。只使用已提供的数据，缺失依据时明确说明，不推断无依据的原因。控制在 200 字以内。',
+      prompt: type === 'metric' ? '按 SQL 查询结果回填当前指标，沿用原文单位和数值格式，仅输出指标值。' : type === 'chart' ? chartPrompt(part) : '结合当前内容前文已配置的指标和图表结果，解释本期采购表现、主要变化与需关注的问题。只使用已提供的数据，缺失依据时明确说明，不推断无依据的原因。控制在 200 字以内。',
       field: 'value', categoryField: 'category', unit: part.unit || '', decimals: 2,
       confirmed: false, revision: 1, messages: [], result: null, ...clone(part)
     };
@@ -231,10 +333,12 @@
   }
   function normalizeSkill(source) {
     const result = clone(source);
+    const migrateSampleChartPrompt = result.reportTemplate?.source === 'sample';
     ['executionPrompt', 'reportContentPrompt', 'reportFormatPrompt', 'reportPrompt', 'configSources', 'draftConfig', 'workflowStatus'].forEach((key) => delete result[key]);
     if (result.reportTemplate) ['generatedContentPrompt', 'generatedFormatPrompt', 'generatedPrompt'].forEach((key) => delete result.reportTemplate[key]);
     result.parts = (result.parts || []).map((part) => {
       const prepared = preparePart(part);
+      if (migrateSampleChartPrompt && prepared.type === 'chart' && prepared.prompt === LEGACY_CHART_PROMPT) prepared.prompt = chartPrompt(prepared);
       delete prepared.dependencies;
       delete prepared.missingDependencies;
       if (prepared.type === 'analysis' && /^依据引用数据/.test(prepared.prompt || '')) prepared.prompt = prepared.prompt.replace(/^依据引用数据/, '结合当前内容前文已配置的指标和图表结果');
@@ -294,20 +398,38 @@
     localStorage.setItem(STATUS_LAYOUT_MARKER, '1');
     return result;
   }
+  function trimFailedStatusSamples(skills) {
+    if (localStorage.getItem(FAILED_SAMPLE_TRIM_MARKER) === '1') return skills;
+    const failures = skills.filter((skill) => skill.parseStatus === 'failed' && skill.reportTemplate?.source === 'preset-status');
+    const retained = failures.find((skill) => skill.id === 'skill-inventory-turnover') || failures[0];
+    const result = failures.length > 1 ? save(skills.filter((skill) => skill.parseStatus !== 'failed' || skill.reportTemplate?.source !== 'preset-status' || skill.id === retained.id)) : skills;
+    localStorage.setItem(FAILED_SAMPLE_TRIM_MARKER, '1');
+    return result;
+  }
+  function resetPrototypeDataOnReload() {
+    if (reloadResetHandled) return;
+    reloadResetHandled = true;
+    const navigation = global.performance?.getEntriesByType?.('navigation')?.[0];
+    if (navigation?.type !== 'reload') return;
+    localStorage.removeItem(KEY);
+    localStorage.removeItem('smart-query-skill-catalog-v1');
+  }
   function load() {
+    resetPrototypeDataOnReload();
     const raw = localStorage.getItem(KEY);
-    if (raw !== null) return migrateStatusSampleLayout(seedPublishedSamples(seedStatusSamples(JSON.parse(raw).map(normalizeSkill))));
+    if (raw !== null) return trimFailedStatusSamples(migrateStatusSampleLayout(seedPublishedSamples(seedStatusSamples(JSON.parse(raw).map(normalizeSkill)))));
     const legacyRaw = localStorage.getItem('smart-query-skill-catalog-v1');
-    if (legacyRaw) return migrateStatusSampleLayout(seedPublishedSamples(seedStatusSamples(save(JSON.parse(legacyRaw).map((old) => {
+    if (legacyRaw) return trimFailedStatusSamples(migrateStatusSampleLayout(seedPublishedSamples(seedStatusSamples(save(JSON.parse(legacyRaw).map((old) => {
       const data = { ...old, ...(old.draftConfig || {}) };
       const isSample = data.id === 'skill-monthly' && /monthly-procurement|采购快报/.test(`${data.reportTemplate?.name} ${data.reportTemplate?.downloadUrl}`);
       return isSample ? { ...data, reportTemplate: defaultSkill().reportTemplate, parts: sampleParts(), parseStatus: 'completed', enabled: false }
         : { ...data, parts: [], parseStatus: 'failed', parseError: '旧技能尚未绑定可解析的 Word 原文件，请重新导入模板。', enabled: false };
-    })))));
+    }))))));
     const defaults = save(defaultSkills());
     localStorage.setItem(STATUS_SAMPLE_MARKER, '1');
     localStorage.setItem(STATUS_LAYOUT_MARKER, '1');
     localStorage.setItem(PUBLISHED_SAMPLE_MARKER, '1');
+    localStorage.setItem(FAILED_SAMPLE_TRIM_MARKER, '1');
     return defaults;
   }
   function update(id, mutate) {

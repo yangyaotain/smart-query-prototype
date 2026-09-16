@@ -42,6 +42,16 @@
     $('swWorkbench').innerHTML = '<div class="sw-empty">当前技能不存在或模板尚未解析完成，请返回列表查看。</div>';
     return;
   }
+  if (skill.enabled) {
+    $('swWorkbench').innerHTML = '<div class="sw-empty">当前技能已启用，请先返回列表停用后再修改内容配置。</div>';
+    return;
+  }
+  function updateSkill(mutate) {
+    return Store.update(id, (current) => {
+      if (current.enabled) throw new Error('技能已启用，请先停用后再修改内容配置。');
+      mutate(current);
+    });
+  }
   function promptParameters() {
     return (skill.testParams || []).filter((parameter) => (parameter.usage || []).includes('业务端变量'));
   }
@@ -539,7 +549,7 @@
       { label: '解析提示词与查询参数', detail: settingsText(settings) },
       { label: '校验并执行 SQL', detail: '检查分类字段和数值字段' },
       { label: '整理图表数据', detail: '按提示词处理排序和展示数量' },
-      { label: '生成图表预览', detail: '沿用模板中的图表位置和尺寸' }
+      { label: '生成图表预览', detail: '按提示词生成图表类型、坐标轴和展示样式' }
     ];
     return [
       { label: '读取当前标注配置', detail: `自定义：${part.name}` },
@@ -687,42 +697,6 @@
     const control = options.select ? `<select data-field="${key}">${options.select.map((v) => `<option value="${esc(v)}" ${v === value ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select>` : options.textarea ? `<textarea data-field="${key}" rows="${options.rows || 4}" maxlength="6000">${esc(value)}</textarea>` : `<input data-field="${key}" value="${esc(value)}" ${options.number ? 'type="number" min="0" max="6" step="1"' : 'maxlength="100"'}>`;
     return `<label class="sw-field">${label}${control}</label>`;
   }
-  function sqlMetadataMarkup(part) {
-    const current = Store.syncPartMetadata(Store.clone(part));
-    const source = current.executionSource || {};
-    const tables = Array.isArray(source.tables) ? source.tables : [];
-    const indicators = Array.isArray(current.managedIndicators) ? current.managedIndicators : [];
-    const databaseUnresolved = !source.databaseName || source.databaseName === '待识别执行库';
-    return `<div class="sw-sql-meta" id="swSqlMetadata" aria-label="SQL 执行与指标信息">
-      <div class="sw-sql-meta-row">
-        <span class="sw-sql-meta-label">执行库</span>
-        <div class="sw-sql-meta-value${databaseUnresolved ? ' is-unresolved' : ''}">
-          <strong>${esc(source.databaseName || '待识别执行库')}</strong>
-          ${source.databaseType ? `<span class="sw-sql-engine">${esc(source.databaseType)}</span>` : ''}
-        </div>
-      </div>
-      <div class="sw-sql-meta-row">
-        <span class="sw-sql-meta-label">涉及表</span>
-        <div class="sw-sql-meta-value sw-sql-table-list">
-          ${tables.length ? tables.map((table) => `<span class="sw-sql-table"><strong>${esc(table.label || table.name || table.physicalName)}</strong><code>${esc(table.physicalName || table.name)}</code></span>`).join('') : '<span class="sw-sql-unresolved">未从 SQL 中识别到数据表</span>'}
-        </div>
-      </div>
-      <div class="sw-sql-meta-row">
-        <span class="sw-sql-meta-label">关联指标</span>
-        <div class="sw-sql-meta-value sw-managed-indicator-list">
-          ${indicators.length ? indicators.map((indicator) => `<div class="sw-managed-indicator">
-            <div><span class="sw-indicator-type ${indicator.type === '衍生指标' ? 'is-derived' : 'is-atom'}">${esc(indicator.type || '指标')}</span><strong>${esc(indicator.name)}</strong></div>
-            <p>${[indicator.unit ? `单位：${indicator.unit}` : '', indicator.aggregation ? `聚合：${indicator.aggregation}` : ''].filter(Boolean).join(' · ')}</p>
-            <small title="${esc(indicator.definition || '')}">口径：${esc(indicator.definition || '待补充')}</small>
-          </div>`).join('') : '<span class="sw-sql-unresolved">未关联指标体系指标</span>'}
-        </div>
-      </div>
-    </div>`;
-  }
-  function renderSqlMetadata() {
-    const host = $('swSqlMetadata');
-    if (host && draft) host.outerHTML = sqlMetadataMarkup(draft);
-  }
   function renderFields() {
     if (!draft) return;
     $('swPartType').className = `sw-type is-${draft.type}`;
@@ -731,12 +705,12 @@
     $('swPartTitle').title = draft.name;
     let html = '';
     if (draft.type !== 'analysis') {
-      html += '<div class="sw-field"><span>SQL 配置</span>' + SmartQuerySqlEditor.render({ value: draft.sql, bind: 'sql', minLines: 6, title: '查询 SQL', ariaLabel: '当前内容 SQL' }) + sqlMetadataMarkup(draft) + '</div>';
+      html += '<div class="sw-field"><span>SQL 配置</span>' + SmartQuerySqlEditor.render({ value: draft.sql, bind: 'sql', minLines: 6, title: '查询 SQL', ariaLabel: '当前内容 SQL' }) + '</div>';
     }
-    html += field('提示词', 'prompt', draft.prompt, { textarea: true, rows: 5 });
+    html += field('提示词', 'prompt', draft.prompt, { textarea: true, rows: draft.type === 'chart' ? 9 : 5 });
     $('swConfigFields').innerHTML = html;
     $('swAIInput').value = '';
-    $('swAIInput').placeholder = draft.type === 'metric' ? '例如：排除已取消订单，并保留两位小数' : draft.type === 'chart' ? '例如：按成交金额降序，展示前十项' : Store.usesGenerationDate(draft) ? '例如：将生成日期改为 YYYY-MM-DD 格式' : '例如：重点解释节资率下降，控制在 200 字以内';
+    $('swAIInput').placeholder = draft.type === 'metric' ? '例如：排除已取消订单，并保留两位小数' : draft.type === 'chart' ? '例如：改为横向柱状图，X轴显示成交金额，展示前10项并显示数据标签' : Store.usesGenerationDate(draft) ? '例如：将生成日期改为 YYYY-MM-DD 格式' : '例如：重点解释节资率下降，控制在 200 字以内';
     renderChat(); renderResult(); status();
   }
   function status() {
@@ -783,7 +757,8 @@
     if (draft.type === 'metric' && (!Number.isInteger(Number(draft.decimals)) || draft.decimals < 0 || draft.decimals > 6)) { message('小数位应为 0 至 6 的整数。'); return false; }
     try {
       const edited = Store.clone(draft);
-      skill = Store.update(id, (s) => {
+      skill = updateSkill((s) => {
+        if (s.enabled) throw new Error('技能已启用，请先停用后再修改内容配置。');
         const index = s.parts.findIndex((p) => p.id === selectedId);
         if (index < 0 || s.parts[index].revision !== edited.revision) throw new Error('当前配置已被其他窗口更新，请刷新后再修改。');
         s.parts[index] = Store.syncPartMetadata(edited);
@@ -827,7 +802,7 @@
     try {
       const result = await executePart(captured, settings, skill.parts, 'single', control);
       if (result.stopped) { renderResult(); message('当前项测试已停止，本次结果未保存。'); return; }
-      skill = Store.update(id, (s) => {
+      skill = updateSkill((s) => {
         const p = s.parts.find((p) => p.id === captured.id);
         if (!p || Store.signature(p, settings, s.parts) !== Store.signature(captured, settings, skill.parts)) throw new Error('测试期间配置已变化，请重新执行。');
         p.result = result;
@@ -859,7 +834,7 @@
     closeFailurePanel();
     snapshots.forEach((part) => executionRuns.set(part.id, createExecution(part, settings, 'queued')));
     try {
-      skill = Store.update(id, (s) => { s.lastGlobalTest = globalRunRecord(run, 'running'); });
+      skill = updateSkill((s) => { s.lastGlobalTest = globalRunRecord(run, 'running'); });
       renderGlobalTest(); renderHeader(); renderResult(); syncMarks(); status();
       for (let start = 0; start < snapshots.length; start += 12) {
         if (run.stopRequested) break;
@@ -868,7 +843,7 @@
         const applied = new Map();
         const finished = completed.filter(({ result }) => !result.stopped);
         if (finished.length) {
-          skill = Store.update(id, (s) => {
+          skill = updateSkill((s) => {
             finished.forEach(({ captured, result }) => {
               const part = s.parts.find((entry) => entry.id === captured.id);
               if (!part || part.revision !== captured.revision) return;
@@ -889,7 +864,7 @@
           else if (applied.get(captured.id)) run.passed += 1;
           else { run.failed += 1; run.failedIds.add(captured.id); }
         });
-        skill = Store.update(id, (s) => { s.lastGlobalTest = globalRunRecord(run, 'running'); });
+        skill = updateSkill((s) => { s.lastGlobalTest = globalRunRecord(run, 'running'); });
         if (draft && !dirty && !busy) {
           const current = skill.parts.find((part) => part.id === selectedId);
           if (current) { draft = Store.clone(current); renderResult(); status(); }
@@ -907,16 +882,16 @@
           }
         });
         run.pending.clear();
-        skill = Store.update(id, (s) => { s.lastGlobalTest = globalRunRecord(run, 'stopped'); });
+        skill = updateSkill((s) => { s.lastGlobalTest = globalRunRecord(run, 'stopped'); });
         lastGlobalTestStatus = storedGlobalTestStatus();
         message('全局测试已停止，未完成项目未写入本次结果。');
       } else {
-        skill = Store.update(id, (s) => { s.lastGlobalTest = globalRunRecord(run, 'completed'); });
+        skill = updateSkill((s) => { s.lastGlobalTest = globalRunRecord(run, 'completed'); });
         lastGlobalTestStatus = storedGlobalTestStatus();
         message(run.failed || run.skipped ? '全局测试已完成，请逐项检查失败或配置变化的内容。' : '全局测试已完成，请逐项检查并确认。');
       }
     } catch (e) {
-      try { skill = Store.update(id, (s) => { s.lastGlobalTest = globalRunRecord(run, 'interrupted'); }); } catch (_) { /* Preserve the original execution error. */ }
+      try { skill = updateSkill((s) => { s.lastGlobalTest = globalRunRecord(run, 'interrupted'); }); } catch (_) { /* Preserve the original execution error. */ }
       lastGlobalTestStatus = '全局测试中断，请重新执行。'; fail(e);
     } finally {
       globalTest = null;
@@ -938,7 +913,7 @@
     await new Promise((resolve) => setTimeout(resolve, 1000));
     try {
       const response = Store.aiEdit(captured, request);
-      skill = Store.update(id, (s) => {
+      skill = updateSkill((s) => {
         const index = s.parts.findIndex((p) => p.id === captured.id);
         if (index < 0 || s.parts[index].revision !== captured.revision) throw new Error('当前配置已变化，本次 AI 修改未写入，请重新发送。');
         const messages = [...s.parts[index].messages, { role: 'user', text: request, context }, { role: 'assistant', text: response.reply }].slice(-20);
@@ -954,7 +929,7 @@
   function confirmPart() {
     if (busy || !draft || dirty || $('swConfirmPart').disabled) return;
     try {
-      skill = Store.update(id, (s) => {
+      skill = updateSkill((s) => {
         const p = s.parts.find((p) => p.id === selectedId);
         if (!p?.result?.ok || p.result.stale || p.result.signature !== Store.signature(p, params(), s.parts)) throw new Error('配置已更新，请重新测试后确认。');
         p.confirmed = true; p.confirmedAt = new Date().toISOString();
@@ -981,7 +956,7 @@
         const settings = params();
         const expectedTestParams = JSON.stringify(skill.testParams || []);
         const expected = new Map(skill.parts.map((part) => [part.id, { revision: part.revision, signature: Store.signature(part, settings, skill.parts) }]));
-        skill = Store.update(id, (s) => {
+        skill = updateSkill((s) => {
           if (JSON.stringify(s.testParams || []) !== expectedTestParams) throw new Error('测试提问已发生变化，请重新测试后确认。');
           if (s.parts.length !== expected.size) throw new Error('配置项已发生变化，请刷新后重新确认。');
           s.parts.forEach((part) => {
@@ -1017,7 +992,7 @@
     const { host, close } = UI.modal('删除此项', '删除后，该位置不再自动替换内容。', body, button('back', '取消', 'data-close') + button('trash', '确认删除', 'id="swDeleteConfirm"', 'ghost-btn sw-danger'));
     host.querySelector('#swDeleteConfirm').onclick = () => {
       try {
-        skill = Store.update(id, (s) => {
+        skill = updateSkill((s) => {
           const current = s.parts.find((p) => p.id === captured.id);
           if (!current || current.revision !== captured.revision) throw new Error('当前配置已被其他窗口更新，请刷新后再删除。');
           Store.removePart(s, captured.id);
@@ -1047,7 +1022,7 @@
         if (!file) throw new Error('本地原文件不可用，请返回列表重新导入模板。');
         if (!skill.outline.length && IO.outline) {
           const extracted = await IO.outline(file);
-          if (extracted.length) skill = Store.update(id, (current) => { current.outline = extracted; });
+          if (extracted.length) skill = updateSkill((current) => { current.outline = extracted; });
         }
         $('swDocument').innerHTML = '';
         await docx.renderAsync(await file.arrayBuffer(), $('swDocument'), $('swDocxStyles'), { inWrapper: true, ignoreLastRenderedPageBreak: false, renderAltChunks: false, renderComments: false, useBase64URL: true });
@@ -1156,7 +1131,7 @@
       const partId = `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       saving = true;
       try {
-        skill = Store.update(id, (s) => {
+        skill = updateSkill((s) => {
           s.parts.push(Store.preparePart({ id: partId, type, name, theme: s.themes[0] || Store.themes[0], source: 'manual', sourceText: `第 ${anchor.page} 页手动框选区域`, anchor, confirmed: false, result: null, messages: [] }));
           s.enabled = false;
         });
@@ -1199,7 +1174,6 @@
     if (!draft || !['sql', 'prompt'].includes(key)) return;
     draft[key] = e.target.value;
     dirty = true;
-    if (key === 'sql') renderSqlMetadata();
     status(); renderResult(); syncMarks(); renderHeader();
   });
   $('swTestPrompt').addEventListener('input', () => {
@@ -1207,7 +1181,7 @@
     try {
       ensureTestSkillTag();
       const values = new Map(promptParameters().map((parameter) => [parameter.key, parameterValue(parameter)]));
-      skill = Store.update(id, (current) => {
+      skill = updateSkill((current) => {
         current.testParams.forEach((parameter) => {
           if (values.has(parameter.key)) parameter.value = values.get(parameter.key);
         });
@@ -1243,6 +1217,7 @@
     if (dirty || busy || globalTest || drawingMode || document.querySelector('#swRegionForm,[data-content-modal]')) { message('其他窗口已更新技能；当前修改保留，请完成操作后核对。'); return; }
     const next = Store.load().find((s) => s.id === id);
     if (!next) { message('技能已在其他窗口删除。'); location.href = 'knowledge-skill.html'; return; }
+    if (next.enabled) { message('技能已启用，内容配置已关闭。'); location.href = 'knowledge-skill.html'; return; }
     skill = next; renderManualMarks(); renderTestContext();
     const current = skill.parts.find((p) => p.id === selectedId) || skill.parts[0];
     if (current) selectPart(current.id, false);

@@ -6,8 +6,8 @@
   <title>技能管理 - 智能问数管理后台</title>
   <link rel="stylesheet" href="../../assets/css/theme.css" />
   <link rel="stylesheet" href="../../assets/css/admin.css" />
-  <link rel="stylesheet" href="../../assets/css/knowledge-skill.css?v=20260914-table-fit" />
-  <link rel="stylesheet" href="../../assets/css/skill-workflow.css?v=20260914-status-link" />
+  <link rel="stylesheet" href="../../assets/css/knowledge-skill.css?v=20260916-list-pagination" />
+  <link rel="stylesheet" href="../../assets/css/skill-workflow.css?v=20260916-skill-actions" />
 </head>
 <body>
   <div class="admin-shell">
@@ -114,7 +114,24 @@
               <strong>暂无匹配技能</strong><p>请调整筛选条件后重试。</p>
             </div>
           </div>
-          <div class="ks-list-foot"><span id="ksListCount">共 0 项技能</span><span>基本信息完整且全部内容确认后可启用；停用技能不在业务端展示。</span></div>
+          <div class="ks-list-foot">
+            <div class="ks-list-summary">
+              <span id="ksListCount">共 0 项技能</span>
+              <label class="ks-page-size">每页
+                <select id="ksPageSize" aria-label="每页显示数量">
+                  <option value="10" selected>10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                </select>项
+              </label>
+            </div>
+            <span class="ks-list-note">基本信息完整且全部内容确认后可启用；停用技能不在业务端展示。</span>
+            <div class="ks-pagination hidden" id="ksPagination" aria-label="技能列表分页">
+              <button type="button" class="ks-page-nav" id="ksPrevPage" aria-label="上一页"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>上一页</button>
+              <div class="ks-page-numbers" id="ksPageNumbers"></div>
+              <button type="button" class="ks-page-nav is-next" id="ksNextPage" aria-label="下一页"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>下一页</button>
+            </div>
+          </div>
         </div>
       </section>
     </main>
@@ -122,10 +139,10 @@
 
   <script src="../../assets/js/common.js?v=20260717-natural-prompt"></script>
   <script src="../../assets/js/skill-template-sample.js?v=20260911"></script>
-  <script src="../../assets/js/skill-workflow-store.js?v=20260914-sql-meta"></script>
+  <script src="../../assets/js/skill-workflow-store.js?v=20260916-prototype-reset"></script>
   <script src="../../assets/vendor/docx-preview/jszip.min.js"></script>
   <script src="../../assets/js/skill-template-io.js?v=20260911"></script>
-  <script src="../../assets/js/skill-workflow-ui.js?v=20260911"></script>
-  <script src="../../assets/js/skill-workflow-list.js?v=20260914-table-fit"></script>
+  <script src="../../assets/js/skill-workflow-ui.js?v=20260916-skill-actions"></script>
+  <script src="../../assets/js/skill-workflow-list.js?v=20260916-list-pagination"></script>
 </body>
 </html>

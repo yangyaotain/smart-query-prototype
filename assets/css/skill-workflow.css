@@ -225,24 +225,6 @@ button.sw-mark { position:absolute; z-index:1; min-width:6px; min-height:6px; }
 .sw-type { color:var(--mark-color); font-size:12px; }
 .sw-config-scroll { overflow:auto; min-height:0; flex:1; padding:16px; }
 .sw-field { margin-bottom:14px; }
-.sw-sql-meta { margin-top:8px; border:1px solid var(--border); border-radius:8px; background:#f8fafc; overflow:hidden; }
-.sw-sql-meta-row { display:grid; grid-template-columns:58px minmax(0,1fr); gap:10px; padding:9px 10px; border-top:1px solid #e7ebf0; }
-.sw-sql-meta-row:first-child { border-top:0; }
-.sw-sql-meta-label { color:var(--muted); font-size:11px; line-height:24px; }
-.sw-sql-meta-value { min-width:0; display:flex; align-items:center; flex-wrap:wrap; gap:6px; color:var(--heading); font-size:12px; line-height:1.5; }
-.sw-sql-meta-value.is-unresolved,.sw-sql-unresolved { color:#a16207; }
-.sw-sql-engine { padding:2px 6px; border-radius:4px; background:#e8eef7; color:#52647a; font-size:11px; }
-.sw-sql-table-list { align-items:stretch; }
-.sw-sql-table { min-width:0; display:inline-flex; align-items:center; flex-wrap:wrap; gap:5px; padding:3px 7px; border:1px solid #dce4ed; border-radius:5px; background:white; }
-.sw-sql-table code { min-width:0; color:#64748b; font-size:11px; overflow-wrap:anywhere; }
-.sw-managed-indicator-list { display:grid; gap:6px; }
-.sw-managed-indicator { min-width:0; padding:7px 8px; border:1px solid #dce4ed; border-radius:6px; background:white; }
-.sw-managed-indicator>div { display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
-.sw-indicator-type { padding:1px 5px; border-radius:4px; font-size:10px; font-weight:600; }
-.sw-indicator-type.is-atom { background:#e8f2ff; color:#2563eb; }
-.sw-indicator-type.is-derived { background:#f1ebff; color:#7c3aed; }
-.sw-managed-indicator p { margin:4px 0 0; color:#52647a; font-size:11px; }
-.sw-managed-indicator small { display:block; margin-top:2px; color:var(--muted); font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .sw-two-fields { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .sw-section { border-top:1px solid var(--border); padding-top:17px; margin-top:19px; }
 .sw-section-title { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
