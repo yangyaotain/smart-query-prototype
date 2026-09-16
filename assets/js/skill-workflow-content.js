@@ -705,7 +705,12 @@
     $('swPartTitle').title = draft.name;
     let html = '';
     if (draft.type !== 'analysis') {
-      html += '<div class="sw-field"><span>SQL 配置</span>' + SmartQuerySqlEditor.render({ value: draft.sql, bind: 'sql', minLines: 6, title: '查询 SQL', ariaLabel: '当前内容 SQL' }) + '</div>';
+      html += '<div class="sw-field"><span>SQL 配置</span>' + window.SmartQuerySqlEditor.render({
+        value: draft.sql,
+        bind: 'sql',
+        minLines: 6,
+        ariaLabel: '当前内容 SQL'
+      }) + '</div>';
     }
     html += field('提示词', 'prompt', draft.prompt, { textarea: true, rows: draft.type === 'chart' ? 9 : 5 });
     $('swConfigFields').innerHTML = html;

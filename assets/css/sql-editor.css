@@ -144,7 +144,7 @@
   will-change: transform;
 }
 
-.sq-sql-input {
+.sq-sql-editor .sq-sql-input {
   position: relative;
   z-index: 1;
   width: 100%;
@@ -164,12 +164,18 @@
   tab-size: 2;
 }
 
-.sq-sql-input::selection {
+.sq-sql-editor .sq-sql-input:focus {
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+}
+
+.sq-sql-editor .sq-sql-input::selection {
   color: transparent;
   background: rgba(var(--primary-rgb), .42);
 }
 
-.sq-sql-input::placeholder {
+.sq-sql-editor .sq-sql-input::placeholder {
   color: #64748b;
 }
 

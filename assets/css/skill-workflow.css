@@ -282,8 +282,6 @@ button.sw-mark { position:absolute; z-index:1; min-width:6px; min-height:6px; }
 .sw-config-footer { border-top:1px solid var(--border); padding:12px; display:flex; flex-wrap:wrap; align-items:center; gap:8px; background:white; flex:none; }
 .sw-config-footer .sw-button { padding:8px 10px; }
 .sw-config-footer .sw-delete-action { margin-left:auto; }
-.sw-config-scroll .sq-sql-body { max-height:230px; overflow:auto; }
-.sw-config-scroll .sq-sql-input { min-height:120px; }
 @media(max-width:1250px) { .sw-content { padding:12px; } .sw-workbench { grid-template-columns:minmax(330px,var(--sw-preview-width)) 16px minmax(360px,1fr); } .sw-outline { width:205px; min-width:205px; } .sw-test-composer { padding:10px 12px; } }
 @media(max-width:1180px) { .ks-page .ks-table th,.ks-page .ks-table td { padding-left:8px; padding-right:8px; } .ks-page .sw-row-actions { gap:4px 6px; } .ks-page .sw-row-actions .sw-button { padding-left:5px; padding-right:5px; font-size:12px; } .ks-page .sw-status.is-enabled,.ks-page .sw-status.is-disabled { min-width:0; gap:3px; padding-left:4px; padding-right:4px; font-size:11px; } }
 @media(max-width:1000px) { .sw-content-shell .admin-main { overflow:auto; height:auto; } .sw-content { height:auto; min-height:calc(100vh - 64px); } .sw-workbench { grid-template-columns:1fr; gap:10px; } .sw-resize-handle { display:none; } .sw-preview-panel { height:75vh; } .sw-config-panel { max-height:90vh; } }
