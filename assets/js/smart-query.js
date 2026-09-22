@@ -2175,7 +2175,7 @@ function renderCompletedQaHistory(scenario, options = {}) {
     return;
   }
   currentResultView = "line";
-  resultViewToolbar?.classList.remove("hidden");
+  resultViewToolbar?.classList.add("hidden");
   chartResult?.classList.remove("hidden");
   if (!options.skipChartRender) setResultView("line", false);
 }
@@ -2766,7 +2766,7 @@ function startTypewriterConclusion() {
       setTimeout(() => {
         if (!isAnswering) return;
         if (!isCityBreakdown) {
-          resultViewToolbar.classList.remove("hidden");
+          resultViewToolbar.classList.add("hidden");
           chartResult.classList.remove("hidden");
           setResultView(currentResultView || "line", false);
         }
@@ -2890,7 +2890,7 @@ function showFeedbackDetail(key) {
   aiConclusion.classList.remove("typing-cursor");
   conclusionTags.classList.remove("hidden");
   tableResult.classList.remove("hidden");
-  resultViewToolbar.classList.remove("hidden");
+  resultViewToolbar.classList.add("hidden");
   chartResult.classList.remove("hidden");
   answerActionBar?.classList.remove("hidden");
   renderFeedbackDetail(record);
