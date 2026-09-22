@@ -81,6 +81,10 @@ const themeDesc = document.getElementById("themeDesc");
 const themeBadge = document.getElementById("themeBadge");
 const themeIndicatorCount = document.getElementById("themeIndicatorCount");
 const themeIndicatorList = document.getElementById("themeIndicatorList");
+const themeSummaryCard = document.getElementById("themeSummaryCard");
+const themeIndicatorSearchBox = document.getElementById("themeIndicatorSearchBox");
+const themeIndicatorSearchInput = document.getElementById("themeIndicatorSearchInput");
+const themeIndicatorSearchClear = document.getElementById("themeIndicatorSearchClear");
 const themeSelectDropdown = document.getElementById("themeSelectDropdown");
 const themeSelectTrigger = document.getElementById("themeSelectTrigger");
 const themeSelectText = document.getElementById("themeSelectText");
@@ -480,6 +484,7 @@ const indicatorMetaMap = {
 
 const themeOptionNames = Object.keys(themeDescMap);
 const selectedThemes = new Set(["销售分析"]);
+let themeIndicatorKeyword = "";
 
 const qaThinkingSteps = [
   ["识别业务意图", "识别问题类型、业务对象和时间范围。"],
@@ -1345,18 +1350,56 @@ function renderThemeOptions() {
   }).join("");
 }
 
+function highlightThemeIndicatorKeyword(text, keyword) {
+  const source = String(text || "");
+  const needle = String(keyword || "").trim();
+  if (!needle) return escapeHtml(source);
+  const sourceLower = source.toLowerCase();
+  const needleLower = needle.toLowerCase();
+  let cursor = 0;
+  let matchIndex = sourceLower.indexOf(needleLower, cursor);
+  let html = "";
+  while (matchIndex >= 0) {
+    html += escapeHtml(source.slice(cursor, matchIndex));
+    html += `<mark class="theme-indicator-match">${escapeHtml(source.slice(matchIndex, matchIndex + needle.length))}</mark>`;
+    cursor = matchIndex + needle.length;
+    matchIndex = sourceLower.indexOf(needleLower, cursor);
+  }
+  return html + escapeHtml(source.slice(cursor));
+}
+
 function renderThemeIndicators(themes) {
   if (!themeIndicatorList) return;
   const themeList = Array.isArray(themes) ? themes : [themes || "销售分析"];
   const indicators = getThemeIndicators(themeList);
+  const keyword = themeIndicatorKeyword.trim().toLowerCase();
+  const visibleIndicators = keyword
+    ? indicators.filter((item) => {
+        const searchableText = `${item.name || ""} ${item.synonyms || ""}`.toLowerCase();
+        return searchableText.includes(keyword);
+      })
+    : indicators;
   if (themeIndicatorCount) {
     themeIndicatorCount.textContent = `关联指标 ${indicators.length} 个`;
   }
-  themeIndicatorList.innerHTML = indicators.map((item) => `
+  themeSummaryCard?.classList.toggle("hidden", Boolean(keyword));
+  themeIndicatorSearchBox?.classList.toggle("is-searching", Boolean(keyword));
+  themeIndicatorSearchClear?.classList.toggle("hidden", !themeIndicatorKeyword);
+  if (!visibleIndicators.length) {
+    themeIndicatorList.innerHTML = `
+      <div class="theme-indicator-empty" role="status">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 4 4"></path><path d="M8.5 8.5l4 4"></path><path d="m12.5 8.5-4 4"></path></svg>
+        <strong>未找到匹配指标</strong>
+        <span>请尝试其他指标名称或同义词</span>
+      </div>
+    `;
+    return;
+  }
+  themeIndicatorList.innerHTML = visibleIndicators.map((item) => `
     <div class="theme-indicator-item">
       <div class="theme-indicator-main">
-        <strong>${escapeHtml(item.name)}</strong>
-        <span title="同义词：${escapeHtml(item.synonyms)}">同义词：${escapeHtml(item.synonyms)}</span>
+        <strong>${highlightThemeIndicatorKeyword(item.name, keyword)}</strong>
+        <span title="同义词：${escapeHtml(item.synonyms)}">同义词：${highlightThemeIndicatorKeyword(item.synonyms, keyword)}</span>
       </div>
       <p>${escapeHtml(item.desc)}</p>
       ${renderIndicatorMeta(item)}
@@ -1437,6 +1480,19 @@ window.toggleModelItem = toggleModelItem;
 window.handleThemeChange = handleThemeChange;
 window.toggleThemeDropdown = toggleThemeDropdown;
 window.toggleThemeOption = toggleThemeOption;
+
+themeIndicatorSearchInput?.addEventListener("input", () => {
+  themeIndicatorKeyword = themeIndicatorSearchInput.value || "";
+  renderThemeIndicators(getSelectedThemeList());
+});
+
+themeIndicatorSearchClear?.addEventListener("click", () => {
+  themeIndicatorKeyword = "";
+  themeIndicatorSearchInput.value = "";
+  renderThemeIndicators(getSelectedThemeList());
+  themeIndicatorSearchInput.focus();
+});
+
 syncThemeSelection();
 
 function focusQuestionComposer() {

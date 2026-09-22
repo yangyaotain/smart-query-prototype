@@ -1175,7 +1175,15 @@
         </div>
       </div>
       <div class="context-scroll">
-        <div class="context-card">
+        <div class="theme-indicator-search" id="themeIndicatorSearchBox" role="search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m16.2 16.2 4 4"></path></svg>
+          <input id="themeIndicatorSearchInput" type="search" placeholder="查询指标名称或同义词" aria-label="查询指标名称或同义词" autocomplete="off" />
+          <button type="button" id="themeIndicatorSearchClear" class="theme-indicator-search-clear hidden" aria-label="清空指标查询">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10"></path><path d="m17 7-10 10"></path></svg>
+            <span>清空</span>
+          </button>
+        </div>
+        <div class="context-card" id="themeSummaryCard">
           <h4><span id="themeName">销售分析</span> <span class="small-badge" id="themeBadge">当前主题</span></h4>
           <p id="themeDesc">覆盖销售额、订单量、渠道转化、区域业绩、产品销售等核心经营指标。</p>
           <div class="tag-row"><span id="themeIndicatorCount">关联指标 11 个</span></div>
