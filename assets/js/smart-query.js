@@ -38,6 +38,11 @@ const comparisonResult = document.getElementById("comparisonResult");
 const comparisonReportTitle = document.getElementById("comparisonReportTitle");
 const templateResult = document.getElementById("templateResult");
 const templateReportTitle = document.getElementById("templateReportTitle");
+const boardDraftResult = document.getElementById("boardDraftResult");
+const boardDraftTitle = document.getElementById("boardDraftTitle");
+const boardDraftMeta = document.getElementById("boardDraftMeta");
+const boardDraftChangeCount = document.getElementById("boardDraftChangeCount");
+const boardDraftKpiGrid = document.getElementById("boardDraftKpiGrid");
 const fileResult = document.getElementById("fileResult");
 const fileResultAnswerTitle = document.getElementById("fileResultAnswerTitle");
 const fileResultSummary = document.getElementById("fileResultSummary");
@@ -56,6 +61,8 @@ const referenceExecutionFeedback = document.getElementById("referenceExecutionFe
 const referenceFeedbackTitle = document.getElementById("referenceFeedbackTitle");
 const referenceFeedbackDesc = document.getElementById("referenceFeedbackDesc");
 const referenceFeedbackMeta = document.getElementById("referenceFeedbackMeta");
+const referenceSaveActions = document.getElementById("referenceSaveActions");
+const referenceSaveButton = document.getElementById("referenceSaveButton");
 const deleteModal = document.getElementById("deleteModal");
 const uploadModal = document.getElementById("uploadModal");
 const exportMenu = document.getElementById("exportMenu");
@@ -114,26 +121,33 @@ let currentAnswerTitle = "华东区近6个月销售额趋势分析";
 let selectedSkillKey = "general";
 let activeSkillRun = null;
 let activeReferenceRun = null;
+let activeBoardDraftRun = null;
+let historySequenceToken = 0;
+const boardDraftStates = new Map();
+const archivedBoardDraftRuns = new Map();
+const archivedQueryBoardData = new Map();
 let currentReferenceTab = "board";
 let selectedReferences = [];
 let pendingReferenceKeys = new Set();
 const reportVersionCounters = new Map([["report:r1", 13], ["report:r2", 6], ["report:r3", 3]]);
+const boardVersionCounters = new Map([["board:ai1", 1]]);
 
 const BASE_QUESTION_PLACEHOLDER = questionInput?.dataset.placeholder || "请输入你想了解的业务问题";
 
 const REFERENCE_CATALOG = {
   board: [
     { category: "销售经营", items: [
-      { key: "board:b1", kind: "board", label: "看板", name: "销售经营总览", meta: "销售经营 / 最近更新：今日 09:30" },
-      { key: "board:b2", kind: "board", label: "看板", name: "区域销售看板", meta: "销售经营 / 最近更新：昨日 18:20" },
-      { key: "board:b3", kind: "board", label: "看板", name: "渠道经营看板", meta: "销售经营 / 最近更新：昨日 17:45" }
+      { key: "board:ai1", kind: "board", label: "看板", boardEngine: "ai-html", name: "华东区销售趋势分析", meta: "销售经营 / AI生成 · 最新版本 V1" },
+      { key: "board:b1", kind: "board", label: "看板", boardEngine: "component", name: "销售经营总览", meta: "销售经营 / 组件搭建 · 今日 09:30" },
+      { key: "board:b2", kind: "board", label: "看板", boardEngine: "component", name: "区域销售看板", meta: "销售经营 / 组件搭建 · 昨日 18:20" },
+      { key: "board:b3", kind: "board", label: "看板", boardEngine: "component", name: "渠道经营看板", meta: "销售经营 / 组件搭建 · 昨日 17:45" }
     ] },
     { category: "客户运营", items: [
-      { key: "board:b4", kind: "board", label: "看板", name: "客户画像看板", meta: "客户运营 / 最近更新：05-08 16:30" },
-      { key: "board:b5", kind: "board", label: "看板", name: "客户复购看板", meta: "客户运营 / 最近更新：05-08 15:10" }
+      { key: "board:b4", kind: "board", label: "看板", boardEngine: "component", name: "客户画像看板", meta: "客户运营 / 组件搭建 · 05-08 16:30" },
+      { key: "board:b5", kind: "board", label: "看板", boardEngine: "component", name: "客户复购看板", meta: "客户运营 / 组件搭建 · 05-08 15:10" }
     ] },
     { category: "管理层汇报", items: [
-      { key: "board:b6", kind: "board", label: "看板", name: "关键经营指标看板", meta: "管理层汇报 / 最近更新：05-07 09:00" }
+      { key: "board:b6", kind: "board", label: "看板", boardEngine: "component", name: "关键经营指标看板", meta: "管理层汇报 / 组件搭建 · 05-07 09:00" }
     ] }
   ],
   report: [
@@ -151,6 +165,102 @@ const REFERENCE_CATALOG = {
     ] }
   ]
 };
+
+const TEMP_BOARD_STORAGE_KEYS = [
+  "smart-query-saved-boards",
+  "smart-query-board-version-events",
+  "smart-query-component-board-overrides"
+];
+
+function isForcedPageReload() {
+  const navigation = performance.getEntriesByType?.("navigation")?.[0];
+  return navigation?.type === "reload";
+}
+
+function resetTemporaryBoardsOnReload() {
+  if (!isForcedPageReload()) return;
+  TEMP_BOARD_STORAGE_KEYS.forEach((key) => {
+    sessionStorage.removeItem(key);
+    localStorage.removeItem(key);
+  });
+}
+
+function getPrototypeStorage(key) {
+  return TEMP_BOARD_STORAGE_KEYS.includes(key) ? sessionStorage : localStorage;
+}
+
+resetTemporaryBoardsOnReload();
+
+function readPrototypeStorageList(key) {
+  try {
+    const value = JSON.parse(getPrototypeStorage(key).getItem(key) || "[]");
+    return Array.isArray(value) ? value : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function syncSavedQueryBoardsToReferences() {
+  readPrototypeStorageList("smart-query-saved-boards").forEach((saved) => {
+    if (!saved?.id || !saved?.name) return;
+    const categoryName = String(saved.directory || "销售经营").split("/")[0].trim() || "销售经营";
+    let group = REFERENCE_CATALOG.board.find((item) => item.category === categoryName);
+    if (!group) {
+      group = { category: categoryName, items: [] };
+      REFERENCE_CATALOG.board.push(group);
+    }
+    const key = `board:${saved.id}`;
+    if (!group.items.some((item) => item.key === key)) {
+      group.items.unshift({
+        key,
+        kind: "board",
+        label: "看板",
+        boardEngine: saved.boardEngine || saved.boardData?.boardEngine || "ai-html",
+        name: saved.name,
+        meta: `${categoryName} / 最新版本 V${saved.version || 1} · ${saved.savedAt || "刚刚"}`
+      });
+    }
+    boardVersionCounters.set(key, Number(saved.version) || 1);
+  });
+}
+
+function syncComponentBoardOverridesToReferences() {
+  readPrototypeStorageList("smart-query-component-board-overrides").forEach((saved) => {
+    if (!saved?.id || !saved?.name) return;
+    const key = `board:${saved.id}`;
+    let item = getAllReferenceItems().find((candidate) => candidate.key === key);
+    if (!item) {
+      const group = REFERENCE_CATALOG.board[0];
+      item = { key, kind: "board", label: "看板", boardEngine: "component", name: saved.name, meta: "销售经营 / 组件搭建 · 刚刚" };
+      group?.items.unshift(item);
+    } else {
+      item.name = saved.name;
+      item.boardEngine = "component";
+      item.meta = `销售经营 / 组件搭建 · ${saved.savedAt || "刚刚"}`;
+    }
+  });
+}
+
+function syncVersionCountersFromStorage() {
+  [
+    ["smart-query-board-version-events", "board", boardVersionCounters],
+    ["smart-query-report-version-events", "report", reportVersionCounters]
+  ].forEach(([storageKey, kind, counters]) => {
+    readPrototypeStorageList(storageKey).forEach((event) => {
+      const item = REFERENCE_CATALOG[kind]
+        .flatMap((group) => group.items)
+        .find((candidate) => candidate.name === event.name);
+      if (!item) return;
+      const version = Number(event.version) || 1;
+      counters.set(item.key, Math.max(counters.get(item.key) || 1, version));
+      if (/V\d+/.test(item.meta)) item.meta = item.meta.replace(/V\d+/, `V${version}`);
+    });
+  });
+}
+
+syncSavedQueryBoardsToReferences();
+syncComponentBoardOverridesToReferences();
+syncVersionCountersFromStorage();
 
 const SKILL_DEFINITIONS = {
   general: {
@@ -202,11 +312,16 @@ let reportChart = null;
 let attributionChart = null;
 let trendChart = null;
 let comparisonChart = null;
+const boardDraftCharts = new Map();
 let currentResultView = "line";
 let lastWordExportScope = null;
 let currentSaveType = "";
 let currentDashboardAssetType = "chart";
 let activeDashboardAssetButton = null;
+let activeBoardSaveButton = null;
+let currentBoardSaveMethod = "new";
+let currentBoardSaveContext = null;
+let currentBoardSaveData = null;
 let activeReportPicker = "";
 
 const resultChartData = [
@@ -543,10 +658,168 @@ const fileThinkingSteps = [
 
 const referenceThinkingSteps = [
   ["读取引用内容", "加载当前对话引用的看板或报告内容。"],
-  ["识别对话要求", "判断本次请求是引用分析、修改报告还是写入报告。"],
-  ["组织处理结果", "结合引用内容生成分析结论或执行报告处理。"],
-  ["反馈执行状态", "返回处理范围、写入位置和最新报告版本。"]
+  ["识别对话要求", "判断本次请求是引用分析、修改看板、修改报告还是写入报告。"],
+  ["组织处理结果", "结合引用内容生成分析结论、完整看板草稿或报告候选内容。"],
+  ["反馈执行状态", "看板修改先返回可继续调整的 HTML 草稿，由用户主动选择保存方式。"]
 ];
+
+const BOARD_DRAFT_BASE = {
+  title: "销售经营总览",
+  directory: "销售经营",
+  sourceVersion: 3,
+  changeLabels: [],
+  kpis: [
+    { label: "销售额（万元）", value: "3,248", delta: "+4.1% 环比", deltaCls: "up", primary: true },
+    { label: "订单量（单）", value: "17,260", delta: "+2.3% 环比", deltaCls: "up" },
+    { label: "客单价（元）", value: "1,882", delta: "+1.8% 环比", deltaCls: "up" },
+    { label: "目标完成率", value: "86%", delta: "需关注 · 距离目标 14%", deltaCls: "warn", emphasis: true }
+  ],
+  trend: { months: ["1月", "2月", "3月", "4月", "5月", "6月"], values: [2180, 2360, 2510, 2890, 3120, 3248], forecast: [3370, 3490, 3620] },
+  region: { names: ["华东", "华南", "华北", "西南", "东北", "西北"], values: [3248, 2680, 2310, 1980, 1620, 1410] },
+  channel: [{ name: "线上自营", value: 42 }, { name: "线下门店", value: 31 }, { name: "经销商", value: 18 }, { name: "其他", value: 9 }],
+  gauge: 86,
+  customers: { names: ["上海伟业", "北京华信", "深圳鼎盛", "广州益丰", "杭州凯越", "成都领航", "南京晨光", "苏州博远", "武汉博通", "西安兴达"], values: [320, 285, 264, 232, 218, 196, 184, 172, 158, 144] },
+  productMix: {
+    months: ["1月", "2月", "3月", "4月", "5月", "6月"],
+    series: [
+      { name: "智能设备", values: [980, 1060, 1120, 1290, 1380, 1440] },
+      { name: "配件类", values: [720, 760, 810, 930, 1010, 1068] },
+      { name: "服务类", values: [480, 540, 580, 670, 730, 740] }
+    ]
+  },
+  insight: "销售经营整体保持增长，目标完成率为 86%，华东区贡献领先；当前需要继续关注目标缺口、区域差异和重点客户集中度。",
+  tags: ["趋势上行", "华东领跑", "目标差距14%", "客户集中度较高"]
+};
+
+function cloneBoardDraft(data) {
+  return JSON.parse(JSON.stringify(data));
+}
+
+function buildBoardDraftQuerySnapshot(draft) {
+  const kpiHtml = draft.kpis.map((item) => (
+    `<div class="kpi-card${item.primary ? " primary" : ""}${item.emphasis ? " is-emphasis" : ""}">` +
+      `<p>${escapeHtml(item.label)}</p><h2>${escapeHtml(item.value)}</h2>` +
+      `<span class="${escapeHtml(item.deltaCls || "")}">${escapeHtml(item.delta)}</span>` +
+    "</div>"
+  )).join("");
+  const chartBlock = (title, index) => (
+    `<section class="chart-card"><div class="chart-top"><h3>${escapeHtml(title)}</h3></div>` +
+    `<div class="chart-area"><div class="chart-canvas saved-query-chart" data-saved-chart-index="${index}"></div></div></section>`
+  );
+  const trendBlock = chartBlock("销售额月度趋势", 0);
+  const regionBlock = chartBlock("区域销售对比", 1);
+  const channelBlock = chartBlock("渠道销售占比", 2);
+  const chartHtml = draft.layout === "region-after-trend"
+    ? `${trendBlock}${regionBlock}${channelBlock}`
+    : `${trendBlock}${channelBlock}${regionBlock}`;
+  return {
+    mode: "qa",
+    modeLabel: "智能问数 · 对话修改",
+    question: draft.lastPrompt || "基于引用看板生成新的 HTML 版本",
+    conclusion: draft.insight,
+    contentHtml:
+      `<section class="insight-box"><p>${escapeHtml(draft.insight)}</p>` +
+        `<div class="tag-row">${draft.changeLabels.map((label) => `<span>${escapeHtml(label)}</span>`).join("")}</div>` +
+        `<div class="kpi-grid">${kpiHtml}</div>` +
+      `</section>${chartHtml}`,
+    chartOptions: [
+      {
+        color: ["#2f7df6"], tooltip: { trigger: "axis" },
+        grid: { top: 28, left: 54, right: 24, bottom: 34 },
+        xAxis: { type: "category", data: draft.trend.months },
+        yAxis: { type: "value" },
+        series: [{ name: "销售额", type: "line", smooth: true, areaStyle: { opacity: 0.08 }, data: draft.trend.values }]
+      },
+      {
+        color: ["#43b69a"], tooltip: { trigger: "axis" },
+        grid: { top: 24, left: 54, right: 24, bottom: 34 },
+        xAxis: { type: "category", data: draft.region.names },
+        yAxis: { type: "value" },
+        series: [{ name: "销售额", type: "bar", barMaxWidth: 34, data: draft.region.values }]
+      },
+      {
+        tooltip: { trigger: "item" },
+        legend: { bottom: 0 },
+        series: [{ type: "pie", radius: ["42%", "68%"], label: { show: Boolean(draft.channelLabels), formatter: "{b} {d}%" }, data: draft.channel }]
+      }
+    ],
+    chartView: "line",
+    savedAt: draft.updatedAt || "刚刚"
+  };
+}
+
+function getReferenceBoardSnapshot(reference) {
+  if (!reference) return null;
+  const versionEvent = readPrototypeStorageList("smart-query-board-version-events")
+    .find((event) => event.boardData && (event.key === reference.key || event.name === reference.name));
+  if (versionEvent?.boardData) return versionEvent.boardData;
+  const savedId = String(reference.key || "").replace(/^board:/, "");
+  const savedBoard = readPrototypeStorageList("smart-query-saved-boards")
+    .find((item) => item.id === savedId || item.name === reference.name);
+  return savedBoard?.boardData || null;
+}
+
+function createBoardDraft(reference, question, priorDraft) {
+  const draft = cloneBoardDraft(priorDraft || getReferenceBoardSnapshot(reference) || BOARD_DRAFT_BASE);
+  draft.title = reference?.name || draft.title;
+  draft.directory = String(reference?.meta || draft.directory).split("/")[0].trim() || draft.directory;
+  draft.sourceVersion = Number((String(reference?.meta || "").match(/V(\d+)/) || [])[1]) || draft.sourceVersion || 1;
+  draft.changeLabels = Array.isArray(draft.changeLabels) ? draft.changeLabels.slice() : [];
+  if (/(目标|完成率|卡片|突出)/.test(question) && !draft.changeLabels.includes("目标完成率卡片")) {
+    draft.changeLabels.push("目标完成率卡片");
+    const target = draft.kpis.find((item) => item.label.includes("目标完成率"));
+    if (target) target.emphasis = true;
+  }
+  if (/(区域|布局|趋势图下方|移动)/.test(question) && !draft.changeLabels.includes("区域布局")) {
+    draft.changeLabels.push("区域布局");
+    draft.layout = "region-after-trend";
+  }
+  if (/(渠道|占比)/.test(question) && !draft.changeLabels.includes("渠道图表")) {
+    draft.changeLabels.push("渠道图表");
+    draft.channelLabels = true;
+  }
+  if (/(标题|名称)/.test(question) && !draft.changeLabels.includes("看板标题")) {
+    draft.changeLabels.push("看板标题");
+  }
+  if (!draft.changeLabels.length) draft.changeLabels.push("看板展示配置");
+  draft.lastPrompt = question;
+  draft.updatedAt = new Date().toLocaleString("zh-CN", { hour12: false });
+  draft.boardEngine = "ai-html";
+  draft.viewType = "query-html";
+  draft.querySnapshot = buildBoardDraftQuerySnapshot(draft);
+  return draft;
+}
+
+const BOARD_REVISION_REFERENCE = {
+  key: "board:ai1",
+  kind: "board",
+  label: "看板",
+  boardEngine: "ai-html",
+  name: "华东区销售趋势分析",
+  meta: "销售经营 / AI生成 · 修改前版本 V1"
+};
+const BOARD_REVISION_SAMPLE_BASE = cloneBoardDraft(BOARD_DRAFT_BASE);
+BOARD_REVISION_SAMPLE_BASE.sourceVersion = 1;
+BOARD_REVISION_SAMPLE_BASE.changeLabels = [];
+BOARD_REVISION_SAMPLE_BASE.channelLabels = false;
+const boardRevisionTargetKpi = BOARD_REVISION_SAMPLE_BASE.kpis.find((item) => item.label.includes("目标完成率"));
+if (boardRevisionTargetKpi) boardRevisionTargetKpi.emphasis = false;
+delete BOARD_REVISION_SAMPLE_BASE.layout;
+const boardRevisionDraft1 = createBoardDraft(
+  BOARD_REVISION_REFERENCE,
+  "先突出目标完成率卡片，并补充距离目标的提示。",
+  BOARD_REVISION_SAMPLE_BASE
+);
+const boardRevisionDraft2 = createBoardDraft(
+  BOARD_REVISION_REFERENCE,
+  "再将区域销售对比移动到月度趋势图下方。",
+  boardRevisionDraft1
+);
+const boardRevisionDraft3 = createBoardDraft(
+  BOARD_REVISION_REFERENCE,
+  "最后给渠道销售占比增加数据标签。",
+  boardRevisionDraft2
+);
 
 const HISTORY_SCENARIOS = {
   normal: { question: "近6个月华东区销售额趋势如何？", mode: "qa" },
@@ -601,7 +874,7 @@ const HISTORY_SCENARIOS = {
     question: "分析一下“销售经营总览”看板，重点看看目标完成情况和区域差异。",
     mode: "reference",
     answerTitle: "销售经营总览看板分析",
-    reference: { kind: "board", label: "看板", name: "销售经营总览", meta: "管理层汇报 / 最近更新：今日 09:30" },
+    reference: { key: "board:b1", kind: "board", label: "看板", boardEngine: "component", name: "销售经营总览", meta: "销售经营 / 组件搭建 · 今日 09:30" },
     result: {
       badge: "引用看板分析",
       title: "看板分析完成",
@@ -612,6 +885,31 @@ const HISTORY_SCENARIOS = {
         "TOP3 客户贡献集中，建议结合客户续约、订单频次和流失预警进一步分析。"
       ]
     }
+  },
+  boardRevision: {
+    turns: [
+      {
+        question: "先突出《华东区销售趋势分析》的目标完成率卡片，并补充距离目标的提示。",
+        mode: "reference",
+        answerTitle: "华东区销售趋势分析看板草稿 · 第 1 次调整",
+        reference: BOARD_REVISION_REFERENCE,
+        result: { boardDraft: boardRevisionDraft1 }
+      },
+      {
+        question: "再将区域销售对比移动到月度趋势图下方。",
+        mode: "reference",
+        answerTitle: "华东区销售趋势分析看板草稿 · 第 2 次调整",
+        reference: BOARD_REVISION_REFERENCE,
+        result: { boardDraft: boardRevisionDraft2 }
+      },
+      {
+        question: "最后给渠道销售占比增加数据标签。",
+        mode: "reference",
+        answerTitle: "华东区销售趋势分析看板草稿 · 第 3 次调整",
+        reference: BOARD_REVISION_REFERENCE,
+        result: { boardDraft: boardRevisionDraft3 }
+      }
+    ]
   },
   reportReferenceAnalysis: {
     question: "分析《二季度销售复盘报告》，总结主要结论和需要重点关注的问题。",
@@ -1004,7 +1302,10 @@ function renderReferencePicker(keyword = "") {
         : `<b class="reference-file-type-mark">${getReferenceFileTypeLabel(item)}</b>`;
       const main = document.createElement("span");
       main.className = "reference-tree-main";
-      main.innerHTML = `<strong>${item.name}</strong><em>${item.meta}</em>`;
+      const engineTag = item.kind === "board"
+        ? `<i class="reference-engine-tag is-${item.boardEngine === "ai-html" ? "ai" : "component"}">${item.boardEngine === "ai-html" ? "AI生成" : "组件搭建"}</i>`
+        : "";
+      main.innerHTML = `<strong>${item.name}${engineTag}</strong><em>${item.meta}</em>`;
       const check = document.createElement("span");
       check.className = "reference-tree-check";
       check.textContent = "✓";
@@ -2008,6 +2309,11 @@ function resolveReferencedReport(question, references) {
   return reports.find((item) => question.includes(item.name)) || (reports.length === 1 ? reports[0] : null);
 }
 
+function resolveReferencedBoard(question, references) {
+  const boards = references.filter((item) => item.kind === "board");
+  return boards.find((item) => question.includes(item.name)) || (boards.length === 1 ? boards[0] : null);
+}
+
 function getNextReportVersion(report) {
   const current = reportVersionCounters.get(report.key)
     || Number((report.meta.match(/V(\d+)/) || [])[1])
@@ -2015,6 +2321,21 @@ function getNextReportVersion(report) {
   const next = current + 1;
   reportVersionCounters.set(report.key, next);
   report.meta = report.meta.replace(/V\d+/, `V${next}`);
+  const catalogItem = getReferenceItem(report.key);
+  if (catalogItem) catalogItem.meta = report.meta;
+  return `V${next}`;
+}
+
+function getNextBoardVersion(board) {
+  const current = boardVersionCounters.get(board.key)
+    || Number((board.meta.match(/V(\d+)/) || [])[1])
+    || 1;
+  const next = current + 1;
+  boardVersionCounters.set(board.key, next);
+  if (/V\d+/.test(board.meta)) board.meta = board.meta.replace(/V\d+/, `V${next}`);
+  else board.meta = `${board.meta} / 最新版本 V${next}`;
+  const catalogItem = getReferenceItem(board.key);
+  if (catalogItem) catalogItem.meta = board.meta;
   return `V${next}`;
 }
 
@@ -2022,50 +2343,72 @@ function buildReferenceRun(question, references) {
   const refs = references.map((item) => ({ ...item }));
   const targetReport = resolveReferencedReport(question, refs);
   const wantsAppend = /(添加到|加入到|写入|插入到|追加到).*(报告|章节)|把.*(添加到|加入到|写入|插入到|追加到)/.test(question);
-  const wantsModify = /(修改|改写|重写|重新整理|调整|更新|补充|删除|替换)/.test(question);
+  const wantsModify = /(修改|改写|重写|重新整理|调整|更新|补充|删除|替换|改成|移动|隐藏|新增|增加|突出)/.test(question);
+  const namedAsset = refs.find((item) => question.includes(item.name));
+  const targetAsset = wantsAppend ? targetReport : (namedAsset || (refs.length === 1 ? refs[0] : null));
   let answerTitle = "引用内容分析";
   let result;
 
-  if ((wantsAppend || wantsModify) && !targetReport) {
+  if ((wantsAppend || wantsModify) && !targetAsset) {
     result = {
       badge: "需要明确目标",
-      title: "请明确需要处理的报告",
-      summary: "当前对话没有唯一可识别的目标报告。请引用一个报告，或在问题中明确写出报告名称后再发送处理要求。",
-      details: ["引用多个报告时，需要在对话中说明目标报告。", "如需写入指定章节，请同时说明章节名称。"]
+      title: "请明确需要处理的看板或报告",
+      summary: "当前对话没有唯一可识别的目标成果。请只引用一个看板或报告，或在问题中明确写出名称后再发送处理要求。",
+      details: ["引用多个成果时，需要在对话中说明目标看板或报告。", "修改报告时如需写入指定章节，请同时说明章节名称。"]
     };
-    answerTitle = "报告处理信息确认";
+    answerTitle = "成果处理信息确认";
   } else if (wantsAppend) {
-    const version = getNextReportVersion(targetReport);
     const sectionMatch = question.match(/[“\"]([^”\"]+)[”\"]章节/);
     const section = sectionMatch ? sectionMatch[1] : "相关章节";
     result = {
       badge: "对话添加报告",
-      title: "当前对话内容已写入报告",
-      summary: `已根据对话要求整理当前分析结论，并添加到《${targetReport.name}》的“${section}”章节。`,
-      details: ["已提取当前对话中的核心结论、关键数据和行动建议。", "本次采用追加方式写入，未覆盖原有报告内容。", "报告已自动保存为最新版本。"],
+      title: "报告追加内容已生成",
+      summary: `已根据对话要求整理当前分析结论，并形成添加到《${targetReport.name}》“${section}”章节的候选内容。`,
+      details: ["已提取当前对话中的核心结论、关键数据和行动建议。", "本次采用追加方式，不覆盖原有报告内容。", "确认内容无误后，点击保存报告生成新版本。"],
       feedback: {
-        title: "对话内容添加完成",
-        desc: "相关内容已写入指定报告并保存最新版本",
-        meta: [["目标报告", targetReport.name], ["写入位置", section], ["最新版本", version], ["版本来源", "智能问数添加"]]
-      }
+        title: "报告修改结果待保存",
+        desc: "当前内容尚未写入正式报告版本",
+        meta: [["目标报告", targetReport.name], ["写入位置", section], ["当前状态", "待保存"], ["保存结果", "生成新版本"]]
+      },
+      pendingSave: { kind: "report", target: targetReport, scope: section, source: "智能问数添加" }
     };
     answerTitle = `${targetReport.name}内容添加结果`;
   } else if (wantsModify) {
-    const version = getNextReportVersion(targetReport);
-    const chapterMatch = question.match(/第[一二三四五六七八九十\d]+章[^，。]*/);
-    const scope = chapterMatch ? chapterMatch[0].replace(/[“”]/g, "") : "对话指定内容";
-    result = {
-      badge: "对话修改报告",
-      title: "已按要求完成报告修改",
-      summary: `已根据对话要求修改《${targetReport.name}》，并保留未涉及章节的原有内容。`,
-      details: ["已识别并修改对话中明确指定的报告范围。", "修改结果已按原报告结构和表达风格完成整理。", "报告已自动保存为最新版本。"],
-      feedback: {
-        title: "报告修改已完成",
-        desc: "已根据对话要求完成处理并保存最新版本",
-        meta: [["目标报告", targetReport.name], ["修改范围", scope], ["最新版本", version], ["版本来源", "智能问数修改"]]
+    if (targetAsset.kind === "board") {
+      if (targetAsset.boardEngine !== "ai-html") {
+        result = {
+          badge: "组件看板修改受限",
+          title: "该看板需在编辑页调整",
+          summary: `《${targetAsset.name}》由人工组件搭建，智能问数可继续分析和解读，但不能直接改写其组件结构与排版。`,
+          details: ["可继续追问指标变化、异常原因和经营建议。", "如需增删组件、调整图表或拖拽布局，请前往“我的看板”点击“编辑看板”。", "两类看板采用不同渲染结构，修改过程不互相转换。"]
+        };
+        answerTitle = `${targetAsset.name}修改方式说明`;
+      } else {
+        const priorDraft = boardDraftStates.get(targetAsset.key) || null;
+        const boardDraft = createBoardDraft(targetAsset, question, priorDraft);
+        boardDraft.boardEngine = "ai-html";
+        boardDraft.viewType = "query-html";
+        boardDraftStates.set(targetAsset.key, boardDraft);
+        result = { boardDraft };
+        answerTitle = `${targetAsset.name}看板草稿`;
       }
-    };
-    answerTitle = `${targetReport.name}修改结果`;
+    } else {
+      const chapterMatch = question.match(/第[一二三四五六七八九十\d]+章[^，。]*/);
+      const scope = chapterMatch ? chapterMatch[0].replace(/[“”]/g, "") : "对话指定内容";
+      result = {
+        badge: "对话修改报告",
+        title: "报告修改内容已生成",
+        summary: `已根据对话要求修改《${targetAsset.name}》，并保留未涉及章节的原有内容。`,
+        details: ["已识别并修改对话中明确指定的报告范围。", "修改结果已按原报告结构和表达风格完成整理。", "确认内容无误后，点击保存报告生成新版本。"],
+        feedback: {
+          title: "报告修改结果待保存",
+          desc: "当前内容尚未写入正式报告版本",
+          meta: [["目标报告", targetAsset.name], ["修改范围", scope], ["当前状态", "待保存"], ["保存结果", "生成新版本"]]
+        },
+        pendingSave: { kind: "report", target: targetAsset, scope, source: "智能问数修改" }
+      };
+      answerTitle = `${targetAsset.name}修改结果`;
+    }
   } else {
     const boardRefs = refs.filter((item) => item.kind === "board");
     const reportRefs = refs.filter((item) => item.kind === "report");
@@ -2078,7 +2421,7 @@ function buildReferenceRun(question, references) {
         ? "引用看板整体经营趋势向好，但目标达成、区域差异和客户集中度仍是当前需要重点关注的问题。"
         : "引用报告显示经营规模和质量同步改善，同时仍需关注目标缺口、库存周转和重点客户风险。",
       details: boardRefs.length
-        ? ["核心指标整体保持增长，当前目标完成率仍存在提升空间。", "华东区域贡献领先，低完成率区域需要继续拆解原因。", "建议结合客户贡献和库存变化进一步追问。"]
+        ? ["核心指标整体保持增长，当前目标完成率仍存在提升空间。", "华东区域贡献领先，低完成率区域需要继续拆解原因。", "建议结合客户贡献和库存变化进一步追问。", "本次仅进行引用分析，没有修改看板内容，也不会产生新版本。"]
         : ["报告核心结论与数据口径保持一致，主要增长来源清晰。", "区域达成、库存周转和客户集中度是主要风险。", "本次仅进行引用分析，没有修改报告内容，也不会产生新版本。"]
     };
   }
@@ -2087,7 +2430,7 @@ function buildReferenceRun(question, references) {
     question,
     mode: "reference",
     answerTitle,
-    reference: refs[0] || null,
+    reference: targetAsset || refs[0] || null,
     references: refs,
     result
   };
@@ -2194,7 +2537,9 @@ function prepareCompletedHistoryTurn(scenario) {
   if (resultTitle) resultTitle.textContent = currentAnswerTitle;
   if (resultTitle?.nextElementSibling) {
     if (scenario.mode === "reference") {
-      const operation = scenario.result?.feedback ? "已执行对话指令" : "基于引用内容分析";
+      const operation = scenario.result?.boardDraft
+        ? "基于引用看板重新生成"
+        : (scenario.result?.feedback ? "已执行对话指令" : "基于引用内容分析");
       resultTitle.nextElementSibling.textContent = `${operation} · ${scenario.reference?.label || "引用"}：${scenario.reference?.name || "-"} · 历史对话`;
     } else {
       const historyModeLabels = {
@@ -2381,15 +2726,103 @@ function renderCompletedFileHistory(scenario) {
   generatedFileActions?.classList.remove("hidden");
 }
 
+function ensureBoardDraftChart(id, option) {
+  if (typeof echarts === "undefined") return;
+  const dom = document.getElementById(id);
+  if (!dom) return;
+  if (!dom.clientWidth || !dom.clientHeight) {
+    requestAnimationFrame(() => ensureBoardDraftChart(id, option));
+    return;
+  }
+  let chart = boardDraftCharts.get(id) || echarts.getInstanceByDom(dom);
+  if (!chart) chart = echarts.init(dom, null, { renderer: "canvas" });
+  boardDraftCharts.set(id, chart);
+  chart.setOption(option, true);
+  chart.resize();
+}
+
+function renderBoardDraftCharts(draft) {
+  const theme = getSmartQueryChartTheme();
+  const axis = { color: "#7e8aa3", fontSize: 11 };
+  const splitLine = { lineStyle: { color: "#edf2f7", type: "dashed" } };
+  const tooltip = { trigger: "axis", backgroundColor: "rgba(17,24,39,.92)", borderWidth: 0, textStyle: { color: "#fff", fontSize: 12 } };
+  const forecastMonths = ["7月", "8月", "9月"];
+  const actualLength = draft.trend.months.length;
+  ensureBoardDraftChart("boardDraftTrendChart", {
+    grid: { top: 34, left: 54, right: 24, bottom: 32 },
+    tooltip,
+    legend: { right: 10, top: 2, icon: "circle", itemWidth: 8, itemHeight: 8, textStyle: axis },
+    xAxis: { type: "category", data: draft.trend.months.concat(forecastMonths), axisTick: { show: false }, axisLine: { lineStyle: { color: "#dbe5f7" } }, axisLabel: axis },
+    yAxis: { type: "value", axisLine: { show: false }, axisTick: { show: false }, splitLine, axisLabel: axis },
+    series: [
+      { name: "销售额", type: "line", smooth: true, symbolSize: 7, data: draft.trend.values.concat([null, null, null]), lineStyle: { width: 3, color: theme.primary }, itemStyle: { color: theme.primary }, areaStyle: { color: "rgba(31,111,235,.10)" } },
+      { name: "预测", type: "line", smooth: true, symbolSize: 6, data: Array(Math.max(0, actualLength - 1)).fill(null).concat([draft.trend.values[actualLength - 1]], draft.trend.forecast), lineStyle: { width: 2, type: "dashed", color: theme.primaryAccent }, itemStyle: { color: theme.primaryAccent } }
+    ]
+  });
+  ensureBoardDraftChart("boardDraftRegionChart", {
+    grid: { top: 18, left: 52, right: 18, bottom: 32 }, tooltip,
+    xAxis: { type: "category", data: draft.region.names, axisTick: { show: false }, axisLine: { lineStyle: { color: "#dbe5f7" } }, axisLabel: axis },
+    yAxis: { type: "value", axisLine: { show: false }, axisTick: { show: false }, splitLine, axisLabel: axis },
+    series: [{ type: "bar", barWidth: 22, data: draft.region.values, itemStyle: { color: theme.primary, borderRadius: [6, 6, 0, 0] } }]
+  });
+  ensureBoardDraftChart("boardDraftChannelChart", {
+    tooltip: { trigger: "item", formatter: "{b}<br/>{c}%" },
+    legend: { bottom: 0, icon: "circle", itemWidth: 8, itemHeight: 8, textStyle: axis },
+    color: [theme.primary, theme.primaryAccent, "#5b8ff9", "#a7c5ff"],
+    series: [{ type: "pie", radius: ["42%", "68%"], center: ["50%", "44%"], label: { show: Boolean(draft.channelLabels), formatter: "{b}\n{d}%", fontSize: 11, color: "#475569" }, data: draft.channel }]
+  });
+  ensureBoardDraftChart("boardDraftGaugeChart", {
+    series: [{ type: "gauge", startAngle: 210, endAngle: -30, radius: "88%", center: ["50%", "58%"], progress: { show: true, width: 14, itemStyle: { color: theme.primary } }, axisLine: { lineStyle: { width: 14, color: [[1, "#eef2f7"]] } }, pointer: { show: false }, axisTick: { show: false }, splitLine: { show: false }, axisLabel: { show: false }, title: { offsetCenter: [0, "36%"], color: "#94a3b8", fontSize: 11 }, detail: { offsetCenter: [0, "0%"], formatter: "{value}%", color: "#17375e", fontSize: 26, fontWeight: 700 }, data: [{ value: draft.gauge, name: "完成率" }] }]
+  });
+  ensureBoardDraftChart("boardDraftCustomerChart", {
+    grid: { top: 10, left: 12, right: 45, bottom: 8, containLabel: true }, tooltip,
+    xAxis: { type: "value", axisLine: { show: false }, axisTick: { show: false }, splitLine, axisLabel: { show: false } },
+    yAxis: { type: "category", data: draft.customers.names.slice().reverse(), axisLine: { show: false }, axisTick: { show: false }, axisLabel: { ...axis, fontSize: 10 } },
+    series: [{ type: "bar", barWidth: 10, data: draft.customers.values.slice().reverse(), label: { show: true, position: "right", color: "#1f3f7a", fontSize: 10 }, itemStyle: { color: theme.primaryAccent, borderRadius: [3, 6, 6, 3] } }]
+  });
+  ensureBoardDraftChart("boardDraftProductChart", {
+    grid: { top: 38, left: 54, right: 20, bottom: 32 }, tooltip,
+    legend: { right: 10, top: 2, icon: "circle", itemWidth: 8, itemHeight: 8, textStyle: axis },
+    xAxis: { type: "category", data: draft.productMix.months, axisTick: { show: false }, axisLine: { lineStyle: { color: "#dbe5f7" } }, axisLabel: axis },
+    yAxis: { type: "value", axisLine: { show: false }, axisTick: { show: false }, splitLine, axisLabel: axis },
+    color: [theme.primary, theme.primaryAccent, "#87aef7"],
+    series: draft.productMix.series.map((series) => ({ name: series.name, type: "bar", stack: "total", barWidth: 24, data: series.values }))
+  });
+}
+
+function renderBoardDraftResult(scenario) {
+  const draft = scenario?.result?.boardDraft;
+  if (!draft || !boardDraftResult) return false;
+  activeBoardDraftRun = scenario;
+  insightBox?.classList.add("hidden");
+  answerActionBar?.classList.add("hidden");
+  referenceConversationResult?.classList.add("hidden");
+  referenceSaveActions?.classList.add("hidden");
+  boardDraftResult.classList.remove("hidden");
+  boardDraftTitle.textContent = draft.title;
+  boardDraftMeta.textContent = `基于${draft.title} V${draft.sourceVersion} · 当前为未保存草稿`;
+  boardDraftChangeCount.textContent = `已累计调整 ${draft.changeLabels.length} 项`;
+  const regionWidget = boardDraftResult.querySelector('[data-board-draft-widget="region"]');
+  if (regionWidget) regionWidget.classList.toggle("wide", draft.layout === "region-after-trend");
+  boardDraftKpiGrid.innerHTML = draft.kpis.map((item) => (
+    `<div class="kpi-card${item.primary ? " primary" : ""}${item.emphasis ? " is-emphasis" : ""}">` +
+      `<p>${item.label}</p><h2>${item.value}</h2><span class="${item.deltaCls || ""}">${item.delta}</span>` +
+    "</div>"
+  )).join("");
+  requestAnimationFrame(() => renderBoardDraftCharts(draft));
+  return true;
+}
+
 function renderCompletedReferenceHistory(scenario) {
   const result = scenario.result;
   if (!result || !referenceConversationResult) return;
+  if (renderBoardDraftResult(scenario)) return;
   applyReferenceResultIcon(scenario.reference);
   insightBox?.classList.add("hidden");
   answerActionBar?.classList.add("hidden");
   referenceConversationResult.classList.remove("hidden");
   referenceResultBadge.textContent = result.badge || "引用分析";
-  referenceResultBadge.classList.toggle("is-executed", Boolean(result.feedback));
+  referenceResultBadge.classList.toggle("is-executed", Boolean(result.feedback) && !result.pendingSave);
   referenceResultHeading.textContent = result.title || "引用内容分析完成";
   referenceResultSummary.textContent = result.summary || "";
   referenceResultDetails.replaceChildren();
@@ -2399,6 +2832,12 @@ function renderCompletedReferenceHistory(scenario) {
     referenceResultDetails.appendChild(item);
   });
   referenceExecutionFeedback.classList.toggle("hidden", !result.feedback);
+  referenceExecutionFeedback.classList.toggle("is-pending", Boolean(result.pendingSave));
+  referenceSaveActions?.classList.toggle("hidden", !result.pendingSave);
+  if (referenceSaveButton && result.pendingSave) {
+    const label = referenceSaveButton.querySelector("span");
+    if (label) label.textContent = "保存报告";
+  }
   referenceFeedbackMeta.replaceChildren();
   if (!result.feedback) return;
   referenceFeedbackTitle.textContent = result.feedback.title;
@@ -2412,6 +2851,41 @@ function renderCompletedReferenceHistory(scenario) {
     row.append(dt, dd);
     referenceFeedbackMeta.appendChild(row);
   });
+}
+
+function recordReferenceVersionEvent(pendingSave, version) {
+  const storageKey = "smart-query-report-version-events";
+  let events = [];
+  try {
+    events = JSON.parse(localStorage.getItem(storageKey) || "[]");
+  } catch (error) {
+    events = [];
+  }
+  events.unshift({
+    name: pendingSave.target.name,
+    version: Number(String(version).replace("V", "")) || 1,
+    time: new Date().toLocaleString("zh-CN", { hour12: false }),
+    source: pendingSave.source,
+    summary: `${pendingSave.scope}已通过智能问数完成调整并保存。`
+  });
+  localStorage.setItem(storageKey, JSON.stringify(events.slice(0, 40)));
+}
+
+function saveReferenceChanges() {
+  const result = activeReferenceRun?.result;
+  const pendingSave = result?.pendingSave;
+  if (!pendingSave) return;
+  const version = getNextReportVersion(pendingSave.target);
+  const assetLabel = "报告";
+  result.feedback = {
+    title: `${assetLabel}修改已保存`,
+    desc: `修改内容已生成新的${assetLabel}版本`,
+    meta: [[`目标${assetLabel}`, pendingSave.target.name], ["修改范围", pendingSave.scope], ["最新版本", version], ["版本来源", pendingSave.source]]
+  };
+  recordReferenceVersionEvent(pendingSave, version);
+  result.pendingSave = null;
+  renderCompletedReferenceHistory(activeReferenceRun);
+  showToast(`${pendingSave.target.name}已保存为${version}`);
 }
 
 function renderCompletedHistoryTurn(scenario, options = {}) {
@@ -2429,6 +2903,10 @@ function loadHistoryScenario(key, item) {
   document.querySelectorAll("#historyList .history-item").forEach((historyItem) => {
     historyItem.classList.toggle("active", historyItem === item);
   });
+  if (Array.isArray(scenario.turns) && scenario.turns.length) {
+    renderHistoryTurnSequence(scenario.turns, 0, historySequenceToken);
+    return;
+  }
   if (scenario.followup) {
     renderCompletedHistoryTurn(HISTORY_SCENARIOS.normal, { skipChartRender: true });
     archiveCurrentMessageIfNeeded();
@@ -2437,7 +2915,26 @@ function loadHistoryScenario(key, item) {
   requestAnimationFrame(scrollToAnswerBottom);
 }
 
+function renderHistoryTurnSequence(turns, index = 0, token = historySequenceToken) {
+  if (token !== historySequenceToken) return;
+  const turn = turns[index];
+  if (!turn) return;
+  renderCompletedHistoryTurn(turn);
+  if (index >= turns.length - 1) {
+    requestAnimationFrame(scrollToAnswerBottom);
+    return;
+  }
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (token !== historySequenceToken) return;
+      archiveCurrentMessageIfNeeded();
+      renderHistoryTurnSequence(turns, index + 1, token);
+    });
+  });
+}
+
 function resetChat() {
+  historySequenceToken += 1;
   if (isAnswering) {
     isAnswering = false;
     if (conclusionTypingTimer) {
@@ -2460,6 +2957,10 @@ function resetChat() {
   clearFollowupContext();
   activeSkillRun = null;
   activeReferenceRun = null;
+  activeBoardDraftRun = null;
+  boardDraftStates.clear();
+  archivedBoardDraftRuns.clear();
+  archivedQueryBoardData.clear();
   selectedReferences = [];
   renderReferencePreview();
   closeReferencePicker();
@@ -2612,9 +3113,11 @@ function resetAnswerSimulation() {
   trendResult?.classList.add("hidden");
   comparisonResult?.classList.add("hidden");
   templateResult?.classList.add("hidden");
+  boardDraftResult?.classList.add("hidden");
   fileResult?.classList.add("hidden");
   referenceConversationResult?.classList.add("hidden");
   referenceExecutionFeedback?.classList.add("hidden");
+  referenceSaveActions?.classList.add("hidden");
   applyGeneratedFileProfile(DEFAULT_GENERATED_FILE, false);
   generatedFileActions?.classList.add("hidden");
   if (generatedFileStatus) {
@@ -4410,6 +4913,10 @@ function archiveCurrentMessageIfNeeded() {
   const questionText = userQuestionBubble?.textContent?.trim();
   if (!currentMessage || !questionText) return;
 
+  const sourceBoardDraftCanvases = Array.from(currentMessage.querySelectorAll(".board-draft-section:not(.hidden) canvas"));
+  const canArchiveQueryBoard = Object.prototype.hasOwnProperty.call(QUERY_BOARD_MODE_LABELS, currentAnswerMode)
+    && boardDraftResult?.classList.contains("hidden");
+  const queryBoardData = canArchiveQueryBoard ? getCurrentQueryBoardData(getCurrentResultTitle()) : null;
   const archived = currentMessage.cloneNode(true);
   archived.classList.remove("current-chat-message");
   archived.classList.add("archived-message");
@@ -4434,8 +4941,31 @@ function archiveCurrentMessageIfNeeded() {
     c.innerHTML = "";
     c.removeAttribute("_echarts_instance_");
   });
+  const archivedDraftSaveButton = archived.querySelector('[onclick^="saveBoardDraft"]');
+  if (archivedDraftSaveButton) {
+    const draftToken = `board-draft-${Date.now()}-${archivedBoardDraftRuns.size + 1}`;
+    if (activeBoardDraftRun) archivedBoardDraftRuns.set(draftToken, activeBoardDraftRun);
+    archivedDraftSaveButton.setAttribute("onclick", `saveArchivedBoardDraft('${draftToken}', this)`);
+  }
+  if (queryBoardData) {
+    const queryToken = `query-result-${Date.now()}-${archivedQueryBoardData.size + 1}`;
+    archivedQueryBoardData.set(queryToken, queryBoardData);
+    archived.querySelectorAll('[onclick^="saveCurrentResultAsBoard"]').forEach((button) => {
+      if (button.closest(".hidden")) return;
+      button.setAttribute("onclick", `saveArchivedQueryResult('${queryToken}', this)`);
+    });
+  }
 
   conversationHistory.appendChild(archived);
+  const archivedBoardDraftCanvases = Array.from(archived.querySelectorAll(".board-draft-section:not(.hidden) canvas"));
+  archivedBoardDraftCanvases.forEach((canvas, index) => {
+    const source = sourceBoardDraftCanvases[index];
+    if (!source) return;
+    try {
+      const ctx = canvas.getContext("2d");
+      if (ctx) ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+    } catch (error) {}
+  });
 
   const archivedChartCard = archived.querySelector(".chart-card");
   const chartShown = archivedChartCard && !archivedChartCard.classList.contains("hidden");
@@ -4620,7 +5150,7 @@ function bindChartResizeHandlerOnce() {
   bindChartResizeHandlerOnce._bound = true;
   window.addEventListener("resize", () => {
     if (typeof echarts === "undefined") return;
-    document.querySelectorAll(".chart-canvas, .report-chart-canvas").forEach((dom) => {
+    document.querySelectorAll(".chart-canvas, .report-chart-canvas, .board-draft-section .widget-chart").forEach((dom) => {
       const inst = echarts.getInstanceByDom(dom);
       if (inst) inst.resize();
     });
@@ -4879,16 +5409,23 @@ const DASHBOARD_DIR_TREE = [
   { id: 'n4', name: '财务分析' },
 ];
 
+// 我的看板目录（与「我的看板」侧栏保持一致）
+const BOARD_DIR_TREE = [
+  { id: 'bc1', name: '销售经营' },
+  { id: 'bc2', name: '财务分析' },
+  { id: 'bc3', name: '客户运营' },
+  { id: 'bc4', name: '管理层汇报' },
+];
 const REPORT_SAVE_CATEGORIES = [
   { id: 'c1', name: '销售经营' },
   { id: 'c2', name: '渠道与产品' },
   { id: 'c3', name: '客户运营' },
   { id: 'c4', name: '管理层汇报' },
 ];
-
 function renderDirTree() {
   const root = document.getElementById('saveDirTree');
   if (!root) return;
+  const directoryData = currentSaveType === 'board' ? BOARD_DIR_TREE : DASHBOARD_DIR_TREE;
   function walk(items, level, parentPath) {
     return items.map((it) => {
       const path = parentPath.concat(it.name);
@@ -4911,7 +5448,7 @@ function renderDirTree() {
       return html;
     }).join('');
   }
-  root.innerHTML = walk(DASHBOARD_DIR_TREE, 1, []);
+  root.innerHTML = walk(directoryData, 1, []);
 
   root.onclick = function (e) {
     const toggle = e.target.closest('.dir-tree-toggle');
@@ -4943,21 +5480,31 @@ function positionDirPanel() {
   const panel = document.getElementById('saveDirPanel');
   const trigger = document.getElementById('saveDirTrigger');
   if (!panel || !trigger) return;
-  // 由于 .modal 上有 transform，会让其内部 position: fixed 变为相对 modal 定位。
-  // 把 panel 临时挂到 body，脱离 modal 的容器块。
+  // 目录层挂到 body，避免被弹窗的 overflow / transform 裁切。
   if (panel.parentElement !== document.body) {
     document.body.appendChild(panel);
   }
   const rect = trigger.getBoundingClientRect();
-  panel.style.left = rect.left + 'px';
-  panel.style.width = rect.width + 'px';
-  const panelMax = 320;
-  const spaceBelow = window.innerHeight - rect.bottom;
-  if (spaceBelow < panelMax + 16 && rect.top > panelMax + 16) {
-    panel.style.top = (rect.top - panelMax - 6) + 'px';
-  } else {
-    panel.style.top = (rect.bottom + 6) + 'px';
-  }
+  const viewportMargin = 12;
+  const gap = 6;
+  const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+  const viewportHeight = document.documentElement.clientHeight || window.innerHeight;
+  const width = Math.min(rect.width, viewportWidth - viewportMargin * 2);
+  const left = Math.min(Math.max(viewportMargin, rect.left), viewportWidth - width - viewportMargin);
+  const desiredHeight = Math.min(Math.max(panel.scrollHeight || 260, 220), 320);
+  const spaceBelow = Math.max(0, viewportHeight - rect.bottom - gap - viewportMargin);
+  const spaceAbove = Math.max(0, rect.top - gap - viewportMargin);
+  const openAbove = spaceBelow < Math.min(desiredHeight, 240) && spaceAbove > spaceBelow;
+  const availableHeight = openAbove ? spaceAbove : spaceBelow;
+  const panelHeight = Math.min(desiredHeight, Math.max(180, availableHeight));
+  const top = openAbove
+    ? Math.max(viewportMargin, rect.top - gap - panelHeight)
+    : Math.min(rect.bottom + gap, viewportHeight - panelHeight - viewportMargin);
+  panel.style.left = left + 'px';
+  panel.style.top = top + 'px';
+  panel.style.width = width + 'px';
+  panel.style.maxHeight = panelHeight + 'px';
+  panel.dataset.placement = openAbove ? 'top' : 'bottom';
 }
 
 function toggleDirPicker(e) {
@@ -4981,6 +5528,7 @@ function closeDirPicker() {
   const trigger = document.getElementById('saveDirTrigger');
   if (!panel) return;
   panel.classList.add('hidden');
+  delete panel.dataset.placement;
   if (trigger) trigger.classList.remove('open');
   document.removeEventListener('click', onDocClickClose);
   window.removeEventListener('resize', positionDirPanel);
@@ -5235,12 +5783,230 @@ function getCurrentResultTitle() {
   return visibleTitle || currentAnswerTitle || currentQuestionText || '智能问数分析报告';
 }
 
+const QUERY_BOARD_MODE_LABELS = {
+  qa: "交互问数",
+  analysis: "数据解读",
+  attribution: "归因分析",
+  trend: "趋势分析",
+  comparison: "对比分析",
+  template: "模板分析"
+};
+
+function cloneSerializableChartOption(dom) {
+  if (!dom || typeof echarts === "undefined") return null;
+  const instance = echarts.getInstanceByDom(dom);
+  if (!instance) return null;
+  try {
+    return JSON.parse(JSON.stringify(instance.getOption()));
+  } catch (error) {
+    return null;
+  }
+}
+
+function serializeResultNodeForBoard(node, chartOptions) {
+  if (!node) return "";
+  const clone = node.cloneNode(true);
+  clone.classList.remove("hidden");
+  const sourceCharts = Array.from(node.querySelectorAll(".chart-canvas, .report-chart-canvas"));
+  const clonedCharts = Array.from(clone.querySelectorAll(".chart-canvas, .report-chart-canvas"));
+  clonedCharts.forEach((chart, index) => {
+    const chartOption = cloneSerializableChartOption(sourceCharts[index]);
+    const chartIndex = chartOptions.length;
+    chartOptions.push(chartOption);
+    chart.innerHTML = "";
+    chart.removeAttribute("_echarts_instance_");
+    chart.classList.add("saved-query-chart");
+    chart.dataset.savedChartIndex = String(chartIndex);
+  });
+  clone.querySelectorAll(".analysis-report-foot, .answer-action-bar, .result-table-actions, .chart-top-actions, .dashboard-asset-btn, .table-export-btn").forEach((item) => item.remove());
+  clone.querySelectorAll("[onclick]").forEach((item) => item.removeAttribute("onclick"));
+  clone.querySelectorAll("[id]").forEach((item) => item.removeAttribute("id"));
+  return clone.outerHTML;
+}
+
+function captureCurrentHtmlResult() {
+  const chartOptions = [];
+  const content = [];
+  if (currentAnswerMode === "qa") {
+    content.push(serializeResultNodeForBoard(insightBox, chartOptions));
+    if (chartResult && !chartResult.classList.contains("hidden")) {
+      content.push(serializeResultNodeForBoard(chartResult, chartOptions));
+    }
+  } else {
+    const sectionByMode = {
+      analysis: analysisResult,
+      attribution: attributionResult,
+      trend: trendResult,
+      comparison: comparisonResult,
+      template: templateResult
+    };
+    content.push(serializeResultNodeForBoard(sectionByMode[currentAnswerMode], chartOptions));
+  }
+  return {
+    mode: currentAnswerMode,
+    modeLabel: QUERY_BOARD_MODE_LABELS[currentAnswerMode] || "智能问数",
+    question: currentQuestionText,
+    conclusion: aiConclusion?.textContent.trim() || "",
+    contentHtml: content.filter(Boolean).join(""),
+    chartOptions,
+    chartView: currentResultView,
+    savedAt: new Date().toLocaleString("zh-CN", { hour12: false })
+  };
+}
+
+function getCurrentQueryBoardData(title) {
+  const values = resultChartData.map((item) => item.value);
+  const firstValue = values[0] || 1;
+  const lastValue = values[values.length - 1] || firstValue;
+  const growth = ((lastValue - firstValue) / firstValue * 100).toFixed(1);
+  const tags = Array.from(conclusionTags?.querySelectorAll("span") || []).map((item) => item.textContent.trim()).filter(Boolean);
+  const querySnapshot = captureCurrentHtmlResult();
+  return {
+    boardEngine: "ai-html",
+    viewType: "query-html",
+    querySnapshot,
+    title: title || getCurrentResultTitle(),
+    meta: "来源：智能问数完整结果 · 当前版本 V1 · 最近更新：刚刚",
+    kpis: [
+      { label: "最新销售额（万元）", value: lastValue.toLocaleString("zh-CN"), delta: "+4.1% 环比", deltaCls: "up", primary: true },
+      { label: "统计周期", value: `${values.length}个月`, delta: "1月—6月", deltaCls: "up" },
+      { label: "累计增长", value: `${growth}%`, delta: `较1月增加 ${lastValue - firstValue} 万元`, deltaCls: "up" },
+      { label: "最大环比增幅", value: "15.1%", delta: "4月增长最明显", deltaCls: "warn" }
+    ],
+    trend: { months: resultChartData.map((item) => item.name), values, forecast: [3370, 3490, 3620] },
+    region: { names: ["上海", "江苏", "浙江", "安徽", "福建", "江西"], values: [1080, 760, 620, 340, 276, 172] },
+    channel: [{ name: "线上直销", value: 41 }, { name: "直营网点", value: 29 }, { name: "经销商", value: 21 }, { name: "其他", value: 9 }],
+    gauge: 92,
+    customers: { names: ["上海伟业", "杭州凯越", "南京晨光", "苏州博远", "宁波海创", "合肥智达", "福州恒信", "南昌联盛", "无锡新科", "温州启航"], values: [320, 286, 264, 238, 216, 194, 176, 164, 152, 141] },
+    productMix: {
+      months: resultChartData.map((item) => item.name),
+      series: [
+        { name: "智能设备", values: [920, 980, 1040, 1160, 1240, 1280] },
+        { name: "配件类", values: [760, 820, 850, 980, 1060, 1120] },
+        { name: "服务类", values: [500, 560, 620, 750, 820, 848] }
+      ]
+    },
+    insight: querySnapshot.conclusion || "当前结果已从智能问数保存，可在看板中继续查看对应分析内容。",
+    tags: tags.length ? tags : ["连续增长", "4月增速明显", "6月达到峰值"]
+  };
+}
+
+function saveCurrentResultAsBoard(button) {
+  const boardTitle = getCurrentResultTitle();
+  openSave("board", {
+    boardTitle,
+    boardData: getCurrentQueryBoardData(boardTitle),
+    triggerButton: button || null
+  });
+}
+
+function saveArchivedQueryResult(token, button) {
+  const boardData = archivedQueryBoardData.get(token);
+  if (!boardData) return;
+  openSave("board", {
+    boardTitle: boardData.title || "智能问数分析看板",
+    boardData: cloneBoardDraft(boardData),
+    triggerButton: button || null
+  });
+}
+
+function persistQueryBoard(name, directory, boardData, source = "问数结果保存") {
+  let boards = [];
+  try {
+    boards = JSON.parse(sessionStorage.getItem("smart-query-saved-boards") || "[]");
+  } catch (error) {
+    boards = [];
+  }
+  const id = `b-query-${Date.now()}`;
+  const savedAt = new Date().toLocaleString("zh-CN", { hour12: false });
+  const payload = cloneBoardDraft(boardData || getCurrentQueryBoardData(name));
+  payload.title = name;
+  payload.boardEngine = "ai-html";
+  payload.meta = `来源：${source} · 当前版本 V1 · 保存时间：${savedAt}`;
+  boards.unshift({
+    id,
+    name,
+    directory,
+    version: 1,
+    boardEngine: "ai-html",
+    savedAt,
+    source,
+    summary: `将“${currentQuestionText}”的完整交互结果保存为看板初始版本。`,
+    question: currentQuestionText,
+    mode: currentAnswerMode,
+    boardData: payload
+  });
+  sessionStorage.setItem("smart-query-saved-boards", JSON.stringify(boards.slice(0, 20)));
+  syncSavedQueryBoardsToReferences();
+  return { id, version: 1, boardData: payload };
+}
+
+function openBoardDraftSave(run, button) {
+  const draft = run?.result?.boardDraft;
+  const reference = run?.reference;
+  if (!draft || !reference) return;
+  const knownVersion = boardVersionCounters.get(reference.key) || draft.sourceVersion || 1;
+  openSave("board", {
+    boardTitle: draft.title,
+    boardData: draft,
+    triggerButton: button || null,
+    boardContext: {
+      key: reference.key,
+      name: reference.name,
+      directory: draft.directory,
+      sourceVersion: draft.sourceVersion,
+      currentVersion: knownVersion,
+      changeLabels: draft.changeLabels,
+      target: reference
+    }
+  });
+}
+
+function saveBoardDraft(button) {
+  openBoardDraftSave(activeBoardDraftRun, button);
+}
+
+function saveArchivedBoardDraft(token, button) {
+  openBoardDraftSave(archivedBoardDraftRuns.get(token), button);
+}
+
+function setBoardSaveMethod(method) {
+  currentBoardSaveMethod = ["current", "version", "new"].includes(method) ? method : "version";
+  document.querySelectorAll('#boardSaveMethods input[name="boardSaveMethod"]').forEach((input) => {
+    input.checked = input.value === currentBoardSaveMethod;
+    input.closest(".board-save-method")?.classList.toggle("selected", input.checked);
+  });
+  document.getElementById("boardSaveFields")?.classList.toggle("hidden", currentBoardSaveMethod !== "new");
+  document.getElementById("boardSaveOverwriteWarning")?.classList.toggle("hidden", currentBoardSaveMethod !== "current");
+}
+
+function recordBoardDraftVersionEvent(context, version, method, boardData) {
+  const events = readPrototypeStorageList("smart-query-board-version-events");
+  const payload = cloneBoardDraft(boardData);
+  payload.title = context.name;
+  payload.meta = `来源：智能问数修改 · 当前版本 V${version} · 最近更新：刚刚`;
+  events.unshift({
+    name: context.name,
+    key: context.key,
+    version,
+    action: method,
+    time: new Date().toLocaleString("zh-CN", { hour12: false }),
+    source: method === "current" ? "智能问数覆盖保存" : "智能问数修改",
+    summary: `${context.changeLabels.join("、") || "看板展示配置"}已通过智能问数完成调整。`,
+    boardData: payload
+  });
+  sessionStorage.setItem("smart-query-board-version-events", JSON.stringify(events.slice(0, 40)));
+}
+
 function openSave(type, options = {}) {
   closeDrawer();
   closeModal();
   currentSaveType = type || "";
   currentDashboardAssetType = options.assetType === "table" ? "table" : "chart";
   activeDashboardAssetButton = type === "dashboard" ? (options.triggerButton || null) : null;
+  activeBoardSaveButton = type === "board" ? (options.triggerButton || null) : null;
+  currentBoardSaveContext = type === "board" ? (options.boardContext || null) : null;
+  currentBoardSaveData = type === "board" ? (options.boardData || null) : null;
   modalMask.classList.remove("hidden");
   saveModal.classList.remove("hidden");
 
@@ -5251,16 +6017,42 @@ function openSave(type, options = {}) {
   const reportMode = document.getElementById("saveModeReport");
   const saveConfirmButton = document.getElementById("saveConfirmButton");
   if (saveConfirmButton) saveConfirmButton.textContent = "确认添加";
-  if (type === "dashboard") {
+  if (type === "dashboard" || type === "board") {
+    const isBoardSave = type === "board";
     const assetLabel = currentDashboardAssetType === "table" ? "表格" : "图表";
-    title.textContent = "添加到我的仪表盘";
-    sub.textContent = `填写${assetLabel}名称并选择保存目录`;
+    title.textContent = isBoardSave ? "保存到我的看板" : "添加到我的仪表盘";
+    sub.textContent = isBoardSave ? "将当前完整问数结果保存为可继续引用修改的 AI 看板" : `填写${assetLabel}名称并选择保存目录`;
     dashMode.classList.remove("hidden");
     otherMode.classList.add("hidden");
     if (reportMode) reportMode.classList.add("hidden");
-    document.getElementById("saveInputNameLabel").textContent = `${assetLabel}名称`;
-    document.getElementById("saveInputName").value = options.assetTitle || `当前${assetLabel}`;
-    document.getElementById("saveDirText").textContent = "销售分析 / 区域销售";
+    document.getElementById("saveInputNameLabel").textContent = isBoardSave ? "看板名称" : `${assetLabel}名称`;
+    document.getElementById("saveInputName").value = isBoardSave ? (options.boardTitle || getCurrentResultTitle()) : (options.assetTitle || `当前${assetLabel}`);
+    document.querySelector("#saveModeDashboard .field:nth-child(2) > label").textContent = isBoardSave ? "我的看板目录" : "保存目录";
+    document.getElementById("saveDirText").textContent = isBoardSave ? "销售经营" : "销售分析 / 区域销售";
+    if (saveConfirmButton) saveConfirmButton.textContent = isBoardSave ? "确认保存" : "确认添加";
+    const boardSaveContext = document.getElementById("boardSaveContext");
+    const boardSaveMethods = document.getElementById("boardSaveMethods");
+    if (isBoardSave && currentBoardSaveContext) {
+      boardSaveContext?.classList.remove("hidden");
+      boardSaveMethods?.classList.remove("hidden");
+      document.getElementById("boardSaveSourceName").textContent = currentBoardSaveContext.name;
+      document.getElementById("boardSaveSourceVersion").textContent = `V${currentBoardSaveContext.sourceVersion}`;
+      document.getElementById("boardSaveChangeSummary").textContent = currentBoardSaveContext.changeLabels.join("、") || "看板展示配置";
+      document.getElementById("boardSaveCurrentMethod").textContent = `更新当前版本 V${currentBoardSaveContext.currentVersion}`;
+      document.getElementById("boardSaveCurrentDesc").textContent = `覆盖 V${currentBoardSaveContext.currentVersion} 的内容，版本号保持不变`;
+      document.getElementById("boardSaveVersionMethod").innerHTML = `保存为新版本 V${currentBoardSaveContext.currentVersion + 1} <b>推荐</b>`;
+      document.getElementById("boardSaveVersionDesc").textContent = `保留历史版本，并将 V${currentBoardSaveContext.currentVersion + 1} 设为当前版本`;
+      document.getElementById("saveInputName").value = `${currentBoardSaveContext.name}（副本）`;
+      document.getElementById("saveDirText").textContent = currentBoardSaveContext.directory || "销售经营";
+      setBoardSaveMethod("version");
+      sub.textContent = "选择本次看板草稿的保存方式";
+    } else {
+      boardSaveContext?.classList.add("hidden");
+      boardSaveMethods?.classList.add("hidden");
+      document.getElementById("boardSaveOverwriteWarning")?.classList.add("hidden");
+      document.getElementById("boardSaveFields")?.classList.remove("hidden");
+      currentBoardSaveMethod = "new";
+    }
     renderDirTree();
     return;
   }
@@ -5306,9 +6098,50 @@ function closeModal() {
   if (typeof closeDirPicker === "function") closeDirPicker();
   if (typeof closeReportPickers === "function") closeReportPickers();
   activeDashboardAssetButton = null;
+  activeBoardSaveButton = null;
+  currentBoardSaveContext = null;
+  currentBoardSaveData = null;
 }
 
 function saveSuccess() {
+  if (currentSaveType === "board") {
+    if (currentBoardSaveContext && currentBoardSaveMethod !== "new") {
+      const context = currentBoardSaveContext;
+      const method = currentBoardSaveMethod;
+      const version = method === "current"
+        ? context.currentVersion
+        : getNextBoardVersion(context.target);
+      recordBoardDraftVersionEvent(context, version, method, currentBoardSaveData);
+      if (activeBoardSaveButton) {
+        const label = activeBoardSaveButton.querySelector("span");
+        if (label) label.textContent = "再次保存";
+      }
+      closeModal();
+      showToast(method === "current"
+        ? `“${context.name}”当前版本 V${version} 已更新`
+        : `“${context.name}”已保存为新版本 V${version}`);
+      return;
+    }
+    const name = (document.getElementById("saveInputName").value || "").trim();
+    const directory = (document.getElementById("saveDirText").textContent || "").trim();
+    if (!name) {
+      showToast("请填写看板名称");
+      return;
+    }
+    if (!directory) {
+      showToast("请选择我的看板目录");
+      return;
+    }
+    const source = currentBoardSaveContext ? "智能问数另存看板" : "问数结果保存";
+    persistQueryBoard(name, directory, currentBoardSaveData, source);
+    if (activeBoardSaveButton) {
+      const label = activeBoardSaveButton.querySelector("span");
+      if (label) label.textContent = "再次保存";
+    }
+    closeModal();
+    showToast(`“${name}”已保存到我的看板，并生成版本 V1`);
+    return;
+  }
   if (currentSaveType === "dashboard") {
     const assetLabel = currentDashboardAssetType === "table" ? "表格" : "图表";
     const name = (document.getElementById("saveInputName").value || "").trim();
@@ -6432,6 +7265,25 @@ function completeScheduledTrialRecord(payload) {
     } catch (error) {}
   }, 4500);
 }
+
+(function restoreBoardReferenceHandoff() {
+  let payload = null;
+  try {
+    payload = JSON.parse(sessionStorage.getItem("smart-query-board-handoff") || "null");
+    if (payload) sessionStorage.removeItem("smart-query-board-handoff");
+  } catch (error) {}
+  if (!payload || !questionInput) return;
+  const reference = getReferenceItem(payload.key) || payload;
+  reference.boardEngine = "ai-html";
+  selectedReferences = [reference];
+  renderReferencePreview();
+  setQuestionEditorContent(`请修改《${reference.name}》，`, { withHints: false });
+  handleQuestionInput();
+  window.setTimeout(() => {
+    questionInput.focus();
+    showToast("已引用 AI 生成看板，请继续描述修改要求");
+  }, 0);
+})();
 
 (function restoreScheduledConversation() {
   let payload = null;

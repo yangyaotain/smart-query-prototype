@@ -370,6 +370,125 @@
       stroke-linecap: round;
       stroke-linejoin: round;
     }
+
+    .board-version-modal {
+      width: min(760px, calc(100vw - 48px));
+      max-width: none;
+    }
+
+    .board-version-layout {
+      display: grid;
+      grid-template-columns: minmax(250px, 0.9fr) minmax(300px, 1.1fr);
+      gap: 16px;
+      min-height: 350px;
+    }
+
+    .board-version-list {
+      max-height: 390px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .board-version-item {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 10px;
+      padding: 12px;
+      margin-bottom: 8px;
+      color: #334155;
+      text-align: left;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .board-version-item:hover,
+    .board-version-item.active {
+      background: var(--primary-panel-bg);
+      border-color: rgba(var(--primary-rgb), 0.45);
+    }
+
+    .board-version-item .version-no {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 28px;
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 700;
+      background: #fff;
+      border: 1px solid var(--primary-border-soft);
+      border-radius: 8px;
+    }
+
+    .board-version-item strong,
+    .board-version-item span {
+      display: block;
+    }
+
+    .board-version-item strong {
+      margin-bottom: 4px;
+      color: #1e293b;
+      font-size: 13px;
+    }
+
+    .board-version-item span {
+      color: #94a3b8;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .board-version-preview {
+      padding: 18px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+    }
+
+    .board-version-preview h4 {
+      margin: 0 0 14px;
+      color: #1e293b;
+      font-size: 15px;
+    }
+
+    .board-version-preview .version-preview-meta {
+      display: grid;
+      gap: 10px;
+      margin: 0 0 16px;
+    }
+
+    .board-version-preview .version-preview-meta div {
+      display: grid;
+      grid-template-columns: 68px 1fr;
+      gap: 8px;
+      color: #475569;
+      font-size: 13px;
+    }
+
+    .board-version-preview .version-preview-meta dt {
+      color: #94a3b8;
+    }
+
+    .board-version-preview .version-preview-meta dd {
+      margin: 0;
+    }
+
+    .board-version-preview .version-retention-tip {
+      margin: 0;
+      padding: 12px;
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.7;
+      background: #fff;
+      border: 1px dashed #cbd5e1;
+      border-radius: 9px;
+    }
+
+    @media (max-width: 820px) {
+      .board-version-layout { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body class="board-page">
@@ -406,9 +525,16 @@
             <span class="tree-toggle">▾</span>
             <span class="tree-icon"></span>
             <span class="tree-label">销售经营</span>
-            <span class="tree-count">3</span>
+            <span class="tree-count">4</span>
           </div>
           <div class="tree-children">
+            <div class="tree-node leaf" data-id="ai1" data-level="2" data-type="board" data-board-engine="ai-html" draggable="true">
+              <div class="tree-row">
+                <span class="tree-toggle empty"></span>
+                <span class="tree-icon"></span>
+                <span class="tree-label">华东区销售趋势分析</span>
+              </div>
+            </div>
             <div class="tree-node leaf" data-id="b1" data-level="2" data-type="board" draggable="true">
               <div class="tree-row active">
                 <span class="tree-toggle empty"></span>
@@ -514,13 +640,17 @@
     <section class="module-content">
       <div class="module-content-head">
         <div>
-          <h2 id="boardTitle">销售经营总览</h2>
-          <p id="boardMeta" style="margin:6px 0 0;color:#6b7280;font-size:13px;">来源：智能问数 + 我的仪表盘 · 最近更新：今日 09:30</p>
+          <div class="board-title-line"><h2 id="boardTitle">销售经营总览</h2><span class="board-engine-badge is-component" id="boardEngineBadge">组件搭建</span></div>
+          <p id="boardMeta" style="margin:6px 0 0;color:#6b7280;font-size:13px;">来源：人工组件搭建 · 最近更新：今日 09:30</p>
         </div>
         <div class="toolbar">
           <button class="action-dropdown-btn" type="button" onclick="createBoardFromToolbar()">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><path d="M16.5 14v6"></path><path d="M13.5 17h6"></path></svg>
             <span>新建看板</span>
+          </button>
+          <button class="action-dropdown-btn hidden" type="button" id="boardVersionBtn" onclick="openBoardVersionModal()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5l3 2"></path><path d="M4.9 6.9A8 8 0 1 1 4 12"></path><path d="M4 4v4h4"></path></svg>
+            <span id="boardVersionLabel">版本 V4</span>
           </button>
           <button class="action-dropdown-btn" type="button" id="boardDataUpdateBtn" onclick="startBoardDataUpdate()">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.5 6.2"></path><path d="M3 12A9 9 0 0 1 18.5 5.8"></path><path d="M18 2v5h-5"></path><path d="M6 22v-5h5"></path></svg>
@@ -531,7 +661,11 @@
             <span>导出</span>
             <svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
           </button>
-          <button class="action-dropdown-btn primary" type="button" onclick="goTo('board-edit.html')">
+          <button class="action-dropdown-btn primary hidden" type="button" id="boardReferenceModifyBtn" onclick="openBoardInSmartQuery()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v12H7l-3 3z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg>
+            <span>引用修改</span>
+          </button>
+          <button class="action-dropdown-btn primary" type="button" id="boardEditBtn" onclick="openCurrentBoardEditor()">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.06 4.94l5 5"/><path d="M3 21l1.5-5.5L18 2.5a2.83 2.83 0 0 1 4 4L8.5 19.5 3 21Z"/></svg>
             <span>编辑看板</span>
           </button>
@@ -715,6 +849,34 @@
     </div>
   </section>
 
+  <!-- 看板版本：默认展示最新版本，恢复历史版本时生成新的当前版本 -->
+  <div class="modal-mask hidden" id="boardVersionMask"></div>
+  <section class="modal board-version-modal hidden" id="boardVersionModal" role="dialog" aria-modal="true" aria-labelledby="boardVersionTitle">
+    <div class="modal-head">
+      <div>
+        <h3 id="boardVersionTitle">看板版本</h3>
+        <p id="boardVersionSubtitle">默认展示最新版本</p>
+      </div>
+      <button class="close" type="button" data-board-version-act="cancel">×</button>
+    </div>
+    <div class="modal-body board-version-layout">
+      <div class="board-version-list" id="boardVersionList"></div>
+      <div class="board-version-preview">
+        <h4 id="boardVersionPreviewTitle">版本详情</h4>
+        <dl class="version-preview-meta">
+          <div><dt>生成时间</dt><dd id="boardVersionPreviewTime">—</dd></div>
+          <div><dt>生成方式</dt><dd id="boardVersionPreviewSource">—</dd></div>
+          <div><dt>变更说明</dt><dd id="boardVersionPreviewSummary">—</dd></div>
+        </dl>
+        <p class="version-retention-tip">AI 看板通过问数结果保存、智能问数修改或恢复历史版本生成版本。系统自动保留最近 20 个版本。</p>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="ghost-btn" type="button" data-board-version-act="cancel">取消</button>
+      <button class="primary-btn" type="button" id="restoreBoardVersionBtn">恢复此版本</button>
+    </div>
+  </section>
+
   <!-- 导出菜单（与智能问数同款） -->
   <div id="boardExportMenu" class="context-menu export-menu hidden">
     <button onclick="boardExportAction('image')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M7 15l3-3 2.5 2.5 2.5-3 2 3.5"></path><path d="M9 9h.01"></path></svg><span>导出图片</span></button>
@@ -846,18 +1008,38 @@
       let currentNode = null;
       let dragNode = null;
 
+      function escapeHTML(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      const TEMP_BOARD_STORAGE_KEYS = ['smart-query-saved-boards', 'smart-query-board-version-events', 'smart-query-component-board-overrides'];
+      const navigationEntry = performance.getEntriesByType?.('navigation')?.[0];
+      if (navigationEntry?.type === 'reload') {
+        TEMP_BOARD_STORAGE_KEYS.forEach((key) => {
+          sessionStorage.removeItem(key);
+          localStorage.removeItem(key);
+        });
+      }
       // ====================================================================
       // 2. 看板示例数据（标题 / 副标题 / 解读 / 图表数据）
       // ====================================================================
+      const boardCanvas = document.getElementById('boardCanvas');
+      const defaultBoardCanvasHTML = boardCanvas.innerHTML;
       const BOARD_DATA = {
         b1: {
           title: '销售经营总览',
-          meta: '来源：智能问数 + 我的仪表盘 · 最近更新：今日 09:30',
+          meta: '来源：人工组件搭建 · 最近更新：今日 09:30',
+          layout: 'region-after-trend',
           kpis: [
             { label: '销售额（万元）', value: '3,248', delta: '+4.1%', deltaCls: 'up', primary: true },
             { label: '订单量（单）', value: '17,260', delta: '+2.3%', deltaCls: 'up' },
             { label: '客单价（元）', value: '1,882', delta: '+1.8%', deltaCls: 'up' },
-            { label: '目标完成率', value: '86%', delta: '需关注 · 距离目标 14%', deltaCls: 'warn' }
+            { label: '目标完成率', value: '86%', delta: '需关注 · 距离目标 14%', deltaCls: 'warn', emphasis: true }
           ],
           trend: { months: ['1月','2月','3月','4月','5月','6月'], values: [2180, 2360, 2510, 2890, 3120, 3248], forecast: [3380, 3520, 3680] },
           region: { names: ['华东','华南','华北','西南','华中','东北'], values: [4820, 3560, 2180, 1920, 1640, 1210] },
@@ -1082,8 +1264,251 @@
         }
       };
 
+      const BOARD_VERSION_LATEST = { ai1: 1 };
+      const BOARD_VERSIONS = {};
+
+      function cloneBoardData(data) {
+        return JSON.parse(JSON.stringify(data));
+      }
+
+      Object.values(BOARD_DATA).forEach((board) => {
+        board.boardEngine = board.boardEngine || 'component';
+        if (board.boardEngine === 'component' && /^来源：智能问数/.test(board.meta || '')) {
+          board.meta = String(board.meta).replace(/^来源：智能问数(?: \+ 我的仪表盘)?/, '来源：人工组件搭建');
+        }
+      });
+
+      BOARD_DATA.ai1 = Object.assign(cloneBoardData(BOARD_DATA.b1), {
+        boardEngine: 'ai-html',
+        viewType: 'query-html',
+        title: '华东区销售趋势分析',
+        meta: '来源：智能问数完整结果 · 当前版本 V1 · 最近更新：今日 10:18',
+        insight: '华东区近 6 个月销售额持续增长，6 月达到 3,248 万元；4 月增幅最明显，后续应重点关注目标缺口与区域贡献差异。',
+        tags: ['连续增长', '4月增速明显', '6月达到峰值'],
+        querySnapshot: {
+          mode: 'qa',
+          modeLabel: '交互问数',
+          question: '近6个月华东区销售额趋势如何？',
+          conclusion: '华东区近 6 个月销售额持续增长，6 月达到 3,248 万元。',
+          contentHtml:
+            '<section class="insight-box"><p>华东区近 6 个月销售额由 2,180 万元增长至 3,248 万元，累计增长 49.0%。4 月环比增幅达到 15.1%，是本周期最明显的增长节点。</p>' +
+              '<div class="tag-row"><span>连续增长</span><span>4月增速明显</span><span>6月达到峰值</span></div>' +
+              '<div class="inline-table"><div class="result-table-toolbar"><span>明细数据</span></div><table><thead><tr><th>月份</th><th class="num">销售额（万元）</th><th class="num">环比增长</th></tr></thead>' +
+              '<tbody><tr><td>1月</td><td class="num">2,180</td><td class="num">-</td></tr><tr><td>2月</td><td class="num">2,360</td><td class="num up">+8.3%</td></tr><tr><td>3月</td><td class="num">2,510</td><td class="num up">+6.4%</td></tr><tr><td>4月</td><td class="num">2,890</td><td class="num up">+15.1%</td></tr><tr><td>5月</td><td class="num">3,120</td><td class="num up">+8.0%</td></tr><tr><td>6月</td><td class="num">3,248</td><td class="num up">+4.1%</td></tr></tbody></table></div></section>' +
+            '<section class="chart-card"><div class="chart-top"><h3>华东区销售额月度趋势</h3></div><div class="chart-area"><div class="chart-canvas saved-query-chart" data-saved-chart-index="0"></div></div></section>',
+          chartOptions: [null],
+          chartView: 'line',
+          savedAt: '2026/9/23 10:18:00'
+        }
+      });
+
+      function createBoardVersionRecord(boardId, version, latestVersion) {
+        const board = BOARD_DATA[boardId];
+        const isInitial = version === 1;
+        const source = isInitial ? '问数结果保存' : '智能问数修改';
+        const summary = isInitial
+          ? '将智能问数完整交互结果保存为看板初始版本。'
+          : '通过智能问数对话重新生成看板 HTML。';
+        const snapshot = cloneBoardData(board);
+        snapshot.meta = '来源：智能问数 · 历史版本 V' + version;
+        return {
+          version,
+          time: version === latestVersion ? '2026/9/23 09:30:00' : `2026/9/${Math.max(10, 19 + version)} 16:20:00`,
+          source,
+          summary,
+          snapshot
+        };
+      }
+
+      Object.keys(BOARD_DATA).forEach((boardId) => {
+        if (BOARD_DATA[boardId].boardEngine !== 'ai-html') {
+          BOARD_VERSIONS[boardId] = [];
+          return;
+        }
+        const latestVersion = BOARD_VERSION_LATEST[boardId] || 1;
+        BOARD_VERSIONS[boardId] = [];
+        for (let version = latestVersion; version >= 1; version -= 1) {
+          BOARD_VERSIONS[boardId].push(createBoardVersionRecord(boardId, version, latestVersion));
+        }
+      });
+
+      function loadSavedQueryBoards() {
+        let savedBoards = [];
+        try {
+          savedBoards = JSON.parse(sessionStorage.getItem('smart-query-saved-boards') || '[]');
+        } catch (error) {
+          savedBoards = [];
+        }
+        savedBoards.slice().reverse().forEach((saved) => {
+          if (!saved || !saved.id || BOARD_DATA[saved.id]) return;
+          const data = saved.boardData ? cloneBoardData(saved.boardData) : cloneBoardData(BOARD_DATA.b1);
+          data.boardEngine = saved.boardEngine || data.boardEngine || 'ai-html';
+          data.title = saved.name || '问数结果看板';
+          data.meta = data.meta || ('来源：智能问数完整结果 · 当前版本 V1 · 保存时间：' + (saved.savedAt || '刚刚'));
+          BOARD_DATA[saved.id] = data;
+          BOARD_VERSIONS[saved.id] = [{
+            version: Number(saved.version) || 1,
+            time: saved.savedAt || new Date().toLocaleString('zh-CN', { hour12: false }),
+            source: saved.source || '问数结果保存',
+            summary: saved.summary || '将完整问数结果保存为看板初始版本。',
+            snapshot: cloneBoardData(data)
+          }];
+
+          const directoryName = String(saved.directory || '').split('/')[0].trim();
+          const categories = Array.from(tree.querySelectorAll('.tree-node[data-type="category"]'));
+          const category = categories.find((node) => node.querySelector(':scope > .tree-row > .tree-label')?.textContent.trim() === directoryName) || categories[0];
+          if (!category) return;
+          const children = ensureChildrenContainer(category);
+          const node = makeBoardNode('', data.boardEngine);
+          node.dataset.id = saved.id;
+          node.querySelector('.tree-label').textContent = data.title;
+          children.appendChild(node);
+          refreshCategoryCount(category);
+        });
+      }
+
+      function loadComponentBoardOverrides() {
+        let overrides = [];
+        try {
+          overrides = JSON.parse(sessionStorage.getItem('smart-query-component-board-overrides') || '[]');
+        } catch (error) {
+          overrides = [];
+        }
+        if (!Array.isArray(overrides)) return;
+        overrides.slice().reverse().forEach((saved) => {
+          if (!saved?.id || !saved?.boardData) return;
+          const data = cloneBoardData(saved.boardData);
+          data.boardEngine = 'component';
+          data.componentItems = cloneBoardData(saved.componentItems || data.componentItems || []);
+          BOARD_DATA[saved.id] = data;
+
+          let node = tree.querySelector('.tree-node[data-type="board"][data-id="' + saved.id + '"]');
+          if (!node) {
+            const category = tree.querySelector('.tree-node[data-type="category"]');
+            if (!category) return;
+            node = makeBoardNode('', 'component');
+            node.dataset.id = saved.id;
+            ensureChildrenContainer(category).appendChild(node);
+            refreshCategoryCount(category);
+          }
+          const label = node.querySelector(':scope > .tree-row > .tree-label');
+          if (label) label.textContent = data.title || saved.name || '未命名看板';
+        });
+      }
+
+      function mergeSmartQueryBoardVersionEvents() {
+        let events = [];
+        try {
+          events = JSON.parse(sessionStorage.getItem('smart-query-board-version-events') || '[]');
+        } catch (error) {
+          events = [];
+        }
+        events.slice().reverse().forEach((event) => {
+          const keyId = String(event.key || '').replace(/^board:/, '');
+          const boardId = (keyId && BOARD_DATA[keyId])
+            ? keyId
+            : Object.keys(BOARD_DATA).find((id) => BOARD_DATA[id].title === event.name);
+          if (!boardId) return;
+          if (BOARD_DATA[boardId].boardEngine !== 'ai-html') return;
+          const versions = BOARD_VERSIONS[boardId] || (BOARD_VERSIONS[boardId] = []);
+          const versionNumber = Number(event.version) || ((versions[0]?.version || 0) + 1);
+          const snapshot = event.boardData ? cloneBoardData(event.boardData) : cloneBoardData(BOARD_DATA[boardId]);
+          snapshot.boardEngine = snapshot.boardEngine || BOARD_DATA[boardId].boardEngine || 'ai-html';
+          snapshot.title = event.name || BOARD_DATA[boardId].title;
+          snapshot.meta = snapshot.meta || ('来源：智能问数修改 · 当前版本 V' + versionNumber + ' · 最近更新：刚刚');
+          const versionRecord = {
+            version: versionNumber,
+            time: event.time || new Date().toLocaleString('zh-CN', { hour12: false }),
+            source: event.source || '智能问数修改',
+            summary: event.summary || '通过智能问数完成看板调整。',
+            snapshot: cloneBoardData(snapshot)
+          };
+          const existingIndex = versions.findIndex((item) => item.version === versionNumber);
+          if (existingIndex >= 0) versions.splice(existingIndex, 1, versionRecord);
+          else versions.unshift(versionRecord);
+          versions.sort((a, b) => b.version - a.version);
+          if (versions.length > 20) versions.length = 20;
+          if (!versions[0] || versionNumber >= versions[0].version || event.action === 'current') {
+            BOARD_DATA[boardId] = cloneBoardData(snapshot);
+          }
+        });
+      }
+
       // 当前选中看板
       let currentBoardId = 'b1';
+
+      function getBoardEngine(boardId) {
+        const data = BOARD_DATA[boardId];
+        if (data?.boardEngine) return data.boardEngine;
+        if (data?.viewType === 'query-html') return 'ai-html';
+        const node = tree.querySelector('.tree-node[data-type="board"][data-id="' + boardId + '"]');
+        return node?.dataset.boardEngine || 'component';
+      }
+
+      function syncBoardTreeEngineTags() {
+        tree.querySelectorAll('.tree-node[data-type="board"]').forEach((node) => {
+          const engine = getBoardEngine(node.dataset.id);
+          node.dataset.boardEngine = engine;
+          const row = node.querySelector(':scope > .tree-row');
+          if (!row) return;
+          let tag = row.querySelector('.tree-board-engine');
+          if (!tag) {
+            tag = document.createElement('span');
+            tag.className = 'tree-board-engine';
+            row.appendChild(tag);
+          }
+          tag.classList.toggle('is-ai', engine === 'ai-html');
+          tag.classList.toggle('is-component', engine !== 'ai-html');
+          tag.textContent = engine === 'ai-html' ? 'AI' : '组件';
+        });
+      }
+
+      function updateBoardCapabilities(boardId) {
+        const engine = getBoardEngine(boardId);
+        const isAiBoard = engine === 'ai-html';
+        const badge = document.getElementById('boardEngineBadge');
+        if (badge) {
+          badge.textContent = isAiBoard ? 'AI 生成' : '组件搭建';
+          badge.classList.toggle('is-ai', isAiBoard);
+          badge.classList.toggle('is-component', !isAiBoard);
+        }
+        document.getElementById('boardReferenceModifyBtn')?.classList.toggle('hidden', !isAiBoard);
+        document.getElementById('boardEditBtn')?.classList.toggle('hidden', isAiBoard);
+        document.getElementById('boardDataUpdateBtn')?.classList.toggle('hidden', isAiBoard);
+        document.getElementById('boardVersionBtn')?.classList.toggle('hidden', !isAiBoard);
+      }
+
+      window.openBoardInSmartQuery = function () {
+        const data = BOARD_DATA[currentBoardId];
+        if (!data || getBoardEngine(currentBoardId) !== 'ai-html') {
+          showToast('组件看板请使用“编辑看板”调整');
+          return;
+        }
+        sessionStorage.setItem('smart-query-board-handoff', JSON.stringify({
+          key: 'board:' + currentBoardId,
+          kind: 'board',
+          label: '看板',
+          boardEngine: 'ai-html',
+          name: data.title,
+          meta: data.meta
+        }));
+        goTo('smart-query.html?fromBoard=1');
+      };
+
+      window.openCurrentBoardEditor = function () {
+        if (getBoardEngine(currentBoardId) === 'ai-html') {
+          showToast('AI 生成看板需通过“引用修改”重新生成');
+          return;
+        }
+        const data = BOARD_DATA[currentBoardId] || {};
+        sessionStorage.setItem('smart-query-component-board-edit-handoff', JSON.stringify({
+          id: currentBoardId,
+          name: data.title || document.getElementById('boardTitle').textContent || '未命名看板',
+          boardData: cloneBoardData(data),
+          componentItems: data.componentItems ? cloneBoardData(data.componentItems) : null
+        }));
+        goTo('board-edit.html?boardId=' + encodeURIComponent(currentBoardId) + '&engine=component');
+      };
 
       // ====================================================================
       // 3. 数据更新：10 秒静态模拟 + 按看板 ID 绑定遮罩
@@ -1269,6 +1694,10 @@
       }
 
       window.startBoardDataUpdate = function () {
+        if (getBoardEngine(currentBoardId) === 'ai-html') {
+          showToast('AI 生成看板请通过“引用修改”重新生成数据内容');
+          return;
+        }
         const existingTask = readBoardUpdateTask();
         if (existingTask && getBoardUpdateElapsed(existingTask) < BOARD_UPDATE_DURATION) {
           openBoardUpdateTask(existingTask);
@@ -1477,13 +1906,140 @@
       let trendChartType = 'line';
       let channelLabelOn = false;
 
+      function disposeChartsInCanvas() {
+        if (typeof echarts === 'undefined') return;
+        boardCanvas.querySelectorAll('.widget-chart, .saved-query-chart, .chart-canvas, .report-chart-canvas').forEach((dom) => {
+          const instance = echarts.getInstanceByDom(dom);
+          if (instance) instance.dispose();
+        });
+      }
+
+      function restoreDefaultBoardCanvas() {
+        if (!boardCanvas.dataset.view || boardCanvas.dataset.view === 'standard') return;
+        disposeChartsInCanvas();
+        boardCanvas.innerHTML = defaultBoardCanvasHTML;
+        boardCanvas.classList.remove('saved-query-board-canvas');
+        boardCanvas.dataset.view = 'standard';
+      }
+
+      function buildSavedQueryFallbackOption(data, snapshot) {
+        if (snapshot.mode === 'attribution') return buildRegionOption(data.region);
+        if (snapshot.mode === 'comparison') {
+          const theme = getChartTheme();
+          return {
+            color: [theme.primary, '#94a3b8'],
+            grid: { top: 38, left: 56, right: 24, bottom: 32 },
+            tooltip: { trigger: 'axis' },
+            legend: { right: 12, top: 4 },
+            xAxis: { type: 'category', data: data.trend.months },
+            yAxis: { type: 'value', splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } } },
+            series: [
+              { name: '本期', type: 'line', smooth: true, data: data.trend.values },
+              { name: '同期', type: 'line', smooth: true, data: data.trend.values.map((value) => Math.round(value * 0.78)) }
+            ]
+          };
+        }
+        return buildTrendOption(data.trend, snapshot.chartView === 'bar' ? 'bar' : 'line');
+      }
+
+      function renderSavedQueryBoard(data) {
+        const snapshot = data.querySnapshot || {};
+        disposeChartsInCanvas();
+        boardCanvas.dataset.view = 'query-html';
+        boardCanvas.classList.add('saved-query-board-canvas');
+        boardCanvas.innerHTML =
+          '<article class="saved-query-result">' +
+            '<header class="saved-query-result-head">' +
+              '<div><span>' + escapeHTML(snapshot.modeLabel || '智能问数') + '</span><h3>' + escapeHTML(data.title) + '</h3></div>' +
+              '<p>来源问题：' + escapeHTML(snapshot.question || '当前智能问数结果') + '</p>' +
+            '</header>' +
+            '<div class="saved-query-result-content">' + (snapshot.contentHtml || '<div class="saved-query-empty">暂无可展示的结果内容</div>') + '</div>' +
+          '</article>';
+
+        boardCanvas.querySelectorAll('[data-saved-chart-index]').forEach((dom) => {
+          const index = Number(dom.dataset.savedChartIndex);
+          const option = snapshot.chartOptions?.[index] || buildSavedQueryFallbackOption(data, snapshot);
+          if (typeof echarts === 'undefined' || !option) return;
+          const instance = echarts.init(dom, null, { renderer: 'canvas' });
+          instance.setOption(option, true);
+          requestAnimationFrame(() => instance.resize());
+        });
+
+        document.getElementById('boardTitle').textContent = data.title;
+        document.getElementById('boardMeta').textContent = data.meta;
+        const subtitle = document.getElementById('aiChatSubtitle');
+        if (subtitle) subtitle.textContent = '为「' + data.title + '」提供解读与图表微调';
+      }
+
+      function buildComponentItemOption(item) {
+        if (item.chartType === 'trend') return buildTrendOption(item.data, 'line');
+        if (item.chartType === 'region') return buildRegionOption(item.data);
+        if (item.chartType === 'channel') return buildChannelOption(item.data, false);
+        if (item.chartType === 'gauge') return buildGaugeOption(item.data);
+        if (item.chartType === 'topcus') return buildTopCustomerOption(item.data);
+        if (item.chartType === 'productMix') return buildProductMixOption(item.data);
+        if (item.chartType === 'pie') return buildChannelOption([
+          { name: '类别A', value: 36 }, { name: '类别B', value: 28 }, { name: '类别C', value: 22 }, { name: '其他', value: 14 }
+        ], false);
+        if (item.chartType === 'bars') return buildRegionOption({ names: ['类别A','类别B','类别C','类别D','类别E'], values: [62, 88, 75, 54, 96] });
+        return buildTrendOption({ months: ['1月','2月','3月','4月','5月','6月'], values: [82, 96, 108, 124, 142, 158], forecast: [] }, 'line');
+      }
+
+      function renderComponentBoard(data) {
+        const items = Array.isArray(data.componentItems) ? data.componentItems : [];
+        disposeChartsInCanvas();
+        boardCanvas.classList.remove('saved-query-board-canvas');
+        boardCanvas.dataset.view = 'component';
+        boardCanvas.innerHTML = items.length ? items.map((item, index) => {
+          const wide = item.span === 'wide' ? ' wide' : '';
+          const height = Number(item.height) > 0 ? ' style="min-height:' + Number(item.height) + 'px"' : '';
+          if (item.kind === 'kpi') {
+            const cards = (item.kpis || []).map((kpi) => (
+              '<div class="kpi-card' + (kpi.primary ? ' primary' : '') + '">' +
+                '<p>' + escapeHTML(kpi.label) + '</p><h2>' + escapeHTML(kpi.value) + '</h2>' +
+                '<span class="' + escapeHTML(kpi.deltaCls || '') + '">' + escapeHTML(kpi.delta || '') + '</span>' +
+              '</div>'
+            )).join('');
+            return '<div class="canvas-widget' + wide + '"' + height + '><h3>' + escapeHTML(item.title || '指标概览') + '</h3><div class="kpi-grid">' + cards + '</div></div>';
+          }
+          if (item.kind === 'insight') {
+            return '<div class="canvas-widget' + wide + '"' + height + '><h3>' + escapeHTML(item.title || '经营洞察') + '</h3><p class="insight-text">' + escapeHTML(item.desc || '') + '</p></div>';
+          }
+          if (item.chartType === 'table') {
+            return '<div class="canvas-widget' + wide + '"' + height + '><h3>' + escapeHTML(item.title || '数据表格') + '</h3><div class="saved-query-empty">表格组件已保存</div></div>';
+          }
+          return '<div class="canvas-widget' + wide + '"' + height + '><h3>' + escapeHTML(item.title || '图表组件') + '</h3><div class="widget-chart' + (item.tall ? ' tall' : '') + '" data-component-chart="' + index + '"></div></div>';
+        }).join('') : '<div class="saved-query-empty">当前看板暂无组件</div>';
+
+        boardCanvas.querySelectorAll('[data-component-chart]').forEach((dom) => {
+          const item = items[Number(dom.dataset.componentChart)];
+          if (!item || typeof echarts === 'undefined') return;
+          const instance = echarts.init(dom, null, { renderer: 'canvas' });
+          instance.setOption(buildComponentItemOption(item), true);
+          requestAnimationFrame(() => instance.resize());
+        });
+        document.getElementById('boardTitle').textContent = data.title;
+        document.getElementById('boardMeta').textContent = data.meta;
+      }
+
       function renderAllCharts(id) {
         const data = BOARD_DATA[id];
         if (!data) return;
+        if (data.viewType === 'query-html') {
+          renderSavedQueryBoard(data);
+          return;
+        }
+        if (Array.isArray(data.componentItems)) {
+          renderComponentBoard(data);
+          return;
+        }
+        restoreDefaultBoardCanvas();
+        const regionWidget = document.getElementById('chartRegion')?.closest('.canvas-widget');
+        if (regionWidget) regionWidget.classList.toggle('wide', data.layout === 'region-after-trend');
         // KPI
         const kpiGrid = document.getElementById('kpiGrid');
         kpiGrid.innerHTML = data.kpis.map((k) => (
-          '<div class="kpi-card' + (k.primary ? ' primary' : '') + '">' +
+          '<div class="kpi-card' + (k.primary ? ' primary' : '') + (k.emphasis ? ' is-emphasis' : '') + '">' +
             '<p>' + k.label + '</p>' +
             '<h2>' + k.value + '</h2>' +
             '<span class="' + (k.deltaCls || '') + '">' + k.delta + '</span>' +
@@ -1493,7 +2049,7 @@
         const tasks = [
           ['chartTrend',        () => buildTrendOption(data.trend, trendChartType)],
           ['chartRegion',       () => buildRegionOption(data.region)],
-          ['chartChannel',      () => buildChannelOption(data.channel, channelLabelOn)],
+          ['chartChannel',      () => buildChannelOption(data.channel, channelLabelOn || Boolean(data.channelLabels))],
           ['chartGauge',        () => buildGaugeOption(data.gauge)],
           ['chartTopCustomer',  () => buildTopCustomerOption(data.customers)],
           ['chartProductMix',   () => buildProductMixOption(data.productMix)]
@@ -1525,6 +2081,8 @@
           document.getElementById('boardTitle').textContent = fallbackName || '未命名看板';
           document.getElementById('boardMeta').textContent = '新建看板，尚未配置数据来源';
         }
+        updateBoardCapabilities(id);
+        updateBoardVersionBadge(id);
         syncBoardUpdateMask();
       }
 
@@ -1708,18 +2266,20 @@
         return node;
       }
 
-      function makeBoardNode(label) {
+      function makeBoardNode(label, engine = 'component') {
         const node = document.createElement('div');
         node.className = 'tree-node leaf new-flash';
         node.dataset.id = 'b-new-' + Date.now();
         node.dataset.level = '2';
         node.dataset.type = 'board';
+        node.dataset.boardEngine = engine;
         node.draggable = true;
         node.innerHTML =
           '<div class="tree-row">' +
           '<span class="tree-toggle empty"></span>' +
           '<span class="tree-icon"></span>' +
           '<span class="tree-label">' + label + '</span>' +
+          '<span class="tree-board-engine ' + (engine === 'ai-html' ? 'is-ai' : 'is-component') + '">' + (engine === 'ai-html' ? 'AI' : '组件') + '</span>' +
           '</div>';
         return node;
       }
@@ -1996,7 +2556,102 @@
       });
 
       // ====================================================================
-      // 10. 顶部导出菜单
+      // 10. 看板版本管理
+      // ====================================================================
+      const boardVersionMask = document.getElementById('boardVersionMask');
+      const boardVersionModal = document.getElementById('boardVersionModal');
+      const boardVersionList = document.getElementById('boardVersionList');
+      const restoreBoardVersionBtn = document.getElementById('restoreBoardVersionBtn');
+      let selectedBoardVersion = null;
+
+      function updateBoardVersionBadge(boardId) {
+        const versions = BOARD_VERSIONS[boardId] || [];
+        const latest = versions[0];
+        const label = document.getElementById('boardVersionLabel');
+        if (label) label.textContent = latest ? '版本 V' + latest.version : '版本';
+      }
+
+      function renderBoardVersionPreview(version) {
+        const versions = BOARD_VERSIONS[currentBoardId] || [];
+        selectedBoardVersion = version || versions[0] || null;
+        boardVersionList.querySelectorAll('.board-version-item').forEach((item) => {
+          item.classList.toggle('active', selectedBoardVersion && Number(item.dataset.version) === selectedBoardVersion.version);
+        });
+        document.getElementById('boardVersionPreviewTitle').textContent = selectedBoardVersion ? 'V' + selectedBoardVersion.version + ' 版本详情' : '暂无版本';
+        document.getElementById('boardVersionPreviewTime').textContent = selectedBoardVersion ? selectedBoardVersion.time : '—';
+        document.getElementById('boardVersionPreviewSource').textContent = selectedBoardVersion ? selectedBoardVersion.source : '—';
+        document.getElementById('boardVersionPreviewSummary').textContent = selectedBoardVersion ? selectedBoardVersion.summary : '—';
+        restoreBoardVersionBtn.disabled = !selectedBoardVersion || (versions[0] && selectedBoardVersion.version === versions[0].version);
+        restoreBoardVersionBtn.textContent = restoreBoardVersionBtn.disabled ? '当前已是此版本' : '恢复此版本';
+      }
+
+      function renderBoardVersionList() {
+        const board = BOARD_DATA[currentBoardId];
+        const versions = BOARD_VERSIONS[currentBoardId] || [];
+        document.getElementById('boardVersionSubtitle').textContent = '《' + (board ? board.title : '当前看板') + '》· 共 ' + versions.length + ' 个版本，默认展示最新版本';
+        boardVersionList.innerHTML = versions.map((version, index) => (
+          '<button class="board-version-item' + (index === 0 ? ' active' : '') + '" type="button" data-version="' + version.version + '">' +
+            '<span class="version-no">V' + version.version + '</span>' +
+            '<span><strong>' + escapeHTML(version.source) + (index === 0 ? ' · 最新' : '') + '</strong><span>' + escapeHTML(version.time) + '</span></span>' +
+          '</button>'
+        )).join('');
+        renderBoardVersionPreview(versions[0]);
+      }
+
+      function closeBoardVersionModal() {
+        boardVersionMask.classList.add('hidden');
+        boardVersionModal.classList.add('hidden');
+        selectedBoardVersion = null;
+      }
+
+      window.openBoardVersionModal = function () {
+        if (getBoardEngine(currentBoardId) !== 'ai-html') return;
+        renderBoardVersionList();
+        boardVersionMask.classList.remove('hidden');
+        boardVersionModal.classList.remove('hidden');
+      };
+
+      boardVersionList.addEventListener('click', function (event) {
+        const item = event.target.closest('.board-version-item');
+        if (!item) return;
+        const version = (BOARD_VERSIONS[currentBoardId] || []).find((entry) => entry.version === Number(item.dataset.version));
+        if (version) renderBoardVersionPreview(version);
+      });
+
+      function restoreSelectedBoardVersion() {
+        const versions = BOARD_VERSIONS[currentBoardId] || [];
+        const current = versions[0];
+        if (!selectedBoardVersion || !current || selectedBoardVersion.version === current.version) return;
+        const restoredFrom = selectedBoardVersion.version;
+        const restoredData = cloneBoardData(selectedBoardVersion.snapshot || BOARD_DATA[currentBoardId]);
+        const boardTitle = BOARD_DATA[currentBoardId]?.title || restoredData.title;
+        restoredData.title = boardTitle;
+        restoredData.meta = '来源：版本恢复 · 当前版本 V' + (current.version + 1) + ' · 最近更新：刚刚';
+        BOARD_DATA[currentBoardId] = restoredData;
+        const newVersion = {
+          version: current.version + 1,
+          time: new Date().toLocaleString('zh-CN', { hour12: false }),
+          source: '版本恢复',
+          summary: '恢复 V' + restoredFrom + ' 的内容，并生成新的当前版本。',
+          snapshot: cloneBoardData(restoredData)
+        };
+        versions.unshift(newVersion);
+        if (versions.length > 20) versions.length = 20;
+        renderAllCharts(currentBoardId);
+        updateBoardCapabilities(currentBoardId);
+        updateBoardVersionBadge(currentBoardId);
+        closeBoardVersionModal();
+        showToast('已恢复 V' + restoredFrom + '，并生成 V' + newVersion.version);
+      }
+
+      boardVersionModal.querySelectorAll('[data-board-version-act="cancel"]').forEach((button) => {
+        button.addEventListener('click', closeBoardVersionModal);
+      });
+      restoreBoardVersionBtn.addEventListener('click', restoreSelectedBoardVersion);
+      boardVersionMask.addEventListener('click', closeBoardVersionModal);
+
+      // ====================================================================
+      // 11. 顶部导出菜单
       // ====================================================================
       const exportMenu = document.getElementById('boardExportMenu');
       window.toggleBoardExport = function (e) {
@@ -2021,7 +2676,7 @@
       };
 
       // ====================================================================
-      // 11. AI 看板助手 - 浮窗
+      // 12. AI 看板助手 - 浮窗
       // ====================================================================
       const launcher = document.getElementById('aiBotLauncher');
       const pane = document.getElementById('aiChatPane');
@@ -2255,6 +2910,18 @@
       function generateReply(question) {
         const q = (question || '').toLowerCase();
         const data = BOARD_DATA[currentBoardId] || BOARD_DATA.b1;
+        const wantsStructureChange = /(切换|改为|修改|调整|移动|隐藏|新增|增加|删除|替换|柱状图|折线图|数据标签|布局|排版)/.test(q);
+
+        if (wantsStructureChange) {
+          if (getBoardEngine(currentBoardId) === 'ai-html') {
+            return {
+              html: '当前是<strong>AI 生成看板</strong>。请点击页面右上角“引用修改”，在智能问数中通过多轮对话重新生成 HTML；确认结果后再选择覆盖当前版本、保存为新版本或另存为新看板。'
+            };
+          }
+          return {
+            html: '当前是<strong>组件搭建看板</strong>。智能问数可以继续分析和解读，但不能直接改动组件结构；请点击页面右上角“编辑看板”，在编辑页增删组件或拖拽排版。'
+          };
+        }
 
         if (/切换|改为|变.*柱|柱状图/.test(q) && /趋势|销售额/.test(q)) {
           trendChartType = 'bar';
@@ -2455,7 +3122,7 @@
       // ====================================================================
       function resizeAllCharts() {
         if (typeof echarts === 'undefined') return;
-        document.querySelectorAll('.widget-chart').forEach((dom) => {
+        document.querySelectorAll('.widget-chart, .saved-query-chart').forEach((dom) => {
           const inst = echarts.getInstanceByDom(dom);
           if (inst) inst.resize();
         });
@@ -2477,9 +3144,20 @@
       // ====================================================================
       // 13. 初始化
       // ====================================================================
+      loadSavedQueryBoards();
+      loadComponentBoardOverrides();
+      mergeSmartQueryBoardVersionEvents();
+      syncBoardTreeEngineTags();
+      const requestedBoardId = new URLSearchParams(window.location.search).get('boardId') || sessionStorage.getItem('smart-query-current-board-id');
+      const requestedBoardNode = requestedBoardId
+        ? tree.querySelector('.tree-node[data-type="board"][data-id="' + requestedBoardId + '"]')
+        : null;
+      if (requestedBoardNode) selectBoard(requestedBoardNode);
       // 等到 DOM 测量就绪再渲染
       requestAnimationFrame(() => {
         renderAllCharts(currentBoardId);
+        updateBoardCapabilities(currentBoardId);
+        updateBoardVersionBadge(currentBoardId);
         restoreBoardUpdateTask();
       });
     })();

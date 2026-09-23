@@ -320,6 +320,23 @@
       box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.16);
     }
 
+    .board-edit-page .save-state.is-dirty::before {
+      background: #f59e0b;
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.16);
+    }
+
+    .board-edit-page .editor-head-actions {
+      display: flex;
+      flex: 0 0 auto;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .board-edit-page .editor-head-actions button {
+      min-width: 88px;
+      justify-content: center;
+    }
+
     /* —— 编辑画布外层（滚动容器） —— */
     .board-edit-page .editor-canvas {
       flex: 1;
@@ -622,6 +639,15 @@
       box-shadow: 0 12px 24px rgba(var(--primary-rgb), 0.32);
       z-index: 9999;
     }
+
+    .board-edit-page.is-ai-board #btnSave { display: none; }
+    .board-edit-access-block { position: fixed; inset: 64px 0 0; z-index: 900; display: flex; align-items: center; justify-content: center; padding: 32px; background: linear-gradient(145deg, #f4f8ff, #f8fafc 55%, #eefbf7); }
+    .board-edit-access-block.hidden { display: none; }
+    .board-edit-access-card { width: min(600px, 100%); padding: 32px; text-align: center; background: #fff; border: 1px solid #dbe7f8; border-radius: 18px; box-shadow: 0 18px 45px rgba(30, 72, 130, 0.12); }
+    .board-edit-access-icon { display: inline-flex; width: 56px; height: 56px; align-items: center; justify-content: center; color: #2f7df6; background: #eaf2ff; border-radius: 16px; font-size: 24px; font-weight: 800; }
+    .board-edit-access-card h2 { margin: 18px 0 8px; color: #1f2937; font-size: 22px; }
+    .board-edit-access-card p { margin: 0; color: #667085; font-size: 14px; line-height: 1.8; }
+    .board-edit-access-actions { display: flex; justify-content: center; gap: 12px; margin-top: 24px; }
   </style>
 </head>
 <body class="board-edit-page board-page">
@@ -634,11 +660,20 @@
       <button class="menu-item" onclick="goTo('report.html')">我的报告</button>
       <button class="menu-item" onclick="goTo('scheduled-tasks.html')">定时任务</button>
     </nav>
-    <div class="top-actions">
-      <button class="primary-btn" id="btnSave">保存看板</button>
-      <button class="ghost-btn" onclick="goTo('board.html')">退出</button>
-    </div>
+    <div class="top-actions"></div>
   </header>
+
+  <section class="board-edit-access-block hidden" id="boardEditAccessBlock" aria-labelledby="boardEditAccessTitle">
+    <div class="board-edit-access-card">
+      <span class="board-edit-access-icon">AI</span>
+      <h2 id="boardEditAccessTitle">AI 生成看板不支持组件编辑</h2>
+      <p>该看板由智能问数生成完整 HTML，不能进入组件拖拽编辑器。请引用看板并通过多轮对话重新生成，确认后再保存版本。</p>
+      <div class="board-edit-access-actions">
+        <button class="ghost-btn" type="button" onclick="goTo('board.html')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg><span>返回看板</span></button>
+        <button class="primary-btn" type="button" id="goAiBoardModify"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v12H7l-3 3z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg><span>前往智能问数修改</span></button>
+      </div>
+    </div>
+  </section>
 
   <main class="editor-page">
     <!-- ==================== 左侧：我的仪表盘（目录树） ==================== -->
@@ -664,7 +699,11 @@
       <div class="editor-canvas-head">
         <div class="board-name-block">
           <input id="boardNameInput" class="board-name-input" type="text" value="销售经营总览" maxlength="40" />
-          <span class="save-state" id="saveState">已自动保存 · 09:32</span>
+          <span class="save-state" id="saveState">当前内容已加载</span>
+        </div>
+        <div class="editor-head-actions">
+          <button class="ghost-btn" type="button" id="btnCancel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg><span>取消</span></button>
+          <button class="primary-btn" type="button" id="btnSave"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l2 2v14H5z"></path><path d="M8 4v6h8V4"></path><path d="M8 20v-6h8v6"></path></svg><span>保存</span></button>
         </div>
       </div>
       <div class="editor-canvas" id="editorCanvas">
@@ -698,6 +737,36 @@
   <script>
     /* eslint-disable */
     (function () {
+      const editParams = new URLSearchParams(window.location.search);
+      const requestedBoardId = editParams.get('boardId') || '';
+      let requestedSavedBoard = null;
+      let componentEditHandoff = null;
+      try {
+        const savedBoards = JSON.parse(sessionStorage.getItem('smart-query-saved-boards') || '[]');
+        requestedSavedBoard = Array.isArray(savedBoards) ? savedBoards.find((item) => item.id === requestedBoardId) : null;
+      } catch (error) {}
+      try {
+        const handoff = JSON.parse(sessionStorage.getItem('smart-query-component-board-edit-handoff') || 'null');
+        if (handoff?.id === requestedBoardId) componentEditHandoff = handoff;
+      } catch (error) {}
+      const isKnownAiBoard = requestedBoardId === 'ai1' || requestedSavedBoard?.boardEngine === 'ai-html' || requestedSavedBoard?.boardData?.boardEngine === 'ai-html';
+      const requestedEngine = isKnownAiBoard ? 'ai-html' : (editParams.get('engine') || 'component');
+      if (requestedEngine === 'ai-html') {
+        const boardName = requestedSavedBoard?.name || (requestedBoardId === 'ai1' ? '华东区销售趋势分析' : 'AI 生成看板');
+        document.body.classList.add('is-ai-board');
+        document.getElementById('boardEditAccessBlock')?.classList.remove('hidden');
+        const title = document.getElementById('boardEditAccessTitle');
+        if (title) title.textContent = '“' + boardName + '”不支持组件编辑';
+        document.getElementById('goAiBoardModify')?.addEventListener('click', () => {
+          sessionStorage.setItem('smart-query-board-handoff', JSON.stringify({
+            key: 'board:' + (requestedBoardId || 'ai1'),
+            kind: 'board', label: '看板', boardEngine: 'ai-html', name: boardName,
+            meta: requestedSavedBoard?.boardData?.meta || 'AI生成看板'
+          }));
+          goTo('smart-query.html?fromBoard=1');
+        });
+        return;
+      }
       // ====================================================================
       // 1. 数据：图表清单（来自我的仪表盘 dashboard.html）
       // ====================================================================
@@ -1025,16 +1094,22 @@
         tags: ['趋势上行','线上渠道领跑','TOP10集中度67%','目标差距14%']
       };
 
+      const ACTIVE_BOARD = componentEditHandoff?.boardData?.kpis ? componentEditHandoff.boardData : BOARD_B1;
+      const activeBoardName = componentEditHandoff?.name || ACTIVE_BOARD.title || '销售经营总览';
+      document.getElementById('boardNameInput').value = activeBoardName;
+
       // 默认画布组件清单：与 board.html 中 8 个组件一一对应
-      let canvasItems = [
-        { uid: 'w-kpi',     kind: 'kpi',     span: 'wide',   title: '经营总览',         kpis: BOARD_B1.kpis },
-        { uid: 'w-trend',   kind: 'chart',   span: 'wide',   title: '销售额月度趋势',   chartType: 'trend',      tall: true, data: BOARD_B1.trend },
-        { uid: 'w-region',  kind: 'chart',   span: 'normal', title: '各大区销售额对比', chartType: 'region',     data: BOARD_B1.region },
-        { uid: 'w-channel', kind: 'chart',   span: 'normal', title: '渠道销售占比',     chartType: 'channel',    data: BOARD_B1.channel },
-        { uid: 'w-gauge',   kind: 'chart',   span: 'normal', title: '销售目标完成率',   chartType: 'gauge',      data: BOARD_B1.gauge },
-        { uid: 'w-top',     kind: 'chart',   span: 'normal', title: 'TOP10 客户贡献',   chartType: 'topcus',     data: BOARD_B1.customers },
-        { uid: 'w-product', kind: 'chart',   span: 'wide',   title: '产品线销售构成',   chartType: 'productMix', data: BOARD_B1.productMix },
-      ];
+      let canvasItems = componentEditHandoff?.componentItems
+        ? JSON.parse(JSON.stringify(componentEditHandoff.componentItems))
+        : [
+          { uid: 'w-kpi',     kind: 'kpi',     span: 'wide',   title: '经营总览',         kpis: ACTIVE_BOARD.kpis },
+          { uid: 'w-trend',   kind: 'chart',   span: 'wide',   title: '销售额月度趋势',   chartType: 'trend',      tall: true, data: ACTIVE_BOARD.trend },
+          { uid: 'w-region',  kind: 'chart',   span: 'normal', title: '各大区销售额对比', chartType: 'region',     data: ACTIVE_BOARD.region },
+          { uid: 'w-channel', kind: 'chart',   span: 'normal', title: '渠道销售占比',     chartType: 'channel',    data: ACTIVE_BOARD.channel },
+          { uid: 'w-gauge',   kind: 'chart',   span: 'normal', title: '销售目标完成率',   chartType: 'gauge',      data: ACTIVE_BOARD.gauge },
+          { uid: 'w-top',     kind: 'chart',   span: 'normal', title: 'TOP10 客户贡献',   chartType: 'topcus',     data: ACTIVE_BOARD.customers },
+          { uid: 'w-product', kind: 'chart',   span: 'wide',   title: '产品线销售构成',   chartType: 'productMix', data: ACTIVE_BOARD.productMix },
+        ];
       let selectedUid = null;
 
       function renderCanvas() {
@@ -1703,28 +1778,82 @@
       //    （内部仍保留 snapshot 栈，供其他变更调用，不暴露 UI）
       // ====================================================================
       const undoStack = [];
+      let isDirty = false;
+      function markDirty() {
+        isDirty = true;
+        const state = document.getElementById('saveState');
+        if (state) {
+          state.textContent = '编辑中 · 待保存';
+          state.style.color = '#f59e0b';
+          state.classList.add('is-dirty');
+        }
+      }
       function snapshot() {
         undoStack.push(JSON.stringify({ items: canvasItems, sel: selectedUid }));
         if (undoStack.length > 50) undoStack.shift();
+        markDirty();
       }
 
       const saveBtn = document.getElementById('btnSave');
+      const cancelBtn = document.getElementById('btnCancel');
       const saveState = document.getElementById('saveState');
       saveBtn.addEventListener('click', function () {
         const name = document.getElementById('boardNameInput').value.trim() || '未命名看板';
-        showToast('已保存看板:' + name);
         const t = new Date();
         const hh = String(t.getHours()).padStart(2, '0');
         const mm = String(t.getMinutes()).padStart(2, '0');
+        const savedAt = t.toLocaleString('zh-CN', { hour12: false });
+        const boardId = requestedBoardId || ('b-component-' + Date.now());
+        let overrides = [];
+        try {
+          overrides = JSON.parse(sessionStorage.getItem('smart-query-component-board-overrides') || '[]');
+          if (!Array.isArray(overrides)) overrides = [];
+        } catch (error) {
+          overrides = [];
+        }
+        const boardData = JSON.parse(JSON.stringify(ACTIVE_BOARD));
+        boardData.title = name;
+        boardData.boardEngine = 'component';
+        boardData.componentItems = JSON.parse(JSON.stringify(canvasItems));
+        boardData.meta = '来源：人工组件搭建 · 最近保存：' + savedAt;
+        overrides = overrides.filter((item) => item.id !== boardId);
+        overrides.unshift({
+          id: boardId,
+          name,
+          boardEngine: 'component',
+          savedAt,
+          boardData,
+          componentItems: boardData.componentItems
+        });
+        sessionStorage.setItem('smart-query-component-board-overrides', JSON.stringify(overrides.slice(0, 20)));
+        sessionStorage.setItem('smart-query-current-board-id', boardId);
+        isDirty = false;
+        showToast('已保存看板：' + name);
         saveState.textContent = '已保存 · ' + hh + ':' + mm;
         saveState.style.color = '';
-        setTimeout(() => goTo('board.html'), 600);
+        saveState.classList.remove('is-dirty');
+        setTimeout(() => goTo('board.html?boardId=' + encodeURIComponent(boardId)), 600);
+      });
+
+      cancelBtn.addEventListener('click', function () {
+        const leave = () => goTo('board.html?boardId=' + encodeURIComponent(requestedBoardId || 'b1'));
+        if (!isDirty) {
+          leave();
+          return;
+        }
+        showConfirm({
+          title: '放弃本次修改？',
+          subtitle: '当前画布存在尚未保存的调整。',
+          message: '取消后，本次组件增删、排序和布局调整将不会保留。',
+          okText: '放弃修改',
+          cancelText: '继续编辑',
+          onConfirm: leave
+        });
       });
 
       // 看板名实时反馈"编辑中"
       document.getElementById('boardNameInput').addEventListener('input', function () {
-        saveState.textContent = '编辑中 · 待保存';
-        saveState.style.color = '#f59e0b';
+        markDirty();
       });
 
       function escapeHTML(s) {

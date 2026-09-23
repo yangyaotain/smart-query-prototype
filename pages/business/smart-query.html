@@ -69,6 +69,10 @@
           <strong title="分析销售经营总览看板的目标完成和区域差异">分析销售经营总览看板的目标完成和区域差异</strong>
           <span><em>看板引用分析</em><em>08:12</em></span>
         </div>
+        <div class="history-item" onclick="loadHistoryScenario('boardRevision', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="连续调整华东区销售趋势分析看板">连续调整华东区销售趋势分析看板</strong>
+          <span><em>连续修改看板 · 3轮</em><em>08:09</em></span>
+        </div>
         <div class="history-item" onclick="loadHistoryScenario('reportReferenceAnalysis', this)" oncontextmenu="openSideMenu(event, 'history')">
           <strong title="分析二季度销售复盘报告的主要结论和风险">分析二季度销售复盘报告的主要结论和风险</strong>
           <span><em>报告引用分析</em><em>08:06</em></span>
@@ -243,6 +247,10 @@
                         </button>
                       </div>
                       <div class="answer-action-right">
+                        <button class="action-dropdown-btn" type="button" onclick="saveCurrentResultAsBoard(this)">
+                          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><path d="M16.5 14v6"></path><path d="M13.5 17h6"></path></svg>
+                          <span>保存看板</span>
+                        </button>
                         <button class="action-dropdown-btn" type="button" onclick="toggleExport(event)">
                           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"></path><path d="M8.5 10.5L12 14l3.5-3.5"></path><path d="M5 19h14"></path></svg>
                           <span>导出</span>
@@ -370,6 +378,10 @@
                           </button>
                         </div>
                         <div class="answer-action-right">
+                          <button class="action-dropdown-btn" type="button" onclick="saveCurrentResultAsBoard(this)">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><path d="M16.5 14v6"></path><path d="M13.5 17h6"></path></svg>
+                            <span>保存看板</span>
+                          </button>
                           <button class="action-dropdown-btn" type="button" onclick="toggleExport(event)">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"></path><path d="M8.5 10.5L12 14l3.5-3.5"></path><path d="M5 19h14"></path></svg>
                             <span>导出</span>
@@ -473,6 +485,10 @@
                           </button>
                         </div>
                         <div class="answer-action-right">
+                          <button class="action-dropdown-btn" type="button" onclick="saveCurrentResultAsBoard(this)">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><path d="M16.5 14v6"></path><path d="M13.5 17h6"></path></svg>
+                            <span>保存看板</span>
+                          </button>
                           <button class="action-dropdown-btn" type="button" onclick="toggleExport(event)">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"></path><path d="M8.5 10.5L12 14l3.5-3.5"></path><path d="M5 19h14"></path></svg>
                             <span>导出</span>
@@ -545,6 +561,10 @@
                           </button>
                         </div>
                         <div class="answer-action-right">
+                          <button class="action-dropdown-btn" type="button" onclick="saveCurrentResultAsBoard(this)">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><path d="M16.5 14v6"></path><path d="M13.5 17h6"></path></svg>
+                            <span>保存看板</span>
+                          </button>
                           <button class="action-dropdown-btn" type="button" onclick="toggleExport(event)">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"></path><path d="M8.5 10.5L12 14l3.5-3.5"></path><path d="M5 19h14"></path></svg>
                             <span>导出</span>
@@ -738,6 +758,10 @@
                           </button>
                         </div>
                         <div class="answer-action-right">
+                          <button class="action-dropdown-btn" type="button" onclick="saveCurrentResultAsBoard(this)">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><path d="M16.5 14v6"></path><path d="M13.5 17h6"></path></svg>
+                            <span>保存看板</span>
+                          </button>
                           <button class="action-dropdown-btn" type="button" onclick="toggleExport(event)">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"></path><path d="M8.5 10.5L12 14l3.5-3.5"></path><path d="M5 19h14"></path></svg>
                             <span>导出</span>
@@ -891,6 +915,10 @@
                           </button>
                         </div>
                         <div class="answer-action-right">
+                          <button class="action-dropdown-btn" type="button" onclick="saveCurrentResultAsBoard(this)">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><path d="M16.5 14v6"></path><path d="M13.5 17h6"></path></svg>
+                            <span>保存看板</span>
+                          </button>
                           <button class="action-dropdown-btn" type="button" onclick="toggleExport(event)">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"></path><path d="M8.5 10.5L12 14l3.5-3.5"></path><path d="M5 19h14"></path></svg>
                             <span>导出</span>
@@ -900,6 +928,58 @@
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.4 5.6L20 11l-5.6 2.4L12 19l-2.4-5.6L4 11l5.6-2.4Z"></path></svg>
                             <span>追问</span>
                             <svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
+                          </button>
+                        </div>
+                      </div>
+                    </section>
+                    <section id="boardDraftResult" class="analysis-section board-draft-section hidden">
+                      <div class="board-draft-head">
+                        <div>
+                          <span class="reference-result-badge">看板 HTML</span>
+                          <h4 id="boardDraftTitle">销售经营总览</h4>
+                          <p id="boardDraftMeta">基于销售经营总览 V3 · 当前为未保存草稿</p>
+                        </div>
+                        <span id="boardDraftChangeCount" class="board-draft-change-count">已累计调整 2 项</span>
+                      </div>
+                      <div class="board-canvas board-draft-canvas" id="boardDraftCanvas">
+                        <div class="canvas-widget wide" data-board-draft-widget="kpi">
+                          <h3>经营总览</h3>
+                          <div class="kpi-grid" id="boardDraftKpiGrid"></div>
+                        </div>
+                        <div class="canvas-widget wide" data-board-draft-widget="trend">
+                          <h3>销售额月度趋势</h3>
+                          <div class="widget-chart tall" id="boardDraftTrendChart"></div>
+                        </div>
+                        <div class="canvas-widget wide" data-board-draft-widget="region">
+                          <h3>各大区销售额对比</h3>
+                          <div class="widget-chart" id="boardDraftRegionChart"></div>
+                        </div>
+                        <div class="canvas-widget" data-board-draft-widget="channel">
+                          <h3>渠道销售占比</h3>
+                          <div class="widget-chart" id="boardDraftChannelChart"></div>
+                        </div>
+                        <div class="canvas-widget" data-board-draft-widget="gauge">
+                          <h3>销售目标完成率</h3>
+                          <div class="widget-chart" id="boardDraftGaugeChart"></div>
+                        </div>
+                        <div class="canvas-widget" data-board-draft-widget="customer">
+                          <h3>TOP10 客户贡献</h3>
+                          <div class="widget-chart" id="boardDraftCustomerChart"></div>
+                        </div>
+                        <div class="canvas-widget wide" data-board-draft-widget="product">
+                          <h3>产品线销售构成</h3>
+                          <div class="widget-chart" id="boardDraftProductChart"></div>
+                        </div>
+                      </div>
+                      <div class="analysis-report-foot revealed board-draft-foot">
+                        <div class="board-draft-status">
+                          <span class="board-draft-status-dot"></span>
+                          <span>当前修改仅保存在会话草稿中，尚未写入我的看板</span>
+                        </div>
+                        <div class="answer-action-right">
+                          <button class="action-dropdown-btn" type="button" onclick="saveBoardDraft(this)">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><path d="M16.5 14v6"></path><path d="M13.5 17h6"></path></svg>
+                            <span>保存看板</span>
                           </button>
                         </div>
                       </div>
@@ -924,6 +1004,13 @@
                           <div><strong id="referenceFeedbackTitle">报告处理完成</strong><span id="referenceFeedbackDesc">已根据对话要求完成处理并保存最新版本</span></div>
                         </div>
                         <dl id="referenceFeedbackMeta" class="reference-feedback-meta"></dl>
+                      </div>
+                      <div id="referenceSaveActions" class="reference-save-actions hidden">
+                        <span>修改结果尚未写入正式版本</span>
+                        <button id="referenceSaveButton" class="action-dropdown-btn primary" type="button" onclick="saveReferenceChanges()">
+                          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"></path><path d="M8 4v6h8V4"></path><path d="M8 20v-6h8v6"></path></svg>
+                          <span>保存修改</span>
+                        </button>
                       </div>
                     </section>
                     <section id="fileResult" class="file-result-section hidden">
@@ -1343,7 +1430,27 @@
     <div class="modal-body">
       <!-- 仪表盘模式（新版） -->
       <div class="save-mode-dashboard" id="saveModeDashboard">
-        <div class="form-grid">
+        <div id="boardSaveContext" class="board-save-context hidden">
+          <div><span>来源看板</span><strong id="boardSaveSourceName">销售经营总览</strong></div>
+          <div><span>基于版本</span><strong id="boardSaveSourceVersion">V3</strong></div>
+          <div class="full"><span>本次调整</span><strong id="boardSaveChangeSummary">目标完成率卡片、区域布局</strong></div>
+        </div>
+        <div id="boardSaveMethods" class="board-save-methods hidden" role="radiogroup" aria-label="保存方式">
+          <label class="board-save-method">
+            <input type="radio" name="boardSaveMethod" value="current" onchange="setBoardSaveMethod(this.value)" />
+            <span><strong id="boardSaveCurrentMethod">更新当前版本</strong><em id="boardSaveCurrentDesc">覆盖当前版本内容，版本号保持不变</em></span>
+          </label>
+          <label class="board-save-method selected">
+            <input type="radio" name="boardSaveMethod" value="version" checked onchange="setBoardSaveMethod(this.value)" />
+            <span><strong id="boardSaveVersionMethod">保存为新版本 <b>推荐</b></strong><em id="boardSaveVersionDesc">保留历史版本，并生成新的当前版本</em></span>
+          </label>
+          <label class="board-save-method">
+            <input type="radio" name="boardSaveMethod" value="new" onchange="setBoardSaveMethod(this.value)" />
+            <span><strong>另存为新看板</strong><em>原看板不变，新看板从 V1 开始</em></span>
+          </label>
+        </div>
+        <div id="boardSaveOverwriteWarning" class="board-save-warning hidden">更新当前版本会替换现有版本内容，不会新增版本记录。</div>
+        <div class="form-grid" id="boardSaveFields">
           <div class="field full">
             <label id="saveInputNameLabel">图表名称</label>
             <input id="saveInputName" value="华东区近6个月销售额趋势" />
@@ -1458,7 +1565,7 @@
   <div id="referenceModalMask" class="modal-mask hidden"></div>
   <section id="referenceModal" class="modal large reference-picker-modal hidden" role="dialog" aria-modal="true" aria-labelledby="referenceModalTitle">
     <div class="modal-head">
-      <div><h3 id="referenceModalTitle">引用看板或报告</h3><p>引用内容默认只用于当前对话分析；如在对话中明确要求修改或写入报告，将直接执行并反馈结果。</p></div>
+      <div><h3 id="referenceModalTitle">引用看板或报告</h3><p>引用内容默认只用于当前对话分析；如明确要求修改看板、修改报告或写入报告，将先生成候选结果，确认保存后形成新版本。</p></div>
       <button class="close" type="button" onclick="closeReferencePicker()">×</button>
     </div>
     <div class="modal-body">

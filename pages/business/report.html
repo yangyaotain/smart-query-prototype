@@ -1709,7 +1709,7 @@
             <span>导出</span>
             <svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
           </button>
-          <button class="action-dropdown-btn primary" type="button" id="reportEditBtn" onclick="handleReportEdit()">
+          <button class="action-dropdown-btn primary hidden" type="button" id="reportEditBtn" onclick="handleReportEdit()">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.06 4.94l5 5"/><path d="M3 21l1.5-5.5L18 2.5a2.83 2.83 0 0 1 4 4L8.5 19.5 3 21Z"/></svg>
             <span id="reportEditLabel">编辑报告</span>
           </button>
@@ -2833,6 +2833,31 @@
         REPORT_VERSIONS[reportId] = versions.slice(0, 20);
       });
 
+      // 智能问数中确认保存的报告修改，进入同一份报告版本记录。
+      let smartQueryReportEvents = [];
+      try {
+        smartQueryReportEvents = JSON.parse(localStorage.getItem('smart-query-report-version-events') || '[]');
+      } catch (error) {
+        smartQueryReportEvents = [];
+      }
+      smartQueryReportEvents.slice().reverse().forEach((event) => {
+        const reportId = Object.keys(REPORT_DATA).find((id) => REPORT_DATA[id].title === event.name);
+        if (!reportId) return;
+        const versions = REPORT_VERSIONS[reportId] || (REPORT_VERSIONS[reportId] = []);
+        if (versions.some((item) => item.version === Number(event.version))) return;
+        versions.unshift({
+          version: Number(event.version) || ((versions[0]?.version || 0) + 1),
+          time: event.time || new Date().toLocaleString('zh-CN', { hour12: false }),
+          source: event.source || '智能问数修改',
+          summary: event.summary || '通过智能问数完成报告修改并保存。',
+          body: REPORT_DATA[reportId].body,
+          sections: JSON.parse(JSON.stringify(REPORT_DATA[reportId].sections || [])),
+          metaTop: REPORT_DATA[reportId].metaTop
+        });
+        versions.sort((a, b) => b.version - a.version);
+        if (versions.length > 20) versions.length = 20;
+      });
+
       // ====================================================================
       // 2. 渲染目录树
       // ====================================================================
@@ -3258,7 +3283,7 @@
         }
         filePreviewToolbar.classList.toggle('hidden', fileType === 'word');
         filePreviewToolbar.classList.toggle('is-excel', fileType === 'excel');
-        reportEditBtn.classList.toggle('hidden', fileType === 'pdf');
+        reportEditBtn.classList.add('hidden');
         if (reportEditLabel) reportEditLabel.textContent = fileType === 'excel' ? '编辑 Excel' : '编辑报告';
       }
 
