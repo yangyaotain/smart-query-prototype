@@ -133,10 +133,6 @@
       color: #b45309;
     }
 
-    .excel-save-state.is-saved {
-      color: #168449;
-    }
-
     .spread-designer-shell {
       min-height: 0;
       flex: 1 1 auto;
@@ -266,6 +262,7 @@
         componentState.textContent = message;
         componentState.classList.add('is-error');
         saveState.textContent = 'Excel 编辑器加载失败';
+        saveState.classList.remove('hidden');
         saveButton.disabled = true;
       }
 
@@ -273,8 +270,8 @@
         if (initializing) return;
         dirty = true;
         saveState.textContent = '内容已修改，等待保存';
+        saveState.classList.remove('hidden');
         saveState.classList.add('is-unsaved');
-        saveState.classList.remove('is-saved');
       }
 
       function cloneConfig(value) {
@@ -359,7 +356,8 @@
           initializing = false;
           dirty = false;
           componentState.classList.add('hidden');
-          saveState.textContent = savedMeta ? '已加载最新保存版本' : '已加载示例数据';
+          saveState.textContent = '';
+          saveState.classList.add('hidden');
           versionBadge.textContent = '版本 V' + currentVersion;
           document.getElementById('excelFileName').textContent = workbook.fileName;
           document.getElementById('excelDocumentMeta').textContent = workbook.title + ' · 单表 Web Excel 编辑 · 保存后生成新版本';
@@ -378,9 +376,9 @@
         window.ReportExcelData.save(reportId, workbook, currentVersion);
         dirty = false;
         versionBadge.textContent = '版本 V' + currentVersion;
-        saveState.textContent = '已保存为版本 V' + currentVersion;
+        saveState.textContent = '';
+        saveState.classList.add('hidden');
         saveState.classList.remove('is-unsaved');
-        saveState.classList.add('is-saved');
         notify('Excel 已保存，并生成版本 V' + currentVersion);
       });
 

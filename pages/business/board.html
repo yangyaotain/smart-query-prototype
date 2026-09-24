@@ -879,10 +879,8 @@
 
   <!-- 导出菜单（与智能问数同款） -->
   <div id="boardExportMenu" class="context-menu export-menu hidden">
-    <button onclick="boardExportAction('image')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M7 15l3-3 2.5 2.5 2.5-3 2 3.5"></path><path d="M9 9h.01"></path></svg><span>导出图片</span></button>
     <button onclick="boardExportAction('pdf')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h7l4 4v12H7z"></path><path d="M14 4v4h4"></path><path d="M9 16h6"></path></svg><span>导出 PDF</span></button>
     <button onclick="boardExportAction('word')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M8 9l1.5 6L12 9l2.5 6L16 9"></path></svg><span>导出 Word</span></button>
-    <button onclick="boardExportAction('excel')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M9 9l6 6"></path><path d="M15 9l-6 6"></path></svg><span>导出 Excel</span></button>
   </div>
 
   <!-- AI 机器人浮动入口 -->
@@ -1474,7 +1472,7 @@
         }
         document.getElementById('boardReferenceModifyBtn')?.classList.toggle('hidden', !isAiBoard);
         document.getElementById('boardEditBtn')?.classList.toggle('hidden', isAiBoard);
-        document.getElementById('boardDataUpdateBtn')?.classList.toggle('hidden', isAiBoard);
+        document.getElementById('boardDataUpdateBtn')?.classList.remove('hidden');
         document.getElementById('boardVersionBtn')?.classList.toggle('hidden', !isAiBoard);
       }
 
@@ -1694,10 +1692,6 @@
       }
 
       window.startBoardDataUpdate = function () {
-        if (getBoardEngine(currentBoardId) === 'ai-html') {
-          showToast('AI 生成看板请通过“引用修改”重新生成数据内容');
-          return;
-        }
         const existingTask = readBoardUpdateTask();
         if (existingTask && getBoardUpdateElapsed(existingTask) < BOARD_UPDATE_DURATION) {
           openBoardUpdateTask(existingTask);
@@ -2671,8 +2665,9 @@
       };
       window.boardExportAction = function (type) {
         exportMenu.classList.add('hidden');
-        const map = { image: '图片', pdf: 'PDF', word: 'Word', excel: 'Excel' };
-        showToast('已导出为 ' + (map[type] || type));
+        const map = { pdf: 'PDF', word: 'Word' };
+        if (!map[type]) return;
+        showToast('已导出为 ' + map[type]);
       };
 
       // ====================================================================

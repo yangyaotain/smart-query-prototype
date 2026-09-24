@@ -1704,10 +1704,9 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.5 6.2"></path><path d="M3 12A9 9 0 0 1 18.5 5.8"></path><path d="M18 2v5h-5"></path><path d="M6 22v-5h5"></path></svg>
             <span>数据更新</span>
           </button>
-          <button class="action-dropdown-btn" type="button" id="reportExportBtn" onclick="toggleReportExport(event)">
+          <button class="action-dropdown-btn" type="button" id="reportExportBtn" onclick="exportCurrentReport()">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"></path><path d="M8.5 10.5L12 14l3.5-3.5"></path><path d="M5 19h14"></path></svg>
-            <span>导出</span>
-            <svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
+            <span id="reportExportLabel">导出 Word</span>
           </button>
           <button class="action-dropdown-btn primary hidden" type="button" id="reportEditBtn" onclick="handleReportEdit()">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.06 4.94l5 5"/><path d="M3 21l1.5-5.5L18 2.5a2.83 2.83 0 0 1 4 4L8.5 19.5 3 21Z"/></svg>
@@ -1825,14 +1824,6 @@
       </div>
     </section>
   </main>
-
-  <!-- 导出菜单（与我的看板同款） -->
-  <div id="reportExportMenu" class="context-menu export-menu hidden">
-    <button onclick="reportExportAction('pdf')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h7l4 4v12H7z"></path><path d="M14 4v4h4"></path><path d="M9 16h6"></path></svg><span>导出 PDF</span></button>
-    <button onclick="reportExportAction('word')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M8 9l1.5 6L12 9l2.5 6L16 9"></path></svg><span>导出 Word</span></button>
-    <button onclick="reportExportAction('image')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M7 15l3-3 2.5 2.5 2.5-3 2 3.5"></path><path d="M9 9h.01"></path></svg><span>导出图片</span></button>
-    <button onclick="reportExportAction('excel')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M9 9l6 6"></path><path d="M15 9l-6 6"></path></svg><span>导出 Excel</span></button>
-  </div>
 
   <!-- 重命名/新增 通用对话框 -->
   <div class="modal-mask hidden" id="promptMask"></div>
@@ -3567,6 +3558,8 @@
         const data = REPORT_DATA[id];
         if (!data) return;
         const fileType = getReportFileType(id);
+        const exportLabelMap = { word: 'Word', pdf: 'PDF', excel: 'Excel' };
+        document.getElementById('reportExportLabel').textContent = '导出 ' + exportLabelMap[fileType];
         reportTitleEl.textContent = data.title;
         reportMetaTopEl.textContent = data.metaTop || '';
         updateReportVersionBadge(id);
@@ -4264,8 +4257,6 @@
           startedAt: Date.now(),
           duration: REPORT_UPDATE_DURATION
         };
-        const exportMenuEl = document.getElementById('reportExportMenu');
-        if (exportMenuEl) exportMenuEl.classList.add('hidden');
         saveReportUpdateTask(task);
         openReportUpdateTask(task);
       };
@@ -4294,34 +4285,13 @@
       }
 
       // ====================================================================
-      // 9. 顶部导出菜单
+      // 9. 按当前报告格式直接导出
       // ====================================================================
-      const exportMenu = document.getElementById('reportExportMenu');
-      window.toggleReportExport = function (e) {
-        e.stopPropagation();
-        const btn = document.getElementById('reportExportBtn');
-        const rect = btn.getBoundingClientRect();
-        if (exportMenu.classList.contains('hidden')) {
-          exportMenu.classList.remove('hidden');
-          const w = exportMenu.offsetWidth || 168;
-          let left = rect.right - w;
-          if (left < 8) left = 8;
-          exportMenu.style.left = left + 'px';
-          exportMenu.style.top = (rect.bottom + 6) + 'px';
-        } else {
-          exportMenu.classList.add('hidden');
-        }
+      window.exportCurrentReport = function () {
+        const type = getReportFileType(activeReportId);
+        const map = { word: 'Word', pdf: 'PDF', excel: 'Excel' };
+        showToast('已导出为 ' + map[type]);
       };
-      window.reportExportAction = function (type) {
-        exportMenu.classList.add('hidden');
-        const map = { image: '图片', pdf: 'PDF', word: 'Word', excel: 'Excel' };
-        showToast('已导出为 ' + (map[type] || type));
-      };
-      document.addEventListener('click', (e) => {
-        if (!exportMenu.classList.contains('hidden') && !e.target.closest('#reportExportMenu') && !e.target.closest('#reportExportBtn')) {
-          exportMenu.classList.add('hidden');
-        }
-      });
 
       // ====================================================================
       // 10. 通用对话框：prompt / confirm

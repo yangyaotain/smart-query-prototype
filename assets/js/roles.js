@@ -1455,11 +1455,7 @@
       saveBtn.addEventListener("click", () => {
         const role = currentRole();
         const enabled = role ? enabledDataPermissionLabels(role).join("、") : "";
-        saveBtn.textContent = "已保存";
         showToast("已保存。当前按" + (enabled || "已开启权限") + "叠加收窄生效");
-        window.setTimeout(() => {
-          saveBtn.textContent = "保存权限";
-        }, 1200);
       });
     }
   }

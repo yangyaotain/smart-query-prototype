@@ -302,29 +302,6 @@
       box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
     }
 
-    .board-edit-page .save-state {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      color: #16a34a;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .board-edit-page .save-state::before {
-      content: "";
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #22c55e;
-      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.16);
-    }
-
-    .board-edit-page .save-state.is-dirty::before {
-      background: #f59e0b;
-      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.16);
-    }
-
     .board-edit-page .editor-head-actions {
       display: flex;
       flex: 0 0 auto;
@@ -333,8 +310,24 @@
     }
 
     .board-edit-page .editor-head-actions button {
+      display: inline-flex;
+      align-items: center;
       min-width: 88px;
       justify-content: center;
+      gap: 6px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .board-edit-page .editor-head-actions button svg {
+      flex: 0 0 auto;
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
     /* —— 编辑画布外层（滚动容器） —— */
@@ -699,7 +692,6 @@
       <div class="editor-canvas-head">
         <div class="board-name-block">
           <input id="boardNameInput" class="board-name-input" type="text" value="销售经营总览" maxlength="40" />
-          <span class="save-state" id="saveState">当前内容已加载</span>
         </div>
         <div class="editor-head-actions">
           <button class="ghost-btn" type="button" id="btnCancel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg><span>取消</span></button>
@@ -1781,12 +1773,6 @@
       let isDirty = false;
       function markDirty() {
         isDirty = true;
-        const state = document.getElementById('saveState');
-        if (state) {
-          state.textContent = '编辑中 · 待保存';
-          state.style.color = '#f59e0b';
-          state.classList.add('is-dirty');
-        }
       }
       function snapshot() {
         undoStack.push(JSON.stringify({ items: canvasItems, sel: selectedUid }));
@@ -1796,12 +1782,9 @@
 
       const saveBtn = document.getElementById('btnSave');
       const cancelBtn = document.getElementById('btnCancel');
-      const saveState = document.getElementById('saveState');
       saveBtn.addEventListener('click', function () {
         const name = document.getElementById('boardNameInput').value.trim() || '未命名看板';
         const t = new Date();
-        const hh = String(t.getHours()).padStart(2, '0');
-        const mm = String(t.getMinutes()).padStart(2, '0');
         const savedAt = t.toLocaleString('zh-CN', { hour12: false });
         const boardId = requestedBoardId || ('b-component-' + Date.now());
         let overrides = [];
@@ -1829,9 +1812,6 @@
         sessionStorage.setItem('smart-query-current-board-id', boardId);
         isDirty = false;
         showToast('已保存看板：' + name);
-        saveState.textContent = '已保存 · ' + hh + ':' + mm;
-        saveState.style.color = '';
-        saveState.classList.remove('is-dirty');
         setTimeout(() => goTo('board.html?boardId=' + encodeURIComponent(boardId)), 600);
       });
 

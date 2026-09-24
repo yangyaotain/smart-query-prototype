@@ -196,7 +196,7 @@
             <h1>自定义指令</h1>
             <p>为你的智能问数向大模型提供额外说明和上下文。</p>
           </div>
-          <div class="instruction-status" id="instructionStatus">已保存</div>
+          <div class="instruction-status hidden" id="instructionStatus"></div>
         </div>
 
         <div class="instruction-grid">
@@ -348,7 +348,8 @@
 
       function updateStatus() {
         var isSaved = input.value === savedValue;
-        status.textContent = isSaved ? '已保存' : '未保存';
+        status.textContent = isSaved ? '' : '有未保存修改';
+        status.classList.toggle('hidden', isSaved);
         status.classList.toggle('is-dirty', !isSaved);
         count.textContent = String((input.value || '').length) + ' / 4000';
       }
