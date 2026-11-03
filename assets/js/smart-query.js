@@ -124,10 +124,12 @@ let activeReferenceRun = null;
 let activeBoardDraftRun = null;
 let historySequenceToken = 0;
 const boardDraftStates = new Map();
+const reportDraftStates = new Map();
 const archivedBoardDraftRuns = new Map();
 const archivedQueryBoardData = new Map();
 let currentReferenceTab = "board";
 let selectedReferences = [];
+let referencePrefillText = null;
 let pendingReferenceKeys = new Set();
 const reportVersionCounters = new Map([["report:r1", 13], ["report:r2", 6], ["report:r3", 3]]);
 const boardVersionCounters = new Map([["board:ai1", 1]]);
@@ -249,18 +251,33 @@ function syncVersionCountersFromStorage() {
     readPrototypeStorageList(storageKey).forEach((event) => {
       const item = REFERENCE_CATALOG[kind]
         .flatMap((group) => group.items)
-        .find((candidate) => candidate.name === event.name);
+        .find((candidate) => event.key ? candidate.key === event.key : candidate.name === event.name);
       if (!item) return;
       const version = Number(event.version) || 1;
       counters.set(item.key, Math.max(counters.get(item.key) || 1, version));
-      if (/V\d+/.test(item.meta)) item.meta = item.meta.replace(/V\d+/, `V${version}`);
+      if (/V\d+/.test(item.meta)) item.meta = item.meta.replace(/V\d+/, `V${counters.get(item.key)}`);
     });
   });
 }
 
 syncSavedQueryBoardsToReferences();
 syncComponentBoardOverridesToReferences();
+syncReportReferencesFromCatalog();
 syncVersionCountersFromStorage();
+
+function syncReportReferencesFromCatalog() {
+  const items = window.ReportReference?.readCatalog() || [];
+  if (!items.length) return;
+  const groups = new Map();
+  items.forEach((item) => {
+    const snapshot = window.ReportReference.getSnapshot(item.key) || item;
+    const category = snapshot.category || "我的报告";
+    if (!groups.has(category)) groups.set(category, { category, items: [] });
+    groups.get(category).items.push({ ...snapshot, meta: `${({ word: "Word", pdf: "PDF", excel: "Excel" })[snapshot.fileType]} · ${category} / 最新版本 V${snapshot.version}` });
+    reportVersionCounters.set(item.key, Number(snapshot.version) || 1);
+  });
+  REFERENCE_CATALOG.report = Array.from(groups.values());
+}
 
 const SKILL_DEFINITIONS = {
   general: {
@@ -927,27 +944,7 @@ const HISTORY_SCENARIOS = {
       ]
     }
   },
-  reportRevision: {
-    question: "把《二季度销售复盘报告》第四章“问题与风险”重新整理，并补充库存风险说明。",
-    mode: "reference",
-    answerTitle: "二季度销售复盘报告修改结果",
-    reference: { kind: "report", fileType: "word", label: "报告", name: "二季度销售复盘报告", meta: "Word · 销售经营 / 修改前版本 V11" },
-    result: {
-      badge: "对话修改报告",
-      title: "已按要求完成报告修改",
-      summary: "第四章已重新组织为区域达成、库存周转、客户集中度和毛利风险四部分，并补充了库存积压对现金流和毛利率的影响说明。",
-      details: [
-        "重新整理原有风险顺序，优先呈现影响经营目标的关键问题。",
-        "新增长尾 SKU 周转超过 90 天、库存资金占用和促销清理压力说明。",
-        "保留原报告数据和结论口径，未修改其他章节。"
-      ],
-      feedback: {
-        title: "报告修改已完成",
-        desc: "已根据对话要求完成处理并保存最新版本",
-        meta: [["目标报告", "二季度销售复盘报告"], ["修改范围", "四、问题与风险"], ["最新版本", "V12"], ["版本来源", "智能问数修改"]]
-      }
-    }
-  },
+  reportRevision: { reportRevisionDemo: true },
   reportAppend: {
     question: "把刚才关于华东区销售增长的分析结论添加到《二季度销售复盘报告》的“经营建议”章节。",
     mode: "reference",
@@ -1535,6 +1532,13 @@ function handleQuestionInput() {
     return;
   }
   const text = readQuestionEditorText();
+  if (referencePrefillText !== null) {
+    if (selectedReferences.length && text === referencePrefillText) {
+      suggestPop.classList.add("hidden");
+      return;
+    }
+    referencePrefillText = null;
+  }
   const trimmed = text.trim();
   if (!trimmed) {
     suggestPop.classList.add("hidden");
@@ -1919,6 +1923,8 @@ function hydrateSkillsFromAdminStore() {
           : item.userPrompt;
       }
       if (definition) {
+        definition.category = item.category;
+        definition.desc = item.desc;
         definition.placeholder = `请继续描述本次${item.name || "技能"}要求`;
         definition.contentParts = item.parts || [];
         definition.reportTemplate = item.reportTemplate || null;
@@ -1928,6 +1934,8 @@ function hydrateSkillsFromAdminStore() {
         key: managedKey,
         id: item.id || item.code || managedKey,
         name: item.name || "自定义经营分析",
+        category: item.category,
+        desc: item.desc,
         prompt: item.userPrompt || `请使用“${item.name || "当前技能"}”完成分析。你可以继续修改这段内容，补充时间、范围、重点和输出要求。`,
         placeholder: `可补充“${item.name || "该技能"}”的分析重点和输出要求`,
         contentParts: item.parts || [],
@@ -1960,6 +1968,8 @@ function validateSelectedSkill() {
   }
   selected.contentParts = managed.parts;
   selected.reportTemplate = managed.reportTemplate;
+  selected.category = managed.category;
+  selected.desc = managed.desc;
   if (readQuestionEditorText()) return true;
   questionInput?.focus();
   showToast("请先补充技能提示内容");
@@ -1979,6 +1989,32 @@ function getSkillAnswerTitle(run) {
 function getFinalSkillPrompt(run, inputText) {
   const skill = SKILL_DEFINITIONS[run.key];
   return String(inputText || run.prompt || skill?.prompt || "").trim();
+}
+
+function isSpecialAnalysisRun(run) {
+  return run?.category === "专项分析";
+}
+
+function buildSpecialAnalysisFileProfile(run) {
+  const prompt = String(run.prompt || "");
+  const skill = SKILL_DEFINITIONS[run.key];
+  const title = /报$/.test(skill?.name || "") ? skill.name : getSkillAnswerTitle(run);
+  const monthMatch = prompt.match(/(20\d{2})\s*[年\-/]\s*(1[0-2]|0?[1-9])(?:\s*月|(?=[^\d]|$))/);
+  const period = monthMatch
+    ? `${monthMatch[1]}年${Number(monthMatch[2])}月`
+    : extractTimeKeyword(prompt);
+  const org = prompt.match(/(?:华东|华南|华北|华中|西南|西北|东北)(?:区域|地区|区)?|华润建材科技|全公司|全集团|总部/)?.[0] || "";
+  const reportName = `${period}${org}${title}`.replace(/[\\/:*?"<>|\r\n]/g, "");
+  const scope = [period, org].filter(Boolean).join("、");
+  return {
+    type: "word",
+    name: `${reportName}.docx`,
+    meta: "Word 文档 · 示例报告",
+    title: `${title}已生成`,
+    generatingTitle: `正在生成${title}`,
+    summary: `已${scope ? `根据${scope}的业务数据` : "根据本次分析要求"}生成${title}。${skill?.desc || "报告包含专项分析结论与改进建议。"}`,
+    skillReport: true
+  };
 }
 
 function buildSkillReportProfile(run) {
@@ -2315,9 +2351,9 @@ function resolveReferencedBoard(question, references) {
 }
 
 function getNextReportVersion(report) {
-  const current = reportVersionCounters.get(report.key)
-    || Number((report.meta.match(/V(\d+)/) || [])[1])
-    || 1;
+  const current = Math.max(reportVersionCounters.get(report.key) || 1,
+    Number((report.meta.match(/V(\d+)/) || [])[1]) || 1,
+    window.ReportReference?.getSnapshot(report)?.version || 1);
   const next = current + 1;
   reportVersionCounters.set(report.key, next);
   report.meta = report.meta.replace(/V\d+/, `V${next}`);
@@ -2358,21 +2394,8 @@ function buildReferenceRun(question, references) {
     };
     answerTitle = "成果处理信息确认";
   } else if (wantsAppend) {
-    const sectionMatch = question.match(/[“\"]([^”\"]+)[”\"]章节/);
-    const section = sectionMatch ? sectionMatch[1] : "相关章节";
-    result = {
-      badge: "对话添加报告",
-      title: "报告追加内容已生成",
-      summary: `已根据对话要求整理当前分析结论，并形成添加到《${targetReport.name}》“${section}”章节的候选内容。`,
-      details: ["已提取当前对话中的核心结论、关键数据和行动建议。", "本次采用追加方式，不覆盖原有报告内容。", "确认内容无误后，点击保存报告生成新版本。"],
-      feedback: {
-        title: "报告修改结果待保存",
-        desc: "当前内容尚未写入正式报告版本",
-        meta: [["目标报告", targetReport.name], ["写入位置", section], ["当前状态", "待保存"], ["保存结果", "生成新版本"]]
-      },
-      pendingSave: { kind: "report", target: targetReport, scope: section, source: "智能问数添加" }
-    };
     answerTitle = `${targetReport.name}内容添加结果`;
+    result = buildReportModificationResult(targetReport, question, true);
   } else if (wantsModify) {
     if (targetAsset.kind === "board") {
       if (targetAsset.boardEngine !== "ai-html") {
@@ -2393,21 +2416,8 @@ function buildReferenceRun(question, references) {
         answerTitle = `${targetAsset.name}看板草稿`;
       }
     } else {
-      const chapterMatch = question.match(/第[一二三四五六七八九十\d]+章[^，。]*/);
-      const scope = chapterMatch ? chapterMatch[0].replace(/[“”]/g, "") : "对话指定内容";
-      result = {
-        badge: "对话修改报告",
-        title: "报告修改内容已生成",
-        summary: `已根据对话要求修改《${targetAsset.name}》，并保留未涉及章节的原有内容。`,
-        details: ["已识别并修改对话中明确指定的报告范围。", "修改结果已按原报告结构和表达风格完成整理。", "确认内容无误后，点击保存报告生成新版本。"],
-        feedback: {
-          title: "报告修改结果待保存",
-          desc: "当前内容尚未写入正式报告版本",
-          meta: [["目标报告", targetAsset.name], ["修改范围", scope], ["当前状态", "待保存"], ["保存结果", "生成新版本"]]
-        },
-        pendingSave: { kind: "report", target: targetAsset, scope, source: "智能问数修改" }
-      };
       answerTitle = `${targetAsset.name}修改结果`;
+      result = buildReportModificationResult(targetAsset, question, false);
     }
   } else {
     const boardRefs = refs.filter((item) => item.kind === "board");
@@ -2434,6 +2444,42 @@ function buildReferenceRun(question, references) {
     references: refs,
     result
   };
+}
+
+function buildReportModificationResult(reference, question, append) {
+  const draft = window.ReportReference.buildDraft(reference, question, reportDraftStates.get(reference.key), append);
+  reportDraftStates.set(reference.key, draft);
+  return {
+    badge: append ? "对话添加报告" : "引用修改报告",
+    title: `报告修改草稿 · 第 ${draft.round} 轮`,
+    summary: `已根据本次要求调整《${reference.name}》，累计修改范围：${draft.scope}。确认后保存为新版本。`,
+    details: ["下方展示本次修改后的内容，可继续输入要求调整。", "当前草稿保留前几轮的调整，尚未写入正式报告。"],
+    reportDraft: draft,
+    feedback: { title: "报告修改结果待保存", desc: "当前内容尚未写入正式报告版本",
+      meta: [["目标报告", reference.name], ["修改范围", draft.scope], ["基于版本", `V${draft.baseVersion}`], ["当前状态", "待保存"]] },
+    pendingSave: { kind: "report", target: reference, scope: draft.scope, source: append ? "智能问数添加" : "智能问数修改", draft }
+  };
+}
+
+function renderReportModificationPreview(scenario) {
+  const preview = document.getElementById("reportDraftPreview");
+  const link = document.getElementById("referenceReportLink");
+  const draft = scenario.result?.reportDraft;
+  preview?.classList.toggle("hidden", !draft);
+  link?.classList.toggle("hidden", !draft);
+  if (!draft || !preview) return;
+  const esc = window.ReportReference.escapeHTML;
+  preview.innerHTML = `<h4>${esc(draft.name)} · 修改内容</h4><p class="report-draft-meta">基于 V${draft.baseVersion} · 累计 ${draft.round} 轮调整 · ${scenario.result.pendingSave ? "未保存" : "已保存"}</p>`;
+  if (draft.fileType === "excel" && draft.workbook) {
+    const sheet = draft.workbook.sheets[0];
+    preview.innerHTML += `<div class="report-draft-table"><table class="data-table"><thead><tr>${sheet.columns.map((value) => `<th>${esc(value)}</th>`).join("")}</tr></thead><tbody>${sheet.rows.map((row) => `<tr>${row.map((value) => `<td>${esc(value)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+  } else draft.changes.forEach((change) => { preview.innerHTML += `<h5>${esc(change.heading)}</h5>${change.html}`; });
+  if (link) link.dataset.reportId = (scenario.reference?.key || draft.key).replace(/^report:/, "");
+}
+
+function openReferencedReport(button) {
+  const reportId = button.closest("[data-report-id]")?.dataset.reportId;
+  if (reportId) goTo(`report.html?report=${encodeURIComponent(reportId)}`);
 }
 
 function runQuestion() {
@@ -2469,6 +2515,7 @@ function runQuestion() {
     activeSkillRun = {
       key: selectedSkillKey,
       skillId: selectedSkill?.id || selectedSkillKey,
+      category: selectedSkill?.category,
       prompt: skillPrompt,
       contentParts: selectedSkill?.contentParts || [],
       reportTemplate: selectedSkill?.reportTemplate || null
@@ -2710,6 +2757,13 @@ function applyGeneratedFileProfile(profile, completed) {
     generatedFileIcon.classList.add(`is-${activeGeneratedFile.type}`);
     generatedFileIcon.textContent = ({ word: "W", pdf: "PDF", excel: "X" })[activeGeneratedFile.type] || "文";
   }
+  const card = fileResult?.querySelector(".generated-file-card");
+  if (card) {
+    if (activeGeneratedFile.skillReport) card.dataset.skillReport = JSON.stringify(activeGeneratedFile);
+    else delete card.dataset.skillReport;
+    card.querySelector('[onclick^="downloadGeneratedFile"]')?.setAttribute("onclick", activeGeneratedFile.skillReport ? "downloadGeneratedFile(this)" : "downloadGeneratedFile()");
+    card.querySelector('[onclick^="saveGeneratedFileToReport"]')?.setAttribute("onclick", activeGeneratedFile.skillReport ? "saveGeneratedFileToReport(this)" : "saveGeneratedFileToReport()");
+  }
 }
 
 function renderCompletedFileHistory(scenario) {
@@ -2817,6 +2871,7 @@ function renderCompletedReferenceHistory(scenario) {
   const result = scenario.result;
   if (!result || !referenceConversationResult) return;
   if (renderBoardDraftResult(scenario)) return;
+  renderReportModificationPreview(scenario);
   applyReferenceResultIcon(scenario.reference);
   insightBox?.classList.add("hidden");
   answerActionBar?.classList.add("hidden");
@@ -2862,11 +2917,16 @@ function recordReferenceVersionEvent(pendingSave, version) {
     events = [];
   }
   events.unshift({
+    key: pendingSave.target.key,
+    reportId: pendingSave.target.key.replace(/^report:/, ""),
     name: pendingSave.target.name,
     version: Number(String(version).replace("V", "")) || 1,
     time: new Date().toLocaleString("zh-CN", { hour12: false }),
     source: pendingSave.source,
-    summary: `${pendingSave.scope}已通过智能问数完成调整并保存。`
+    summary: `${pendingSave.scope}已通过智能问数完成调整并保存。`,
+    changes: pendingSave.draft?.changes || [],
+    sections: pendingSave.draft?.sections,
+    workbook: pendingSave.draft?.workbook || null
   });
   localStorage.setItem(storageKey, JSON.stringify(events.slice(0, 40)));
 }
@@ -2883,6 +2943,16 @@ function saveReferenceChanges() {
     meta: [[`目标${assetLabel}`, pendingSave.target.name], ["修改范围", pendingSave.scope], ["最新版本", version], ["版本来源", pendingSave.source]]
   };
   recordReferenceVersionEvent(pendingSave, version);
+  if (result.reportDraft) {
+    result.title = "报告修改已保存";
+    result.summary = `《${pendingSave.target.name}》已保存为 ${version}，修改范围：${pendingSave.scope}。可点击“查看报告”检查最新内容。`;
+    result.details = ["本轮修改已写入报告，未涉及章节保留原有内容。", "可继续描述调整要求，下一轮将基于已保存版本生成草稿。"];
+    result.reportDraft.version = Number(version.slice(1));
+    result.reportDraft.baseVersion = result.reportDraft.version;
+    reportDraftStates.set(pendingSave.target.key, { ...result.reportDraft, changes: [], round: 0 });
+    selectedReferences = selectedReferences.map((item) => item.key === pendingSave.target.key ? { ...item, meta: pendingSave.target.meta } : item);
+    renderReferencePreview();
+  }
   result.pendingSave = null;
   renderCompletedReferenceHistory(activeReferenceRun);
   showToast(`${pendingSave.target.name}已保存为${version}`);
@@ -2890,6 +2960,7 @@ function saveReferenceChanges() {
 
 function renderCompletedHistoryTurn(scenario, options = {}) {
   prepareCompletedHistoryTurn(scenario);
+  if (scenario.mode === "reference") activeReferenceRun = scenario;
   if (scenario.mode === "qa") renderCompletedQaHistory(scenario, options);
   else if (scenario.mode === "file") renderCompletedFileHistory(scenario);
   else if (scenario.mode === "reference") renderCompletedReferenceHistory(scenario);
@@ -2903,6 +2974,15 @@ function loadHistoryScenario(key, item) {
   document.querySelectorAll("#historyList .history-item").forEach((historyItem) => {
     historyItem.classList.toggle("active", historyItem === item);
   });
+  if (key === "reportRevision") {
+    const reference = { ...(getReferenceItem("report:r1") || { key: "report:r1", kind: "report", fileType: "word", label: "报告", name: "二季度销售复盘报告", meta: "Word · 销售经营 / 最新版本 V13" }) };
+    const first = buildReferenceRun(`请重新整理《${reference.name}》第四章“问题与风险”，并补充库存风险说明。`, [reference]);
+    const second = buildReferenceRun("再补充对应的库存风险改进建议，写到第五章“经营建议”。", [reference]);
+    selectedReferences = [reference];
+    renderReferencePreview();
+    renderHistoryTurnSequence([first, second], 0, historySequenceToken);
+    return;
+  }
   if (Array.isArray(scenario.turns) && scenario.turns.length) {
     renderHistoryTurnSequence(scenario.turns, 0, historySequenceToken);
     return;
@@ -2935,6 +3015,7 @@ function renderHistoryTurnSequence(turns, index = 0, token = historySequenceToke
 
 function resetChat() {
   historySequenceToken += 1;
+  referencePrefillText = null;
   if (isAnswering) {
     isAnswering = false;
     if (conclusionTypingTimer) {
@@ -2959,6 +3040,7 @@ function resetChat() {
   activeReferenceRun = null;
   activeBoardDraftRun = null;
   boardDraftStates.clear();
+  reportDraftStates.clear();
   archivedBoardDraftRuns.clear();
   archivedQueryBoardData.clear();
   selectedReferences = [];
@@ -3116,6 +3198,8 @@ function resetAnswerSimulation() {
   boardDraftResult?.classList.add("hidden");
   fileResult?.classList.add("hidden");
   referenceConversationResult?.classList.add("hidden");
+  document.getElementById("reportDraftPreview")?.classList.add("hidden");
+  document.getElementById("referenceReportLink")?.classList.add("hidden");
   referenceExecutionFeedback?.classList.add("hidden");
   referenceSaveActions?.classList.add("hidden");
   applyGeneratedFileProfile(DEFAULT_GENERATED_FILE, false);
@@ -3341,8 +3425,8 @@ function startTypewriterConclusion() {
   }, 34);
 }
 
-function startFileResultSimulation() {
-  const fileProfile = getGeneratedFileProfile(currentQuestionText);
+function startFileResultSimulation(profile) {
+  const fileProfile = profile || getGeneratedFileProfile(currentQuestionText);
   applyGeneratedFileProfile(fileProfile, false);
   insightBox?.classList.add("hidden");
   conclusionTags?.classList.add("hidden");
@@ -3373,14 +3457,20 @@ function startFileResultSimulation() {
   }, 1200);
 }
 
-function downloadGeneratedFile() {
-  showToast(`“${activeGeneratedFile.name}”下载已开始`);
+function getGeneratedFileForAction(button) {
+  const profile = button?.closest(".generated-file-card")?.dataset.skillReport;
+  return profile ? JSON.parse(profile) : activeGeneratedFile;
 }
 
-function saveGeneratedFileToReport() {
+function downloadGeneratedFile(button) {
+  showToast(`“${getGeneratedFileForAction(button).name}”下载已开始`);
+}
+
+function saveGeneratedFileToReport(button) {
+  const profile = getGeneratedFileForAction(button);
   openSave("report");
   const reportNameInput = document.getElementById("reportNewName");
-  if (reportNameInput) reportNameInput.value = activeGeneratedFile.name.replace(/\.[^.]+$/, "");
+  if (reportNameInput) reportNameInput.value = profile.name.replace(/\.[^.]+$/, "");
 }
 
 function exportTableData(button) {
@@ -4798,6 +4888,11 @@ function startTemplateReportTypewriter() {
 }
 
 function startTemplateReportSimulation() {
+  const run = getActiveSkillRun();
+  if (isSpecialAnalysisRun(run)) {
+    startFileResultSimulation(buildSpecialAnalysisFileProfile(run));
+    return;
+  }
   const profile = buildSkillReportProfile(getActiveSkillRun());
   applySkillReportProfile(profile);
   aiConclusion.textContent = "";
@@ -4920,6 +5015,10 @@ function archiveCurrentMessageIfNeeded() {
   const archived = currentMessage.cloneNode(true);
   archived.classList.remove("current-chat-message");
   archived.classList.add("archived-message");
+  if (activeReferenceRun?.result?.reportDraft && activeReferenceRun.result.pendingSave) {
+    const save = archived.querySelector('[onclick^="saveReferenceChanges"]');
+    if (save) { save.disabled = true; save.removeAttribute("onclick"); save.querySelector("span").textContent = "请保存最新草稿"; }
+  }
   archived.querySelectorAll("[id]").forEach((el) => el.removeAttribute("id"));
   const keepInteractive = ".action-dropdown-btn, .answer-action-btn, .chart-point, .table-export-btn, .dashboard-asset-btn, .file-result-action";
   archived.querySelectorAll("[onclick]").forEach((el) => {
@@ -7278,10 +7377,33 @@ function completeScheduledTrialRecord(payload) {
   selectedReferences = [reference];
   renderReferencePreview();
   setQuestionEditorContent(`请修改《${reference.name}》，`, { withHints: false });
+  referencePrefillText = readQuestionEditorText();
   handleQuestionInput();
   window.setTimeout(() => {
     questionInput.focus();
     showToast("已引用 AI 生成看板，请继续描述修改要求");
+  }, 0);
+})();
+
+(function restoreReportReferenceHandoff() {
+  let payload = null;
+  try {
+    payload = JSON.parse(sessionStorage.getItem("smart-query-report-handoff") || "null");
+    sessionStorage.removeItem("smart-query-report-handoff");
+  } catch (error) {}
+  if (!payload?.key || payload.kind !== "report" || !questionInput) return;
+  resetChat();
+  syncReportReferencesFromCatalog();
+  const reference = { ...(getReferenceItem(payload.key) || payload), ...payload };
+  selectedReferences = [reference];
+  currentReferenceTab = "report";
+  renderReferencePreview();
+  setQuestionEditorContent(`请修改《${reference.name}》，`, { withHints: false });
+  referencePrefillText = readQuestionEditorText();
+  handleQuestionInput();
+  window.setTimeout(() => {
+    questionInput.focus();
+    showToast("已引用当前报告，请继续描述修改要求");
   }, 0);
 })();
 

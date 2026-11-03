@@ -78,8 +78,8 @@
           <span><em>报告引用分析</em><em>08:06</em></span>
         </div>
         <div class="history-item" onclick="loadHistoryScenario('reportRevision', this)" oncontextmenu="openSideMenu(event, 'history')">
-          <strong title="重新整理报告第四章并补充库存风险">重新整理报告第四章并补充库存风险</strong>
-          <span><em>对话修改报告</em><em>07:58</em></span>
+          <strong title="引用修改二季度报告，补充库存风险与改进建议">引用修改二季度报告，补充库存风险与改进建议</strong>
+          <span><em>引用修改报告 · 2轮</em><em>07:58</em></span>
         </div>
         <div class="history-item" onclick="loadHistoryScenario('reportAppend', this)" oncontextmenu="openSideMenu(event, 'history')">
           <strong title="把当前分析结论添加到报告经营建议章节">把当前分析结论添加到报告经营建议章节</strong>
@@ -996,6 +996,7 @@
                         </div>
                       </div>
                       <ul id="referenceResultDetails" class="reference-result-points"></ul>
+                      <section id="reportDraftPreview" class="report-reference-draft hidden" aria-label="报告修改内容预览"></section>
                       <div id="referenceExecutionFeedback" class="reference-execution-feedback hidden">
                         <div class="reference-feedback-head">
                           <span class="reference-feedback-icon">
@@ -1007,9 +1008,15 @@
                       </div>
                       <div id="referenceSaveActions" class="reference-save-actions hidden">
                         <span>修改结果尚未写入正式版本</span>
-                        <button id="referenceSaveButton" class="action-dropdown-btn primary" type="button" onclick="saveReferenceChanges()">
+                        <button id="referenceSaveButton" class="action-dropdown-btn primary" type="button" onclick="saveReferenceChanges(this)">
                           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"></path><path d="M8 4v6h8V4"></path><path d="M8 20v-6h8v6"></path></svg>
                           <span>保存修改</span>
+                        </button>
+                      </div>
+                      <div id="referenceReportLink" class="reference-save-actions hidden">
+                        <button class="file-result-action" type="button" onclick="openReferencedReport(this)">
+                          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h10l4 4v14H5z"></path><path d="M14 3v5h5"></path><path d="M8 12h8M8 16h6"></path></svg>
+                          <span>查看报告</span>
                         </button>
                       </div>
                     </section>
@@ -1619,6 +1626,7 @@
     <script src="../../assets/js/skill-workflow-store.js?v=20260916-prototype-reset"></script>
   <script src="../../assets/js/skill-picker.js?v=20260914-skill-copy"></script>
   <script src="../../assets/js/scheduled-task-form.js?v=20260914-skill-copy"></script>
-  <script src="../../assets/js/smart-query.js?v=20260914-skill-copy"></script>
+  <script src="../../assets/js/report-reference.js?v=20261103"></script>
+  <script src="../../assets/js/smart-query.js?v=20261103-report-reference"></script>
 </body>
 </html>

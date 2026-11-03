@@ -652,7 +652,7 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5l3 2"></path><path d="M4.9 6.9A8 8 0 1 1 4 12"></path><path d="M4 4v4h4"></path></svg>
             <span id="boardVersionLabel">版本 V4</span>
           </button>
-          <button class="action-dropdown-btn" type="button" id="boardDataUpdateBtn" onclick="startBoardDataUpdate()">
+          <button class="action-dropdown-btn hidden" type="button" id="boardDataUpdateBtn" onclick="startBoardDataUpdate()">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.5 6.2"></path><path d="M3 12A9 9 0 0 1 18.5 5.8"></path><path d="M18 2v5h-5"></path><path d="M6 22v-5h5"></path></svg>
             <span>数据更新</span>
           </button>
@@ -1472,7 +1472,7 @@
         }
         document.getElementById('boardReferenceModifyBtn')?.classList.toggle('hidden', !isAiBoard);
         document.getElementById('boardEditBtn')?.classList.toggle('hidden', isAiBoard);
-        document.getElementById('boardDataUpdateBtn')?.classList.remove('hidden');
+        document.getElementById('boardDataUpdateBtn')?.classList.add('hidden');
         document.getElementById('boardVersionBtn')?.classList.toggle('hidden', !isAiBoard);
       }
 

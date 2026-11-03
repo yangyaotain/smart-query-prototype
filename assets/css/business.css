@@ -8032,6 +8032,27 @@ textarea {
   font-weight: 700;
 }
 
+.report-reference-draft {
+  margin-top: 16px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface, #fff);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+.report-reference-draft h4 { margin: 0 0 12px; font-size: 16px; }
+.report-reference-draft h5 { margin: 16px 0 8px; font-size: 14px; }
+.report-reference-draft h3 { margin: 12px 0 6px; font-size: 14px; }
+.report-reference-draft p { margin: 6px 0; }
+.report-reference-draft ul { padding-left: 20px; }
+.report-reference-draft .report-draft-meta { color: var(--muted); font-size: 12px; }
+.report-reference-draft .report-draft-table { overflow-x: auto; }
+.report-reference-draft .asset-preview { display: none; }
+
 .reference-save-actions {
   margin-top: 14px;
   padding-top: 14px;

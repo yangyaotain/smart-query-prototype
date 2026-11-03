@@ -1708,6 +1708,10 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10"></path><path d="M8.5 10.5L12 14l3.5-3.5"></path><path d="M5 19h14"></path></svg>
             <span id="reportExportLabel">导出 Word</span>
           </button>
+          <button class="action-dropdown-btn primary" type="button" id="reportReferenceModifyBtn" onclick="openReportInSmartQuery()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v12H7l-3 3z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg>
+            <span>引用修改</span>
+          </button>
           <button class="action-dropdown-btn primary hidden" type="button" id="reportEditBtn" onclick="handleReportEdit()">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.06 4.94l5 5"/><path d="M3 21l1.5-5.5L18 2.5a2.83 2.83 0 0 1 4 4L8.5 19.5 3 21Z"/></svg>
             <span id="reportEditLabel">编辑报告</span>
@@ -1929,6 +1933,7 @@
   <script src="../../assets/vendor/spreadjs/19.2.0/js/gc.spread.sheets.shapes.min.js"></script>
   <script src="../../assets/js/report-excel-data.js"></script>
   <script src="../../assets/js/report-excel-spread.js"></script>
+  <script src="../../assets/js/report-reference.js?v=20261103"></script>
   <script>
     /* eslint-disable */
     (function () {
@@ -2802,7 +2807,9 @@
               : (isRevisionExampleVersion ? '重新整理第四章并补充库存风险说明。' : (version === 1 ? '创建报告初始版本。' : '根据当次分析结果更新报告内容。')),
             body: REPORT_DATA[reportId].body,
             sections: JSON.parse(JSON.stringify(REPORT_DATA[reportId].sections || [])),
-            metaTop: REPORT_DATA[reportId].metaTop
+            metaTop: REPORT_DATA[reportId].metaTop,
+            pdfData: PDF_PREVIEW_DATA[reportId] ? JSON.parse(JSON.stringify(PDF_PREVIEW_DATA[reportId])) : null,
+            workbook: getReportFileType(reportId) === 'excel' ? window.ReportExcelData.get(reportId) : null
           };
         });
       });
@@ -2812,6 +2819,7 @@
         const savedMeta = window.ReportExcelData && window.ReportExcelData.getSavedMeta(reportId);
         const versions = REPORT_VERSIONS[reportId] || [];
         if (!savedMeta || !versions.length || savedMeta.version <= versions[0].version) return;
+        if (window.ReportReference.readEvents().some((event) => (event.key === 'report:' + reportId || event.reportId === reportId) && Number(event.version) === savedMeta.version)) return;
         versions.unshift({
           version: savedMeta.version,
           time: savedMeta.savedAt || new Date().toLocaleString('zh-CN', { hour12: false }),
@@ -2825,29 +2833,53 @@
       });
 
       // 智能问数中确认保存的报告修改，进入同一份报告版本记录。
-      let smartQueryReportEvents = [];
-      try {
-        smartQueryReportEvents = JSON.parse(localStorage.getItem('smart-query-report-version-events') || '[]');
-      } catch (error) {
-        smartQueryReportEvents = [];
-      }
-      smartQueryReportEvents.slice().reverse().forEach((event) => {
-        const reportId = Object.keys(REPORT_DATA).find((id) => REPORT_DATA[id].title === event.name);
-        if (!reportId) return;
-        const versions = REPORT_VERSIONS[reportId] || (REPORT_VERSIONS[reportId] = []);
-        if (versions.some((item) => item.version === Number(event.version))) return;
-        versions.unshift({
-          version: Number(event.version) || ((versions[0]?.version || 0) + 1),
-          time: event.time || new Date().toLocaleString('zh-CN', { hour12: false }),
-          source: event.source || '智能问数修改',
-          summary: event.summary || '通过智能问数完成报告修改并保存。',
-          body: REPORT_DATA[reportId].body,
-          sections: JSON.parse(JSON.stringify(REPORT_DATA[reportId].sections || [])),
-          metaTop: REPORT_DATA[reportId].metaTop
+      function mergeSmartQueryReportEvents() {
+        window.ReportReference.readEvents().slice().reverse().forEach((event) => {
+          const reportId = event.reportId || (event.key || '').replace(/^report:/, '') || Object.keys(REPORT_DATA).find((id) => REPORT_DATA[id].title === event.name);
+          if (!REPORT_DATA[reportId]) return;
+          const versions = REPORT_VERSIONS[reportId] || (REPORT_VERSIONS[reportId] = []);
+          if (versions.some((item) => item.version === Number(event.version))) return;
+          const snapshot = window.ReportReference.applySnapshot({
+            ...REPORT_DATA[reportId], pdfData: PDF_PREVIEW_DATA[reportId],
+            workbook: getReportFileType(reportId) === 'excel' ? window.ReportExcelData.get(reportId) : null
+          }, event);
+          versions.unshift({
+            version: Number(event.version) || ((versions[0]?.version || 0) + 1),
+            time: event.time || new Date().toLocaleString('zh-CN', { hour12: false }),
+            source: event.source || '智能问数修改',
+            summary: event.summary || '通过智能问数完成报告修改并保存。',
+            body: snapshot.body,
+            sections: JSON.parse(JSON.stringify(snapshot.sections || [])),
+            metaTop: snapshot.metaTop,
+            pdfData: snapshot.pdfData || null,
+            workbook: snapshot.workbook || null
+          });
+          versions.sort((a, b) => b.version - a.version);
+          if (versions[0].version === Number(event.version)) {
+            REPORT_DATA[reportId].body = snapshot.body;
+            REPORT_DATA[reportId].sections = snapshot.sections;
+            if (snapshot.pdfData) PDF_PREVIEW_DATA[reportId] = snapshot.pdfData;
+            if (event.workbook) window.ReportExcelData.save(reportId, event.workbook, event.version);
+          }
+          if (versions.length > 20) versions.length = 20;
         });
-        versions.sort((a, b) => b.version - a.version);
-        if (versions.length > 20) versions.length = 20;
-      });
+      }
+      mergeSmartQueryReportEvents();
+
+      function syncReportReferenceCatalog() {
+        const items = DIR_TREE.flatMap((category) => (category.reports || []).map((item) => {
+          const data = REPORT_DATA[item.id];
+          const latest = (REPORT_VERSIONS[item.id] || [])[0];
+          return data ? {
+            key: 'report:' + item.id, reportId: item.id, kind: 'report', label: '报告',
+            name: data.title, fileType: getReportFileType(item.id), category: category.name,
+            version: latest ? latest.version : 1, body: data.body, sections: data.sections,
+            metaTop: data.metaTop, pdfData: PDF_PREVIEW_DATA[item.id] || null,
+            workbook: getReportFileType(item.id) === 'excel' ? window.ReportExcelData.get(item.id) : null
+          } : null;
+        })).filter(Boolean);
+        window.ReportReference.saveCatalog(items);
+      }
 
       // ====================================================================
       // 2. 渲染目录树
@@ -3554,6 +3586,16 @@
         goTo('report-edit.html');
       };
 
+      window.openReportInSmartQuery = function () {
+        syncReportReferenceCatalog();
+        const reference = window.ReportReference.getSnapshot('report:' + activeReportId);
+        if (!reference) return;
+        const typeLabel = { word: 'Word', pdf: 'PDF', excel: 'Excel' }[reference.fileType];
+        reference.meta = typeLabel + ' · ' + reference.category + ' / 当前版本 V' + reference.version;
+        sessionStorage.setItem('smart-query-report-handoff', JSON.stringify(reference));
+        goTo('smart-query.html?fromReport=1');
+      };
+
       function renderReport(id) {
         const data = REPORT_DATA[id];
         if (!data) return;
@@ -3563,6 +3605,7 @@
         reportTitleEl.textContent = data.title;
         reportMetaTopEl.textContent = data.metaTop || '';
         updateReportVersionBadge(id);
+        syncReportReferenceCatalog();
 
         // 释放旧图表实例
         disposeCharts(reportArticleEl);
@@ -3723,6 +3766,8 @@
         report.body = selectedReportVersion.body;
         report.sections = JSON.parse(JSON.stringify(selectedReportVersion.sections || []));
         report.metaTop = selectedReportVersion.metaTop || report.metaTop;
+        if (selectedReportVersion.pdfData) PDF_PREVIEW_DATA[activeReportId] = JSON.parse(JSON.stringify(selectedReportVersion.pdfData));
+        if (selectedReportVersion.workbook) window.ReportExcelData.save(activeReportId, selectedReportVersion.workbook, current.version + 1);
         const newVersion = {
           version: current.version + 1,
           time: new Date().toLocaleString('zh-CN', { hour12: false }),
@@ -3730,10 +3775,23 @@
           summary: '恢复 V' + restoredFrom + ' 的内容，并生成新的当前版本。',
           body: report.body,
           sections: JSON.parse(JSON.stringify(report.sections || [])),
-          metaTop: report.metaTop
+          metaTop: report.metaTop,
+          pdfData: PDF_PREVIEW_DATA[activeReportId] || null,
+          workbook: getReportFileType(activeReportId) === 'excel' ? window.ReportExcelData.get(activeReportId) : null
         };
         versions.unshift(newVersion);
         if (versions.length > 20) versions.length = 20;
+        const restoreEvents = window.ReportReference.readEvents();
+        const restoredChanges = (report.sections || []).map((section) => {
+          const holder = document.createElement('div');
+          holder.innerHTML = report.body;
+          const heading = holder.querySelector('[id="' + section.id + '"]');
+          let html = '';
+          for (let node = heading && heading.nextSibling; node && !(node.nodeType === 1 && node.tagName === 'H2'); node = node.nextSibling) html += node.outerHTML || escapeHTML(node.textContent);
+          return { sectionId: section.id, heading: section.name, html };
+        });
+        restoreEvents.unshift({ key: 'report:' + activeReportId, reportId: activeReportId, name: report.title, ...newVersion, changes: restoredChanges });
+        localStorage.setItem('smart-query-report-version-events', JSON.stringify(restoreEvents.slice(0, 40)));
         renderReport(activeReportId);
         closeReportVersionModal();
         showToast('已恢复 V' + restoredFrom + '，并生成 V' + newVersion.version);
@@ -3744,6 +3802,11 @@
       });
       restoreReportVersionBtn.addEventListener('click', restoreSelectedReportVersion);
       reportVersionMask.addEventListener('click', closeReportVersionModal);
+      window.addEventListener('pageshow', function (event) {
+        if (!event.persisted) return;
+        mergeSmartQueryReportEvents();
+        renderReport(activeReportId);
+      });
 
       // ====================================================================
       // 7.x ECharts 图表渲染
