@@ -1,11 +1,15 @@
 (function () {
+  const MIN_GRID_COLUMNS = 64;
+
   function spreadNamespace() {
     return window.GC && window.GC.Spread && window.GC.Spread.Sheets;
   }
 
   function isAvailable() {
     const Sheets = spreadNamespace();
-    return Boolean(Sheets && Sheets.Workbook);
+    const host = window.location.hostname;
+    const isLocal = !host || host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
+    return Boolean(Sheets?.Workbook && (isLocal || Sheets.LicenseKey));
   }
 
   function applySingleSheetOptions(spread) {
@@ -37,7 +41,7 @@
     const rows = Array.isArray(source.rows) ? source.rows : [];
     const matrix = [columns].concat(rows).map((row) => row.map(valueForSpread));
     const rowCount = Math.max(50, matrix.length + 12);
-    const columnCount = Math.max(12, columns.length || 1);
+    const columnCount = Math.max(MIN_GRID_COLUMNS, columns.length);
 
     spread.setSheetCount(1);
     const sheet = spread.getActiveSheet();
@@ -88,7 +92,19 @@
         await spread.fromJSON(workbook.spreadSnapshot);
         applySingleSheetOptions(spread);
         const sheet = spread.getActiveSheet();
-        if (sheet) sheet.options.isProtected = false;
+        if (sheet) {
+          sheet.options.isProtected = false;
+          if (sheet.getColumnCount() < MIN_GRID_COLUMNS) sheet.setColumnCount(MIN_GRID_COLUMNS);
+          const column = workbook.analysisColumn;
+          if (Number.isInteger(column)) {
+            const data = workbook.sheets[0];
+            if (sheet.getColumnCount() <= column) sheet.setColumnCount(column + 1);
+            sheet.setArray(0, column, [[data.columns[column]], ...data.rows.map((row) => [row[column]])]);
+          }
+          (workbook.cellEdits || []).forEach(({ row, column, value }) => {
+            sheet.setValue(row, column, valueForSpread(value));
+          });
+        }
       } else {
         initializeLegacy(spread, workbook || {});
       }
@@ -118,6 +134,8 @@
       columnWidths: columnWidths
     }];
     base.spreadSnapshot = spread.toJSON();
+    delete base.analysisColumn;
+    delete base.cellEdits;
     return base;
   }
 

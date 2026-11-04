@@ -73,6 +73,9 @@
       const fallback = WORKBOOKS[reportId] || WORKBOOKS.r10;
       return normalizeWorkbook(stored && stored.workbook, fallback);
     },
+    getSample: function (reportId) {
+      return WORKBOOKS[reportId] ? normalizeWorkbook(WORKBOOKS[reportId]) : this.get(reportId);
+    },
     getSavedMeta: function (reportId) {
       const stored = readStored(reportId);
       return stored ? { version: Number(stored.version) || 1, savedAt: stored.savedAt || '' } : null;

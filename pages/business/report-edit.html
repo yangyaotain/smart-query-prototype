@@ -1812,12 +1812,12 @@
       <button class="menu-item" onclick="goTo('smart-query.html')">智能问数</button>
       <button class="menu-item" onclick="goTo('dashboard.html')">我的仪表盘</button>
       <button class="menu-item" onclick="goTo('board.html')">我的看板</button>
-      <button class="menu-item active">我的报告</button>
+      <button class="menu-item active" type="button" onclick="returnToReport()">我的报告</button>
       <button class="menu-item" onclick="goTo('scheduled-tasks.html')">定时任务</button>
     </nav>
     <div class="top-actions">
-      <button class="primary-btn" id="btnSaveReport">保存报告</button>
-      <button class="ghost-btn" onclick="goTo('report.html')">退出</button>
+      <button class="primary-btn" type="button" id="btnSaveReport"><span aria-hidden="true">✓</span><span>保存报告</span></button>
+      <button class="ghost-btn" type="button" onclick="returnToReport()"><span aria-hidden="true">←</span><span>返回报告</span></button>
     </div>
   </header>
 
@@ -2004,143 +2004,12 @@
       <!-- 顶部一行小提示 -->
       <div class="editor-tip">
         <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
-        <span><strong>提示：</strong>可使用顶部工具栏调整内容与格式；保存后将生成一个新的报告版本。</span>
+        <span><strong id="wordEditVersion">人工编辑</strong> · 可使用顶部工具栏调整内容与格式，保存后生成新版本。</span>
       </div>
 
       <!-- 富文本编辑画布 -->
       <div class="editor-canvas" id="editorCanvas">
-        <article class="report-page" id="reportArticle" contenteditable="true" spellcheck="false">
-          <section class="report-doc-page">
-          <h1>二季度销售复盘报告</h1>
-          <p class="report-meta">生成时间：2026-06-30 · 报告类型：经营分析 · 季度复盘 · 数据周期：2026-04-01 ~ 2026-06-30</p>
-          <p>本报告基于智能问数二季度全量数据自动生成，覆盖经营全景、区域、渠道、产品、客户五大维度，重点回答"二季度做得如何、靠什么增长、有什么风险、下一步怎么做"四个核心问题，可作为经营会议汇报与下季度策略输入。</p>
-          <div class="tag-row" contenteditable="false">
-            <span class="tag">趋势上行</span>
-            <span class="tag">华东主力</span>
-            <span class="tag">线上渠道领跑</span>
-            <span class="tag">TOP10 集中度 67%</span>
-            <span class="tag">目标差距 14%</span>
-          </div>
-
-          <h2 id="s1">一、经营概览</h2>
-          <p>二季度整体销售保持增长态势，华东区连续 6 个月环比正增长，线上电商与重点客户订单释放是主要增长引擎；目标完成率 86%，距离季度目标仍有 14%，6 月需重点冲刺。</p>
-          <div class="kpi-row" contenteditable="false">
-            <div class="kpi-card"><div class="lbl">销售额（万元）</div><div class="val">9,258</div><div class="delta up">同比 +12.4% · 环比 +4.1%</div></div>
-            <div class="kpi-card"><div class="lbl">订单量（单）</div><div class="val">52,140</div><div class="delta up">同比 +8.6% · 环比 +2.3%</div></div>
-            <div class="kpi-card"><div class="lbl">客单价（元）</div><div class="val">1,776</div><div class="delta up">同比 +3.5% · 环比 +1.8%</div></div>
-            <div class="kpi-card"><div class="lbl">目标完成率</div><div class="val">86%</div><div class="delta warn">距目标 14%，需关注</div></div>
-          </div>
-          <h3>1.1 同比 / 环比对比</h3>
-          <ul>
-            <li>同比增长：销售额 <strong>+12.4%</strong>，订单量 <strong>+8.6%</strong>，客单价 <strong>+3.5%</strong>，整体跑赢去年同期。</li>
-            <li>环比 1 季度：销售额 <strong>+4.1%</strong>，进入二季度后增长斜率明显抬升，4-6 月持续正向。</li>
-            <li>累计达成率：上半年合计 <strong>62%</strong>，下半年需在 7-9 月完成 <strong>≥48%</strong> 的全年目标节奏。</li>
-          </ul>
-          <div class="asset-preview" contenteditable="false" data-chart="line" data-chart-title="二季度销售额走势 · 4-6 月环比变化">
-            <div class="ap-head"><span class="ap-tag">趋势</span><span>二季度销售额走势 · 4-6 月环比变化</span></div>
-            <div class="ap-body chart-canvas"></div>
-          </div>
-          <blockquote><strong>结论：</strong>整体处于稳步上行通道，但目标节奏仍偏慢，6 月已进入冲刺窗口期，建议聚焦未达成的细分品类与客户。</blockquote>
-
-            <div class="report-page-number" contenteditable="false">第 1 / 5 页</div>
-          </section>
-
-          <section class="report-doc-page">
-          <h2 id="s2">二、区域销售表现</h2>
-          <p>二季度六大区销售额合计 <strong>9,258 万元</strong>，TOP3 大区合计贡献 <strong>69.7%</strong>，呈现"东高西低、华东独大"格局。</p>
-          <table class="data-table">
-            <thead><tr><th>大区</th><th class="num">销售额（万）</th><th class="num">环比</th><th class="num">同比</th><th>主要动因</th></tr></thead>
-            <tbody>
-              <tr><td>华东</td><td class="num">3,248</td><td class="num">+5.4%</td><td class="num">+18.2%</td><td>线上促销 + 大客户订单</td></tr>
-              <tr><td>华南</td><td class="num">2,156</td><td class="num">+3.8%</td><td class="num">+11.6%</td><td>新品上市 + 直播专场</td></tr>
-              <tr><td>华北</td><td class="num">1,053</td><td class="num">+2.1%</td><td class="num">+6.7%</td><td>稳态运营，渠道下沉</td></tr>
-              <tr><td>西南</td><td class="num">982</td><td class="num">+1.4%</td><td class="num">+8.0%</td><td>区域代理增量</td></tr>
-              <tr><td>华中</td><td class="num">896</td><td class="num">+0.9%</td><td class="num">+4.5%</td><td>持平，缺亮点</td></tr>
-              <tr><td>东北</td><td class="num">923</td><td class="num">+0.4%</td><td class="num">+1.2%</td><td>增速放缓，需关注</td></tr>
-            </tbody>
-          </table>
-          <div class="asset-preview" contenteditable="false" data-chart="bar" data-chart-title="六大区销售额分布与环比">
-            <div class="ap-head"><span class="ap-tag">柱状图</span><span>六大区销售额分布与环比</span></div>
-            <div class="ap-body chart-canvas"></div>
-          </div>
-          <h3>2.1 华东区重点城市</h3>
-          <p>华东 6 月销售额 <strong>3,248 万元</strong>，较 1 月增长约 <strong>49.0%</strong>。上海、杭州、苏州、南京合计贡献华东区 <strong>78.4%</strong> 销售额。</p>
-          <ul>
-            <li>上海：1,124 万元（占比 34.6%），线上电商占比 46%；</li>
-            <li>杭州：812 万元（占比 25.0%），私域社群复购率 38%；</li>
-            <li>苏州：456 万元（占比 14.0%），大客户订单提升 21%；</li>
-            <li>南京：154 万元（占比 4.7%），新品贡献 32%。</li>
-          </ul>
-
-            <div class="report-page-number" contenteditable="false">第 2 / 5 页</div>
-          </section>
-
-          <section class="report-doc-page">
-          <h2 id="s3">三、异常增长归因</h2>
-          <p>二季度共出现 3 次异常增长信号，由智能问数自动识别并完成归因：</p>
-          <h3>3.1 4 月销售额环比 +15.1%</h3>
-          <ul>
-            <li>促销活动贡献：<strong>+6.2%</strong>，主要来自"清明 3 折券"与"五一预热"叠加；</li>
-            <li>新品贡献：<strong>+4.5%</strong>，"智能 Pro 系列"开局亮眼；</li>
-            <li>渠道扩张：<strong>+2.4%</strong>，新增 2 家区域代理；</li>
-            <li>自然增长：<strong>+2.0%</strong>，与季节性需求一致。</li>
-          </ul>
-          <div class="asset-preview" contenteditable="false" data-chart="stacked-bar" data-chart-title="4 月销售额增量结构拆解">
-            <div class="ap-head"><span class="ap-tag">堆叠柱</span><span>4 月销售额增量结构拆解</span></div>
-            <div class="ap-body chart-canvas"></div>
-          </div>
-          <h3>3.2 5 月华南区直播专场单日突破 320 万</h3>
-          <p>5 月 18 日华南区直播专场单日 GMV <strong>328 万元</strong>，是过去 12 个月单日最高值，主要源于头部主播首播 + 新品组合。建议沉淀该模型作为标准化打法。</p>
-          <h3>3.3 6 月线上电商渠道占比突破 40%</h3>
-          <p>线上电商渠道占比由 1 月 33% 提升至 6 月 <strong>40.6%</strong>，已超过门店零售成为第一大渠道。需要同步评估履约、客服、售后链路的承载能力。</p>
-          <blockquote><strong>归因结论：</strong>本季度增长 70% 来自"促销 + 新品 + 渠道结构升级"，自然增长占比下降，提示需要持续投入"主动经营动作"才能维持当前增速。</blockquote>
-
-            <div class="report-page-number" contenteditable="false">第 3 / 5 页</div>
-          </section>
-
-          <section class="report-doc-page">
-          <h2 id="s4">四、问题与风险</h2>
-          <p>本季度数据中识别 4 项需要管理层关注的风险：</p>
-          <ol>
-            <li><strong>北区（华北/东北）目标完成率偏低</strong>：分别为 79% / 76%，连续两月低于公司均值 7-10 个百分点。</li>
-            <li><strong>库存周转天数上升</strong>：从 38 天上升到 42 天，部分长尾 SKU 周转超过 90 天。</li>
-            <li><strong>TOP10 客户集中度偏高</strong>：合计贡献 67%，其中 3 家头部客户近 90 天订单频次下降 ≥30%，存在流失风险。</li>
-            <li><strong>毛利率小幅承压</strong>：综合毛利率 26.8%，环比下降 <strong>0.6 pct</strong>，受促销外溢影响。</li>
-          </ol>
-          <div class="asset-preview" contenteditable="false" data-chart="heatmap" data-chart-title="六大区 × KPI 风险矩阵">
-            <div class="ap-head"><span class="ap-tag">热力图</span><span>六大区 × KPI 风险矩阵</span></div>
-            <div class="ap-body chart-canvas"></div>
-          </div>
-          <blockquote><strong>风险提示：</strong>若库存与流失同时恶化，预计三季度毛利率额外承压 0.5-1.0 pct。建议优先处理库存与流失客户两件事。</blockquote>
-
-            <div class="report-page-number" contenteditable="false">第 4 / 5 页</div>
-          </section>
-
-          <section class="report-doc-page">
-          <h2 id="s5">五、经营建议</h2>
-          <p>结合数据洞察与策略可执行性，建议下季度从短期、中期、长期三个层次推进：</p>
-          <h3>5.1 短期（1-30 天）</h3>
-          <ul>
-            <li>北区启动"促销补强"专项：模板复用华东 4 月活动，目标月销售额 +8%；</li>
-            <li>头部客户 3 家进行 1V1 走访，结合"专属服务包"挽回订单；</li>
-            <li>对周转 ≥90 天的长尾 SKU 启动清仓促销，目标 30 天降至 50 天以内。</li>
-          </ul>
-          <h3>5.2 中期（30-90 天）</h3>
-          <ul>
-            <li>把华东"线上促销 + 大客户运营 + 仓配优化"三合一打法标准化，输出复制 SOP；</li>
-            <li>建立 RFM 客户分层运营机制，按月跟踪流失预警与召回率；</li>
-            <li>在线上电商渠道上线"加购→下单"减损方案，目标提升整体转化 1-2 pct。</li>
-          </ul>
-          <h3>5.3 长期（季度以上）</h3>
-          <ul>
-            <li>形成"经营会议看板 + 周报报告 + 月度策略复盘"三位一体的数据驱动经营节奏；</li>
-            <li>新品发布节奏稳定在每月 1-2 款，保持 12% 新品贡献；</li>
-            <li>构建毛利率护城河：高端 + 新品销售占比目标提升至 75%。</li>
-          </ul>
-          <blockquote><strong>下季度目标：</strong>销售额 ≥10,200 万元，目标完成率 ≥95%，综合毛利率回升至 27.5%，TOP10 客户集中度下降到 60% 以内。</blockquote>
-            <div class="report-page-number" contenteditable="false">第 5 / 5 页</div>
-          </section>
-        </article>
+        <article class="report-page" id="reportArticle" contenteditable="true" spellcheck="false"></article>
       </div>
       <div class="report-edit-zoom-toolbar" id="editZoomToolbar" aria-label="编辑器缩放工具条">
         <button type="button" id="editZoomOut" title="缩小" aria-label="缩小">
@@ -2389,9 +2258,22 @@
 
   <script src="../../assets/js/echarts.min.js"></script>
   <script src="../../assets/js/common.js"></script>
+  <script src="../../assets/js/report-chart.js"></script>
+  <script src="../../assets/js/report-reference.js?v=20261104-excel-init"></script>
   <script>
     /* eslint-disable */
     (function () {
+      const reportId = new URLSearchParams(window.location.search).get('report');
+      const snapshot = reportId && window.ReportReference.getSnapshot('report:' + reportId);
+      const reportUrl = reportId ? 'report.html?report=' + encodeURIComponent(reportId) : 'report.html';
+      window.returnToReport = () => goTo(reportUrl);
+      if (!snapshot || snapshot.fileType !== 'word') {
+        window.returnToReport();
+        return;
+      }
+      document.title = snapshot.name + ' · 人工编辑 - 智能问数';
+      document.getElementById('wordEditVersion').textContent = '当前版本 V' + snapshot.version;
+
       // ====================================================================
       // 0. 报告内图表渲染（与 report.html 同款）
       // ====================================================================
@@ -2405,7 +2287,7 @@
           let inst = echarts.getInstanceByDom(dom);
           if (inst) inst.dispose();
           inst = echarts.init(dom);
-          inst.setOption(buildChartOption(type, title));
+          inst.setOption(window.buildReportChartOption(type, title));
         });
       }
 
@@ -2416,84 +2298,6 @@
           if (inst) inst.resize();
         });
       });
-
-      function buildChartOption(type, title) {
-        const theme = window.getSmartQueryThemeColors();
-        const COLOR = [theme.primary, '#36cfc9', '#ffa940', '#ff7875', '#9254de', '#52c41a', '#13c2c2', '#fadb14'];
-        const baseTextStyle = { color: '#475569', fontSize: 11 };
-        const baseGrid = { left: 50, right: 24, top: 30, bottom: 28 };
-        const t = title || '';
-
-        if (type === 'line') {
-          let xAxis = ['1月', '2月', '3月', '4月', '5月', '6月'];
-          let series = [{ name: '销售额', type: 'line', smooth: true, data: [2180, 2360, 2510, 2890, 3120, 3248], areaStyle: { opacity: 0.18 }, lineStyle: { width: 2.5 }, symbolSize: 7 }];
-          return {
-            color: COLOR, grid: baseGrid, tooltip: { trigger: 'axis' },
-            legend: { top: 0, right: 0, icon: 'roundRect', textStyle: baseTextStyle, itemWidth: 10, itemHeight: 6 },
-            xAxis: { type: 'category', data: xAxis, axisLine: { lineStyle: { color: '#dbe2ec' } }, axisLabel: baseTextStyle },
-            yAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } }, axisLabel: baseTextStyle },
-            series: series
-          };
-        }
-        if (type === 'bar') {
-          const xAxis = ['华东', '华南', '华北', '西南', '华中', '东北'];
-          const data = [3248, 2156, 1053, 982, 896, 923];
-          return {
-            color: COLOR, grid: baseGrid, tooltip: { trigger: 'axis' },
-            xAxis: { type: 'category', data: xAxis, axisLine: { lineStyle: { color: '#dbe2ec' } }, axisLabel: baseTextStyle },
-            yAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } }, axisLabel: baseTextStyle },
-            series: [{ name: title || '数值', type: 'bar', barWidth: 18, itemStyle: { borderRadius: [6, 6, 0, 0] }, data: data }]
-          };
-        }
-        if (type === 'stacked-bar') {
-          return {
-            color: COLOR, grid: baseGrid,
-            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-            legend: { top: 0, right: 0, icon: 'roundRect', textStyle: baseTextStyle, itemWidth: 10, itemHeight: 6 },
-            xAxis: { type: 'category', data: ['基础', '促销贡献', '新品贡献', '渠道扩张', '自然增长', '4 月合计'], axisLine: { lineStyle: { color: '#dbe2ec' } }, axisLabel: baseTextStyle },
-            yAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } }, axisLabel: baseTextStyle },
-            series: [{ name: '增量（万）', type: 'bar', barWidth: 22, itemStyle: { borderRadius: [6, 6, 0, 0] }, data: [2510, 156, 113, 60, 51, 2890] }]
-          };
-        }
-        if (type === 'pie') {
-          const data = [
-            { name: '线上电商', value: 38 }, { name: '门店零售', value: 26 },
-            { name: '大客户直销', value: 18 }, { name: '经销商分销', value: 12 },
-            { name: '其他', value: 6 }
-          ];
-          return {
-            color: COLOR, tooltip: { trigger: 'item', formatter: '{b}<br/>{c}% ({d}%)' },
-            legend: { orient: 'vertical', left: 'right', top: 'center', icon: 'roundRect', textStyle: baseTextStyle, itemWidth: 10, itemHeight: 6 },
-            series: [{ name: title || '占比', type: 'pie', radius: ['38%', '70%'], center: ['38%', '52%'], avoidLabelOverlap: true, itemStyle: { borderColor: '#fff', borderWidth: 2 }, label: { show: true, formatter: '{b}\n{d}%', fontSize: 11, color: '#475569' }, labelLine: { length: 8, length2: 6 }, data: data }]
-          };
-        }
-        if (type === 'funnel') {
-          return {
-            color: COLOR, tooltip: { trigger: 'item', formatter: '{b}: {c}' },
-            series: [{ name: title || '转化', type: 'funnel', left: '12%', right: '12%', top: 30, bottom: 8, minSize: '20%', maxSize: '100%', sort: 'descending', gap: 4, label: { show: true, position: 'inside', color: '#fff', fontSize: 12, fontWeight: 600 }, itemStyle: { borderColor: '#fff', borderWidth: 2 }, data: [{ value: 1260000, name: '访问 1,260,000' }, { value: 231840, name: '加购 231,840 (18.4%)' }, { value: 97605, name: '下单 97,605 (42.1%)' }, { value: 85404, name: '支付 85,404 (87.5%)' }] }]
-          };
-        }
-        if (type === 'heatmap') {
-          const xAxis = ['销售额', '订单量', '客单价', '完成率', '毛利率', '库存周转'];
-          const yAxis = ['华东', '华南', '华北', '西南', '华中', '东北'];
-          const data = [];
-          for (let y = 0; y < yAxis.length; y++) {
-            for (let x = 0; x < xAxis.length; x++) {
-              const v = Math.round(20 + Math.abs(Math.sin((x + 1) * (y + 1.3)) * 80));
-              data.push([x, y, v]);
-            }
-          }
-          return {
-            tooltip: { position: 'top' },
-            grid: { left: 70, right: 30, top: 30, bottom: 56 },
-            xAxis: { type: 'category', data: xAxis, splitArea: { show: true }, axisLabel: baseTextStyle, axisLine: { lineStyle: { color: '#dbe2ec' } } },
-            yAxis: { type: 'category', data: yAxis, splitArea: { show: true }, axisLabel: baseTextStyle, axisLine: { lineStyle: { color: '#dbe2ec' } } },
-            visualMap: { min: 0, max: 100, calculable: true, orient: 'horizontal', left: 'center', bottom: 0, inRange: { color: theme.heatmapPalette }, textStyle: baseTextStyle },
-            series: [{ name: title || '热力', type: 'heatmap', data: data, label: { show: true, fontSize: 10, color: '#fff' }, emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.2)' } } }]
-          };
-        }
-        return { title: { text: title, left: 'center', top: 'middle', textStyle: { color: '#94a3b8', fontSize: 13, fontWeight: 'normal' } } };
-      }
 
       // 默认数据加载完后即渲染（图表均为 contenteditable=false）
       requestAnimationFrame(() => renderCharts(document));
@@ -2515,6 +2319,10 @@
       // 2. 章节目录 ↔ 编辑画布锚点
       // ====================================================================
       const article = document.getElementById('reportArticle');
+      article.innerHTML = window.ReportReference.buildWordPages(snapshot);
+      article.querySelectorAll('.asset-preview[data-chart]').forEach((chart) => {
+        chart.contentEditable = 'false';
+      });
       const sectionList = document.getElementById('sectionList');
       const editZoomRange = document.getElementById('editZoomRange');
       const editZoomValue = document.getElementById('editZoomValue');
@@ -2577,9 +2385,15 @@
 
       function rebuildSectionList() {
         const items = article.querySelectorAll('h2');
+        const ids = new Set();
         sectionList.innerHTML = '';
         items.forEach((h2, i) => {
-          if (!h2.id) h2.id = 'sec-' + (i + 1);
+          if (!h2.id || ids.has(h2.id)) {
+            let suffix = i + 1;
+            while (ids.has('sec-' + suffix) || document.getElementById('sec-' + suffix)) suffix += 1;
+            h2.id = 'sec-' + suffix;
+          }
+          ids.add(h2.id);
           const link = document.createElement('div');
           link.className = 'section-link' + (i === 0 ? ' active' : '');
           link.dataset.target = h2.id;
@@ -4061,8 +3875,28 @@
       // 8. 顶部"保存报告"
       // ====================================================================
       document.getElementById('btnSaveReport').addEventListener('click', function () {
-        showToast('已保存报告，并生成新版本');
-        setTimeout(() => goTo('report.html'), 600);
+        rebuildSectionList();
+        const copy = article.cloneNode(true);
+        copy.querySelectorAll('.report-page-number').forEach((footer) => footer.remove());
+        copy.querySelectorAll('.find-hit').forEach((mark) => mark.replaceWith(...mark.childNodes));
+        copy.querySelectorAll('.asset-preview[data-chart] .chart-canvas').forEach((chart) => {
+          chart.removeAttribute('_echarts_instance_');
+          chart.replaceChildren();
+        });
+        Array.from(copy.children).forEach((page) => {
+          if (page.matches('.report-doc-page')) page.replaceWith(...page.childNodes);
+        });
+        const sections = Array.from(copy.querySelectorAll('h2'), (heading) => ({ id: heading.id, name: heading.textContent }));
+        try {
+          const version = window.ReportReference.saveManualVersion(snapshot, { body: copy.innerHTML, sections, wordDocument: true });
+          if (!version) {
+            showToast('报告已有新版本，请返回报告后重新打开编辑器');
+            return;
+          }
+          goTo(reportUrl + '&savedVersion=' + version);
+        } catch (error) {
+          showToast('保存失败，请重试');
+        }
       });
 
       // ====================================================================

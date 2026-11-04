@@ -663,7 +663,7 @@
           </button>
           <button class="action-dropdown-btn primary hidden" type="button" id="boardReferenceModifyBtn" onclick="openBoardInSmartQuery()">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v12H7l-3 3z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg>
-            <span>引用修改</span>
+            <span>AI编辑</span>
           </button>
           <button class="action-dropdown-btn primary" type="button" id="boardEditBtn" onclick="openCurrentBoardEditor()">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.06 4.94l5 5"/><path d="M3 21l1.5-5.5L18 2.5a2.83 2.83 0 0 1 4 4L8.5 19.5 3 21Z"/></svg>
@@ -1495,7 +1495,7 @@
 
       window.openCurrentBoardEditor = function () {
         if (getBoardEngine(currentBoardId) === 'ai-html') {
-          showToast('AI 生成看板需通过“引用修改”重新生成');
+          showToast('请通过“AI编辑”重新生成看板');
           return;
         }
         const data = BOARD_DATA[currentBoardId] || {};
@@ -2910,7 +2910,7 @@
         if (wantsStructureChange) {
           if (getBoardEngine(currentBoardId) === 'ai-html') {
             return {
-              html: '当前是<strong>AI 生成看板</strong>。请点击页面右上角“引用修改”，在智能问数中通过多轮对话重新生成 HTML；确认结果后再选择覆盖当前版本、保存为新版本或另存为新看板。'
+              html: '当前是<strong>AI 生成看板</strong>。请点击页面右上角“AI编辑”，在智能问数中通过多轮对话重新生成 HTML；确认结果后再选择覆盖当前版本、保存为新版本或另存为新看板。'
             };
           }
           return {

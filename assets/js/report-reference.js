@@ -23,7 +23,8 @@
   }
   function applySnapshot(snapshot, event) {
     const result = clone(snapshot);
-    result.body = applyChanges(result.body, event.changes);
+    result.body = typeof event.body === "string" ? event.body : applyChanges(result.body, event.changes);
+    if (typeof event.wordDocument === "boolean") result.wordDocument = event.wordDocument;
     if (event.sections) result.sections = clone(event.sections);
     if (event.workbook) result.workbook = clone(event.workbook);
     if (event.pdfData) result.pdfData = clone(event.pdfData);
@@ -49,6 +50,45 @@
     read(eventKey).filter((event) => (event.key ? event.key === key : event.name === snapshot.name) && Number(event.version) > snapshot.version)
       .sort((a, b) => a.version - b.version).forEach((event) => { snapshot = applySnapshot(snapshot, event); });
     return snapshot;
+  }
+  function saveManualVersion(snapshot, content) {
+    const latest = getSnapshot(snapshot.key);
+    if (!latest || latest.version !== snapshot.version) return null;
+    const version = latest.version + 1;
+    const events = read(eventKey);
+    events.unshift({
+      key: latest.key, reportId: latest.reportId, name: latest.name, version,
+      time: new Date().toLocaleString("zh-CN", { hour12: false }),
+      source: "人工编辑",
+      summary: latest.fileType === "excel" ? "在 Excel 编辑器中修改并保存工作簿。" : "在 Word 编辑器中修改并保存文档。",
+      ...content
+    });
+    localStorage.setItem(eventKey, JSON.stringify(events.slice(0, 40)));
+    return version;
+  }
+  function buildWordPages(snapshot) {
+    const temp = document.createElement("template");
+    temp.innerHTML = snapshot.body || "";
+    const pages = [];
+    let html = snapshot.wordDocument ? "" :
+      "<h1>" + esc(snapshot.name) + '</h1><p class="report-meta">生成时间：' +
+      esc(snapshot.generatedAt) + " · 报告类型：" + esc(snapshot.type) + "</p>";
+    let hasSection = false;
+    for (const node of temp.content.childNodes) {
+      if (node.nodeName === "H2") {
+        if (hasSection && html.trim()) {
+          pages.push(html);
+          html = "";
+        }
+        hasSection = true;
+      }
+      html += node.nodeType === 1 ? node.outerHTML : esc(node.textContent);
+    }
+    pages.push(html);
+    return pages.map((page, index) =>
+      '<section class="report-doc-page" data-page-index="' + (index + 1) + '">' + page +
+      '<div class="report-page-number" contenteditable="false">第 ' + (index + 1) + " / " + pages.length + " 页</div></section>"
+    ).join("");
   }
   function buildDraft(reference, question, prior, append) {
     const snapshot = prior || getSnapshot(reference) || {
@@ -99,10 +139,12 @@
       sheet.rows.forEach((row) => {
         row[column] = /异常|待|高|流失|放缓/.test(row.slice(0, column).join(" ")) ? "优先复核异常原因，明确负责人并跟进处理结果" : "维持常规跟踪，定期复核经营变化";
       });
+      if (draft.workbook.spreadSnapshot) draft.workbook.analysisColumn = column;
+      if (draft.workbook.cellEdits) draft.workbook.cellEdits = draft.workbook.cellEdits.filter((edit) => edit.column !== column);
       draft.scope = "业务明细表 · 分析建议列";
     }
     return draft;
   }
-  global.ReportReference = { readCatalog: () => read(catalogKey), readEvents: () => read(eventKey), getSnapshot, buildDraft, applyChanges, applySnapshot,
+  global.ReportReference = { readCatalog: () => read(catalogKey), readEvents: () => read(eventKey), getSnapshot, saveManualVersion, buildWordPages, buildDraft, applyChanges, applySnapshot,
     saveCatalog: (items) => localStorage.setItem(catalogKey, JSON.stringify(items)), escapeHTML: esc };
 })(window);

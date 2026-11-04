@@ -1710,11 +1710,11 @@
           </button>
           <button class="action-dropdown-btn primary" type="button" id="reportReferenceModifyBtn" onclick="openReportInSmartQuery()">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v12H7l-3 3z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg>
-            <span>引用修改</span>
+            <span>AI编辑</span>
           </button>
-          <button class="action-dropdown-btn primary hidden" type="button" id="reportEditBtn" onclick="handleReportEdit()">
+          <button class="action-dropdown-btn hidden" type="button" id="reportEditBtn" onclick="handleReportEdit()">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.06 4.94l5 5"/><path d="M3 21l1.5-5.5L18 2.5a2.83 2.83 0 0 1 4 4L8.5 19.5 3 21Z"/></svg>
-            <span id="reportEditLabel">编辑报告</span>
+            <span>人工编辑</span>
           </button>
         </div>
       </div>
@@ -1927,13 +1927,15 @@
 
   <script src="../../assets/js/echarts.min.js"></script>
   <script src="../../assets/js/common.js"></script>
+  <script src="../../assets/js/report-chart.js"></script>
   <script src="../../assets/vendor/spreadjs/19.2.0/js/gc.spread.sheets.all.min.js"></script>
   <script src="../../assets/vendor/spreadjs/19.2.0/js/gc.spread.sheets.resources.zh.min.js"></script>
-  <script src="../../assets/vendor/spreadjs/19.2.0/js/gc.spread.sheets.charts.min.js"></script>
+  <!-- Charts 依赖 Shapes。 -->
   <script src="../../assets/vendor/spreadjs/19.2.0/js/gc.spread.sheets.shapes.min.js"></script>
+  <script src="../../assets/vendor/spreadjs/19.2.0/js/gc.spread.sheets.charts.min.js"></script>
   <script src="../../assets/js/report-excel-data.js"></script>
-  <script src="../../assets/js/report-excel-spread.js"></script>
-  <script src="../../assets/js/report-reference.js?v=20261103"></script>
+  <script src="../../assets/js/report-excel-spread.js?v=20261104-excel-grid"></script>
+  <script src="../../assets/js/report-reference.js?v=20261104-excel-init"></script>
   <script>
     /* eslint-disable */
     (function () {
@@ -2788,10 +2790,23 @@
         }
       ];
 
+      // 复制的报告也能从编辑器返回，并在刷新时重新打开。
+      window.ReportReference.readCatalog().filter((item) => item.reportId?.startsWith('r-copy-')).forEach((item) => {
+        const category = DIR_TREE.find((entry) => entry.id === item.categoryId) || DIR_TREE[0];
+        if (!category || REPORT_DATA[item.reportId]) return;
+        category.reports.push({ id: item.reportId, name: item.name, fileType: item.fileType });
+        REPORT_DATA[item.reportId] = {
+          title: item.name, body: item.body, sections: item.sections, wordDocument: item.wordDocument,
+          metaTop: item.metaTop, generatedAt: item.generatedAt, type: item.type, copyBase: item.copyBase
+        };
+        if (item.pdfData) PDF_PREVIEW_DATA[item.reportId] = item.pdfData;
+      });
+
       // 报告版本：最新版本排在最前；静态原型中为每份报告预置可演示记录。
       const REPORT_VERSIONS = {};
       Object.keys(REPORT_DATA).forEach((reportId, reportIndex) => {
-        const count = reportId === 'r1' ? 13 : Math.max(3, 7 - (reportIndex % 4));
+        const initial = REPORT_DATA[reportId].copyBase || REPORT_DATA[reportId];
+        const count = reportId === 'r1' ? 13 : (reportId.startsWith('r-copy-') ? 1 : Math.max(3, 7 - (reportIndex % 4)));
         REPORT_VERSIONS[reportId] = Array.from({ length: count }, (_, index) => {
           const version = count - index;
           const isLatestSmartQueryVersion = reportId === 'r1' && version === 13;
@@ -2805,11 +2820,12 @@
             summary: isLatestSmartQueryVersion
               ? '将华东区销售增长分析结论添加到“经营建议”章节。'
               : (isRevisionExampleVersion ? '重新整理第四章并补充库存风险说明。' : (version === 1 ? '创建报告初始版本。' : '根据当次分析结果更新报告内容。')),
-            body: REPORT_DATA[reportId].body,
-            sections: JSON.parse(JSON.stringify(REPORT_DATA[reportId].sections || [])),
+            body: initial.body,
+            wordDocument: Boolean(initial.wordDocument),
+            sections: JSON.parse(JSON.stringify(initial.sections || [])),
             metaTop: REPORT_DATA[reportId].metaTop,
             pdfData: PDF_PREVIEW_DATA[reportId] ? JSON.parse(JSON.stringify(PDF_PREVIEW_DATA[reportId])) : null,
-            workbook: getReportFileType(reportId) === 'excel' ? window.ReportExcelData.get(reportId) : null
+            workbook: getReportFileType(reportId) === 'excel' ? window.ReportExcelData.getSample(reportId) : null
           };
         });
       });
@@ -2827,28 +2843,28 @@
           summary: '在 Web Excel 编辑页修改并保存工作簿。',
           body: REPORT_DATA[reportId].body,
           sections: JSON.parse(JSON.stringify(REPORT_DATA[reportId].sections || [])),
-          metaTop: REPORT_DATA[reportId].metaTop
+          metaTop: REPORT_DATA[reportId].metaTop,
+          workbook: window.ReportExcelData.get(reportId)
         });
         REPORT_VERSIONS[reportId] = versions.slice(0, 20);
       });
 
-      // 智能问数中确认保存的报告修改，进入同一份报告版本记录。
-      function mergeSmartQueryReportEvents() {
+      // AI 编辑、人工编辑和版本恢复共用报告版本记录。
+      function mergeReportVersionEvents() {
         window.ReportReference.readEvents().slice().reverse().forEach((event) => {
           const reportId = event.reportId || (event.key || '').replace(/^report:/, '') || Object.keys(REPORT_DATA).find((id) => REPORT_DATA[id].title === event.name);
           if (!REPORT_DATA[reportId]) return;
           const versions = REPORT_VERSIONS[reportId] || (REPORT_VERSIONS[reportId] = []);
           if (versions.some((item) => item.version === Number(event.version))) return;
-          const snapshot = window.ReportReference.applySnapshot({
-            ...REPORT_DATA[reportId], pdfData: PDF_PREVIEW_DATA[reportId],
-            workbook: getReportFileType(reportId) === 'excel' ? window.ReportExcelData.get(reportId) : null
-          }, event);
+          const previous = versions.find((item) => item.version < Number(event.version));
+          const snapshot = window.ReportReference.applySnapshot(previous || REPORT_DATA[reportId], event);
           versions.unshift({
             version: Number(event.version) || ((versions[0]?.version || 0) + 1),
             time: event.time || new Date().toLocaleString('zh-CN', { hour12: false }),
             source: event.source || '智能问数修改',
             summary: event.summary || '通过智能问数完成报告修改并保存。',
             body: snapshot.body,
+            wordDocument: Boolean(snapshot.wordDocument),
             sections: JSON.parse(JSON.stringify(snapshot.sections || [])),
             metaTop: snapshot.metaTop,
             pdfData: snapshot.pdfData || null,
@@ -2858,13 +2874,13 @@
           if (versions[0].version === Number(event.version)) {
             REPORT_DATA[reportId].body = snapshot.body;
             REPORT_DATA[reportId].sections = snapshot.sections;
+            REPORT_DATA[reportId].wordDocument = Boolean(snapshot.wordDocument);
             if (snapshot.pdfData) PDF_PREVIEW_DATA[reportId] = snapshot.pdfData;
-            if (event.workbook) window.ReportExcelData.save(reportId, event.workbook, event.version);
           }
           if (versions.length > 20) versions.length = 20;
         });
       }
-      mergeSmartQueryReportEvents();
+      mergeReportVersionEvents();
 
       function syncReportReferenceCatalog() {
         const items = DIR_TREE.flatMap((category) => (category.reports || []).map((item) => {
@@ -2872,10 +2888,11 @@
           const latest = (REPORT_VERSIONS[item.id] || [])[0];
           return data ? {
             key: 'report:' + item.id, reportId: item.id, kind: 'report', label: '报告',
-            name: data.title, fileType: getReportFileType(item.id), category: category.name,
+            name: data.title, fileType: getReportFileType(item.id), category: category.name, categoryId: category.id,
             version: latest ? latest.version : 1, body: data.body, sections: data.sections,
+            generatedAt: data.generatedAt, type: data.type, wordDocument: Boolean(data.wordDocument), copyBase: data.copyBase,
             metaTop: data.metaTop, pdfData: PDF_PREVIEW_DATA[item.id] || null,
-            workbook: getReportFileType(item.id) === 'excel' ? window.ReportExcelData.get(item.id) : null
+            workbook: latest?.workbook || null
           } : null;
         })).filter(Boolean);
         window.ReportReference.saveCatalog(items);
@@ -2886,7 +2903,8 @@
       // ====================================================================
       const tree = document.getElementById('reportDirTree');
       const searchInput = document.getElementById('reportTreeSearch');
-      const requestedReportId = new URLSearchParams(window.location.search).get('report');
+      const reportParams = new URLSearchParams(window.location.search);
+      const requestedReportId = reportParams.get('report');
       let activeReportId = REPORT_DATA[requestedReportId] ? requestedReportId : 'r1';
       DIR_TREE.forEach((category) => {
         if ((category.reports || []).some((report) => report.id === activeReportId)) category.expanded = true;
@@ -3150,6 +3168,7 @@
                 }
               }
               renderTree();
+              syncReportReferenceCatalog();
               showToast('已删除');
             }
           });
@@ -3207,7 +3226,6 @@
       const reportArticleEl = document.getElementById('reportArticle');
       const reportDocStageEl = document.getElementById('reportDocStage');
       const reportEditBtn = document.getElementById('reportEditBtn');
-      const reportEditLabel = document.getElementById('reportEditLabel');
       const filePreviewToolbar = document.getElementById('filePreviewToolbar');
       const filePreviewType = document.getElementById('filePreviewType');
       const filePreviewIcon = document.getElementById('filePreviewIcon');
@@ -3260,32 +3278,6 @@
         applyReportZoom();
       }
 
-      function buildReportDocPages(data) {
-        const temp = document.createElement('div');
-        temp.innerHTML = data.body || '';
-        const pages = [];
-        let html =
-          '<h1>' + escapeHTML(data.title) + '</h1>' +
-          '<p class="report-meta">生成时间：' + escapeHTML(data.generatedAt || '') + ' · 报告类型：' + escapeHTML(data.type || '') + '</p>';
-        let hasSection = false;
-        Array.from(temp.childNodes).forEach((node) => {
-          const isHeading = node.nodeType === 1 && node.tagName && node.tagName.toLowerCase() === 'h2';
-          if (isHeading && hasSection && html.trim()) {
-            pages.push(html);
-            html = '';
-          }
-          if (isHeading) hasSection = true;
-          html += node.nodeType === 1 ? node.outerHTML : escapeHTML(node.textContent || '');
-        });
-        if (html.trim()) pages.push(html);
-        return pages.map((pageHtml, index) => (
-          '<section class="report-doc-page" data-page-index="' + (index + 1) + '">' +
-            pageHtml +
-            '<div class="report-page-number">第 ' + (index + 1) + ' / ' + pages.length + ' 页</div>' +
-          '</section>'
-        )).join('');
-      }
-
       function getReportTreeItem(reportId) {
         return DIR_TREE.flatMap((category) => category.reports || []).find((report) => report.id === reportId) || null;
       }
@@ -3306,8 +3298,7 @@
         }
         filePreviewToolbar.classList.toggle('hidden', fileType === 'word');
         filePreviewToolbar.classList.toggle('is-excel', fileType === 'excel');
-        reportEditBtn.classList.add('hidden');
-        if (reportEditLabel) reportEditLabel.textContent = fileType === 'excel' ? '编辑 Excel' : '编辑报告';
+        reportEditBtn.classList.toggle('hidden', fileType === 'pdf');
       }
 
       function configureFilePreview(fileType, data, detail, status) {
@@ -3503,7 +3494,7 @@
       }
 
       function renderExcelReport(id, data) {
-        const workbook = window.ReportExcelData.get(id);
+        const workbook = REPORT_VERSIONS[id][0].workbook;
         const sheet = workbook.sheets[0];
         const fallbackHTML = buildExcelPreview(workbook);
         reportSectionTitleEl.textContent = '';
@@ -3570,7 +3561,7 @@
         reportSectionListEl.innerHTML = (data.sections || []).map((section, index) => (
           '<div class="section-link' + (index === 0 ? ' active' : '') + '" data-target="' + section.id + '">' + escapeHTML(section.name) + '</div>'
         )).join('');
-        reportArticleEl.innerHTML = buildReportDocPages(data);
+        reportArticleEl.innerHTML = window.ReportReference.buildWordPages({ ...data, name: data.title });
         applyReportZoom();
         requestAnimationFrame(() => renderCharts(reportArticleEl));
       }
@@ -3578,12 +3569,8 @@
       window.handleReportEdit = function () {
         const fileType = getReportFileType(activeReportId);
         if (fileType === 'pdf') return;
-        if (fileType === 'excel') {
-          const latest = (REPORT_VERSIONS[activeReportId] || [])[0];
-          goTo('report-excel-edit.html?report=' + encodeURIComponent(activeReportId) + '&version=' + encodeURIComponent(latest ? latest.version : 1));
-          return;
-        }
-        goTo('report-edit.html');
+        const editor = fileType === 'excel' ? 'report-excel-edit.html' : 'report-edit.html';
+        goTo(editor + '?report=' + encodeURIComponent(activeReportId));
       };
 
       window.openReportInSmartQuery = function () {
@@ -3679,6 +3666,7 @@
         copiedReport.generatedAt = new Date().toISOString().slice(0, 10);
         copiedReport.type = '人工备份';
         copiedReport.metaTop = '复制自《' + source.title + '》 · 人工备份';
+        copiedReport.copyBase = { body: copiedReport.body, sections: copiedReport.sections, wordDocument: copiedReport.wordDocument };
         REPORT_DATA[newId] = copiedReport;
         const sourceTreeReport = DIR_TREE.flatMap((item) => item.reports || []).find((item) => item.id === activeReportId);
         category.reports.push({ id: newId, name: name, fileType: normalizeReportFileType(sourceTreeReport && sourceTreeReport.fileType) });
@@ -3689,14 +3677,16 @@
           source: '人工复制',
           summary: '复制自《' + source.title + '》，作为独立备份。',
           body: copiedReport.body,
+          wordDocument: Boolean(copiedReport.wordDocument),
           sections: JSON.parse(JSON.stringify(copiedReport.sections || [])),
           metaTop: copiedReport.metaTop
         }];
         if (sourceTreeReport && normalizeReportFileType(sourceTreeReport.fileType) === 'excel' && window.ReportExcelData) {
-          const copiedWorkbook = window.ReportExcelData.get(activeReportId);
+          const copiedWorkbook = JSON.parse(JSON.stringify(REPORT_VERSIONS[activeReportId][0].workbook));
           copiedWorkbook.title = name;
           copiedWorkbook.fileName = name + '.xlsx';
           window.ReportExcelData.save(newId, copiedWorkbook, 1);
+          REPORT_VERSIONS[newId][0].workbook = copiedWorkbook;
         }
         activeReportId = newId;
         renderTree();
@@ -3764,33 +3754,26 @@
         const restoredFrom = selectedReportVersion.version;
         const report = REPORT_DATA[activeReportId];
         report.body = selectedReportVersion.body;
+        report.wordDocument = Boolean(selectedReportVersion.wordDocument);
         report.sections = JSON.parse(JSON.stringify(selectedReportVersion.sections || []));
         report.metaTop = selectedReportVersion.metaTop || report.metaTop;
         if (selectedReportVersion.pdfData) PDF_PREVIEW_DATA[activeReportId] = JSON.parse(JSON.stringify(selectedReportVersion.pdfData));
-        if (selectedReportVersion.workbook) window.ReportExcelData.save(activeReportId, selectedReportVersion.workbook, current.version + 1);
         const newVersion = {
           version: current.version + 1,
           time: new Date().toLocaleString('zh-CN', { hour12: false }),
           source: '版本恢复',
           summary: '恢复 V' + restoredFrom + ' 的内容，并生成新的当前版本。',
           body: report.body,
+          wordDocument: report.wordDocument,
           sections: JSON.parse(JSON.stringify(report.sections || [])),
           metaTop: report.metaTop,
           pdfData: PDF_PREVIEW_DATA[activeReportId] || null,
-          workbook: getReportFileType(activeReportId) === 'excel' ? window.ReportExcelData.get(activeReportId) : null
+          workbook: selectedReportVersion.workbook || null
         };
         versions.unshift(newVersion);
         if (versions.length > 20) versions.length = 20;
         const restoreEvents = window.ReportReference.readEvents();
-        const restoredChanges = (report.sections || []).map((section) => {
-          const holder = document.createElement('div');
-          holder.innerHTML = report.body;
-          const heading = holder.querySelector('[id="' + section.id + '"]');
-          let html = '';
-          for (let node = heading && heading.nextSibling; node && !(node.nodeType === 1 && node.tagName === 'H2'); node = node.nextSibling) html += node.outerHTML || escapeHTML(node.textContent);
-          return { sectionId: section.id, heading: section.name, html };
-        });
-        restoreEvents.unshift({ key: 'report:' + activeReportId, reportId: activeReportId, name: report.title, ...newVersion, changes: restoredChanges });
+        restoreEvents.unshift({ key: 'report:' + activeReportId, reportId: activeReportId, name: report.title, ...newVersion });
         localStorage.setItem('smart-query-report-version-events', JSON.stringify(restoreEvents.slice(0, 40)));
         renderReport(activeReportId);
         closeReportVersionModal();
@@ -3804,7 +3787,7 @@
       reportVersionMask.addEventListener('click', closeReportVersionModal);
       window.addEventListener('pageshow', function (event) {
         if (!event.persisted) return;
-        mergeSmartQueryReportEvents();
+        mergeReportVersionEvents();
         renderReport(activeReportId);
       });
 
@@ -3827,7 +3810,7 @@
           const dom = wrap.querySelector('.chart-canvas');
           if (!dom) return;
           const inst = echarts.init(dom);
-          inst.setOption(buildChartOption(type, title));
+          inst.setOption(window.buildReportChartOption(type, title));
         });
       }
 
@@ -3835,242 +3818,6 @@
         resizeVisibleCharts(document);
         if (excelPreviewSpread) excelPreviewSpread.refresh();
       });
-
-      // ECharts option 工厂：根据 type + title 关键词，返回合理可视化
-      function buildChartOption(type, title) {
-        const theme = window.getSmartQueryThemeColors();
-        const COLOR = [theme.primary, '#36cfc9', '#ffa940', '#ff7875', '#9254de', '#52c41a', '#13c2c2', '#fadb14'];
-        const baseTextStyle = { color: '#475569', fontSize: 11 };
-        const baseGrid = { left: 50, right: 24, top: 30, bottom: 28 };
-        const t = title || '';
-
-        // —— 趋势 / 折线
-        if (type === 'line') {
-          // 不同 title 用不同 mock 数据
-          let xAxis = ['1月', '2月', '3月', '4月', '5月', '6月'];
-          let series = [{ name: '销售额', type: 'line', smooth: true, data: [2180, 2360, 2510, 2890, 3120, 3248], areaStyle: { opacity: 0.18 }, lineStyle: { width: 2.5 }, symbolSize: 7 }];
-          if (/新品/.test(t)) {
-            xAxis = ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8'];
-            series = [
-              { name: '智能 Pro', type: 'line', smooth: true, data: [120, 180, 260, 350, 420, 460, 510, 540], lineStyle: { width: 2 }, symbolSize: 6 },
-              { name: '家居 X', type: 'line', smooth: true, data: [80, 130, 180, 220, 260, 280, 305, 330], lineStyle: { width: 2 }, symbolSize: 6 },
-              { name: '办公 S', type: 'line', smooth: true, data: [60, 90, 130, 175, 220, 260, 300, 320], lineStyle: { width: 2 }, symbolSize: 6 }
-            ];
-          } else if (/月度|本月|核心|KPI/.test(t)) {
-            xAxis = ['1月', '2月', '3月', '4月', '5月', '6月'];
-            series = [
-              { name: '销售额', type: 'line', smooth: true, data: [2180, 2360, 2510, 2890, 3120, 3248], lineStyle: { width: 2.5 }, symbolSize: 7 },
-              { name: '订单量', type: 'line', smooth: true, data: [11200, 12100, 13200, 15360, 16800, 17260], yAxisIndex: 1, lineStyle: { width: 2 }, symbolSize: 6 }
-            ];
-          }
-          const yAxisArr = series.length > 1 && series.some((s) => s.yAxisIndex === 1)
-            ? [
-                { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } }, axisLabel: baseTextStyle },
-                { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { show: false }, axisLabel: baseTextStyle }
-              ]
-            : { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } }, axisLabel: baseTextStyle };
-          return {
-            color: COLOR,
-            grid: baseGrid,
-            tooltip: { trigger: 'axis' },
-            legend: { top: 0, right: 0, icon: 'roundRect', textStyle: baseTextStyle, itemWidth: 10, itemHeight: 6 },
-            xAxis: { type: 'category', data: xAxis, axisLine: { lineStyle: { color: '#dbe2ec' } }, axisLabel: baseTextStyle },
-            yAxis: yAxisArr,
-            series: series
-          };
-        }
-
-        // —— 柱状图（垂直）
-        if (type === 'bar') {
-          let xAxis = ['华东', '华南', '华北', '西南', '华中', '东北'];
-          let data = [3248, 2156, 1053, 982, 896, 923];
-          if (/华东.*城市|城市/.test(t)) {
-            xAxis = ['上海', '杭州', '苏州', '南京', '其他'];
-            data = [1668, 1205, 675, 228, 1044];
-          } else if (/产品线|毛利/.test(t)) {
-            xAxis = ['高端系列', '主推新品', '老品维稳', '长尾产品'];
-            return {
-              color: COLOR,
-              grid: { left: 50, right: 24, top: 30, bottom: 28 },
-              tooltip: { trigger: 'axis' },
-              legend: { top: 0, right: 0, icon: 'roundRect', textStyle: baseTextStyle, itemWidth: 10, itemHeight: 6 },
-              xAxis: { type: 'category', data: xAxis, axisLine: { lineStyle: { color: '#dbe2ec' } }, axisLabel: baseTextStyle },
-              yAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } }, axisLabel: baseTextStyle },
-              series: [
-                { name: '销售占比 %', type: 'bar', barWidth: 14, itemStyle: { borderRadius: [6, 6, 0, 0] }, data: [35, 35, 22, 8] },
-                { name: '毛利贡献 %', type: 'bar', barWidth: 14, itemStyle: { borderRadius: [6, 6, 0, 0] }, data: [42.4, 36.9, 17.4, 3.3] }
-              ]
-            };
-          } else if (/下月|专项|目标拆解/.test(t)) {
-            xAxis = ['北区促销', '库存改善', '客户挽回', '新品贡献'];
-            data = [260, 180, 320, 220];
-          }
-          return {
-            color: COLOR,
-            grid: baseGrid,
-            tooltip: { trigger: 'axis' },
-            xAxis: { type: 'category', data: xAxis, axisLine: { lineStyle: { color: '#dbe2ec' } }, axisLabel: baseTextStyle },
-            yAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } }, axisLabel: baseTextStyle },
-            series: [{ name: title || '数值', type: 'bar', barWidth: 18, itemStyle: { borderRadius: [6, 6, 0, 0] }, data: data }]
-          };
-        }
-
-        // —— 横向条形
-        if (type === 'bar-h') {
-          let yAxis = ['上海伟业', '北京华信', '深圳鼎盛', '广州益丰', '杭州凯越', '成都领航', '南京晨光', '苏州博远', '武汉博通', '西安兴达'];
-          let data = [320, 285, 264, 232, 218, 196, 184, 172, 158, 144];
-          if (/流失原因/.test(t)) {
-            yAxis = ['竞品价格优势', '产品体验问题', '售后不满意', '服务响应慢', '其他'];
-            data = [35, 22, 15, 12, 16];
-          }
-          return {
-            color: COLOR,
-            grid: { left: 90, right: 30, top: 28, bottom: 24 },
-            tooltip: { trigger: 'axis' },
-            xAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } }, axisLabel: baseTextStyle },
-            yAxis: { type: 'category', data: yAxis.slice().reverse(), axisLine: { lineStyle: { color: '#dbe2ec' } }, axisLabel: baseTextStyle },
-            series: [{ name: title || '数值', type: 'bar', barWidth: 12, itemStyle: { borderRadius: [0, 6, 6, 0] }, data: data.slice().reverse() }]
-          };
-        }
-
-        // —— 堆叠柱
-        if (type === 'stacked-bar') {
-          const xAxis = ['1月', '2月', '3月', '4月', '5月', '6月'];
-          if (/4 月销售额/.test(t) && /拆解|结构/.test(t)) {
-            return {
-              color: COLOR,
-              grid: baseGrid,
-              tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-              legend: { top: 0, right: 0, icon: 'roundRect', textStyle: baseTextStyle, itemWidth: 10, itemHeight: 6 },
-              xAxis: { type: 'category', data: ['基础', '促销贡献', '新品贡献', '渠道扩张', '自然增长', '4 月合计'], axisLine: { lineStyle: { color: '#dbe2ec' } }, axisLabel: baseTextStyle },
-              yAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } }, axisLabel: baseTextStyle },
-              series: [{ name: '增量（万）', type: 'bar', barWidth: 22, itemStyle: { borderRadius: [6, 6, 0, 0] }, data: [2510, 156, 113, 60, 51, 2890] }]
-            };
-          }
-          return {
-            color: COLOR,
-            grid: baseGrid,
-            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-            legend: { top: 0, right: 0, icon: 'roundRect', textStyle: baseTextStyle, itemWidth: 10, itemHeight: 6 },
-            xAxis: { type: 'category', data: xAxis, axisLine: { lineStyle: { color: '#dbe2ec' } }, axisLabel: baseTextStyle },
-            yAxis: { type: 'value', axisLine: { show: false }, axisTick: { show: false }, splitLine: { lineStyle: { color: '#eef2f7', type: 'dashed' } }, axisLabel: baseTextStyle },
-            series: [
-              { name: '高端系列', type: 'bar', stack: 'total', barWidth: 20, data: [820, 880, 940, 1080, 1180, 1240] },
-              { name: '主推新品', type: 'bar', stack: 'total', barWidth: 20, data: [560, 620, 680, 760, 820, 868] },
-              { name: '老品维稳', type: 'bar', stack: 'total', barWidth: 20, data: [800, 860, 890, 1050, 1120, 1140] }
-            ]
-          };
-        }
-
-        // —— 饼图
-        if (type === 'pie') {
-          let data = [
-            { name: '线上电商', value: 38 },
-            { name: '门店零售', value: 26 },
-            { name: '大客户直销', value: 18 },
-            { name: '经销商分销', value: 12 },
-            { name: '其他', value: 6 }
-          ];
-          if (/客户分层/.test(t)) {
-            data = [
-              { name: '核心客户', value: 12 },
-              { name: '重要客户', value: 18 },
-              { name: '普通客户', value: 46 },
-              { name: '流失客户', value: 24 }
-            ];
-          }
-          return {
-            color: COLOR,
-            tooltip: { trigger: 'item', formatter: '{b}<br/>{c}% ({d}%)' },
-            legend: { orient: 'vertical', left: 'right', top: 'center', icon: 'roundRect', textStyle: baseTextStyle, itemWidth: 10, itemHeight: 6 },
-            series: [{
-              name: title || '占比', type: 'pie', radius: ['38%', '70%'], center: ['38%', '52%'],
-              avoidLabelOverlap: true, itemStyle: { borderColor: '#fff', borderWidth: 2 },
-              label: { show: true, formatter: '{b}\n{d}%', fontSize: 11, color: '#475569' },
-              labelLine: { length: 8, length2: 6 }, data: data
-            }]
-          };
-        }
-
-        // —— 漏斗图
-        if (type === 'funnel') {
-          return {
-            color: COLOR,
-            tooltip: { trigger: 'item', formatter: '{b}: {c}' },
-            legend: { top: 0, right: 0, icon: 'roundRect', textStyle: baseTextStyle, itemWidth: 10, itemHeight: 6 },
-            series: [{
-              name: title || '转化',
-              type: 'funnel',
-              left: '12%', right: '12%', top: 30, bottom: 8,
-              minSize: '20%', maxSize: '100%',
-              sort: 'descending', gap: 4,
-              label: { show: true, position: 'inside', color: '#fff', fontSize: 12, fontWeight: 600 },
-              itemStyle: { borderColor: '#fff', borderWidth: 2 },
-              data: [
-                { value: 1260000, name: '访问 1,260,000' },
-                { value: 231840, name: '加购 231,840 (18.4%)' },
-                { value: 97605, name: '下单 97,605 (42.1%)' },
-                { value: 85404, name: '支付 85,404 (87.5%)' }
-              ]
-            }]
-          };
-        }
-
-        // —— 雷达图
-        if (type === 'radar') {
-          return {
-            color: COLOR,
-            tooltip: {},
-            legend: { top: 0, right: 0, icon: 'roundRect', textStyle: baseTextStyle, itemWidth: 10, itemHeight: 6 },
-            radar: {
-              center: ['50%', '54%'], radius: '62%',
-              indicator: [
-                { name: '渠道结构', max: 100 }, { name: '客户集中度', max: 100 },
-                { name: '新品贡献', max: 100 }, { name: '库存周转', max: 100 },
-                { name: '增长率', max: 100 }
-              ],
-              name: { textStyle: { color: '#475569', fontSize: 11 } },
-              splitLine: { lineStyle: { color: '#dbe2ec' } },
-              axisLine: { lineStyle: { color: '#dbe2ec' } },
-              splitArea: { areaStyle: { color: [theme.primaryRgba(0.04), theme.primaryRgba(0.08)] } }
-            },
-            series: [{
-              name: title || '区域对比', type: 'radar',
-              data: [
-                { name: '华东', value: [88, 92, 80, 86, 82], areaStyle: { opacity: 0.18 } },
-                { name: '华南', value: [78, 70, 70, 72, 76], areaStyle: { opacity: 0.12 } },
-                { name: '华北', value: [62, 58, 55, 65, 60], areaStyle: { opacity: 0.10 } },
-                { name: '西南', value: [60, 55, 50, 60, 65], areaStyle: { opacity: 0.10 } }
-              ]
-            }]
-          };
-        }
-
-        // —— 热力图
-        if (type === 'heatmap') {
-          const xAxis = ['销售额', '订单量', '客单价', '完成率', '毛利率', '库存周转'];
-          const yAxis = /客户/.test(t) ? ['上海伟业', '北京华信', '深圳鼎盛', '广州益丰', '杭州凯越', '成都领航']
-                                          : ['华东', '华南', '华北', '西南', '华中', '东北'];
-          const data = [];
-          for (let y = 0; y < yAxis.length; y++) {
-            for (let x = 0; x < xAxis.length; x++) {
-              const v = Math.round(20 + Math.abs(Math.sin((x + 1) * (y + 1.3)) * 80));
-              data.push([x, y, v]);
-            }
-          }
-          return {
-            tooltip: { position: 'top' },
-            grid: { left: 70, right: 30, top: 30, bottom: 56 },
-            xAxis: { type: 'category', data: xAxis, splitArea: { show: true }, axisLabel: baseTextStyle, axisLine: { lineStyle: { color: '#dbe2ec' } } },
-            yAxis: { type: 'category', data: yAxis, splitArea: { show: true }, axisLabel: baseTextStyle, axisLine: { lineStyle: { color: '#dbe2ec' } } },
-            visualMap: { min: 0, max: 100, calculable: true, orient: 'horizontal', left: 'center', bottom: 0, inRange: { color: theme.heatmapPalette }, textStyle: baseTextStyle },
-            series: [{ name: title || '热力', type: 'heatmap', data: data, label: { show: true, fontSize: 10, color: '#fff' }, emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.2)' } } }]
-          };
-        }
-
-        // 默认占位
-        return { title: { text: title, left: 'center', top: 'middle', textStyle: { color: '#94a3b8', fontSize: 13, fontWeight: 'normal' } } };
-      }
 
       // 章节点击锚点跳转
       reportSectionListEl.addEventListener('click', function (e) {
@@ -4122,6 +3869,13 @@
       // 初始化
       renderTree();
       renderReport(activeReportId);
+      const savedVersion = Number(reportParams.get('savedVersion'));
+      if (requestedReportId === activeReportId && savedVersion && REPORT_VERSIONS[activeReportId][0].version === savedVersion) {
+        showToast('已保存报告，并生成版本 V' + savedVersion);
+        const url = new URL(window.location.href);
+        url.searchParams.delete('savedVersion');
+        try { window.history.replaceState(null, '', url); } catch (error) {}
+      }
 
       // ====================================================================
       // 8. 数据更新：10 秒静态模拟 + 跨页面状态恢复
@@ -4338,7 +4092,7 @@
         if (getReportUpdateElapsed(restoringUpdateTask) >= REPORT_UPDATE_DURATION) {
           clearReportUpdateTask();
         } else {
-          if (restoringUpdateTask.reportId && REPORT_DATA[restoringUpdateTask.reportId]) {
+          if (!REPORT_DATA[requestedReportId] && restoringUpdateTask.reportId && REPORT_DATA[restoringUpdateTask.reportId]) {
             activeReportId = restoringUpdateTask.reportId;
             renderTree();
             renderReport(activeReportId);
