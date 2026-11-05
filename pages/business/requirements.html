@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="智能问数业务端整体架构、业务架构、技术架构与业务场景说明">
+  <meta name="description" content="智能问数背景介绍、业务场景与整体架构说明">
   <title>智能问数业务端重点需求说明</title>
   <style>
     :root {
@@ -248,7 +248,7 @@
       font-size: 13px;
       font-weight: 700;
     }
-    .section-heading h2 { margin: 0; color: var(--navy-900); font-size: 22px; line-height: 1.4; }
+    .section-heading h3 { margin: 0; color: var(--navy-900); font-size: 18px; line-height: 1.4; }
     .section-heading p { margin: 4px 0 0; color: var(--slate-600); font-size: 13px; }
 
     .diagram-panel {
@@ -950,11 +950,13 @@
     .original-tech-content td a { color: var(--blue-700); }
     .original-tech-content .scope { color: var(--slate-600); font-size: 12px; }
 
+    .document-chapter,
     .scenarios-chapter {
       margin-top: 48px;
       padding-top: 40px;
       border-top: 2px solid var(--navy-900);
     }
+    .background-chapter { margin-top: 0; border-top: 0; }
     .chapter-heading {
       display: grid;
       grid-template-columns: 54px minmax(0, 1fr);
@@ -994,7 +996,51 @@
       font-weight: 700;
     }
     .scenario-heading h3 { margin: 0; color: var(--navy-900); font-size: 18px; line-height: 1.4; }
+    .scenario-heading h4 { margin: 0; color: var(--navy-900); font-size: 16px; line-height: 1.4; }
     .scenario-heading p { margin: 4px 0 0; color: var(--slate-600); font-size: 13px; }
+
+    .background-chapter .scenario-section { padding-top: 28px; }
+    .background-chapter .scenario-section + .scenario-section { margin-top: 24px; }
+    .pain-points { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin: 0; padding: 8px 0; list-style: none; }
+    .pain-point { min-width: 0; padding: 4px 10px; text-align: center; }
+    .pain-point + .pain-point { border-left: 1px solid var(--slate-200); }
+    .pain-icon { display: grid; place-items: center; width: 44px; height: 44px; margin: 0 auto 12px; color: var(--blue-700); background: var(--blue-50); border-radius: 10px; }
+    .pain-icon svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    .pain-point h4 { margin: 0 0 6px; color: var(--navy-900); font-size: 16px; line-height: 1.5; }
+    .pain-point p { margin: 0; color: var(--slate-600); font-size: 13px; }
+    .background-summary { margin: 18px 0 0; padding: 11px 14px; color: var(--blue-700); background: var(--blue-50); border-radius: 8px; font-size: 13px; text-align: center; }
+    .evolution-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; margin: 0; padding: 8px 0 0; list-style: none; }
+    .evolution-list li { position: relative; min-width: 0; text-align: center; }
+    .evolution-list li:not(:last-child)::before { content: ""; position: absolute; top: 16px; left: 50%; width: calc(100% + 24px); height: 1px; background: var(--slate-300); }
+    .evolution-list li:not(:last-child)::after { content: ""; position: absolute; top: 12px; right: -14px; width: 8px; height: 8px; border-top: 1px solid var(--slate-500); border-right: 1px solid var(--slate-500); transform: rotate(45deg); }
+    .evolution-step { position: relative; display: grid; place-items: center; width: 32px; height: 32px; margin: 0 auto 14px; color: var(--blue-700); background: var(--blue-100); border-radius: 50%; box-shadow: 0 0 0 7px var(--surface); font-size: 12px; font-weight: 700; }
+    .evolution-list .project-stage .evolution-step { color: #fff; background: var(--blue-600); }
+    .evolution-list h4 { min-height: 48px; margin: 0 0 6px; color: var(--navy-900); font-size: 16px; line-height: 1.5; }
+    .evolution-list .project-stage h4 { color: var(--blue-700); }
+    .evolution-list p { margin: 0; color: var(--slate-600); font-size: 13px; }
+    .evolution-scope { margin: 20px 0 0; padding-top: 12px; color: var(--slate-600); border-top: 1px solid var(--slate-200); font-size: 12px; text-align: center; }
+    .evolution-scope strong { color: var(--blue-700); font-weight: 500; }
+    .value-comparison { overflow-x: auto; }
+    .value-comparison table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 14px; text-align: left; }
+    .value-comparison col:nth-child(1) { width: 35%; }
+    .value-comparison col:nth-child(2) { width: 8%; }
+    .value-comparison col:nth-child(3) { width: 37%; }
+    .value-comparison col:nth-child(4) { width: 20%; }
+    .value-comparison th { padding: 10px 14px; color: var(--slate-600); background: var(--slate-100); font-size: 13px; font-weight: 500; }
+    .value-comparison td { padding: 15px 14px; color: var(--slate-700); border-bottom: 1px solid var(--slate-200); overflow-wrap: anywhere; }
+    .value-comparison .value-arrow { padding-right: 0; padding-left: 0; color: var(--blue-600); text-align: center; }
+    .value-arrow svg { width: 20px; height: 20px; margin: 0 auto; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    .value-comparison .value-target { color: var(--navy-900); }
+    .value-comparison strong { color: var(--blue-700); font-size: 14px; font-weight: 700; }
+
+    .scenario-intro { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 36px; margin: 0 0 22px; padding: 14px 0 18px; }
+    .scenario-intro-item { position: relative; min-width: 0; }
+    .scenario-intro-item:not(:last-child)::after { content: "→"; position: absolute; top: 46px; right: -26px; color: var(--slate-500); font-size: 18px; line-height: 1; }
+    .scenario-intro dt { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; color: var(--blue-700); font-size: 13px; font-weight: 500; }
+    .scenario-intro dt svg { flex: 0 0 auto; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    .scenario-intro dd { margin: 0; }
+    .scenario-intro strong { display: block; color: var(--navy-900); font-size: 16px; font-weight: 700; line-height: 1.5; }
+    .scenario-intro p { margin: 6px 0 0; color: var(--slate-600); font-size: 13px; overflow-wrap: anywhere; }
 
     .scene-flow {
       display: grid;
@@ -1280,6 +1326,25 @@
       .chapter-heading h2 { font-size: 21px; }
       .scenario-heading { grid-template-columns: 42px minmax(0, 1fr); gap: 10px; }
       .scenario-index { width: 42px; height: 36px; }
+      .pain-points { grid-template-columns: 1fr; gap: 14px; }
+      .pain-point { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 14px; padding: 0; text-align: left; }
+      .pain-point + .pain-point { border-left: 0; }
+      .pain-icon { grid-row: span 2; margin: 0; }
+      .pain-point h4 { margin-bottom: 2px; }
+      .evolution-list { grid-template-columns: 1fr; gap: 20px; }
+      .evolution-list li { display: grid; grid-template-columns: 32px minmax(0, 1fr); column-gap: 16px; text-align: left; }
+      .evolution-list li:not(:last-child)::before { top: 16px; left: 16px; width: 1px; height: calc(100% + 20px); }
+      .evolution-list li:not(:last-child)::after { display: none; }
+      .evolution-step { grid-row: span 2; margin: 0; }
+      .evolution-list h4 { min-height: 0; margin-bottom: 4px; }
+      .evolution-list p { grid-column: 2; }
+      .value-comparison th { padding: 9px 6px; }
+      .value-comparison td { padding: 12px 6px; font-size: 13px; }
+      .value-comparison strong { font-size: 13px; }
+      .scenario-intro { grid-template-columns: 1fr; gap: 18px; padding-top: 8px; }
+      .scenario-intro-item + .scenario-intro-item { padding-top: 16px; border-top: 1px solid var(--slate-200); }
+      .scenario-intro-item:not(:last-child)::after { display: none; }
+      .scenario-intro dt { margin-bottom: 7px; }
       .diagram-toolbar { align-items: flex-start; }
       .diagram-toolbar > div span { display: none; }
       .diagram-viewport { padding: 18px 14px 24px; }
@@ -1316,26 +1381,16 @@
         <span>CONTENTS</span>
       </div>
       <nav class="toc-nav">
-        <div class="toc-group" data-toc-group="architecture">
-          <button class="toc-root" type="button" data-toc-toggle aria-expanded="true" aria-controls="toc-architecture">
+        <div class="toc-group" data-toc-group="background">
+          <button class="toc-root" type="button" data-toc-toggle aria-expanded="true" aria-controls="toc-background">
             <span class="toc-index">01</span>
-            <span class="toc-label">整体架构</span>
+            <span class="toc-label">背景介绍</span>
             <svg class="toc-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
           </button>
-          <div class="toc-children" id="toc-architecture">
-            <a class="toc-link" href="#overall-architecture" data-toc-link data-parent="architecture" aria-current="true">1.1 整体架构</a>
-            <a class="toc-link" href="#business-architecture" data-toc-link data-parent="architecture">1.2 业务架构</a>
-            <a class="toc-link" href="#technical-architecture" data-toc-link data-parent="architecture">1.3 技术架构</a>
-            <div class="toc-grandchildren">
-              <a class="toc-link" href="#tech-overview" data-toc-link data-parent="architecture">1.3.1 总体技术架构</a>
-              <a class="toc-link" href="#tech-preparation" data-toc-link data-parent="architecture">1.3.2 数据准备与授权</a>
-              <a class="toc-link" href="#tech-sequence" data-toc-link data-parent="architecture">1.3.3 请求运行时序</a>
-              <a class="toc-link" href="#tech-query" data-toc-link data-parent="architecture">1.3.4 查询决策与展示</a>
-              <a class="toc-link" href="#tech-skills" data-toc-link data-parent="architecture">1.3.5 托管技能执行</a>
-              <a class="toc-link" href="#tech-reports" data-toc-link data-parent="architecture">1.3.6 报告处理流程</a>
-              <a class="toc-link" href="#tech-deployment" data-toc-link data-parent="architecture">1.3.7 部署拓扑</a>
-              <a class="toc-link" href="#tech-boundary" data-toc-link data-parent="architecture">1.3.8 实现边界</a>
-            </div>
+          <div class="toc-children" id="toc-background">
+            <a class="toc-link" href="#background-pain-points" data-toc-link data-parent="background" aria-current="true">1.1 智能问数的背景痛点</a>
+            <a class="toc-link" href="#background-evolution" data-toc-link data-parent="background">1.2 发展历程</a>
+            <a class="toc-link" href="#background-value" data-toc-link data-parent="background">1.3 价值意义</a>
           </div>
         </div>
         <div class="toc-group" data-toc-group="scenarios">
@@ -1354,23 +1409,687 @@
             <a class="toc-link" href="#scene-scheduled" data-toc-link data-parent="scenarios">2.7 定时任务</a>
           </div>
         </div>
+        <div class="toc-group" data-toc-group="architecture">
+          <button class="toc-root" type="button" data-toc-toggle aria-expanded="true" aria-controls="toc-architecture">
+            <span class="toc-index">03</span>
+            <span class="toc-label">整体架构</span>
+            <svg class="toc-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+          </button>
+          <div class="toc-children" id="toc-architecture">
+            <a class="toc-link" href="#overall-architecture" data-toc-link data-parent="architecture">3.1 整体架构</a>
+            <a class="toc-link" href="#business-architecture" data-toc-link data-parent="architecture">3.2 业务架构</a>
+            <a class="toc-link" href="#technical-architecture" data-toc-link data-parent="architecture">3.3 技术架构</a>
+            <div class="toc-grandchildren">
+              <a class="toc-link" href="#tech-overview" data-toc-link data-parent="architecture">3.3.1 总体技术架构</a>
+              <a class="toc-link" href="#tech-preparation" data-toc-link data-parent="architecture">3.3.2 数据准备与授权</a>
+              <a class="toc-link" href="#tech-sequence" data-toc-link data-parent="architecture">3.3.3 请求运行时序</a>
+              <a class="toc-link" href="#tech-query" data-toc-link data-parent="architecture">3.3.4 查询决策与展示</a>
+              <a class="toc-link" href="#tech-skills" data-toc-link data-parent="architecture">3.3.5 托管技能执行</a>
+              <a class="toc-link" href="#tech-reports" data-toc-link data-parent="architecture">3.3.6 报告处理流程</a>
+              <a class="toc-link" href="#tech-deployment" data-toc-link data-parent="architecture">3.3.7 部署拓扑</a>
+              <a class="toc-link" href="#tech-boundary" data-toc-link data-parent="architecture">3.3.8 实现边界</a>
+            </div>
+          </div>
+        </div>
       </nav>
-      <div class="toc-note">整体架构用于概览，业务架构和业务场景用于说明业务闭环，技术架构用于说明系统实现与数据流程。</div>
+      <div class="toc-note">背景介绍说明建设动因与价值，业务场景说明使用路径，整体架构说明业务闭环、系统实现与数据流程。</div>
     </aside>
 
     <main class="document" id="main">
       <header class="document-head">
-        <div class="document-type">重点需求 · 整体、业务与技术架构</div>
+        <div class="document-type">重点需求 · 背景、场景与架构</div>
         <h1>智能问数业务端重点需求说明</h1>
-        <p class="document-subtitle">先通过整体架构建立统一认知，再分别说明业务闭环、技术实现和重点业务场景，便于需求宣讲、方案评审和后续章节持续扩展。</p>
-        <div class="scope-note"><strong>当前范围：</strong>本页包括整体架构、业务架构、技术架构和业务场景流程。</div>
+        <p class="document-subtitle">从智能问数的背景痛点、发展历程与价值意义出发，介绍重点业务场景，再通过整体架构说明业务闭环与技术实现，便于需求宣讲和方案评审。</p>
+        <div class="scope-note"><strong>当前范围：</strong>本页包括背景介绍、业务场景和整体架构三章，架构部分包含整体架构、业务架构与技术架构。</div>
       </header>
+
+      <section class="document-chapter background-chapter" id="background-introduction">
+        <div class="chapter-heading">
+          <span class="chapter-number">01</span>
+          <div>
+            <h2>背景介绍</h2>
+            <p>从业务用数面临的问题出发，说明智能问数的能力演进方向与建设价值。</p>
+          </div>
+        </div>
+
+        <section class="scenario-section" id="background-pain-points">
+          <div class="scenario-heading">
+            <span class="scenario-index">1.1</span>
+            <div>
+              <h3>智能问数的背景痛点</h3>
+            </div>
+          </div>
+          <ul class="pain-points" aria-label="业务用数的五类常见痛点">
+            <li class="pain-point">
+              <span class="pain-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="7" cy="5" rx="4" ry="2"></ellipse><path d="M3 5v7c0 1.1 1.8 2 4 2m4-9v5M3 9c0 1.1 1.8 2 4 2"></path><ellipse cx="17" cy="12" rx="4" ry="2"></ellipse><path d="M13 12v7c0 1.1 1.8 2 4 2s4-.9 4-2v-7m-8 3.5c0 1.1 1.8 2 4 2s4-.9 4-2"></path></svg></span>
+              <h4>数据分散</h4>
+              <p>跨系统查找汇总</p>
+            </li>
+            <li class="pain-point">
+              <span class="pain-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span>
+              <h4>取数等待</h4>
+              <p>依赖技术人员</p>
+            </li>
+            <li class="pain-point">
+              <span class="pain-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path><circle cx="8" cy="6" r="2" fill="var(--blue-50)"></circle><circle cx="16" cy="12" r="2" fill="var(--blue-50)"></circle><circle cx="10" cy="18" r="2" fill="var(--blue-50)"></circle></svg></span>
+              <h4>口径不一</h4>
+              <p>指标定义有差异</p>
+            </li>
+            <li class="pain-point">
+              <span class="pain-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 3V11.5A7.5 7.5 0 0 1 10.5 4H13"></path><path d="M16 3h5v5m0-5-7 7"></path></svg></span>
+              <h4>追问受限</h4>
+              <p>固定报表难深入</p>
+            </li>
+            <li class="pain-point">
+              <span class="pain-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h9l4 4v11H8zM17 3v5h4M5 7H3v14h13v-1M11 12h7m-7 3h5"></path></svg></span>
+              <h4>成果零散</h4>
+              <p>整理复用成本高</p>
+            </li>
+          </ul>
+          <p class="background-summary">从提出问题到获得结论，业务用数链路仍然较长。</p>
+        </section>
+
+        <section class="scenario-section" id="background-evolution">
+          <div class="scenario-heading">
+            <span class="scenario-index">1.2</span>
+            <div>
+              <h3>发展历程</h3>
+              <p>从人工取数到智能分析，逐步衔接查询、探索与成果交付。</p>
+            </div>
+          </div>
+          <ol class="evolution-list">
+            <li>
+              <span class="evolution-step" aria-hidden="true">01</span>
+              <h4>人工取数与固定报表</h4>
+              <p>人找数据</p>
+            </li>
+            <li>
+              <span class="evolution-step" aria-hidden="true">02</span>
+              <h4>自助 BI</h4>
+              <p>自主探索</p>
+            </li>
+            <li class="project-stage">
+              <span class="evolution-step" aria-hidden="true">03</span>
+              <h4>自然语言问数</h4>
+              <p>对话查询</p>
+            </li>
+            <li class="project-stage">
+              <span class="evolution-step" aria-hidden="true">04</span>
+              <h4>智能分析与成果生成</h4>
+              <p>分析与交付</p>
+            </li>
+          </ol>
+          <p class="evolution-scope"><strong>本项目覆盖方向：自然语言问数 → 智能分析与成果生成</strong>；各类用数方式可并存。</p>
+        </section>
+
+        <section class="scenario-section" id="background-value">
+          <div class="scenario-heading">
+            <span class="scenario-index">1.3</span>
+            <div>
+              <h3>价值意义</h3>
+              <p>从用数方式的变化，体现智能问数带来的四项核心价值。</p>
+            </div>
+          </div>
+          <div class="value-comparison">
+            <table aria-label="智能问数建设前后的用数方式与核心价值对照">
+              <colgroup><col><col><col><col></colgroup>
+              <thead>
+                <tr><th scope="col">原有用数方式</th><th scope="col" aria-label="转变方向"></th><th scope="col">建设后的能力</th><th scope="col">核心价值</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>依赖技术人员取数</td>
+                  <td class="value-arrow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6"></path></svg></td>
+                  <td class="value-target">自然语言提问</td>
+                  <td><strong>降低门槛</strong></td>
+                </tr>
+                <tr>
+                  <td>多工具切换、手动整理</td>
+                  <td class="value-arrow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6"></path></svg></td>
+                  <td class="value-target">衔接查询、分析与交付</td>
+                  <td><strong>提升效率</strong></td>
+                </tr>
+                <tr>
+                  <td>口径反复解释核对</td>
+                  <td class="value-arrow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6"></path></svg></td>
+                  <td class="value-target">统一语义与权限约束</td>
+                  <td><strong>规范用数</strong></td>
+                </tr>
+                <tr>
+                  <td>相似任务重复制作</td>
+                  <td class="value-arrow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16m-6-6 6 6-6 6"></path></svg></td>
+                  <td class="value-target">报告、看板与技能复用</td>
+                  <td><strong>沉淀成果</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section class="scenarios-chapter" id="business-scenarios">
+        <div class="chapter-heading">
+          <span class="chapter-number">02</span>
+          <div>
+            <h2>业务场景</h2>
+            <p>围绕问数、文档、看板、引用分析、附件、技能与定时任务，分别说明从发起、处理、输出到成果沉淀的具体路径。</p>
+          </div>
+        </div>
+
+        <section class="scenario-section" id="scene-qa">
+          <div class="scenario-heading">
+            <span class="scenario-index">2.1</span>
+            <div>
+              <h3>通用问数与HTML结果</h3>
+              <p>面向临时查询与探索分析，通过对话获取并理解业务数据。</p>
+            </div>
+          </div>
+          <dl class="scenario-intro" aria-label="通用问数与HTML结果场景介绍">
+            <div class="scenario-intro-item">
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>使用功能</dt>
+              <dd><strong>自然语言问数</strong><p>连续追问 · 文字与图表展示</p></dd>
+            </div>
+            <div class="scenario-intro-item">
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6m0 4h.01"></path></svg>解决问题</dt>
+              <dd><strong>临时取数慢、追问难</strong><p>固定报表难以覆盖深入分析</p></dd>
+            </div>
+            <div class="scenario-intro-item">
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h16M8 15l4-4 4 2 5-7m-5 0h5v5"></path></svg>业务价值</dt>
+              <dd><strong>降低查询门槛</strong><p>快速获取数据，理解业务变化</p></dd>
+            </div>
+          </dl>
+          <div class="diagram-panel">
+            <div class="diagram-toolbar">
+              <div><strong>通用问数与HTML结果流程</strong><span>从提出问题到追问、保存或导出</span></div>
+              <button class="diagram-btn" type="button" data-fullscreen="scene-qa-diagram">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"></path></svg>全屏查看
+              </button>
+            </div>
+            <div class="diagram-viewport">
+              <div class="scene-flow" id="scene-qa-diagram" aria-label="通用问数与HTML结果流程图">
+                <div class="fc-node fc-startend">提出业务问题</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-node">AI理解问题<small>识别指标、维度、筛选条件和会话上下文</small></div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-node">查询并分析数据</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-node">自动选择展示方式<small>根据结果内容组织文字、指标卡、表格、图表或图片</small></div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-node fc-result">生成HTML交互结果</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-decision-wrap"><div class="fc-decision"><span>下一步如何处理？</span></div></div>
+                <div class="fc-split" aria-hidden="true"></div>
+                <div class="fc-branches cols-4">
+                  <div class="fc-branch">
+                    <span class="fc-branch-label">继续分析</span>
+                    <div class="fc-node">继续追问、趋势、归因、对比或数据解读</div>
+                    <div class="fc-loop-note">携带当前结果上下文，返回AI理解与分析流程</div>
+                  </div>
+                  <div class="fc-branch">
+                    <span class="fc-branch-label">整体保存</span>
+                    <div class="fc-node fc-result">完整结果保存到“我的看板”</div>
+                  </div>
+                  <div class="fc-branch">
+                    <span class="fc-branch-label">局部保存</span>
+                    <div class="fc-node">表格、图表或指标卡保存到“我的仪表盘”</div>
+                    <div class="fc-arrow" aria-hidden="true"></div>
+                    <div class="fc-node fc-result">手动编排组件看板</div>
+                  </div>
+                  <div class="fc-branch">
+                    <span class="fc-branch-label">导出</span>
+                    <div class="fc-node fc-document">导出Word、PDF或表格数据Excel</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="scenario-section" id="scene-document">
+          <div class="scenario-heading">
+            <span class="scenario-index">2.2</span>
+            <div>
+              <h3>文档生成与报告管理</h3>
+              <p>面向有明确交付要求的任务，将分析结果整理为可持续修订的报告。</p>
+            </div>
+          </div>
+          <dl class="scenario-intro" aria-label="文档生成与报告管理场景介绍">
+            <div class="scenario-intro-item">
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>使用功能</dt>
+              <dd><strong>文档生成与报告管理</strong><p>Word / PDF / Excel · AI修改与版本保存</p></dd>
+            </div>
+            <div class="scenario-intro-item">
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6m0 4h.01"></path></svg>解决问题</dt>
+              <dd><strong>文档整理与修订繁琐</strong><p>分析后需手动排版，修改版本分散</p></dd>
+            </div>
+            <div class="scenario-intro-item">
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h16M8 15l4-4 4 2 5-7m-5 0h5v5"></path></svg>业务价值</dt>
+              <dd><strong>缩短报告交付链路</strong><p>按本次要求灵活输出，修订可追溯</p></dd>
+            </div>
+          </dl>
+          <div class="diagram-panel">
+            <div class="diagram-toolbar">
+              <div><strong>文档生成与报告管理流程</strong><span>从生成文件到报告版本沉淀</span></div>
+              <button class="diagram-btn" type="button" data-fullscreen="scene-document-diagram">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"></path></svg>全屏查看
+              </button>
+            </div>
+            <div class="diagram-viewport">
+              <div class="scene-flow" id="scene-document-diagram" aria-label="文档生成与报告管理流程图">
+                <div class="fc-node fc-startend">明确要求生成文档</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-node">识别格式、内容范围和模板要求</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-node">查询并组织数据</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-node fc-document">生成Word、PDF或Excel</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-node">预览或下载文件</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-decision-wrap"><div class="fc-decision"><span>是否保存到“我的报告”？</span></div></div>
+                <div class="fc-split" aria-hidden="true"></div>
+                <div class="fc-branches cols-2">
+                  <div class="fc-branch">
+                    <span class="fc-branch-label">否</span>
+                    <div class="fc-node fc-startend">完成本次文档输出</div>
+                  </div>
+                  <div class="fc-branch">
+                    <span class="fc-branch-label">是</span>
+                    <div class="fc-node fc-result">保存报告及当前版本</div>
+                    <div class="fc-arrow" aria-hidden="true"></div>
+                    <div class="fc-decision-wrap"><div class="fc-decision"><span>是否继续AI修改？</span></div></div>
+                    <div class="fc-split" aria-hidden="true"></div>
+                    <div class="fc-branches cols-2">
+                      <div class="fc-branch">
+                        <span class="fc-branch-label">否</span>
+                        <div class="fc-node fc-startend">保留当前报告版本</div>
+                      </div>
+                      <div class="fc-branch">
+                        <span class="fc-branch-label">是</span>
+                        <div class="fc-node">引用报告提出改写、补充或追加要求</div>
+                        <div class="fc-arrow" aria-hidden="true"></div>
+                        <div class="fc-node">AI生成修改候选</div>
+                        <div class="fc-arrow" aria-hidden="true"></div>
+                        <div class="fc-decision-wrap"><div class="fc-decision"><span>是否确认保存修改？</span></div></div>
+                        <div class="fc-split" aria-hidden="true"></div>
+                        <div class="fc-branches cols-2">
+                          <div class="fc-branch">
+                            <span class="fc-branch-label">否</span>
+                            <div class="fc-node">返回继续调整候选内容</div>
+                          </div>
+                          <div class="fc-branch">
+                            <span class="fc-branch-label">是</span>
+                            <div class="fc-node fc-result">形成新报告版本并重新导出</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="scenario-section" id="scene-dashboard">
+          <div class="scenario-heading">
+            <span class="scenario-index">2.3</span>
+            <div>
+              <h3>仪表盘与看板沉淀</h3>
+              <p>面向常用指标与专题分析，将一次性结果沉淀为可持续查看的业务视图。</p>
+            </div>
+          </div>
+          <dl class="scenario-intro" aria-label="仪表盘与看板沉淀场景介绍">
+            <div class="scenario-intro-item">
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>使用功能</dt>
+              <dd><strong>保存结果与编排看板</strong><p>完整结果存为AI看板，局部组件手动编排</p></dd>
+            </div>
+            <div class="scenario-intro-item">
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6m0 4h.01"></path></svg>解决问题</dt>
+              <dd><strong>分析成果分散难复用</strong><p>常用指标与图表需要重复整理</p></dd>
+            </div>
+            <div class="scenario-intro-item">
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h16M8 15l4-4 4 2 5-7m-5 0h5v5"></path></svg>业务价值</dt>
+              <dd><strong>沉淀可复用的业务视图</strong><p>集中组织成果，便于后续查看</p></dd>
+            </div>
+          </dl>
+          <div class="diagram-panel">
+            <div class="diagram-toolbar">
+              <div><strong>仪表盘与看板沉淀流程</strong><span>完整保存与局部组件沉淀的差异</span></div>
+              <button class="diagram-btn" type="button" data-fullscreen="scene-dashboard-diagram">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"></path></svg>全屏查看
+              </button>
+            </div>
+            <div class="diagram-viewport">
+              <div class="scene-flow" id="scene-dashboard-diagram" aria-label="仪表盘与看板沉淀流程图">
+                <div class="fc-node fc-startend">获得HTML分析结果</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-decision-wrap"><div class="fc-decision"><span>保存完整结果还是局部内容？</span></div></div>
+                <div class="fc-split" aria-hidden="true"></div>
+                <div class="fc-branches cols-2">
+                  <div class="fc-branch">
+                    <span class="fc-branch-label">完整结果</span>
+                    <div class="fc-node fc-result">整体保存为AI生成看板</div>
+                    <div class="fc-arrow" aria-hidden="true"></div>
+                    <div class="fc-node">后续引用看板继续AI分析</div>
+                    <div class="fc-arrow" aria-hidden="true"></div>
+                    <div class="fc-decision-wrap"><div class="fc-decision"><span>是否要求修改看板？</span></div></div>
+                    <div class="fc-split" aria-hidden="true"></div>
+                    <div class="fc-branches cols-2">
+                      <div class="fc-branch">
+                        <span class="fc-branch-label">否</span>
+                        <div class="fc-node fc-result">生成HTML分析结果</div>
+                      </div>
+                      <div class="fc-branch">
+                        <span class="fc-branch-label">是</span>
+                        <div class="fc-node">生成看板修改草稿</div>
+                        <div class="fc-arrow" aria-hidden="true"></div>
+                        <div class="fc-node fc-result">确认后形成新看板版本</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="fc-branch">
+                    <span class="fc-branch-label">局部内容</span>
+                    <div class="fc-node">表格、图表或指标卡保存到“我的仪表盘”</div>
+                    <div class="fc-arrow" aria-hidden="true"></div>
+                    <div class="fc-node">选择多个已保存成果</div>
+                    <div class="fc-arrow" aria-hidden="true"></div>
+                    <div class="fc-node">手动编排组件看板</div>
+                    <div class="fc-arrow" aria-hidden="true"></div>
+                    <div class="fc-node fc-result">进入看板编辑页维护组件与布局</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="scenario-section" id="scene-reference">
+          <div class="scenario-heading">
+            <span class="scenario-index">2.4</span>
+            <div>
+              <h3>引用看板或报告</h3>
+              <p>面向已有成果的后续分析与更新，沿用原有上下文继续开展工作。</p>
+            </div>
+          </div>
+          <dl class="scenario-intro" aria-label="引用看板或报告场景介绍">
+            <div class="scenario-intro-item">
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>使用功能</dt>
+              <dd><strong>引用成果与继续分析</strong><p>引用看板或报告，按需确认修改</p></dd>
+            </div>
+            <div class="scenario-intro-item">
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6m0 4h.01"></path></svg>解决问题</dt>
+              <dd><strong>背景重复提供、版本易混淆</strong><p>后续分析与成果更新缺少清晰衔接</p></dd>
+            </div>
+            <div class="scenario-intro-item">
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h16M8 15l4-4 4 2 5-7m-5 0h5v5"></path></svg>业务价值</dt>
+              <dd><strong>延续上下文，明确版本边界</strong><p>仅分析保留原成果，确认修改后形成新版本</p></dd>
+            </div>
+          </dl>
+          <div class="diagram-panel">
+            <div class="diagram-toolbar">
+              <div><strong>引用看板或报告流程</strong><span>明确分析与修改的版本边界</span></div>
+              <button class="diagram-btn" type="button" data-fullscreen="scene-reference-diagram">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"></path></svg>全屏查看
+              </button>
+            </div>
+            <div class="diagram-viewport">
+              <div class="scene-flow" id="scene-reference-diagram" aria-label="引用看板或报告流程图">
+                <div class="fc-node fc-startend">引用“我的看板”或“我的报告”</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-node">AI读取引用内容和当前版本</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-decision-wrap"><div class="fc-decision"><span>本次是分析还是修改？</span></div></div>
+                <div class="fc-split" aria-hidden="true"></div>
+                <div class="fc-branches cols-2">
+                  <div class="fc-branch">
+                    <span class="fc-branch-label">仅分析</span>
+                    <div class="fc-node fc-result">生成HTML分析结果</div>
+                    <div class="fc-arrow" aria-hidden="true"></div>
+                    <div class="fc-node">继续基于引用内容追问</div>
+                    <div class="fc-arrow" aria-hidden="true"></div>
+                    <div class="fc-node fc-startend">不改原成果，不产生新版本</div>
+                  </div>
+                  <div class="fc-branch">
+                    <span class="fc-branch-label">修改或写入</span>
+                    <div class="fc-node">明确修改目标与影响范围</div>
+                    <div class="fc-arrow" aria-hidden="true"></div>
+                    <div class="fc-node">按目标类型处理<small>报告：修改或追加候选；AI看板：生成草稿；人工组件看板：进入看板编辑页</small></div>
+                    <div class="fc-arrow" aria-hidden="true"></div>
+                    <div class="fc-decision-wrap"><div class="fc-decision"><span>是否确认保存？</span></div></div>
+                    <div class="fc-split" aria-hidden="true"></div>
+                    <div class="fc-branches cols-2">
+                      <div class="fc-branch">
+                        <span class="fc-branch-label">否</span>
+                        <div class="fc-node">返回修改目标或候选内容继续调整</div>
+                      </div>
+                      <div class="fc-branch">
+                        <span class="fc-branch-label">是</span>
+                        <div class="fc-node fc-result">形成新的看板或报告版本</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="scenario-section" id="scene-upload">
+          <div class="scenario-heading">
+            <span class="scenario-index">2.5</span>
+            <div>
+              <h3>附件、图片与模板分析</h3>
+              <p>面向外部材料与指定模板，结合上传内容完成分析和成果输出。</p>
+            </div>
+          </div>
+          <dl class="scenario-intro" aria-label="附件、图片与模板分析场景介绍">
+            <div class="scenario-intro-item">
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>使用功能</dt>
+              <dd><strong>上传材料与结合内容分析</strong><p>附件 · 图片 · 文档模板</p></dd>
+            </div>
+            <div class="scenario-intro-item">
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6m0 4h.01"></path></svg>解决问题</dt>
+              <dd><strong>外部材料整理转换费时</strong><p>文件与图片内容难以直接参与问数</p></dd>
+            </div>
+            <div class="scenario-intro-item">
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h16M8 15l4-4 4 2 5-7m-5 0h5v5"></path></svg>业务价值</dt>
+              <dd><strong>扩展分析材料范围</strong><p>减少手动整理，按需输出文档或HTML结果</p></dd>
+            </div>
+          </dl>
+          <div class="diagram-panel">
+            <div class="diagram-toolbar">
+              <div><strong>附件、图片与模板分析流程</strong><span>上传内容识别与后续成果分流</span></div>
+              <button class="diagram-btn" type="button" data-fullscreen="scene-upload-diagram">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"></path></svg>全屏查看
+              </button>
+            </div>
+            <div class="diagram-viewport">
+              <div class="scene-flow" id="scene-upload-diagram" aria-label="附件图片与模板分析流程图">
+                <div class="fc-node fc-startend">上传附件、图片或文档模板</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-node">识别文件内容、图片信息或模板结构</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-node">用户补充分析范围和输出要求</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-node">AI结合上传内容进行分析</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-decision-wrap"><div class="fc-decision"><span>选择输出类型</span></div></div>
+                <div class="fc-split" aria-hidden="true"></div>
+                <div class="fc-branches cols-2">
+                  <div class="fc-branch">
+                    <span class="fc-branch-label">文档输出</span>
+                    <div class="fc-node fc-document">生成Word、PDF或Excel</div>
+                    <div class="fc-arrow" aria-hidden="true"></div>
+                    <div class="fc-node fc-result">下载文件或保存到“我的报告”</div>
+                  </div>
+                  <div class="fc-branch">
+                    <span class="fc-branch-label">HTML输出</span>
+                    <div class="fc-node">生成文字、表格、图表等交互结果</div>
+                    <div class="fc-arrow" aria-hidden="true"></div>
+                    <div class="fc-node fc-result">继续追问、保存看板或导出结果</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="scenario-section" id="scene-skill">
+          <div class="scenario-heading">
+            <span class="scenario-index">2.6</span>
+            <div>
+              <h3>技能分析</h3>
+              <p>面向方法与结构相对固定的专业任务，复用预置分析规则和文档模板。</p>
+            </div>
+          </div>
+          <dl class="scenario-intro" aria-label="技能分析场景介绍">
+            <div class="scenario-intro-item">
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>使用功能</dt>
+              <dd><strong>选择技能、填写参数</strong><p>按预置提示词、查询规则与模板执行</p></dd>
+            </div>
+            <div class="scenario-intro-item">
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6m0 4h.01"></path></svg>解决问题</dt>
+              <dd><strong>专业方法难复用</strong><p>同类分析依赖个人经验，报告结构不一致</p></dd>
+            </div>
+            <div class="scenario-intro-item">
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h16M8 15l4-4 4 2 5-7m-5 0h5v5"></path></svg>业务价值</dt>
+              <dd><strong>沉淀专业方法</strong><p>复用标准流程，提升分析与交付的一致性</p></dd>
+            </div>
+          </dl>
+          <div class="diagram-panel">
+            <div class="diagram-toolbar">
+              <div><strong>技能分析流程</strong><span>后台技能配置驱动的标准化输出</span></div>
+              <button class="diagram-btn" type="button" data-fullscreen="scene-skill-diagram">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"></path></svg>全屏查看
+              </button>
+            </div>
+            <div class="diagram-viewport">
+              <div class="scene-flow" id="scene-skill-diagram" aria-label="技能分析流程图">
+                <div class="fc-node fc-startend">选择分析技能</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-node">加载后台技能配置</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-node">读取提示词、数据查询规则和文档模板</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-node">用户补充时间、范围和业务参数</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-node">执行预置数据查询与分析</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-node fc-document">按照技能模板生成相应文档</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-node">预览或下载</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-decision-wrap"><div class="fc-decision"><span>是否保存到“我的报告”？</span></div></div>
+                <div class="fc-split" aria-hidden="true"></div>
+                <div class="fc-branches cols-2">
+                  <div class="fc-branch">
+                    <span class="fc-branch-label">否</span>
+                    <div class="fc-node fc-startend">完成本次技能分析</div>
+                  </div>
+                  <div class="fc-branch">
+                    <span class="fc-branch-label">是</span>
+                    <div class="fc-node fc-result">保存报告</div>
+                    <div class="fc-arrow" aria-hidden="true"></div>
+                    <div class="fc-node">后续引用报告进行AI修改</div>
+                    <div class="fc-arrow" aria-hidden="true"></div>
+                    <div class="fc-node fc-result">确认后形成新报告版本</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="scenario-section" id="scene-scheduled">
+          <div class="scenario-heading">
+            <span class="scenario-index">2.7</span>
+            <div>
+              <h3>定时任务</h3>
+              <p>面向周期性问数与报告需求，按计划执行并持续管理每次分析结果。</p>
+            </div>
+          </div>
+          <dl class="scenario-intro" aria-label="定时任务场景介绍">
+            <div class="scenario-intro-item">
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>使用功能</dt>
+              <dd><strong>周期配置与自动执行</strong><p>问数或文档任务 · 结果记录与通知</p></dd>
+            </div>
+            <div class="scenario-intro-item">
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6m0 4h.01"></path></svg>解决问题</dt>
+              <dd><strong>周期分析反复手动发起</strong><p>重复配置任务，历次执行结果分散</p></dd>
+            </div>
+            <div class="scenario-intro-item">
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h16M8 15l4-4 4 2 5-7m-5 0h5v5"></path></svg>业务价值</dt>
+              <dd><strong>减少重复操作</strong><p>按周期获得成果，集中查看执行记录</p></dd>
+            </div>
+          </dl>
+          <div class="diagram-panel">
+            <div class="diagram-toolbar">
+              <div><strong>定时任务流程</strong><span>周期执行、结果记录与任务状态管理</span></div>
+              <button class="diagram-btn" type="button" data-fullscreen="scene-scheduled-diagram">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"></path></svg>全屏查看
+              </button>
+            </div>
+            <div class="diagram-viewport">
+              <div class="scene-flow" id="scene-scheduled-diagram" aria-label="定时任务流程图">
+                <div class="fc-node fc-startend">创建定时任务</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-node">设置执行周期</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-node">配置问题、数据范围和输出要求</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-node">按计划自动执行</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-decision-wrap"><div class="fc-decision"><span>本次输出类型</span></div></div>
+                <div class="fc-split" aria-hidden="true"></div>
+                <div class="fc-branches cols-2 with-merge">
+                  <div class="fc-branch">
+                    <span class="fc-branch-label">HTML</span>
+                    <div class="fc-node">生成问数与分析结果</div>
+                  </div>
+                  <div class="fc-branch">
+                    <span class="fc-branch-label">文档</span>
+                    <div class="fc-node fc-document">生成Word、PDF或Excel</div>
+                  </div>
+                </div>
+                <div class="fc-merge" aria-hidden="true"></div>
+                <div class="fc-node">记录执行结果并发送通知</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-node fc-result">查看、下载或保存本次成果</div>
+                <div class="fc-arrow" aria-hidden="true"></div>
+                <div class="fc-decision-wrap"><div class="fc-decision"><span>任务是否继续？</span></div></div>
+                <div class="fc-split" aria-hidden="true"></div>
+                <div class="fc-branches cols-2">
+                  <div class="fc-branch">
+                    <span class="fc-branch-label">继续</span>
+                    <div class="fc-node">等待下一执行周期</div>
+                    <div class="fc-loop-note">到达计划时间后再次自动执行</div>
+                  </div>
+                  <div class="fc-branch">
+                    <span class="fc-branch-label">不继续</span>
+                    <div class="fc-node fc-startend">暂停或结束任务</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section class="document-chapter" id="architecture-chapter">
+        <div class="chapter-heading">
+          <span class="chapter-number">03</span>
+          <div>
+            <h2>整体架构</h2>
+            <p>从整体分层、业务闭环与技术实现三个方面，说明前述业务场景的支撑方式。</p>
+          </div>
+        </div>
 
       <section class="architecture-section" id="overall-architecture">
         <div class="section-heading">
-          <span class="section-index">1.1</span>
+          <span class="section-index">3.1</span>
           <div>
-            <h2>整体架构</h2>
+            <h3>整体架构</h3>
             <p>以自然语言作为统一入口，在业务口径和权限范围内连接企业数据、智能分析能力与多种成果交付方式。</p>
           </div>
         </div>
@@ -1456,9 +2175,9 @@
 
       <section class="architecture-section" id="business-architecture">
         <div class="section-heading">
-          <span class="section-index">1.2</span>
+          <span class="section-index">3.2</span>
           <div>
-            <h2>业务架构</h2>
+            <h3>业务架构</h3>
             <p>从多类业务入口出发，经AI意图判断进入文档或HTML输出，并通过看板、报告、引用和版本机制形成完整闭环。</p>
           </div>
         </div>
@@ -1565,9 +2284,9 @@
 
       <section class="technical-section" id="technical-architecture">
         <div class="section-heading">
-          <span class="section-index">1.3</span>
+          <span class="section-index">3.3</span>
           <div>
-            <h2>技术架构</h2>
+            <h3>技术架构</h3>
             <p>以Web交互、Java业务服务和Python智能体为核心，说明数据准备、请求执行、查询决策、技能、报告和部署的完整技术链路。</p>
           </div>
         </div>
@@ -1575,9 +2294,9 @@
 
         <section class="technical-subsection original-tech-subsection" id="tech-overview">
           <div class="scenario-heading">
-            <span class="scenario-index">1.3.1</span>
+            <span class="scenario-index">3.3.1</span>
             <div>
-              <h3>总体技术架构</h3>
+              <h4>总体技术架构</h4>
               <p>业务系统按场景组装业务上下文和技能，编排业务逻辑，由 Codex 或 CodeBuddy 择一执行 AI 任务。数据访问和业务状态由系统统一管理。</p>
             </div>
           </div>
@@ -1743,9 +2462,9 @@
 
         <section class="technical-subsection original-tech-subsection" id="tech-preparation">
           <div class="scenario-heading">
-            <span class="scenario-index">1.3.2</span>
+            <span class="scenario-index">3.3.2</span>
             <div>
-              <h3>数据准备、语义配置与授权</h3>
+              <h4>数据准备、语义配置与授权</h4>
               <p>分析主题连接数据模型、指标口径和权限，问数以当前主题的授权上下文为事实基础。</p>
             </div>
           </div>
@@ -1780,9 +2499,9 @@ classDef purple fill:#f2edfa,stroke:#9c82b8,color:#553d75;
 
         <section class="technical-subsection original-tech-subsection" id="tech-sequence">
           <div class="scenario-heading">
-            <span class="scenario-index">1.3.3</span>
+            <span class="scenario-index">3.3.3</span>
             <div>
-              <h3>一次问数请求的运行时序</h3>
+              <h4>一次问数请求的运行时序</h4>
               <p>sessionId、jobId 与 Codex threadId 分别标识业务会话、单轮任务和推理历史。</p>
             </div>
           </div>
@@ -1830,9 +2549,9 @@ classDef purple fill:#f2edfa,stroke:#9c82b8,color:#553d75;
 
         <section class="technical-subsection original-tech-subsection" id="tech-query">
           <div class="scenario-heading">
-            <span class="scenario-index">1.3.4</span>
+            <span class="scenario-index">3.3.4</span>
             <div>
-              <h3>查询决策与结果展示</h3>
+              <h4>查询决策与结果展示</h4>
               <p>query-data 定义业务编排规则；Java 提供检索、模板渲染、SQL 安全与执行接口。</p>
             </div>
           </div>
@@ -1875,9 +2594,9 @@ classDef purple fill:#f2edfa,stroke:#9c82b8,color:#553d75;
 
         <section class="technical-subsection original-tech-subsection" id="tech-skills">
           <div class="scenario-heading">
-            <span class="scenario-index">1.3.5</span>
+            <span class="scenario-index">3.3.5</span>
             <div>
-              <h3>托管技能配置、测试与正式执行</h3>
+              <h4>托管技能配置、测试与正式执行</h4>
               <p>内置 Skill 提供能力，托管技能保存业务提示词和可选模板身份；当前运行协议为 PROMPT_DRIVEN_SKILL_V10。</p>
             </div>
           </div>
@@ -1914,9 +2633,9 @@ classDef purple fill:#f2edfa,stroke:#9c82b8,color:#553d75;
 
         <section class="technical-subsection original-tech-subsection" id="tech-reports">
           <div class="scenario-heading">
-            <span class="scenario-index">1.3.6</span>
+            <span class="scenario-index">3.3.6</span>
             <div>
-              <h3>网页报告编辑与模板文件报告</h3>
+              <h4>网页报告编辑与模板文件报告</h4>
               <p>网页助手生成待采纳正文；模板文件流程复用冻结数据和原 DOCX，经逐页视觉质检后交付。</p>
             </div>
           </div>
@@ -1959,9 +2678,9 @@ classDef purple fill:#f2edfa,stroke:#9c82b8,color:#553d75;
 
         <section class="technical-subsection original-tech-subsection" id="tech-deployment">
           <div class="scenario-heading">
-            <span class="scenario-index">1.3.7</span>
+            <span class="scenario-index">3.3.7</span>
             <div>
-              <h3>应用部署与持久化拓扑</h3>
+              <h4>应用部署与持久化拓扑</h4>
               <p>按当前 docker-compose.yml 绘制，基础数据库与模型服务通过环境变量连接既有服务。</p>
             </div>
           </div>
@@ -2004,9 +2723,9 @@ classDef purple fill:#f2edfa,stroke:#9c82b8,color:#553d75;
 
         <section class="technical-subsection original-tech-subsection" id="tech-boundary">
           <div class="scenario-heading">
-            <span class="scenario-index">1.3.8</span>
+            <span class="scenario-index">3.3.8</span>
             <div>
-              <h3>实现边界与维护依据</h3>
+              <h4>实现边界与维护依据</h4>
               <p>以可执行源码和当前 Skill 约定为准；历史设计中的规划能力需要逐项确认。</p>
             </div>
           </div>
@@ -2023,420 +2742,11 @@ classDef purple fill:#f2edfa,stroke:#9c82b8,color:#553d75;
         </section>
       </section>
 
-      <section class="scenarios-chapter" id="business-scenarios">
-        <div class="chapter-heading">
-          <span class="chapter-number">02</span>
-          <div>
-            <h2>业务场景</h2>
-            <p>以下流程承接整体业务架构，分别说明各类业务场景从发起、处理、输出到成果沉淀的具体路径。</p>
-          </div>
-        </div>
-
-        <section class="scenario-section" id="scene-qa">
-          <div class="scenario-heading">
-            <span class="scenario-index">2.1</span>
-            <div>
-              <h3>通用问数与HTML结果</h3>
-              <p>适用于自由问数、连续追问、趋势分析、数据解读等通用分析需求，默认生成可交互的HTML结果。</p>
-            </div>
-          </div>
-          <div class="diagram-panel">
-            <div class="diagram-toolbar">
-              <div><strong>通用问数与HTML结果流程</strong><span>从提出问题到追问、保存或导出</span></div>
-              <button class="diagram-btn" type="button" data-fullscreen="scene-qa-diagram">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"></path></svg>全屏查看
-              </button>
-            </div>
-            <div class="diagram-viewport">
-              <div class="scene-flow" id="scene-qa-diagram" aria-label="通用问数与HTML结果流程图">
-                <div class="fc-node fc-startend">提出业务问题</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-node">AI理解问题<small>识别指标、维度、筛选条件和会话上下文</small></div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-node">查询并分析数据</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-node">自动选择展示方式<small>根据结果内容组织文字、指标卡、表格、图表或图片</small></div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-node fc-result">生成HTML交互结果</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-decision-wrap"><div class="fc-decision"><span>下一步如何处理？</span></div></div>
-                <div class="fc-split" aria-hidden="true"></div>
-                <div class="fc-branches cols-4">
-                  <div class="fc-branch">
-                    <span class="fc-branch-label">继续分析</span>
-                    <div class="fc-node">继续追问、趋势、归因、对比或数据解读</div>
-                    <div class="fc-loop-note">携带当前结果上下文，返回AI理解与分析流程</div>
-                  </div>
-                  <div class="fc-branch">
-                    <span class="fc-branch-label">整体保存</span>
-                    <div class="fc-node fc-result">完整结果保存到“我的看板”</div>
-                  </div>
-                  <div class="fc-branch">
-                    <span class="fc-branch-label">局部保存</span>
-                    <div class="fc-node">表格、图表或指标卡保存到“我的仪表盘”</div>
-                    <div class="fc-arrow" aria-hidden="true"></div>
-                    <div class="fc-node fc-result">手动编排组件看板</div>
-                  </div>
-                  <div class="fc-branch">
-                    <span class="fc-branch-label">导出</span>
-                    <div class="fc-node fc-document">导出Word、PDF或表格数据Excel</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="scenario-section" id="scene-document">
-          <div class="scenario-heading">
-            <span class="scenario-index">2.2</span>
-            <div>
-              <h3>文档生成与报告管理</h3>
-              <p>适用于明确要求生成Word、PDF或Excel的任务，并支持保存报告、AI修改和版本管理。</p>
-            </div>
-          </div>
-          <div class="diagram-panel">
-            <div class="diagram-toolbar">
-              <div><strong>文档生成与报告管理流程</strong><span>从生成文件到报告版本沉淀</span></div>
-              <button class="diagram-btn" type="button" data-fullscreen="scene-document-diagram">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"></path></svg>全屏查看
-              </button>
-            </div>
-            <div class="diagram-viewport">
-              <div class="scene-flow" id="scene-document-diagram" aria-label="文档生成与报告管理流程图">
-                <div class="fc-node fc-startend">明确要求生成文档</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-node">识别格式、内容范围和模板要求</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-node">查询并组织数据</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-node fc-document">生成Word、PDF或Excel</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-node">预览或下载文件</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-decision-wrap"><div class="fc-decision"><span>是否保存到“我的报告”？</span></div></div>
-                <div class="fc-split" aria-hidden="true"></div>
-                <div class="fc-branches cols-2">
-                  <div class="fc-branch">
-                    <span class="fc-branch-label">否</span>
-                    <div class="fc-node fc-startend">完成本次文档输出</div>
-                  </div>
-                  <div class="fc-branch">
-                    <span class="fc-branch-label">是</span>
-                    <div class="fc-node fc-result">保存报告及当前版本</div>
-                    <div class="fc-arrow" aria-hidden="true"></div>
-                    <div class="fc-decision-wrap"><div class="fc-decision"><span>是否继续AI修改？</span></div></div>
-                    <div class="fc-split" aria-hidden="true"></div>
-                    <div class="fc-branches cols-2">
-                      <div class="fc-branch">
-                        <span class="fc-branch-label">否</span>
-                        <div class="fc-node fc-startend">保留当前报告版本</div>
-                      </div>
-                      <div class="fc-branch">
-                        <span class="fc-branch-label">是</span>
-                        <div class="fc-node">引用报告提出改写、补充或追加要求</div>
-                        <div class="fc-arrow" aria-hidden="true"></div>
-                        <div class="fc-node">AI生成修改候选</div>
-                        <div class="fc-arrow" aria-hidden="true"></div>
-                        <div class="fc-decision-wrap"><div class="fc-decision"><span>是否确认保存修改？</span></div></div>
-                        <div class="fc-split" aria-hidden="true"></div>
-                        <div class="fc-branches cols-2">
-                          <div class="fc-branch">
-                            <span class="fc-branch-label">否</span>
-                            <div class="fc-node">返回继续调整候选内容</div>
-                          </div>
-                          <div class="fc-branch">
-                            <span class="fc-branch-label">是</span>
-                            <div class="fc-node fc-result">形成新报告版本并重新导出</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="scenario-section" id="scene-dashboard">
-          <div class="scenario-heading">
-            <span class="scenario-index">2.3</span>
-            <div>
-              <h3>仪表盘与看板沉淀</h3>
-              <p>区分完整HTML结果沉淀为AI看板，以及局部组件保存后手动编排看板两条路径。</p>
-            </div>
-          </div>
-          <div class="diagram-panel">
-            <div class="diagram-toolbar">
-              <div><strong>仪表盘与看板沉淀流程</strong><span>完整保存与局部组件沉淀的差异</span></div>
-              <button class="diagram-btn" type="button" data-fullscreen="scene-dashboard-diagram">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"></path></svg>全屏查看
-              </button>
-            </div>
-            <div class="diagram-viewport">
-              <div class="scene-flow" id="scene-dashboard-diagram" aria-label="仪表盘与看板沉淀流程图">
-                <div class="fc-node fc-startend">获得HTML分析结果</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-decision-wrap"><div class="fc-decision"><span>保存完整结果还是局部内容？</span></div></div>
-                <div class="fc-split" aria-hidden="true"></div>
-                <div class="fc-branches cols-2">
-                  <div class="fc-branch">
-                    <span class="fc-branch-label">完整结果</span>
-                    <div class="fc-node fc-result">整体保存为AI生成看板</div>
-                    <div class="fc-arrow" aria-hidden="true"></div>
-                    <div class="fc-node">后续引用看板继续AI分析</div>
-                    <div class="fc-arrow" aria-hidden="true"></div>
-                    <div class="fc-decision-wrap"><div class="fc-decision"><span>是否要求修改看板？</span></div></div>
-                    <div class="fc-split" aria-hidden="true"></div>
-                    <div class="fc-branches cols-2">
-                      <div class="fc-branch">
-                        <span class="fc-branch-label">否</span>
-                        <div class="fc-node fc-result">生成HTML分析结果</div>
-                      </div>
-                      <div class="fc-branch">
-                        <span class="fc-branch-label">是</span>
-                        <div class="fc-node">生成看板修改草稿</div>
-                        <div class="fc-arrow" aria-hidden="true"></div>
-                        <div class="fc-node fc-result">确认后形成新看板版本</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="fc-branch">
-                    <span class="fc-branch-label">局部内容</span>
-                    <div class="fc-node">表格、图表或指标卡保存到“我的仪表盘”</div>
-                    <div class="fc-arrow" aria-hidden="true"></div>
-                    <div class="fc-node">选择多个已保存成果</div>
-                    <div class="fc-arrow" aria-hidden="true"></div>
-                    <div class="fc-node">手动编排组件看板</div>
-                    <div class="fc-arrow" aria-hidden="true"></div>
-                    <div class="fc-node fc-result">进入看板编辑页维护组件与布局</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="scenario-section" id="scene-reference">
-          <div class="scenario-heading">
-            <span class="scenario-index">2.4</span>
-            <div>
-              <h3>引用看板或报告</h3>
-              <p>引用已有成果后，先区分“只分析”与“修改或写入”，再决定是否形成新的成果版本。</p>
-            </div>
-          </div>
-          <div class="diagram-panel">
-            <div class="diagram-toolbar">
-              <div><strong>引用看板或报告流程</strong><span>明确分析与修改的版本边界</span></div>
-              <button class="diagram-btn" type="button" data-fullscreen="scene-reference-diagram">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"></path></svg>全屏查看
-              </button>
-            </div>
-            <div class="diagram-viewport">
-              <div class="scene-flow" id="scene-reference-diagram" aria-label="引用看板或报告流程图">
-                <div class="fc-node fc-startend">引用“我的看板”或“我的报告”</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-node">AI读取引用内容和当前版本</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-decision-wrap"><div class="fc-decision"><span>本次是分析还是修改？</span></div></div>
-                <div class="fc-split" aria-hidden="true"></div>
-                <div class="fc-branches cols-2">
-                  <div class="fc-branch">
-                    <span class="fc-branch-label">仅分析</span>
-                    <div class="fc-node fc-result">生成HTML分析结果</div>
-                    <div class="fc-arrow" aria-hidden="true"></div>
-                    <div class="fc-node">继续基于引用内容追问</div>
-                    <div class="fc-arrow" aria-hidden="true"></div>
-                    <div class="fc-node fc-startend">不改原成果，不产生新版本</div>
-                  </div>
-                  <div class="fc-branch">
-                    <span class="fc-branch-label">修改或写入</span>
-                    <div class="fc-node">明确修改目标与影响范围</div>
-                    <div class="fc-arrow" aria-hidden="true"></div>
-                    <div class="fc-node">按目标类型处理<small>报告：修改或追加候选；AI看板：生成草稿；人工组件看板：进入看板编辑页</small></div>
-                    <div class="fc-arrow" aria-hidden="true"></div>
-                    <div class="fc-decision-wrap"><div class="fc-decision"><span>是否确认保存？</span></div></div>
-                    <div class="fc-split" aria-hidden="true"></div>
-                    <div class="fc-branches cols-2">
-                      <div class="fc-branch">
-                        <span class="fc-branch-label">否</span>
-                        <div class="fc-node">返回修改目标或候选内容继续调整</div>
-                      </div>
-                      <div class="fc-branch">
-                        <span class="fc-branch-label">是</span>
-                        <div class="fc-node fc-result">形成新的看板或报告版本</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="scenario-section" id="scene-upload">
-          <div class="scenario-heading">
-            <span class="scenario-index">2.5</span>
-            <div>
-              <h3>附件、图片与模板分析</h3>
-              <p>先识别上传内容和用户要求，再根据任务目标进入文档输出或HTML分析流程。</p>
-            </div>
-          </div>
-          <div class="diagram-panel">
-            <div class="diagram-toolbar">
-              <div><strong>附件、图片与模板分析流程</strong><span>上传内容识别与后续成果分流</span></div>
-              <button class="diagram-btn" type="button" data-fullscreen="scene-upload-diagram">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"></path></svg>全屏查看
-              </button>
-            </div>
-            <div class="diagram-viewport">
-              <div class="scene-flow" id="scene-upload-diagram" aria-label="附件图片与模板分析流程图">
-                <div class="fc-node fc-startend">上传附件、图片或文档模板</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-node">识别文件内容、图片信息或模板结构</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-node">用户补充分析范围和输出要求</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-node">AI结合上传内容进行分析</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-decision-wrap"><div class="fc-decision"><span>选择输出类型</span></div></div>
-                <div class="fc-split" aria-hidden="true"></div>
-                <div class="fc-branches cols-2">
-                  <div class="fc-branch">
-                    <span class="fc-branch-label">文档输出</span>
-                    <div class="fc-node fc-document">生成Word、PDF或Excel</div>
-                    <div class="fc-arrow" aria-hidden="true"></div>
-                    <div class="fc-node fc-result">下载文件或保存到“我的报告”</div>
-                  </div>
-                  <div class="fc-branch">
-                    <span class="fc-branch-label">HTML输出</span>
-                    <div class="fc-node">生成文字、表格、图表等交互结果</div>
-                    <div class="fc-arrow" aria-hidden="true"></div>
-                    <div class="fc-node fc-result">继续追问、保存看板或导出结果</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="scenario-section" id="scene-skill">
-          <div class="scenario-heading">
-            <span class="scenario-index">2.6</span>
-            <div>
-              <h3>技能分析</h3>
-              <p>按照后台配置的技能提示词、查询规则和文档模板执行，形成结构固定的专业文档成果。</p>
-            </div>
-          </div>
-          <div class="diagram-panel">
-            <div class="diagram-toolbar">
-              <div><strong>技能分析流程</strong><span>后台技能配置驱动的标准化输出</span></div>
-              <button class="diagram-btn" type="button" data-fullscreen="scene-skill-diagram">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"></path></svg>全屏查看
-              </button>
-            </div>
-            <div class="diagram-viewport">
-              <div class="scene-flow" id="scene-skill-diagram" aria-label="技能分析流程图">
-                <div class="fc-node fc-startend">选择分析技能</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-node">加载后台技能配置</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-node">读取提示词、数据查询规则和文档模板</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-node">用户补充时间、范围和业务参数</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-node">执行预置数据查询与分析</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-node fc-document">按照技能模板生成相应文档</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-node">预览或下载</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-decision-wrap"><div class="fc-decision"><span>是否保存到“我的报告”？</span></div></div>
-                <div class="fc-split" aria-hidden="true"></div>
-                <div class="fc-branches cols-2">
-                  <div class="fc-branch">
-                    <span class="fc-branch-label">否</span>
-                    <div class="fc-node fc-startend">完成本次技能分析</div>
-                  </div>
-                  <div class="fc-branch">
-                    <span class="fc-branch-label">是</span>
-                    <div class="fc-node fc-result">保存报告</div>
-                    <div class="fc-arrow" aria-hidden="true"></div>
-                    <div class="fc-node">后续引用报告进行AI修改</div>
-                    <div class="fc-arrow" aria-hidden="true"></div>
-                    <div class="fc-node fc-result">确认后形成新报告版本</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="scenario-section" id="scene-scheduled">
-          <div class="scenario-heading">
-            <span class="scenario-index">2.7</span>
-            <div>
-              <h3>定时任务</h3>
-              <p>将问数或文档任务配置为周期执行，并持续记录、通知和管理每次执行结果。</p>
-            </div>
-          </div>
-          <div class="diagram-panel">
-            <div class="diagram-toolbar">
-              <div><strong>定时任务流程</strong><span>周期执行、结果记录与任务状态管理</span></div>
-              <button class="diagram-btn" type="button" data-fullscreen="scene-scheduled-diagram">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"></path></svg>全屏查看
-              </button>
-            </div>
-            <div class="diagram-viewport">
-              <div class="scene-flow" id="scene-scheduled-diagram" aria-label="定时任务流程图">
-                <div class="fc-node fc-startend">创建定时任务</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-node">设置执行周期</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-node">配置问题、数据范围和输出要求</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-node">按计划自动执行</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-decision-wrap"><div class="fc-decision"><span>本次输出类型</span></div></div>
-                <div class="fc-split" aria-hidden="true"></div>
-                <div class="fc-branches cols-2 with-merge">
-                  <div class="fc-branch">
-                    <span class="fc-branch-label">HTML</span>
-                    <div class="fc-node">生成问数与分析结果</div>
-                  </div>
-                  <div class="fc-branch">
-                    <span class="fc-branch-label">文档</span>
-                    <div class="fc-node fc-document">生成Word、PDF或Excel</div>
-                  </div>
-                </div>
-                <div class="fc-merge" aria-hidden="true"></div>
-                <div class="fc-node">记录执行结果并发送通知</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-node fc-result">查看、下载或保存本次成果</div>
-                <div class="fc-arrow" aria-hidden="true"></div>
-                <div class="fc-decision-wrap"><div class="fc-decision"><span>任务是否继续？</span></div></div>
-                <div class="fc-split" aria-hidden="true"></div>
-                <div class="fc-branches cols-2">
-                  <div class="fc-branch">
-                    <span class="fc-branch-label">继续</span>
-                    <div class="fc-node">等待下一执行周期</div>
-                    <div class="fc-loop-note">到达计划时间后再次自动执行</div>
-                  </div>
-                  <div class="fc-branch">
-                    <span class="fc-branch-label">不继续</span>
-                    <div class="fc-node fc-startend">暂停或结束任务</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
       </section>
 
       <footer class="document-footer">
         <span>智能问数业务端重点需求说明</span>
-        <span>整体架构 · 业务架构 · 技术架构 · 业务场景</span>
+        <span>背景介绍 · 业务场景 · 整体架构</span>
       </footer>
     </main>
   </div>
