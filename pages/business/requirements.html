@@ -1734,7 +1734,7 @@
 </pre></details>
             <div class="notes">
               <div class="note"><h3>业务系统组装和编排</h3><p>Java 管理权限、业务数据和会话状态。Agent 按场景组装业务上下文、Skills 与附件，将任务交给所选引擎，并将执行事件回传给 Java，由 Java 更新任务状态、消息和时间线。</p></div>
-              <div class="note"><h3>第三方引擎择一执行</h3><p>成熟的 AI 执行引擎将多轮执行封装为通用机制。引擎把每次工具调用与返回结果对应起来，记录已完成和待处理的步骤，并在上下文增长时保留任务目标、约束和关键结果。遇到工具异常或任务中断时，引擎依据已记录的进度恢复执行，让模型根据准确的执行状态判断该继续、重试，还是调整执行路径。</p></div>
+              <div class="note"><h3>第三方引擎择一执行</h3><p>通用 AI 执行引擎要在多轮工具调用、长上下文和任务中断的情况下稳定运行，需要持续投入模型适配、状态管理、异常恢复和回归评测。大型厂商可以在多个产品和大量真实任务中反复验证这些机制，并复用改进成果，因此更容易把通用执行能力做稳。本系统在 Codex 或 CodeBuddy 中择一执行，复用其多轮推理、工具调用和异常恢复能力，将研发精力集中在指标口径、数据权限、查询校验和报告规则等业务逻辑上。</p></div>
               <div class="note"><h3>数据访问受业务规则约束</h3><p>Skills 通过 Java 内部接口访问受控数据能力，由 Java 恢复授权上下文、校验 SQL 并执行权限过滤。推理模型由执行引擎调用，Embedding 与 Reranker 由 Java 的检索链路调用。</p></div>
             </div>
             <div class="sources">源码 / 约定：<a href="../smart-query-api/src/main/java/com/aotain/smartquery/agent/InternalAgentApiController.java">InternalAgentApiController</a> · <a href="../smart-query-agent/app/services/codex_runtime.py">codex_runtime.py</a> · <a href="../smart-query-api/src/main/java/com/aotain/smartquery/planner/QueryVectorContextService.java">QueryVectorContextService</a> · <a href="../smart-query-web/src/app/router.tsx">router.tsx</a></div>
