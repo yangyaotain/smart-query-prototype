@@ -273,7 +273,7 @@ function syncReportReferencesFromCatalog() {
     const snapshot = window.ReportReference.getSnapshot(item.key) || item;
     const category = snapshot.category || "我的报告";
     if (!groups.has(category)) groups.set(category, { category, items: [] });
-    groups.get(category).items.push({ ...snapshot, meta: `${({ word: "Word", pdf: "PDF", excel: "Excel" })[snapshot.fileType]} · ${category} / 最新版本 V${snapshot.version}` });
+    groups.get(category).items.push({ ...snapshot, meta: `${({ word: "Word", pdf: "PDF", excel: "Excel", ppt: "PPT" })[snapshot.fileType]} · ${category} / 最新版本 V${snapshot.version}` });
     reportVersionCounters.set(item.key, Number(snapshot.version) || 1);
   });
   REFERENCE_CATALOG.report = Array.from(groups.values());
@@ -875,6 +875,19 @@ const HISTORY_SCENARIOS = {
       summary: "已生成适合直接分发和归档的 PDF 销售分析月报，页面包含经营摘要、趋势图表、风险提示与行动建议。"
     }
   },
+  filePpt: {
+    question: "请生成6月经营汇报PPT",
+    mode: "file",
+    answerTitle: "2026年6月经营汇报",
+    artifact: {
+      type: "ppt",
+      name: "2026年6月经营汇报.pptx",
+      meta: "PPT 演示文稿 · 4 页",
+      title: "PPT 经营汇报已生成",
+      generatingTitle: "正在生成 PPT 经营汇报",
+      summary: "已根据 6 月经营数据生成 4 页管理层汇报，包含封面、核心经营指标、经营亮点与风险、下月行动计划。"
+    }
+  },
   fileExcel: {
     question: "请生成5月份销售明细Excel文件",
     mode: "file",
@@ -1238,16 +1251,16 @@ function getReferenceItem(key) {
 }
 
 function getReferenceFileType(item) {
-  return ["word", "pdf", "excel"].includes(item?.fileType) ? item.fileType : "word";
+  return ["word", "pdf", "excel", "ppt"].includes(item?.fileType) ? item.fileType : "word";
 }
 
 function getReferenceFileTypeLabel(item) {
-  return ({ word: "W", pdf: "PDF", excel: "X" })[getReferenceFileType(item)];
+  return ({ word: "W", pdf: "PDF", excel: "X", ppt: "PPT" })[getReferenceFileType(item)];
 }
 
 function applyReferenceResultIcon(reference) {
   if (!referenceResultIcon) return;
-  referenceResultIcon.classList.remove("is-board", "is-word", "is-pdf", "is-excel");
+  referenceResultIcon.classList.remove("is-board", "is-word", "is-pdf", "is-excel", "is-ppt");
   if (reference?.kind === "report") {
     const fileType = getReferenceFileType(reference);
     referenceResultIcon.classList.add(`is-${fileType}`);
@@ -2379,7 +2392,8 @@ function buildReferenceRun(question, references) {
   const refs = references.map((item) => ({ ...item }));
   const targetReport = resolveReferencedReport(question, refs);
   const wantsAppend = /(添加到|加入到|写入|插入到|追加到).*(报告|章节)|把.*(添加到|加入到|写入|插入到|追加到)/.test(question);
-  const wantsModify = /(修改|改写|重写|重新整理|调整|更新|补充|删除|替换|改成|移动|隐藏|新增|增加|突出)/.test(question);
+  const wantsModify = /(修改|改写|重写|重新整理|调整|更新|补充|删除|替换|改成|移动|隐藏|新增|增加|突出)/.test(question)
+    || (targetReport?.fileType === "ppt" && /精简|简化|缩短|缩写|压缩|扩写/.test(question));
   const namedAsset = refs.find((item) => question.includes(item.name));
   const targetAsset = wantsAppend ? targetReport : (namedAsset || (refs.length === 1 ? refs[0] : null));
   let answerTitle = "引用内容分析";
@@ -2448,6 +2462,12 @@ function buildReferenceRun(question, references) {
 
 function buildReportModificationResult(reference, question, append) {
   const draft = window.ReportReference.buildDraft(reference, question, reportDraftStates.get(reference.key), append);
+  if (!draft) return {
+    badge: "引用修改报告",
+    title: "未找到指定幻灯片",
+    summary: "请核对页码，或按幻灯片标题描述需要修改的页面。",
+    details: []
+  };
   reportDraftStates.set(reference.key, draft);
   return {
     badge: append ? "对话添加报告" : "引用修改报告",
@@ -2719,6 +2739,7 @@ let activeGeneratedFile = { ...DEFAULT_GENERATED_FILE };
 function getGeneratedFileProfile(question, artifact) {
   if (artifact) return { ...DEFAULT_GENERATED_FILE, ...artifact };
   const text = String(question || "").toLowerCase();
+  if (/ppt/.test(text)) return { ...HISTORY_SCENARIOS.filePpt.artifact };
   if (/excel|xlsx|xls/.test(text)) {
     return {
       type: "excel",
@@ -2753,9 +2774,9 @@ function applyGeneratedFileProfile(profile, completed) {
   if (generatedFileName) generatedFileName.textContent = activeGeneratedFile.name;
   if (generatedFileMeta) generatedFileMeta.textContent = activeGeneratedFile.meta;
   if (generatedFileIcon) {
-    generatedFileIcon.classList.remove("is-word", "is-pdf", "is-excel");
+    generatedFileIcon.classList.remove("is-word", "is-pdf", "is-excel", "is-ppt");
     generatedFileIcon.classList.add(`is-${activeGeneratedFile.type}`);
-    generatedFileIcon.textContent = ({ word: "W", pdf: "PDF", excel: "X" })[activeGeneratedFile.type] || "文";
+    generatedFileIcon.textContent = ({ word: "W", pdf: "PDF", excel: "X", ppt: "PPT" })[activeGeneratedFile.type] || "文";
   }
   const card = fileResult?.querySelector(".generated-file-card");
   if (card) {
@@ -2924,8 +2945,9 @@ function recordReferenceVersionEvent(pendingSave, version) {
     time: new Date().toLocaleString("zh-CN", { hour12: false }),
     source: pendingSave.source,
     summary: `${pendingSave.scope}已通过智能问数完成调整并保存。`,
-    changes: pendingSave.draft?.changes || [],
+    changes: pendingSave.draft?.pptData ? [] : (pendingSave.draft?.changes || []),
     sections: pendingSave.draft?.sections,
+    pptData: pendingSave.draft?.pptData,
     workbook: pendingSave.draft?.workbook || null
   });
   localStorage.setItem(storageKey, JSON.stringify(events.slice(0, 40)));
@@ -2935,6 +2957,11 @@ function saveReferenceChanges() {
   const result = activeReferenceRun?.result;
   const pendingSave = result?.pendingSave;
   if (!pendingSave) return;
+  if (pendingSave.draft?.pptData && window.ReportReference.getSnapshot(pendingSave.target)?.version !== pendingSave.draft.baseVersion) {
+    reportDraftStates.delete(pendingSave.target.key);
+    showToast("报告已有新版本，请重新发送修改要求");
+    return;
+  }
   const version = getNextReportVersion(pendingSave.target);
   const assetLabel = "报告";
   result.feedback = {
@@ -2946,7 +2973,8 @@ function saveReferenceChanges() {
   if (result.reportDraft) {
     result.title = "报告修改已保存";
     result.summary = `《${pendingSave.target.name}》已保存为 ${version}，修改范围：${pendingSave.scope}。可点击“查看报告”检查最新内容。`;
-    result.details = ["本轮修改已写入报告，未涉及章节保留原有内容。", "可继续描述调整要求，下一轮将基于已保存版本生成草稿。"];
+    const contentUnit = result.reportDraft.pptData ? "幻灯片" : "章节";
+    result.details = [`本轮修改已写入报告，未涉及${contentUnit}保留原有内容。`, "可继续描述调整要求，下一轮将基于已保存版本生成草稿。"];
     result.reportDraft.version = Number(version.slice(1));
     result.reportDraft.baseVersion = result.reportDraft.version;
     reportDraftStates.set(pendingSave.target.key, { ...result.reportDraft, changes: [], round: 0 });

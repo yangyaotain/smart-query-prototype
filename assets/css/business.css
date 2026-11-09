@@ -7875,6 +7875,31 @@ textarea {
   font-weight: 900;
 }
 
+.generated-file-icon.is-ppt,
+.reference-chip.is-report .reference-chip-type.is-ppt,
+.reference-tree-icon.is-report.is-ppt,
+.history-reference-file-icon.is-ppt,
+.reference-result-type-icon.is-ppt {
+  color: #9a3412;
+  background: #ffedd5;
+  border-color: #fed7aa;
+}
+
+.generated-file-icon.is-ppt,
+.reference-result-type-icon.is-ppt {
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.reference-chip.is-report .reference-chip-type.is-ppt,
+.reference-tree-icon.is-ppt .reference-file-type-mark {
+  font-size: 8.5px;
+}
+
+.history-reference-file-icon.is-ppt b {
+  font-size: 7.5px;
+}
+
 .reference-result-badge {
   display: inline-flex;
   margin-bottom: 5px;

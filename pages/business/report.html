@@ -336,7 +336,7 @@
       font-weight: 600;
     }
 
-    /* —— 报告（叶子）按文件类型展示 Word / PDF / Excel 图标 —— */
+    /* —— 报告（叶子）按文件类型展示文件图标 —— */
     .report-page-body .dir-tree .tree-node[data-type="report"] > .tree-row > .tree-icon.report-file-icon {
       display: inline-flex;
       align-items: center;
@@ -362,7 +362,13 @@
       border-color: #fecaca;
     }
 
-    .report-page-body .report-file-icon.is-pdf b {
+    .report-page-body .dir-tree .tree-node[data-type="report"] > .tree-row > .tree-icon.report-file-icon.is-ppt {
+      color: #9a3412;
+      background: #ffedd5;
+      border-color: #fed7aa;
+    }
+
+    .report-page-body .report-file-icon:is(.is-pdf, .is-ppt) b {
       font-size: 6.5px;
     }
 
@@ -999,7 +1005,7 @@
       line-height: 1.7;
     }
 
-    /* PDF / Excel 文件预览共用头部 */
+    /* Excel 预览信息栏 */
     .report-page-body .file-preview-toolbar {
       position: sticky;
       top: 0;
@@ -1031,9 +1037,9 @@
 
     .report-page-body .file-preview-type {
       padding: 3px 7px;
-      color: #b91c1c;
-      background: #fee2e2;
-      border: 1px solid #fecaca;
+      color: #15803d;
+      background: #dcfce7;
+      border: 1px solid #bbf7d0;
       border-radius: 6px;
       font-size: 10px;
       font-weight: 800;
@@ -1047,9 +1053,9 @@
       align-items: center;
       justify-content: center;
       color: #fff;
-      background: #dc2626;
+      background: #17864b;
       border-radius: 5px 5px 7px 5px;
-      font-size: 7px;
+      font-size: 15px;
       font-weight: 900;
       box-shadow: inset -5px 0 0 rgba(255, 255, 255, 0.1);
     }
@@ -1074,17 +1080,6 @@
     .report-page-body .file-preview-status {
       color: #64748b;
       font-size: 12px;
-    }
-
-    .report-page-body .file-preview-toolbar.is-excel .file-preview-type {
-      color: #15803d;
-      background: #dcfce7;
-      border-color: #bbf7d0;
-    }
-
-    .report-page-body .file-preview-toolbar.is-excel .file-preview-icon {
-      background: #17864b;
-      font-size: 15px;
     }
 
     .report-page-body .report-doc-stage.is-pdf-preview {
@@ -1419,6 +1414,329 @@
       font-size: 10px;
     }
 
+    .report-page-body .report-layout.is-ppt-layout .pdf-thumb-sheet {
+      height: auto;
+      aspect-ratio: 16 / 9;
+      padding: 6px;
+      gap: 3px;
+    }
+
+    .report-page-body article.report-page.preview-ppt {
+      width: min(920px, 100%);
+      container-type: inline-size;
+    }
+
+    .report-page-body article.report-page.preview-ppt .pdf-viewer-page {
+      display: flex;
+      flex-direction: column;
+      min-height: min-content;
+      aspect-ratio: 16 / 9;
+      padding: clamp(20px, 2.5vw, 40px) clamp(24px, 3vw, 48px) 16px;
+      border-top: 5px solid #245b99;
+    }
+
+    .report-page-body .preview-ppt .pdf-page-head {
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+    }
+
+    .report-page-body .preview-ppt .pdf-page-head span {
+      color: #64748b;
+      letter-spacing: 0.08em;
+    }
+
+    .report-page-body .preview-ppt .pdf-page-foot {
+      position: static;
+      margin-top: auto;
+      gap: 12px;
+    }
+
+    .report-page-body .preview-ppt .pdf-kpi-grid {
+      margin: 0 0 12px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .report-page-body .preview-ppt .pdf-kpi {
+      padding: 8px 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .report-page-body .preview-ppt .pdf-kpi strong {
+      font-size: 20px;
+    }
+
+    .report-page-body .preview-ppt .ppt-split {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    .report-page-body .preview-ppt .ppt-panel {
+      min-width: 0;
+      padding: 12px 14px;
+      background: #f8fbff;
+      border: 1px solid #dce8f4;
+      border-radius: 8px;
+    }
+
+    .report-page-body .preview-ppt .ppt-panel-head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 2px 8px;
+      margin-bottom: 8px;
+    }
+
+    .report-page-body article.report-page.preview-ppt .ppt-panel-head h3 {
+      margin: 0;
+    }
+
+    .report-page-body .preview-ppt .ppt-caption {
+      color: #64748b;
+      font-size: 12px;
+    }
+
+    .report-page-body .preview-ppt .ppt-sales-chart {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 156px;
+      color: #64748b;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .report-page-body .preview-ppt .ppt-metric {
+      display: block;
+      color: #173f70;
+      font-size: 26px;
+      line-height: 1.2;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .report-page-body .preview-ppt .ppt-track {
+      display: block;
+      height: 8px;
+      overflow: hidden;
+      background: #e4edf7;
+      border-radius: 999px;
+    }
+
+    .report-page-body .preview-ppt .ppt-track i {
+      display: block;
+      height: 100%;
+      background: #4f86c6;
+      border-radius: inherit;
+    }
+
+    .report-page-body .preview-ppt .ppt-target .ppt-track {
+      margin: 12px 0 8px;
+      background: #ffedd5;
+    }
+
+    .report-page-body .preview-ppt .ppt-warning {
+      color: #92400e;
+      font-weight: 700;
+    }
+
+    .report-page-body .preview-ppt .pdf-kpi .ppt-warning {
+      color: #92400e;
+    }
+
+    .report-page-body .preview-ppt .ppt-channel-chart {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 16px;
+    }
+
+    .report-page-body .preview-ppt .ppt-donut {
+      display: grid;
+      flex: none;
+      width: 92px;
+      aspect-ratio: 1;
+      place-items: center;
+      color: #173f70;
+      background: conic-gradient(#2864a9 0 40.6%, #dbe8f5 40.6% 100%);
+      border-radius: 50%;
+    }
+
+    .report-page-body .preview-ppt .ppt-donut b {
+      display: grid;
+      width: 70%;
+      aspect-ratio: 1;
+      place-items: center;
+      background: #f8fbff;
+      border-radius: 50%;
+      font-size: 15px;
+    }
+
+    .report-page-body .preview-ppt .ppt-channel-legend {
+      display: grid;
+      gap: 6px;
+      font-size: 12px;
+    }
+
+    .report-page-body .preview-ppt .ppt-channel-legend span::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      margin-right: 6px;
+      background: #2864a9;
+      border-radius: 2px;
+    }
+
+    .report-page-body .preview-ppt .ppt-channel-legend span + span::before {
+      background: #dbe8f5;
+    }
+
+    .report-page-body .preview-ppt .ppt-risk-row {
+      display: grid;
+      grid-template-columns: 32px minmax(0, 1fr) 37px;
+      align-items: center;
+      gap: 6px;
+      margin: 8px 0;
+      font-size: 12px;
+    }
+
+    .report-page-body .preview-ppt .ppt-risk-row .ppt-warning + .ppt-track i {
+      background: #c67b2a;
+    }
+
+    .report-page-body .preview-ppt .ppt-note {
+      display: block;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid #dce8f4;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .report-page-body .preview-ppt .ppt-plan-goal {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px 12px;
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      color: #1e3a5f;
+      background: #edf5ff;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .report-page-body .preview-ppt .ppt-plan-goal b {
+      color: #173f70;
+      font-size: 20px;
+    }
+
+    .report-page-body .preview-ppt .ppt-timeline {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 3px 4px;
+      table-layout: fixed;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .report-page-body .preview-ppt .ppt-timeline .ppt-timeline-edge {
+      width: 22%;
+    }
+
+    .report-page-body .preview-ppt .ppt-timeline th,
+    .report-page-body .preview-ppt .ppt-timeline td {
+      padding: 6px 4px;
+      border-radius: 4px;
+      text-align: center;
+      overflow-wrap: anywhere;
+    }
+
+    .report-page-body .preview-ppt .ppt-timeline thead th,
+    .report-page-body .preview-ppt .ppt-timeline tbody th {
+      color: #334155;
+      background: #f1f5f9;
+    }
+
+    .report-page-body .preview-ppt .ppt-timeline td {
+      color: #1e4f86;
+      background: #e8f1fb;
+    }
+
+    .report-page-body .preview-ppt .ppt-timeline td:last-child {
+      color: #173f70;
+      background: #f4f8fd;
+      font-weight: 700;
+    }
+
+    .report-page-body article.report-page.preview-ppt .ppt-cover {
+      color: #e0ebf8;
+      background: linear-gradient(135deg, #102742 0%, #174371 70%, #245b99 100%);
+      border-top-color: #72a9de;
+    }
+
+    .report-page-body .preview-ppt .ppt-cover-body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      align-items: center;
+      gap: 16px 24px;
+      margin-top: auto;
+    }
+
+    .report-page-body article.report-page.preview-ppt .ppt-cover h1 {
+      margin: 14px 0 6px;
+      color: #fff;
+      font-size: clamp(24px, 2.7vw, 36px);
+      line-height: 1.25;
+    }
+
+    .report-page-body .preview-ppt .ppt-cover-chart {
+      padding: 12px 14px;
+      color: #e0ebf8;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .report-page-body .preview-ppt .ppt-cover-chart .ppt-metric {
+      margin: 4px 0;
+      color: #fff;
+    }
+
+    .report-page-body .preview-ppt .ppt-cover .pdf-page-foot {
+      color: #c9dbef;
+      border-color: rgba(255, 255, 255, 0.24);
+    }
+
+    .report-page-body article.report-page.preview-ppt .ppt-takeaway {
+      margin: 10px 0;
+      padding: 6px 10px;
+      color: #163b68;
+      background: #eff6ff;
+      border-radius: 6px;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .report-page-body article.report-page.preview-ppt .ppt-cover .ppt-takeaway {
+      color: #e0ebf8;
+      background: transparent;
+      padding: 0;
+    }
+
+    @container (max-width: 560px) {
+      .report-page-body .preview-ppt .ppt-split,
+      .report-page-body .preview-ppt .ppt-cover-body {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .report-page-body .preview-ppt .pdf-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
     /* Excel 预览使用表格工作区，不套用 A4 报告纸张样式 */
     .report-page-body .report-doc-stage.is-excel-preview {
       padding: 24px 26px 78px;
@@ -1727,8 +2045,8 @@
           <main class="report-doc-stage" id="reportDocStage">
             <div class="file-preview-toolbar hidden" id="filePreviewToolbar">
               <div class="file-preview-identity">
-                <span class="file-preview-type" id="filePreviewType">PDF</span>
-                <span class="file-preview-icon" id="filePreviewIcon" aria-hidden="true">PDF</span>
+                <span class="file-preview-type">EXCEL</span>
+                <span class="file-preview-icon" aria-hidden="true">X</span>
                 <span class="file-preview-copy">
                   <strong id="filePreviewName">文件预览</strong>
                   <small id="filePreviewMeta">只读预览</small>
@@ -1935,7 +2253,7 @@
   <script src="../../assets/vendor/spreadjs/19.2.0/js/gc.spread.sheets.charts.min.js"></script>
   <script src="../../assets/js/report-excel-data.js"></script>
   <script src="../../assets/js/report-excel-spread.js?v=20261104-excel-grid"></script>
-  <script src="../../assets/js/report-reference.js?v=20261104-excel-init"></script>
+  <script src="../../assets/js/report-reference.js?v=20261109-ppt-report"></script>
   <script>
     /* eslint-disable */
     (function () {
@@ -2603,6 +2921,143 @@
           '<ul><li>5 条订单存在渠道归属待确认；</li><li>7 条记录的客户等级与主数据不一致；</li><li>4 条高折扣订单需补充审批说明。</li></ul>'
       };
 
+      const PPT_SALES_SERIES = [2380, 2510, 2790, 3010, 3120, 3248];
+
+      function buildPptSalesBars() {
+        const baseline = 110;
+        const y = (sales) => baseline - sales / 4000 * 92;
+        const grid = [0, 2000, 4000].map((tick) => `
+          <path d="M37 ${y(tick)} H407" stroke="#dce8f4" />
+          <text x="32" y="${y(tick) + 4}" text-anchor="end" fill="currentColor">${tick}</text>
+        `).join('');
+        const bars = PPT_SALES_SERIES.map((sales, index) => {
+          const x = 66 + index * 60;
+          const latest = index === PPT_SALES_SERIES.length - 1;
+          return `
+            <rect x="${x - 15}" y="${y(sales)}" width="30" height="${baseline - y(sales)}" rx="3" fill="${latest ? '#2864a9' : '#83abd5'}" />
+            <text x="${x}" y="${y(sales) - 6}" text-anchor="middle" fill="#173f70">${sales.toLocaleString('zh-CN')}</text>
+            <text x="${x}" y="128" text-anchor="middle" fill="currentColor">${index + 1}月</text>
+          `;
+        }).join('');
+        return `<svg class="ppt-sales-chart" viewBox="0 0 412 134" role="img" aria-label="1 至 6 月销售额依次为 2,380、2,510、2,790、3,010、3,120、3,248 万元">${grid}${bars}</svg>`;
+      }
+
+      function buildPptCoverTrend() {
+        const points = PPT_SALES_SERIES.map((sales, index) => [20 + index * 64, Math.round(92 - (sales - 2000) / 1600 * 82)]);
+        const line = points.map((point) => point.join(',')).join(' ');
+        const [lastX, lastY] = points[points.length - 1];
+        return `
+          <svg class="ppt-sales-chart" viewBox="0 0 360 112" role="img" aria-label="上半年销售额持续增长，从 1 月 2,380 万元升至 6 月 3,248 万元">
+            <path d="M20 35 H340 M20 64 H340 M20 92 H340" stroke="#fff" stroke-opacity=".18" />
+            <polygon points="20,92 ${line} 340,92" fill="#7cbcff" fill-opacity=".2" />
+            <polyline points="${line}" fill="none" stroke="#9bcfff" stroke-width="3" stroke-linejoin="round" />
+            <circle cx="${lastX}" cy="${lastY}" r="4" fill="#fff" />
+            <text x="20" y="108" fill="#d7e7f8">1月</text><text x="340" y="108" fill="#d7e7f8" text-anchor="end">6月</text>
+          </svg>`;
+      }
+
+      // 图表使用当前样例模板，已保存版本继续提供各页的 AI 编辑结论。
+      const PPT_SLIDE_VISUALS = {
+        '封面': `
+          <div class="ppt-cover-body">
+            <div>
+              <span class="pdf-cover-brand">管理层汇报</span>
+              <h1>2026 年 6 月<br>经营汇报</h1>
+              <span>经营表现 · 重点风险 · 7 月行动</span>
+            </div>
+            <div class="ppt-cover-chart">
+              <span>上半年销售走势</span>
+              <strong class="ppt-metric">3,248 万元</strong>
+              <span>6 月销售额 · 环比 +4.1%</span>
+              ${buildPptCoverTrend()}
+            </div>
+          </div>`,
+        '核心经营指标': `
+          <div class="pdf-kpi-grid">
+            <div class="pdf-kpi"><span>销售额</span><strong>3,248 万</strong><small>环比 +4.1%</small></div>
+            <div class="pdf-kpi"><span>订单量</span><strong>17,260</strong><small>环比 +2.3%</small></div>
+            <div class="pdf-kpi"><span>客单价</span><strong>1,882 元</strong><small>环比 +1.8%</small></div>
+            <div class="pdf-kpi"><span>目标完成率</span><strong>86%</strong><small class="ppt-warning">距目标 14 个百分点</small></div>
+          </div>
+          <div class="ppt-split">
+            <div class="ppt-panel">
+              <div class="ppt-panel-head"><h3>1–6 月销售趋势</h3><span class="ppt-caption">单位：万元</span></div>
+              ${buildPptSalesBars()}
+            </div>
+            <div class="ppt-panel ppt-target">
+              <div class="ppt-panel-head"><h3>6 月目标完成率</h3></div>
+              <strong class="ppt-metric">86%</strong>
+              <span class="ppt-track" aria-hidden="true"><i style="width:86%"></i></span>
+              <span class="ppt-caption ppt-warning">距目标 14 个百分点</span>
+            </div>
+          </div>`,
+        '经营亮点与风险': `
+          <div class="ppt-split">
+            <div class="ppt-panel">
+              <div class="ppt-panel-head"><h3>渠道结构</h3><span class="ppt-caption">6 月销售额占比</span></div>
+              <div class="ppt-channel-chart">
+                <span class="ppt-donut" aria-hidden="true"><b>40.6%</b></span>
+                <div class="ppt-channel-legend"><span>线上渠道 <b>40.6%</b></span><span>其他渠道 <b>59.4%</b></span></div>
+              </div>
+              <span class="ppt-note">华东销售额 <b>1,248 万元</b>，环比 <b>+12.6%</b></span>
+            </div>
+            <div class="ppt-panel">
+              <div class="ppt-panel-head"><h3>库存周转</h3><span class="ppt-caption">0–50 天</span></div>
+              <div class="ppt-risk-row"><span>5 月</span><span class="ppt-track" aria-hidden="true"><i style="width:76%"></i></span><b>38 天</b></div>
+              <div class="ppt-risk-row"><span class="ppt-warning">6 月</span><span class="ppt-track" aria-hidden="true"><i style="width:84%"></i></span><b class="ppt-warning">42 天</b></div>
+              <span class="ppt-note">北区目标完成率 <b class="ppt-warning">79%</b><br>重点客户流失预警 <b class="ppt-warning">3 家</b></span>
+            </div>
+          </div>`,
+        '下月行动计划': `
+          <div class="ppt-plan-goal"><span>整体目标完成率</span><b>86% → 92%</b><span class="ppt-caption">较 6 月提高 6 个百分点</span></div>
+          <div class="ppt-panel">
+            <div class="ppt-panel-head"><h3>7 月专项时间轴</h3><span class="ppt-caption">按周跟踪进度</span></div>
+            <table class="ppt-timeline" aria-label="7 月专项时间轴">
+              <thead><tr><th scope="col" class="ppt-timeline-edge">专项与责任团队</th><th scope="col">第 1 周</th><th scope="col">第 2 周</th><th scope="col">第 3 周</th><th scope="col">第 4 周</th><th scope="col" class="ppt-timeline-edge">验收指标</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">北区促销<br><span class="ppt-caption">北区销售</span></th><td>确定方案</td><td colspan="2">投放与跟踪</td><td>复盘</td><td>销售额 +8%</td></tr>
+                <tr><th scope="row">库存改善<br><span class="ppt-caption">供应链</span></th><td>盘点</td><td colspan="2">调拨与清理</td><td>复核</td><td>周转 ≤40 天</td></tr>
+                <tr><th scope="row">客户挽回<br><span class="ppt-caption">大客户团队</span></th><td colspan="2">重点回访</td><td>跟进订单</td><td>验收</td><td>恢复 80% 订单</td></tr>
+              </tbody>
+            </table>
+          </div>`
+      };
+
+      REPORT_DATA.r11 = {
+        title: '月度经营汇报（PPT演示版）',
+        metaTop: '文件类型：PPT · 来源：月度经营汇报 · 报告期：2026 年 6 月',
+        generatedAt: '2026-07-03',
+        type: 'PPT 经营汇报',
+        pptData: {
+          pages: [
+            {
+              label: '封面', cover: true,
+              summary: '汇报本月核心经营指标、区域表现及风险，并明确下月行动计划。',
+              shortSummary: '6 月经营表现与 7 月行动计划。',
+              detail: '数据范围：2026 年 6 月 1 日至 6 月 30 日。'
+            },
+            {
+              label: '核心经营指标', keywords: ['指标', '销售额', '订单量', '客单价'],
+              summary: '订单量和客单价同步提升，推动销售额环比增长 4.1%，但整体目标仍有 14 个百分点的缺口。',
+              shortSummary: '销售额环比增长 4.1%，目标完成率为 86%。',
+              detail: '订单量环比增长 2.3%，客单价环比增长 1.8%，量价同步改善。'
+            },
+            {
+              label: '经营亮点与风险', keywords: ['亮点', '风险', '库存', '流失'],
+              summary: '库存周转已上升至 42 天，资金占用压力加大。同时，3 家头部客户出现流失预警，需要尽快安排客户回访。',
+              shortSummary: '库存周转升至 42 天，3 家头部客户出现流失预警。',
+              detail: '优先核查长库龄商品和重点客户订单变化，由供应链与销售团队分头跟进。'
+            },
+            {
+              label: '下月行动计划', keywords: ['行动计划', '下月计划', '促销', '挽回'],
+              summary: '下月重点跟踪北区销售、库存周转和客户挽回三项行动，推动整体目标完成率提升至 92%。',
+              shortSummary: '跟踪三项经营行动，整体目标完成率提升至 92%。',
+              detail: '在每周经营例会上复盘北区销售增量、库存周转天数及客户订单恢复率。'
+            }
+          ]
+        }
+      };
+
       // PDF 使用独立的固定分页数据，不复用 Word 的章节目录和动态分页。
       const PDF_PREVIEW_DATA = {
         r4: {
@@ -2785,7 +3240,8 @@
           id: 'c4', name: '管理层汇报', expanded: true,
           reports: [
             { id: 'r8', name: '月度经营汇报', fileType: 'word' },
-            { id: 'r9', name: '月度经营汇报（PDF归档版）', fileType: 'pdf' }
+            { id: 'r9', name: '月度经营汇报（PDF归档版）', fileType: 'pdf' },
+            { id: 'r11', name: REPORT_DATA.r11.title, fileType: 'ppt' }
           ]
         }
       ];
@@ -2797,7 +3253,7 @@
         category.reports.push({ id: item.reportId, name: item.name, fileType: item.fileType });
         REPORT_DATA[item.reportId] = {
           title: item.name, body: item.body, sections: item.sections, wordDocument: item.wordDocument,
-          metaTop: item.metaTop, generatedAt: item.generatedAt, type: item.type, copyBase: item.copyBase
+          metaTop: item.metaTop, generatedAt: item.generatedAt, type: item.type, copyBase: item.copyBase, pptData: item.pptData
         };
         if (item.pdfData) PDF_PREVIEW_DATA[item.reportId] = item.pdfData;
       });
@@ -2806,7 +3262,7 @@
       const REPORT_VERSIONS = {};
       Object.keys(REPORT_DATA).forEach((reportId, reportIndex) => {
         const initial = REPORT_DATA[reportId].copyBase || REPORT_DATA[reportId];
-        const count = reportId === 'r1' ? 13 : (reportId.startsWith('r-copy-') ? 1 : Math.max(3, 7 - (reportIndex % 4)));
+        const count = reportId === 'r1' ? 13 : (reportId.startsWith('r-copy-') || initial.pptData ? 1 : Math.max(3, 7 - (reportIndex % 4)));
         REPORT_VERSIONS[reportId] = Array.from({ length: count }, (_, index) => {
           const version = count - index;
           const isLatestSmartQueryVersion = reportId === 'r1' && version === 13;
@@ -2816,7 +3272,8 @@
             time: isLatestSmartQueryVersion
               ? '2026-08-18 10:28'
               : '2026-08-' + String(Math.max(1, 18 - index)).padStart(2, '0') + ' ' + String(9 + (version % 8)).padStart(2, '0') + ':20',
-            source: isLatestSmartQueryVersion ? '智能问数添加' : (isRevisionExampleVersion ? '智能问数修改' : (version % 3 === 0 ? '编辑页保存' : '智能问数修改')),
+            source: initial.pptData ? (reportId === 'r11' ? '智能问数生成' : '人工复制')
+              : (isLatestSmartQueryVersion ? '智能问数添加' : (isRevisionExampleVersion ? '智能问数修改' : (version % 3 === 0 ? '编辑页保存' : '智能问数修改'))),
             summary: isLatestSmartQueryVersion
               ? '将华东区销售增长分析结论添加到“经营建议”章节。'
               : (isRevisionExampleVersion ? '重新整理第四章并补充库存风险说明。' : (version === 1 ? '创建报告初始版本。' : '根据当次分析结果更新报告内容。')),
@@ -2825,6 +3282,7 @@
             sections: JSON.parse(JSON.stringify(initial.sections || [])),
             metaTop: REPORT_DATA[reportId].metaTop,
             pdfData: PDF_PREVIEW_DATA[reportId] ? JSON.parse(JSON.stringify(PDF_PREVIEW_DATA[reportId])) : null,
+            pptData: initial.pptData,
             workbook: getReportFileType(reportId) === 'excel' ? window.ReportExcelData.getSample(reportId) : null
           };
         });
@@ -2868,6 +3326,7 @@
             sections: JSON.parse(JSON.stringify(snapshot.sections || [])),
             metaTop: snapshot.metaTop,
             pdfData: snapshot.pdfData || null,
+            pptData: snapshot.pptData,
             workbook: snapshot.workbook || null
           });
           versions.sort((a, b) => b.version - a.version);
@@ -2876,6 +3335,7 @@
             REPORT_DATA[reportId].sections = snapshot.sections;
             REPORT_DATA[reportId].wordDocument = Boolean(snapshot.wordDocument);
             if (snapshot.pdfData) PDF_PREVIEW_DATA[reportId] = snapshot.pdfData;
+            if (snapshot.pptData) REPORT_DATA[reportId].pptData = snapshot.pptData;
           }
           if (versions.length > 20) versions.length = 20;
         });
@@ -2891,7 +3351,7 @@
             name: data.title, fileType: getReportFileType(item.id), category: category.name, categoryId: category.id,
             version: latest ? latest.version : 1, body: data.body, sections: data.sections,
             generatedAt: data.generatedAt, type: data.type, wordDocument: Boolean(data.wordDocument), copyBase: data.copyBase,
-            metaTop: data.metaTop, pdfData: PDF_PREVIEW_DATA[item.id] || null,
+            metaTop: data.metaTop, pdfData: PDF_PREVIEW_DATA[item.id] || null, pptData: data.pptData,
             workbook: latest?.workbook || null
           } : null;
         })).filter(Boolean);
@@ -2936,11 +3396,11 @@
       }
 
       function normalizeReportFileType(type) {
-        return ['word', 'pdf', 'excel'].includes(type) ? type : 'word';
+        return ['word', 'pdf', 'excel', 'ppt'].includes(type) ? type : 'word';
       }
 
       function getReportFileTypeMark(type) {
-        return ({ word: 'W', pdf: 'PDF', excel: 'X' })[normalizeReportFileType(type)];
+        return ({ word: 'W', pdf: 'PDF', excel: 'X', ppt: 'PPT' })[normalizeReportFileType(type)];
       }
 
       function buildReportHTML(rp) {
@@ -3227,8 +3687,6 @@
       const reportDocStageEl = document.getElementById('reportDocStage');
       const reportEditBtn = document.getElementById('reportEditBtn');
       const filePreviewToolbar = document.getElementById('filePreviewToolbar');
-      const filePreviewType = document.getElementById('filePreviewType');
-      const filePreviewIcon = document.getElementById('filePreviewIcon');
       const filePreviewName = document.getElementById('filePreviewName');
       const filePreviewMeta = document.getElementById('filePreviewMeta');
       const filePreviewStatus = document.getElementById('filePreviewStatus');
@@ -3287,27 +3745,23 @@
         return normalizeReportFileType(item && item.fileType);
       }
 
-      function setPreviewMode(fileType) {
-        reportDocStageEl.classList.remove('is-pdf-preview', 'is-excel-preview');
-        reportLayoutEl.classList.remove('is-pdf-layout', 'is-excel-layout');
-        reportArticleEl.classList.remove('preview-word', 'preview-pdf', 'preview-excel');
-        reportArticleEl.classList.add('preview-' + fileType);
-        if (fileType !== 'word') {
-          reportDocStageEl.classList.add('is-' + fileType + '-preview');
-          reportLayoutEl.classList.add('is-' + fileType + '-layout');
-        }
-        filePreviewToolbar.classList.toggle('hidden', fileType === 'word');
-        filePreviewToolbar.classList.toggle('is-excel', fileType === 'excel');
-        reportEditBtn.classList.toggle('hidden', fileType === 'pdf');
+      function isPagedFile(fileType) {
+        return fileType === 'pdf' || fileType === 'ppt';
       }
 
-      function configureFilePreview(fileType, data, detail, status) {
-        const isExcel = fileType === 'excel';
-        filePreviewType.textContent = isExcel ? 'EXCEL' : 'PDF';
-        filePreviewIcon.textContent = isExcel ? 'X' : 'PDF';
-        filePreviewName.textContent = detail.fileName || (data.title + (isExcel ? '.xlsx' : '.pdf'));
-        filePreviewMeta.textContent = detail.meta || '';
-        filePreviewStatus.textContent = status || '';
+      function setPreviewMode(fileType) {
+        const paged = isPagedFile(fileType);
+        reportDocStageEl.classList.toggle('is-pdf-preview', paged);
+        reportDocStageEl.classList.toggle('is-excel-preview', fileType === 'excel');
+        reportLayoutEl.classList.toggle('is-pdf-layout', paged);
+        reportLayoutEl.classList.toggle('is-ppt-layout', fileType === 'ppt');
+        reportLayoutEl.classList.toggle('is-excel-layout', fileType === 'excel');
+        reportArticleEl.classList.toggle('preview-pdf', paged);
+        reportArticleEl.classList.toggle('preview-ppt', fileType === 'ppt');
+        reportArticleEl.classList.toggle('preview-excel', fileType === 'excel');
+        reportArticleEl.classList.toggle('preview-word', fileType === 'word');
+        filePreviewToolbar.classList.toggle('hidden', fileType !== 'excel');
+        reportEditBtn.classList.toggle('hidden', paged);
       }
 
       function columnLetter(index) {
@@ -3505,17 +3959,14 @@
             '<div class="excel-native-preview-state" id="excelNativePreviewState">正在加载 Excel 预览…</div>' +
           '</section>'
         );
-        configureFilePreview('excel', data, {
-          fileName: workbook.fileName,
-          meta: '单张业务明细表 · 可通过 Web Excel 编辑'
-        }, (sheet.rows || []).length + ' 行 · ' + (sheet.columns || []).length + ' 列');
+        filePreviewName.textContent = workbook.fileName || (data.title + '.xlsx');
+        filePreviewMeta.textContent = '单张业务明细表 · 可通过 Web Excel 编辑';
+        filePreviewStatus.textContent = (sheet.rows || []).length + ' 行 · ' + (sheet.columns || []).length + ' 列';
         mountNativeExcelPreview(workbook, fallbackHTML);
       }
 
-      let activePdfPageIndex = 0;
-
-      function buildPdfThumbnails(pdfData) {
-        return pdfData.pages.map((page, index) => (
+      function buildFileThumbnails(pages) {
+        return pages.map((page, index) => (
           '<button class="pdf-thumbnail' + (index === 0 ? ' active' : '') + '" type="button" data-pdf-page="' + index + '">' +
             '<span class="pdf-thumb-sheet"><i></i><i></i><i></i></span>' +
             '<span class="pdf-thumb-copy"><strong>' + escapeHTML(page.label) + '</strong><small>第 ' + (index + 1) + ' 页</small></span>' +
@@ -3523,36 +3974,34 @@
         )).join('');
       }
 
-      function buildPdfPages(data, pdfData) {
-        const total = pdfData.pages.length;
-        return pdfData.pages.map((page, index) => (
-          '<section class="pdf-viewer-page' + (page.cover ? ' pdf-cover-page' : '') + '" id="pdf-page-' + (index + 1) + '" data-pdf-page-index="' + index + '">' +
-            (page.cover ? page.html : '<div class="pdf-page-head"><strong>' + escapeHTML(page.label) + '</strong><span>' + escapeHTML(data.title) + '</span></div>' + page.html) +
-            '<div class="pdf-page-foot"><span>' + escapeHTML(pdfData.fileName) + '</span><span>' + (index + 1) + ' / ' + total + '</span></div>' +
+      function buildFilePages(data, file, isPpt) {
+        const total = file.pages.length;
+        const coverClass = isPpt ? ' ppt-cover' : ' pdf-cover-page';
+        return file.pages.map((page, index) => (
+          '<section class="pdf-viewer-page' + (page.cover ? coverClass : '') + '" id="pdf-page-' + (index + 1) + '" data-pdf-page-index="' + index + '">' +
+            (page.cover ? '' : '<div class="pdf-page-head"><strong>' + escapeHTML(page.label) + '</strong><span>' + escapeHTML(data.title) + '</span></div>') +
+            (isPpt ? (PPT_SLIDE_VISUALS[page.label] || page.html || '') + '<p class="ppt-takeaway">' + escapeHTML(page.summary) + '</p>' : page.html) +
+            '<div class="pdf-page-foot"><span>' + escapeHTML(file.fileName) + '</span><span>' + (index + 1) + ' / ' + total + '</span></div>' +
           '</section>'
         )).join('');
       }
 
-      function updatePdfPageState(pageIndex) {
-        const pdfData = PDF_PREVIEW_DATA[activeReportId];
-        if (!pdfData) return;
-        activePdfPageIndex = Math.max(0, Math.min(Number(pageIndex) || 0, pdfData.pages.length - 1));
-        reportSectionListEl.querySelectorAll('.pdf-thumbnail').forEach((thumbnail) => {
-          thumbnail.classList.toggle('active', Number(thumbnail.dataset.pdfPage) === activePdfPageIndex);
+      function updateFilePageState(pageIndex) {
+        const thumbnails = reportSectionListEl.querySelectorAll('.pdf-thumbnail');
+        if (!thumbnails.length) return;
+        const activeIndex = Math.max(0, Math.min(Number(pageIndex) || 0, thumbnails.length - 1));
+        thumbnails.forEach((thumbnail) => {
+          thumbnail.classList.toggle('active', Number(thumbnail.dataset.pdfPage) === activeIndex);
         });
-        filePreviewStatus.textContent = '第 ' + (activePdfPageIndex + 1) + ' / ' + pdfData.pages.length + ' 页';
       }
 
-      function renderPdfReport(id, data) {
-        const pdfData = PDF_PREVIEW_DATA[id] || PDF_PREVIEW_DATA.r9;
-        activePdfPageIndex = 0;
-        reportSectionTitleEl.textContent = '页面缩略图';
-        reportSectionListEl.innerHTML = buildPdfThumbnails(pdfData);
-        reportArticleEl.innerHTML = buildPdfPages(data, pdfData);
-        configureFilePreview('pdf', data, {
-          fileName: pdfData.fileName,
-          meta: '归档文件 · 只读预览 · ' + (data.generatedAt || '')
-        }, '第 1 / ' + pdfData.pages.length + ' 页');
+      function renderPagedFile(id, data, fileType) {
+        const isPpt = fileType === 'ppt';
+        const file = isPpt ? { ...data.pptData, fileName: data.title + '.pptx' } : (PDF_PREVIEW_DATA[id] || PDF_PREVIEW_DATA.r9);
+        reportSectionTitleEl.textContent = isPpt ? '幻灯片缩略图' : '页面缩略图';
+        reportSectionListEl.innerHTML = buildFileThumbnails(file.pages);
+        reportArticleEl.innerHTML = buildFilePages(data, file, isPpt);
+        updateFilePageState(0);
         applyReportZoom();
       }
 
@@ -3568,7 +4017,7 @@
 
       window.handleReportEdit = function () {
         const fileType = getReportFileType(activeReportId);
-        if (fileType === 'pdf') return;
+        if (isPagedFile(fileType)) return;
         const editor = fileType === 'excel' ? 'report-excel-edit.html' : 'report-edit.html';
         goTo(editor + '?report=' + encodeURIComponent(activeReportId));
       };
@@ -3577,7 +4026,7 @@
         syncReportReferenceCatalog();
         const reference = window.ReportReference.getSnapshot('report:' + activeReportId);
         if (!reference) return;
-        const typeLabel = { word: 'Word', pdf: 'PDF', excel: 'Excel' }[reference.fileType];
+        const typeLabel = { word: 'Word', pdf: 'PDF', excel: 'Excel', ppt: 'PPT' }[reference.fileType];
         reference.meta = typeLabel + ' · ' + reference.category + ' / 当前版本 V' + reference.version;
         sessionStorage.setItem('smart-query-report-handoff', JSON.stringify(reference));
         goTo('smart-query.html?fromReport=1');
@@ -3587,7 +4036,7 @@
         const data = REPORT_DATA[id];
         if (!data) return;
         const fileType = getReportFileType(id);
-        const exportLabelMap = { word: 'Word', pdf: 'PDF', excel: 'Excel' };
+        const exportLabelMap = { word: 'Word', pdf: 'PDF', excel: 'Excel', ppt: 'PPT' };
         document.getElementById('reportExportLabel').textContent = '导出 ' + exportLabelMap[fileType];
         reportTitleEl.textContent = data.title;
         reportMetaTopEl.textContent = data.metaTop || '';
@@ -3600,7 +4049,7 @@
         setPreviewMode(fileType);
 
         if (fileType === 'excel') renderExcelReport(id, data);
-        else if (fileType === 'pdf') renderPdfReport(id, data);
+        else if (isPagedFile(fileType)) renderPagedFile(id, data, fileType);
         else renderWordReport(data);
 
         // 滚动回顶
@@ -3666,7 +4115,7 @@
         copiedReport.generatedAt = new Date().toISOString().slice(0, 10);
         copiedReport.type = '人工备份';
         copiedReport.metaTop = '复制自《' + source.title + '》 · 人工备份';
-        copiedReport.copyBase = { body: copiedReport.body, sections: copiedReport.sections, wordDocument: copiedReport.wordDocument };
+        copiedReport.copyBase = { body: copiedReport.body, sections: copiedReport.sections, wordDocument: copiedReport.wordDocument, pptData: copiedReport.pptData };
         REPORT_DATA[newId] = copiedReport;
         const sourceTreeReport = DIR_TREE.flatMap((item) => item.reports || []).find((item) => item.id === activeReportId);
         category.reports.push({ id: newId, name: name, fileType: normalizeReportFileType(sourceTreeReport && sourceTreeReport.fileType) });
@@ -3679,7 +4128,8 @@
           body: copiedReport.body,
           wordDocument: Boolean(copiedReport.wordDocument),
           sections: JSON.parse(JSON.stringify(copiedReport.sections || [])),
-          metaTop: copiedReport.metaTop
+          metaTop: copiedReport.metaTop,
+          pptData: copiedReport.pptData
         }];
         if (sourceTreeReport && normalizeReportFileType(sourceTreeReport.fileType) === 'excel' && window.ReportExcelData) {
           const copiedWorkbook = JSON.parse(JSON.stringify(REPORT_VERSIONS[activeReportId][0].workbook));
@@ -3758,6 +4208,7 @@
         report.sections = JSON.parse(JSON.stringify(selectedReportVersion.sections || []));
         report.metaTop = selectedReportVersion.metaTop || report.metaTop;
         if (selectedReportVersion.pdfData) PDF_PREVIEW_DATA[activeReportId] = JSON.parse(JSON.stringify(selectedReportVersion.pdfData));
+        if (selectedReportVersion.pptData) report.pptData = selectedReportVersion.pptData;
         const newVersion = {
           version: current.version + 1,
           time: new Date().toLocaleString('zh-CN', { hour12: false }),
@@ -3768,6 +4219,7 @@
           sections: JSON.parse(JSON.stringify(report.sections || [])),
           metaTop: report.metaTop,
           pdfData: PDF_PREVIEW_DATA[activeReportId] || null,
+          pptData: report.pptData,
           workbook: selectedReportVersion.workbook || null
         };
         versions.unshift(newVersion);
@@ -3819,15 +4271,17 @@
         if (excelPreviewSpread) excelPreviewSpread.refresh();
       });
 
-      // 章节点击锚点跳转
+      // 缩略图与章节锚点跳转，分页预览保留滚动区的顶部留白。
+      const pagedPreviewInset = 24;
       reportSectionListEl.addEventListener('click', function (e) {
         const pdfThumbnail = e.target.closest('.pdf-thumbnail');
         if (pdfThumbnail) {
           const pageIndex = Number(pdfThumbnail.dataset.pdfPage) || 0;
           const targetPage = reportArticleEl.querySelector('[data-pdf-page-index="' + pageIndex + '"]');
-          updatePdfPageState(pageIndex);
+          updateFilePageState(pageIndex);
           if (targetPage) {
-            reportDocStageEl.scrollTo({ top: Math.max(0, targetPage.offsetTop - 76), behavior: 'smooth' });
+            const top = targetPage.getBoundingClientRect().top - reportDocStageEl.getBoundingClientRect().top;
+            reportDocStageEl.scrollTo({ top: Math.max(0, reportDocStageEl.scrollTop + top - pagedPreviewInset), behavior: 'smooth' });
           }
           return;
         }
@@ -3844,20 +4298,26 @@
 
       let pdfScrollFrame = null;
       reportDocStageEl.addEventListener('scroll', function () {
-        if (getReportFileType(activeReportId) !== 'pdf' || pdfScrollFrame) return;
+        if (!isPagedFile(getReportFileType(activeReportId)) || pdfScrollFrame) return;
         pdfScrollFrame = requestAnimationFrame(() => {
           pdfScrollFrame = null;
-          const stageTop = reportDocStageEl.getBoundingClientRect().top + 82;
+          const pages = reportArticleEl.querySelectorAll('[data-pdf-page-index]');
+          const maxScrollTop = reportDocStageEl.scrollHeight - reportDocStageEl.clientHeight;
+          if (maxScrollTop > 0 && reportDocStageEl.scrollTop >= maxScrollTop - 1) {
+            updateFilePageState(pages.length - 1);
+            return;
+          }
+          const stageTop = reportDocStageEl.getBoundingClientRect().top + pagedPreviewInset;
           let nearestIndex = 0;
           let nearestDistance = Infinity;
-          reportArticleEl.querySelectorAll('[data-pdf-page-index]').forEach((page) => {
+          pages.forEach((page) => {
             const distance = Math.abs(page.getBoundingClientRect().top - stageTop);
             if (distance < nearestDistance) {
               nearestDistance = distance;
               nearestIndex = Number(page.dataset.pdfPageIndex) || 0;
             }
           });
-          updatePdfPageState(nearestIndex);
+          updateFilePageState(nearestIndex);
         });
       });
 
@@ -4106,7 +4566,7 @@
       // ====================================================================
       window.exportCurrentReport = function () {
         const type = getReportFileType(activeReportId);
-        const map = { word: 'Word', pdf: 'PDF', excel: 'Excel' };
+        const map = { word: 'Word', pdf: 'PDF', excel: 'Excel', ppt: 'PPT' };
         showToast('已导出为 ' + map[type]);
       };
 

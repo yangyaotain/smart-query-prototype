@@ -28,6 +28,7 @@
     if (event.sections) result.sections = clone(event.sections);
     if (event.workbook) result.workbook = clone(event.workbook);
     if (event.pdfData) result.pdfData = clone(event.pdfData);
+    if (event.pptData) result.pptData = clone(event.pptData);
     if (result.pdfData && event.changes?.length) {
       event.changes.forEach((change) => {
         const name = change.heading.replace(/^[一二三四五六七八九十\d]+[、.．\s]*/, "");
@@ -53,7 +54,7 @@
   }
   function saveManualVersion(snapshot, content) {
     const latest = getSnapshot(snapshot.key);
-    if (!latest || latest.version !== snapshot.version) return null;
+    if (!latest || latest.version !== snapshot.version || latest.fileType === "ppt") return null;
     const version = latest.version + 1;
     const events = read(eventKey);
     events.unshift({
@@ -90,6 +91,34 @@
       '<div class="report-page-number" contenteditable="false">第 ' + (index + 1) + " / " + pages.length + " 页</div></section>"
     ).join("");
   }
+  function buildPptDraft(snapshot, question, prior, append) {
+    const draft = clone(snapshot);
+    const pages = draft.pptData.pages;
+    const ordinal = question.match(/第\s*([一二三四五六七八九十\d]+)\s*[页张]/)?.[1];
+    const numberedPage = ordinal ? (/^\d+$/.test(ordinal) ? Number(ordinal) : "一二三四五六七八九十".indexOf(ordinal) + 1) - 1 : -1;
+    if (ordinal && !pages[numberedPage]) return null;
+    let namedPage = pages.findIndex((page) => question.includes(page.label));
+    if (namedPage < 0) namedPage = pages.findIndex((page) => page.keywords?.some((keyword) => question.includes(keyword)));
+    const riskPage = pages.findIndex((page) => page.label.includes("风险"));
+    const lastChange = prior?.changes?.at(-1);
+    const pageIndex = ordinal ? numberedPage : namedPage >= 0 ? namedPage
+      : (lastChange?.pageIndex ?? Math.max(0, riskPage));
+    const page = pages[pageIndex];
+    if (/精简|简化|缩短|缩写|压缩/.test(question)) {
+      page.summary = page.shortSummary;
+    } else if (append || /补充|增加|扩写/.test(question)) {
+      if (!page.summary.includes(page.detail)) page.summary += page.detail;
+    } else {
+      page.summary = page.shortSummary + page.detail;
+    }
+    const heading = "第 " + (pageIndex + 1) + " 页 · " + page.label;
+    const change = { pageIndex, heading, html: "<p>" + esc(page.summary) + "</p>" };
+    draft.changes = (prior?.changes || []).filter((item) => item.pageIndex !== pageIndex).concat(change);
+    draft.round = (prior?.round || 0) + 1;
+    draft.baseVersion = prior?.baseVersion || snapshot.version;
+    draft.scope = draft.changes.map((item) => item.heading).join("、");
+    return draft;
+  }
   function buildDraft(reference, question, prior, append) {
     const snapshot = prior || getSnapshot(reference) || {
       key: reference.key, name: reference.name, fileType: reference.fileType || "word",
@@ -99,6 +128,7 @@
         { id: "s3", name: "三、异常增长归因" }, { id: "s4", name: "四、问题与风险" }, { id: "s5", name: "五、经营建议" }
       ] : [], body: ""
     };
+    if (snapshot.fileType === "ppt") return snapshot.pptData?.pages?.length ? buildPptDraft(snapshot, question, prior, append) : null;
     const sections = snapshot.sections || [];
     const ordinal = question.match(/第([一二三四五六七八九十\d]+)章/)?.[1];
     const index = ordinal ? (Number(ordinal) || "一二三四五六七八九十".indexOf(ordinal) + 1) - 1 : -1;
