@@ -104,6 +104,15 @@ const stopQueryBtn = document.getElementById("stopQueryBtn");
 const currentChatMessage = answerBlock?.querySelector(".current-chat-message");
 const questionTurns = new WeakMap();
 const conversationSnapshots = new WeakMap();
+const queryConfirmationForm = document.getElementById("queryConfirmationForm");
+const queryConfirmationReply = queryConfirmationForm.elements.customReply;
+const queryConfirmationSend = queryConfirmationForm.querySelector('[type="submit"]');
+const reopenQueryConfirmation = document.getElementById("reopenQueryConfirmation");
+const queryConfirmationInputCard = document.querySelector(".input-card");
+const queryConfirmationNote = currentChatMessage.querySelector(".query-confirmation-note");
+const queryConfirmationPrompt = queryConfirmationNote.querySelector(".query-confirmation-prompt");
+const qaChartHeading = chartResult.querySelector(".chart-top h3");
+const defaultQaChartHeading = qaChartHeading.textContent;
 const answerTimeouts = new Set();
 const associateList = document.getElementById("associateList");
 const skillSelectWrap = document.getElementById("skillSelectWrap");
@@ -848,8 +857,20 @@ const boardRevisionDraft3 = createBoardDraft(
   boardRevisionDraft2
 );
 
+const SALES_CONFIRMATION_METRICS = {
+  received: { label: "实收金额", values: [2400, 2550, 2700, 2630, 2860, 3000] },
+  ordered: { label: "下单金额", values: [2680, 2800, 3070, 3020, 3210, 3460] }
+};
+const SALES_CONFIRMATION_MONTHS = ["5月", "6月", "7月", "8月", "9月", "10月"];
+
 const HISTORY_SCENARIOS = {
   normal: { question: "近6个月华东区销售额趋势如何？", mode: "qa" },
+  salesConfirmation: {
+    question: "近6个月华东区销售额趋势如何？",
+    mode: "qa",
+    sentAt: "08:39",
+    confirmation: { status: "pending" }
+  },
   guidedSales: {
     question: "近6个月华东区销售额趋势如何？",
     mode: "qa",
@@ -2542,7 +2563,7 @@ function openReferencedReport(button) {
 }
 
 function runQuestion(edit = null, options = {}) {
-  if (isAnswering || replayingHistory) return;
+  if (isAnswering || replayingHistory || hasPendingQueryConfirmation()) return;
   const inputText = edit ? edit.question : readQuestionEditorText();
   const context = edit?.turn.context || {
     themes: getSelectedThemeList(),
@@ -2679,6 +2700,7 @@ function renderMessageTime(element, sentAt) {
 
 function renderQuestionTurn(turn) {
   questionTurns.set(currentChatMessage, turn);
+  renderQueryConfirmation(turn.confirmation);
   const text = document.createElement("div");
   text.className = "question-text";
   text.textContent = turn.question;
@@ -2777,6 +2799,7 @@ function prepareCompletedHistoryTurn(scenario) {
     : null);
   const turn = {
     ...scenario,
+    confirmation: scenario.confirmation && { ...scenario.confirmation },
     sentAt: scenario.sentAt ?? activeConversationItem?.querySelector("em:last-child")?.textContent.match(/\b\d{2}:\d{2}\b/)?.[0],
     skillRun: activeSkillRun,
     context: scenario.context || {
@@ -3184,10 +3207,167 @@ function saveReferenceChanges() {
   showToast(`${pendingSave.target.name}已保存为${version}`);
 }
 
+function hasPendingQueryConfirmation() {
+  return questionTurns.get(currentChatMessage)?.confirmation?.status === "pending";
+}
+
+function syncQueryConfirmationPanel(confirmation) {
+  const pending = confirmation?.status === "pending";
+  const collapsed = pending && Boolean(confirmation.collapsed);
+  queryConfirmationForm.classList.toggle("hidden", !pending || collapsed);
+  reopenQueryConfirmation.classList.toggle("hidden", !collapsed);
+}
+
+function renderQueryConfirmation(confirmation) {
+  const pending = confirmation?.status === "pending";
+  syncQueryConfirmationPanel(confirmation);
+  queryConfirmationInputCard.inert = pending;
+  queryConfirmationInputCard.classList.toggle("is-waiting-confirmation", pending);
+  queryConfirmationNote.classList.toggle("hidden", !confirmation);
+  queryConfirmationPrompt.classList.toggle("hidden", !pending);
+  if (!confirmation) return;
+
+  const message = queryConfirmationNote.querySelector("p");
+  const badge = queryConfirmationNote.querySelector(".feedback-status");
+  badge.classList.toggle("pending", pending);
+  badge.classList.toggle("done", confirmation.status === "confirmed");
+  if (pending) {
+    message.textContent = "已识别华东区和近 6 个月的时间范围。下单金额和实收金额会得出不同的结果，查询已暂停，等待你确认统计口径。";
+    queryConfirmationPrompt.querySelector("p").textContent = queryConfirmationForm.querySelector("legend").textContent;
+    badge.textContent = "待确认";
+    queryConfirmationForm.reset();
+    queryConfirmationForm.elements.salesMetric.value = confirmation.selection || "";
+    queryConfirmationReply.value = confirmation.draft || "";
+    queryConfirmationSend.disabled = !confirmation.selection && !queryConfirmationReply.value.trim();
+    suggestPop.classList.add("hidden");
+  } else if (confirmation.status === "confirmed") {
+    message.textContent = `已按${SALES_CONFIRMATION_METRICS[confirmation.metric].label}口径继续查询。`;
+    badge.textContent = `已确认口径 · ${SALES_CONFIRMATION_METRICS[confirmation.metric].label}`;
+  } else if (confirmation.status === "custom") {
+    message.textContent = `已收到你的口径「${confirmation.reply}」。当前示例只提供实收金额和下单金额的数据。`;
+    badge.textContent = "已记录口径";
+  } else {
+    message.textContent = confirmation.status === "skipped" ? "已跳过本次口径确认，未执行查询。" : "已取消本次查询。";
+    badge.textContent = confirmation.status === "skipped" ? "已跳过" : "已取消";
+  }
+}
+
+function renderConfirmedQueryResult(confirmation) {
+  if (confirmation.status !== "confirmed") {
+    resultCard.classList.add("hidden");
+    return;
+  }
+
+  const { label, values } = SALES_CONFIRMATION_METRICS[confirmation.metric];
+  const format = new Intl.NumberFormat("zh-CN");
+  const growth = ((values.at(-1) / values[0] - 1) * 100).toFixed(1);
+  resultCard.classList.add("is-confirmation-result");
+  resultTitle.textContent = `华东区近 6 个月${label}趋势`;
+  resultTitle.nextElementSibling.textContent = "销售分析 · 2026 年 5–10 月 · 模拟数据";
+  aiConclusion.textContent = `华东区${label}从 5 月的 ${format.format(values[0])} 万元增至 10 月的 ${format.format(values.at(-1))} 万元，增长 ${growth}%。8 月小幅回落，9 月恢复增长。`;
+  tableResult.querySelector("table").innerHTML = `<thead><tr><th>月份</th><th class="num">${label}（万元）</th><th class="num">环比增长</th></tr></thead><tbody>${values.map((value, index) => {
+    const previous = values[index - 1];
+    const change = previous ? `${value >= previous ? "+" : ""}${((value / previous - 1) * 100).toFixed(1)}%` : "—";
+    return `<tr><td>${SALES_CONFIRMATION_MONTHS[index]}</td><td class="num">${format.format(value)}</td><td class="num">${change}</td></tr>`;
+  }).join("")}</tbody>`;
+  qaChartHeading.textContent = `华东区${label}月度趋势`;
+  chartResult.classList.remove("hidden");
+  setResultView("line", false);
+}
+
+function updateQueryConfirmationDraft(event) {
+  if (!hasPendingQueryConfirmation()) return;
+  const options = queryConfirmationForm.elements.salesMetric;
+  if (event.target.name === "salesMetric") queryConfirmationReply.value = "";
+  else if (queryConfirmationReply.value.trim()) options.value = "";
+  const confirmation = questionTurns.get(currentChatMessage).confirmation;
+  confirmation.selection = options.value;
+  confirmation.draft = queryConfirmationReply.value;
+  queryConfirmationSend.disabled = !confirmation.selection && !confirmation.draft.trim();
+  conversationChanged = true;
+}
+
+function finishQueryConfirmation(decision) {
+  if (!hasPendingQueryConfirmation()) return;
+  const turn = questionTurns.get(currentChatMessage);
+  const reply = queryConfirmationReply.value.trim();
+  const choice = decision || queryConfirmationForm.elements.salesMetric.value;
+  let metric;
+  if (Object.hasOwn(SALES_CONFIRMATION_METRICS, choice)) metric = choice;
+  else if (!choice && /^(?:按)?(?:实收金额|实际回款)(?:统计|查询)?[。！]?$/.test(reply)) metric = "received";
+  else if (!choice && /^(?:按)?(?:下单金额|订单金额)(?:统计|查询)?[。！]?$/.test(reply)) metric = "ordered";
+  if (!choice && !reply) return;
+
+  turn.confirmation = metric ? { status: "confirmed", metric }
+    : { status: choice || "custom", reply };
+  const badge = activeConversationItem?.querySelector("[data-confirmation-status]");
+  if (badge) {
+    badge.classList.add("hidden");
+    badge.textContent = "";
+  }
+  conversationChanged = true;
+  saveActiveConversation();
+  filterSideHistory();
+  renderCompletedHistoryTurn(turn);
+  questionInput.focus({ preventScroll: true });
+  requestAnimationFrame(scrollToQueryConfirmation);
+}
+
+function scrollToQueryConfirmation() {
+  if (questionTurns.get(currentChatMessage)?.confirmation?.status === "confirmed") {
+    queryConfirmationNote.scrollIntoView({ block: "start", behavior: "smooth" });
+  } else {
+    scrollToAnswerBottom();
+  }
+}
+
+queryConfirmationForm.addEventListener("input", updateQueryConfirmationDraft);
+queryConfirmationForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  finishQueryConfirmation();
+});
+document.getElementById("skipQueryConfirmation").addEventListener("click", () => finishQueryConfirmation("skipped"));
+const closeQueryConfirmation = document.getElementById("closeQueryConfirmation");
+function focusQueryConfirmation() {
+  if (queryConfirmationForm.classList.contains("hidden")) {
+    reopenQueryConfirmation.focus();
+    return;
+  }
+  const selected = queryConfirmationForm.querySelector('input[type="radio"]:checked');
+  const field = selected || (queryConfirmationReply.value ? queryConfirmationReply
+    : queryConfirmationForm.querySelector('input[type="radio"]'));
+  field.focus();
+}
+
+function setQueryConfirmationCollapsed(collapsed) {
+  if (!hasPendingQueryConfirmation()) return;
+  const confirmation = questionTurns.get(currentChatMessage).confirmation;
+  confirmation.collapsed = collapsed;
+  conversationChanged = true;
+  syncQueryConfirmationPanel(confirmation);
+  focusQueryConfirmation();
+}
+
+closeQueryConfirmation.addEventListener("click", () => setQueryConfirmationCollapsed(true));
+queryConfirmationForm.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !event.isComposing) setQueryConfirmationCollapsed(true);
+});
+reopenQueryConfirmation.addEventListener("click", () => setQueryConfirmationCollapsed(false));
+document.getElementById("salesConfirmationHistory").addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  event.preventDefault();
+  event.currentTarget.click();
+  if (hasPendingQueryConfirmation()) focusQueryConfirmation();
+});
+
 function renderCompletedHistoryTurn(scenario, options = {}) {
   prepareCompletedHistoryTurn(scenario);
   const turn = questionTurns.get(currentChatMessage);
   activeReferenceRun = turn.mode === "reference" ? turn : null;
+  if (turn.confirmation) {
+    renderConfirmedQueryResult(turn.confirmation);
+    return;
+  }
   if (turn.stopped) {
     renderThinkingTimeline(turn.mode);
     if (turn.salesScope) syncSalesThinkingSteps(turn.salesScope);
@@ -3248,7 +3428,7 @@ function renderHistoryTurnSequence(turns, index = 0, token = historySequenceToke
   if (index >= turns.length - 1) {
     replayingHistory = false;
     updateSendButton();
-    requestAnimationFrame(scrollToAnswerBottom);
+    requestAnimationFrame(turn.confirmation ? scrollToQueryConfirmation : scrollToAnswerBottom);
     return;
   }
   requestAnimationFrame(() => {
@@ -3318,6 +3498,7 @@ function resetChat() {
   setActiveConversationItem(null);
   closeQuestionEditor();
   questionTurns.delete(currentChatMessage);
+  renderQueryConfirmation();
   cancelAnswerWork();
   welcomeBlock.classList.remove("hidden");
   answerBlock.classList.add("hidden");
@@ -3403,7 +3584,7 @@ function finishAnswerSimulation() {
 }
 
 function syncComposerSendButton() {
-  sendBtn.disabled = isAnswering && (!isThinking || questionInput.dataset.empty === "true");
+  sendBtn.disabled = hasPendingQueryConfirmation() || (isAnswering && (!isThinking || questionInput.dataset.empty === "true"));
 }
 
 function updateSendButton() {
@@ -3412,7 +3593,7 @@ function updateSendButton() {
   const inputTools = questionInput.closest(".input-main").querySelector(".input-tools");
   inputTools.inert = isAnswering;
   answerBlock.querySelectorAll('[data-question-action="edit"]').forEach((button) => {
-    button.disabled = isAnswering || replayingHistory;
+    button.disabled = isAnswering || replayingHistory || hasPendingQueryConfirmation();
   });
 }
 
@@ -3582,6 +3763,11 @@ function resetAnswerSimulation() {
   thinkingBox.classList.remove("hidden");
   thinkingBox.classList.remove("collapsed");
   resultCard.classList.add("hidden");
+  if (resultCard.classList.contains("is-confirmation-result")) {
+    tableResult.querySelector("table").innerHTML = defaultQaTableHTML;
+  }
+  resultCard.classList.remove("is-confirmation-result");
+  qaChartHeading.textContent = defaultQaChartHeading;
   aiConclusion.textContent = "";
   aiConclusion.classList.remove("typing-cursor", "hidden");
   insightBox?.classList.remove("hidden");
@@ -5453,7 +5639,7 @@ function archiveCurrentMessageIfNeeded() {
   closeQuestionEditor();
 
   const sourceBoardDraftCanvases = Array.from(currentMessage.querySelectorAll(".board-draft-section:not(.hidden) canvas"));
-  const canArchiveQueryBoard = !turn.stopped
+  const canArchiveQueryBoard = !turn.stopped && !turn.confirmation
     && Object.prototype.hasOwnProperty.call(QUERY_BOARD_MODE_LABELS, currentAnswerMode)
     && boardDraftResult?.classList.contains("hidden");
   const queryBoardData = canArchiveQueryBoard ? getCurrentQueryBoardData(getCurrentResultTitle()) : null;
@@ -5568,12 +5754,14 @@ function setResultView(type, animate = true) {
   currentResultView = type;
   ensureResultChart(() => {
     if (!resultChart) return;
-    resultChart.setOption(buildResultChartOption(type), true);
+    const turn = questionTurns.get(currentChatMessage);
+    resultChart.setOption(buildResultChartOption(type, turn?.confirmation), true);
     resultChart.resize();
   });
 }
 
 function ensureResultChart(callback) {
+  if (hasPendingQueryConfirmation()) return;
   if (resultChart) {
     if (callback) callback();
     return;
@@ -5611,12 +5799,12 @@ function setArchivedResultView(type, btn) {
     inst = echarts.init(dom, null, { renderer: "canvas" });
     bindChartResizeHandlerOnce();
   }
-  inst.setOption(buildResultChartOption(type), true);
+  inst.setOption(buildResultChartOption(type, questionTurns.get(scopeRoot)?.confirmation), true);
   inst.resize();
 }
 
 function renderArchivedChart(dom, type) {
-  if (!dom || typeof echarts === "undefined") return;
+  if (!dom?.isConnected || typeof echarts === "undefined") return;
   if (!dom.clientWidth || !dom.clientHeight) {
     requestAnimationFrame(() => renderArchivedChart(dom, type));
     return;
@@ -5626,7 +5814,8 @@ function renderArchivedChart(dom, type) {
     inst = echarts.init(dom, null, { renderer: "canvas" });
     bindChartResizeHandlerOnce();
   }
-  inst.setOption(buildResultChartOption(type), true);
+  const turn = questionTurns.get(dom.closest(".archived-message"));
+  inst.setOption(buildResultChartOption(type, turn?.confirmation), true);
   inst.resize();
 }
 
@@ -5702,7 +5891,12 @@ function bindChartResizeHandlerOnce() {
   });
 }
 
-function buildResultChartOption(type) {
+function buildResultChartOption(type, confirmation) {
+  if (confirmation?.status === "confirmed") {
+    const { label, values } = SALES_CONFIRMATION_METRICS[confirmation.metric];
+    const data = SALES_CONFIRMATION_MONTHS.map((name, index) => ({ name, value: values[index] }));
+    return buildAxisChartOption(type, data, label);
+  }
   if (type === "pie") return buildPieChartOption();
   return buildAxisChartOption(type);
 }
@@ -5762,15 +5956,15 @@ function buildPieChartOption() {
   };
 }
 
-function buildAxisChartOption(type) {
+function buildAxisChartOption(type, data = resultChartData, metric = "销售额") {
   const theme = getSmartQueryChartTheme();
-  const months = resultChartData.map((d) => d.name);
-  const values = resultChartData.map((d) => d.value);
+  const months = data.map((d) => d.name);
+  const values = data.map((d) => d.value);
   const isBar = type === "bar";
   const isArea = type === "area";
-  const anomalyIndex = resultChartData.findIndex((d) => d.anomaly);
+  const anomalyIndex = data.findIndex((d) => d.anomaly);
   const anomalyData = anomalyIndex >= 0
-    ? [{ name: "异常", coord: [resultChartData[anomalyIndex].name, resultChartData[anomalyIndex].value] }]
+    ? [{ name: "异常", coord: [data[anomalyIndex].name, data[anomalyIndex].value] }]
     : [];
 
   const markPoint = {
@@ -5786,7 +5980,7 @@ function buildAxisChartOption(type) {
       shadowOffsetY: 3
     },
     label: {
-      formatter: () => resultChartData[anomalyIndex]?.anomalyTip || "异常",
+      formatter: () => data[anomalyIndex]?.anomalyTip || "异常",
       color: "#b45309",
       fontSize: 11,
       fontWeight: 700
@@ -5795,7 +5989,7 @@ function buildAxisChartOption(type) {
   };
 
   const lineSeries = {
-    name: "销售额",
+    name: metric,
     type: "line",
     smooth: true,
     symbol: "circle",
@@ -5829,7 +6023,7 @@ function buildAxisChartOption(type) {
   }
 
   const barSeries = {
-    name: "销售额",
+    name: metric,
     type: "bar",
     barWidth: 22,
     itemStyle: {
@@ -5869,9 +6063,9 @@ function buildAxisChartOption(type) {
       formatter: (params) => {
         const p = params[0];
         const idx = p.dataIndex;
-        const datum = resultChartData[idx];
-        const prev = idx > 0 ? resultChartData[idx - 1].value : null;
-        let html = `<strong style="font-size:13px;">${datum.name}</strong><br/>销售额：${datum.value}万`;
+        const datum = data[idx];
+        const prev = idx > 0 ? data[idx - 1].value : null;
+        let html = `<strong style="font-size:13px;">${datum.name}</strong><br/>${metric}：${datum.value}万`;
         if (prev != null) {
           const pct = ((datum.value - prev) / prev) * 100;
           const sign = pct >= 0 ? "+" : "";

@@ -3529,6 +3529,195 @@ th {
   box-shadow: 0 10px 24px rgba(var(--primary-rgb), 0.08);
 }
 
+.query-confirmation-panel {
+  display: grid;
+  gap: 12px;
+  max-height: 44vh;
+  overflow: auto;
+  margin-bottom: 10px;
+  padding: 14px;
+  background: #fff;
+  border: 1px solid var(--primary-border-soft);
+  border-radius: 18px;
+  box-shadow: var(--soft-shadow);
+}
+
+.query-confirmation-head,
+.query-confirmation-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.query-confirmation-head {
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.query-confirmation-head > span,
+.query-confirmation-reply {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.query-confirmation-head svg,
+.query-confirmation-footer svg,
+.query-confirmation-reopen svg {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.query-confirmation-head .close {
+  padding: 0;
+  background: transparent;
+}
+
+.query-confirmation-head .close:hover {
+  color: var(--heading);
+  background: var(--primary-hover-bg);
+}
+
+.query-confirmation-panel fieldset {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.query-confirmation-panel legend {
+  padding: 0;
+  margin-bottom: 8px;
+  color: var(--heading);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.query-confirmation-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  color: var(--heading);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.query-confirmation-option:hover,
+.query-confirmation-option:has(:focus-visible) {
+  background: var(--primary-hover-bg);
+}
+
+.query-confirmation-option:has(:checked) {
+  background: var(--primary-bg);
+  border-color: var(--primary-border);
+}
+
+.query-confirmation-number {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  color: var(--primary-dark);
+  background: var(--primary-soft);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.query-confirmation-option small {
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.query-confirmation-option input {
+  margin: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.query-confirmation-reply {
+  flex: 1 1 160px;
+  min-width: 0;
+  min-height: 36px;
+  padding-inline: 9px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.query-confirmation-reply:focus-within {
+  border-color: var(--primary);
+}
+
+.query-confirmation-reply input {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  color: var(--heading);
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+}
+
+.query-confirmation-footer button:disabled {
+  opacity: .45;
+  box-shadow: none;
+  cursor: default;
+}
+
+.query-confirmation-reopen {
+  height: 32px;
+  margin-bottom: 8px;
+  padding-inline: 10px;
+  border-radius: 999px;
+}
+
+.query-confirmation-reopen:hover {
+  background: var(--primary-hover-bg);
+}
+
+.input-card.is-waiting-confirmation {
+  opacity: .62;
+}
+
+.query-confirmation-note {
+  margin-bottom: 12px;
+  color: var(--heading);
+  font-size: 14px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.query-confirmation-note p {
+  margin: 0 0 8px;
+}
+
+.query-confirmation-prompt p {
+  font-weight: 700;
+}
+
+.result-card.is-confirmation-result :is(.chart-top-actions, .result-table-actions) {
+  display: none;
+}
+
 .input-main {
   min-width: 0;
 }

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>智能问数 - 业务端</title>
   <link rel="stylesheet" href="../../assets/css/theme.css?v=20261110-keyword-highlight" />
-  <link rel="stylesheet" href="../../assets/css/business.css?v=20261110-keyword-highlight" />
+  <link rel="stylesheet" href="../../assets/css/business.css?v=20261110-query-confirmation-toggle" />
   <link rel="stylesheet" href="../../assets/css/skill-picker.css?v=20260914-skill-copy" />
   <link rel="stylesheet" href="../../assets/css/scheduled-tasks.css?v=20260914-skill-copy" />
   <style>
@@ -115,6 +115,10 @@
         <div class="history-item active pinned" onclick="loadHistoryScenario('normal', this)" oncontextmenu="openSideMenu(event, 'history')">
           <strong title="近6个月华东区销售额趋势如何？">近6个月华东区销售额趋势如何？</strong>
           <span><em>普通问数</em><em>置顶 · 08:40</em></span>
+        </div>
+        <div class="history-item" id="salesConfirmationHistory" role="button" tabindex="0" onclick="loadHistoryScenario('salesConfirmation', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="华东区销售额趋势 · 口径确认">华东区销售额趋势 · 口径确认</strong>
+          <span><em>普通问数 · 08:39</em><em class="feedback-status pending" data-confirmation-status>待确认</em></span>
         </div>
         <div class="history-item" onclick="loadHistoryScenario('guidedSales', this)" oncontextmenu="openSideMenu(event, 'history')">
           <strong title="华东区销售额：连续引导与纠正">华东区销售额：连续引导与纠正</strong>
@@ -243,6 +247,16 @@
             <div class="ai-block">
               <div class="ai-avatar">AI</div>
               <div class="ai-content">
+                <div class="query-confirmation-note hidden" aria-live="polite">
+                  <p></p>
+                  <div class="query-confirmation-prompt hidden">
+                    <p></p>
+                    <button class="secondary-btn icon-btn query-confirmation-reopen hidden" id="reopenQueryConfirmation" type="button" aria-controls="queryConfirmationForm">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1 .6-1.5 1-1.5 2m0 3h.01"/></svg><span>回答问题</span>
+                    </button>
+                  </div>
+                  <span class="feedback-status"></span>
+                </div>
                 <div id="thinkingBox" class="thinking-box">
                   <div class="box-head" onclick="toggleThinkingDetail()">
                     <div class="thinking-pill">
@@ -1267,6 +1281,44 @@
             </div>
           </div>
         </div>
+        <form id="queryConfirmationForm" class="query-confirmation-panel hidden" aria-labelledby="queryConfirmationTitle">
+          <div class="query-confirmation-head">
+            <span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1 .6-1.5 1-1.5 2m0 3h.01"/></svg>问题</span>
+            <button class="close icon-btn" type="button" id="closeQueryConfirmation" aria-label="收起确认面板" title="收起确认面板">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <fieldset>
+            <legend id="queryConfirmationTitle">本次华东区销售额趋势按什么口径统计？</legend>
+            <label class="query-confirmation-option">
+              <span class="query-confirmation-number" aria-hidden="true">1</span>
+              <span>实收金额 <small>推荐 · 用于看实际回款</small></span>
+              <input type="radio" name="salesMetric" value="received" />
+            </label>
+            <label class="query-confirmation-option">
+              <span class="query-confirmation-number" aria-hidden="true">2</span>
+              <span>下单金额 <small>用于看订单规模</small></span>
+              <input type="radio" name="salesMetric" value="ordered" />
+            </label>
+            <label class="query-confirmation-option">
+              <span class="query-confirmation-number" aria-hidden="true">3</span>
+              <span>取消本次查询</span>
+              <input type="radio" name="salesMetric" value="cancelled" />
+            </label>
+          </fieldset>
+          <div class="query-confirmation-footer">
+            <label class="query-confirmation-reply">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6 4 4M4 20l4.5-1L20 7.5 16.5 4 5 15.5 4 20Z"/></svg>
+              <input type="text" name="customReply" aria-label="自行撰写回复" placeholder="或自行撰写回复" maxlength="160" />
+            </label>
+            <button class="ghost-btn icon-btn" type="button" id="skipQueryConfirmation" title="跳过确认，本次不查询">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 6 10 6-10 6zM19 6v12"/></svg><span>跳过</span>
+            </button>
+            <button class="primary-btn icon-btn" type="submit" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.2 20.2 4.8l-5.4 15.6-3.4-7.3-6.9-3.3z"/></svg><span>发送</span>
+            </button>
+          </div>
+        </form>
         <div class="input-card">
           <div class="input-main">
             <div class="theme-line">当前主题：<strong>销售分析</strong></div>
@@ -1730,6 +1782,6 @@
       </div>
     </form>
   </template>
-  <script src="../../assets/js/smart-query.js?v=20261110-message-time"></script>
+  <script src="../../assets/js/smart-query.js?v=20261110-query-confirmation-toggle"></script>
 </body>
 </html>
