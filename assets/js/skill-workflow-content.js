@@ -321,13 +321,23 @@
       outlineFrame = requestAnimationFrame(() => { outlineFrame = null; updateOutlineActive(); });
     }, { passive: true });
   }
+  function isPartConfirmed(part) {
+    return !!part.confirmed && !(dirty && part.id === selectedId);
+  }
+  function renderConfirmationStats() {
+    const confirmed = skill.parts.filter(isPartConfirmed).length;
+    const unconfirmed = skill.parts.length - confirmed;
+    $('swConfirmedCount').textContent = String(confirmed);
+    $('swUnconfirmedCount').textContent = String(unconfirmed);
+    $('swLocateConfirmed').disabled = !documentReady || busy || !confirmed;
+    $('swLocateUnconfirmed').disabled = !documentReady || busy || !unconfirmed;
+  }
   function renderHeader() {
     $('swSkillName').textContent = skill.name;
     $('swSkillName').title = skill.name;
     $('swTotalCount').textContent = `共 ${skill.parts.length} 项`;
     $('swTypeCounts').innerHTML = Object.entries(names).map(([type, label]) => `<span class="is-${type}">${label} ${skill.parts.filter((p) => p.type === type).length}</span>`).join('');
-    const count = skill.parts.filter((p) => p.confirmed && !(dirty && p.id === selectedId)).length;
-    $('swConfirmedCount').textContent = `✓ 已确认 ${count} · ○ 未确认 ${skill.parts.length - count}`;
+    renderConfirmationStats();
     renderConfirmAll(); renderFailureTrigger();
   }
   function confirmationIssue(part, settings, parts = skill.parts) {
@@ -344,7 +354,7 @@
       const issue = confirmationIssue(part, settings);
       if (issue) issues[issue] += 1;
     });
-    const confirmed = skill.parts.filter((part) => part.confirmed && !(dirty && part.id === selectedId)).length;
+    const confirmed = skill.parts.filter(isPartConfirmed).length;
     const blockers = Object.values(issues).reduce((sum, count) => sum + count, 0);
     return { settings, issues, blockers, confirmed, remaining: skill.parts.length - confirmed, total: skill.parts.length };
   }
@@ -399,7 +409,8 @@
   }
   function storedGlobalTestStatus(meta = skill.lastGlobalTest) {
     if (!meta) return '';
-    if (meta.status === 'running') return '上次全局测试未正常结束，请重新执行。';
+    // Each batch saves its results and progress together, including the final batch.
+    if (meta.status === 'running' && !(meta.total > 0 && meta.completed === meta.total)) return '上次全局测试未正常结束，请重新执行。';
     if (meta.status === 'interrupted') return '全局测试中断，请重新执行。';
     const resolved = meta.failed > 0 && !meta.failedIds?.length ? ' · 失败项已处理' : '';
     if (meta.status === 'stopped') return `全局测试已停止 · 完成 ${meta.completed}/${meta.total} · 成功 ${meta.passed} · 未执行 ${Math.max(0, meta.total - meta.completed)}${meta.skipped ? ` · ${meta.skipped} 项配置已变化` : ''}${resolved}`;
@@ -453,7 +464,7 @@
     if (!entries.length) { closeFailurePanel(); return; }
     const term = failureSearchTerm.trim().toLowerCase();
     const filtered = term ? entries.filter(({ part, step, reason }) => `${part.name} ${names[part.type]} ${step} ${reason}`.toLowerCase().includes(term)) : entries;
-    const rowMarkup = filtered.length ? filtered.map(({ part, state, step, reason }, index) => `<button type="button" class="sw-failure-item ${part.id === selectedId ? 'is-active' : ''}" data-failure-id="${esc(part.id)}"><span class="sw-failure-item-main"><span class="sw-failure-item-title"><span class="sw-failure-type">${esc(names[part.type])}</span><strong>${esc(part.name)}</strong><span class="sw-failure-state ${state === 'pending' ? 'is-pending' : ''}">${state === 'pending' ? '待重测' : '测试失败'}</span></span><span class="sw-failure-item-meta">${part.anchor?.page ? `第 ${part.anchor.page} 页 · ` : ''}${esc(step)}</span><span class="sw-failure-item-error" title="${esc(reason)}">${esc(reason)}</span></span><span class="sw-failure-item-locate"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>定位查看</span></button>`).join('') : '<div class="sw-failure-empty">没有匹配的失败项</div>';
+    const rowMarkup = filtered.length ? filtered.map(({ part, state, step, reason }, index) => `<button type="button" class="sw-failure-item ${part.id === selectedId ? 'is-active' : ''}" data-failure-id="${esc(part.id)}"><span class="sw-failure-item-main"><span class="sw-failure-item-title"><span class="sw-failure-type">${keywordHighlight.html(names[part.type], term)}</span><strong>${keywordHighlight.html(part.name, term)}</strong><span class="sw-failure-state ${state === 'pending' ? 'is-pending' : ''}">${state === 'pending' ? '待重测' : '测试失败'}</span></span><span class="sw-failure-item-meta">${part.anchor?.page ? `第 ${part.anchor.page} 页 · ` : ''}${keywordHighlight.html(step, term)}</span><span class="sw-failure-item-error" title="${esc(reason)}">${keywordHighlight.excerptHTML(reason, term, 48)}</span></span><span class="sw-failure-item-locate"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>定位查看</span></button>`).join('') : '<div class="sw-failure-empty">没有匹配的失败项</div>';
     const searchMarkup = entries.length > 10 ? `<form class="sw-failure-search" id="swFailureSearch"><input type="search" value="${esc(failureSearchTerm)}" placeholder="输入配置项名称或失败原因" aria-label="搜索失败项"><button type="submit" class="secondary-btn sw-button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M15 15l6 6"/></svg>搜索</button></form>` : '';
     failurePanel.host.innerHTML = `<div class="sw-failure-popover-head"><div><strong>全局测试失败项</strong><small>${entries.length} 项待处理${filtered.length !== entries.length ? ` · 当前显示 ${filtered.length} 项` : ''}</small></div><div class="sw-failure-popover-nav"><button type="button" class="ghost-btn sw-button" data-failure-prev ${filtered.length ? '' : 'disabled'}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>上一项</button><button type="button" class="ghost-btn sw-button" data-failure-next ${filtered.length ? '' : 'disabled'}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>下一项</button><button type="button" class="ghost-btn sw-button" data-failure-close aria-label="关闭失败项列表"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>关闭</button></div></div>${searchMarkup}<div class="sw-failure-list">${rowMarkup}</div>`;
     const list = failurePanel.host.querySelector('.sw-failure-list');
@@ -530,13 +541,6 @@
     renderFailureTrigger();
   }
   function executionSteps(part, settings) {
-    if (Store.usesGenerationDate(part)) return [
-      { label: '读取当前标注配置', detail: `自定义：${part.name}` },
-      { label: '解析提示词与测试参数', detail: `已读取 ${part.prompt.length} 字提示词；${settingsText(settings)}` },
-      { label: '读取报告生成时间', detail: `本次测试值 ${settings.generatedAt}` },
-      { label: '生成日期内容', detail: '按提示词指定格式转换日期' },
-      { label: '检查输出格式', detail: '保持原文档位置与格式，仅替换内容' }
-    ];
     if (part.type === 'metric') return [
       { label: '读取当前标注配置', detail: `指标：${part.name}` },
       { label: '解析提示词与查询参数', detail: settingsText(settings) },
@@ -551,12 +555,16 @@
       { label: '整理图表数据', detail: '按提示词处理排序和展示数量' },
       { label: '生成图表预览', detail: '按提示词生成图表类型、坐标轴和展示样式' }
     ];
+    const date = Store.usesGenerationDate(part);
+    let source = { label: '识别所需业务内容', detail: '根据提示词识别已配置的指标和图表结果' };
+    if (Store.hasAnalysisSql(part)) source = { label: '校验并模拟执行 SQL', detail: '校验查询语句，并将模拟结果提供给提示词' };
+    else if (date) source = { label: '读取报告生成时间', detail: `本次测试值 ${settings.generatedAt}` };
     return [
       { label: '读取当前标注配置', detail: `自定义：${part.name}` },
       { label: '解析提示词与测试参数', detail: `已读取 ${part.prompt.length} 字提示词；${settingsText(settings)}` },
-      { label: '识别所需业务内容', detail: '根据提示词识别已配置的指标和图表结果' },
-      { label: '生成文字内容', detail: '依据提示词组织分析结果' },
-      { label: '检查输出格式', detail: '检查长度和内容完整性' }
+      source,
+      date ? { label: '生成日期内容', detail: '按提示词指定格式转换日期' } : { label: '生成文字内容', detail: '依据提示词组织分析结果' },
+      { label: '检查输出格式', detail: date ? '保持原文档位置与格式，仅替换内容' : '检查长度和内容完整性' }
     ];
   }
   function createExecution(part, settings, state = 'queued') {
@@ -582,8 +590,10 @@
   }
   function enrichExecution(trace, part, result) {
     if (!result?.ok) return;
+    const analysisSql = Store.hasAnalysisSql(part);
+    if (analysisSql) trace.steps[2].detail = `模拟查询完成，返回 ${result.rows.length} 条数据，用于内容生成`;
     if (Store.usesGenerationDate(part)) {
-      trace.steps[2].detail = `已读取 ${new Date(result.at).toLocaleString('zh-CN', { hour12: false })}`;
+      if (!analysisSql) trace.steps[2].detail = `已读取 ${new Date(result.at).toLocaleString('zh-CN', { hour12: false })}`;
       trace.steps[3].detail = `生成结果：${result.text}`;
     } else if (part.type === 'metric') {
       trace.steps[3].detail = `查询完成，返回 ${result.rows.length} 条数据`;
@@ -677,7 +687,7 @@
         else el.replaceWith(...el.childNodes);
         return;
       }
-      const confirmed = part.confirmed && !(dirty && part.id === selectedId);
+      const confirmed = isPartConfirmed(part);
       const trackedFailure = globalFailureEntry(part);
       const failed = !!trackedFailure && trackedFailure.state === 'failed';
       const failurePending = !!trackedFailure && trackedFailure.state === 'pending';
@@ -703,17 +713,16 @@
     $('swPartType').textContent = `标注对象 · ${names[draft.type]}${draft.anchor?.page ? ` · 第 ${draft.anchor.page} 页` : ''}`;
     $('swPartTitle').textContent = draft.name;
     $('swPartTitle').title = draft.name;
-    let html = '';
-    if (draft.type !== 'analysis') {
-      html += '<div class="sw-field"><span>SQL 配置</span>' + window.SmartQuerySqlEditor.render({
-        value: draft.sql,
-        bind: 'sql',
-        minLines: 6,
-        ariaLabel: '当前内容 SQL'
-      }) + '</div>';
-    }
-    html += field('提示词', 'prompt', draft.prompt, { textarea: true, rows: draft.type === 'chart' ? 9 : 5 });
-    $('swConfigFields').innerHTML = html;
+    const sqlLabel = draft.type === 'analysis' ? 'SQL 配置（选填）' : 'SQL 配置';
+    const sqlEditor = window.SmartQuerySqlEditor.render({
+      value: draft.sql,
+      bind: 'sql',
+      minLines: 6,
+      ariaLabel: draft.type === 'analysis' ? '当前内容 SQL（选填）' : '当前内容 SQL',
+      placeholder: draft.type === 'analysis' ? '请输入 SQL，留空时沿用提示词生成流程' : undefined
+    });
+    $('swConfigFields').innerHTML = `<div class="sw-field"><span>${sqlLabel}</span>${sqlEditor}</div>` +
+      field('提示词', 'prompt', draft.prompt, { textarea: true, rows: draft.type === 'chart' ? 9 : 5 });
     $('swAIInput').value = '';
     $('swAIInput').placeholder = draft.type === 'metric' ? '例如：排除已取消订单，并保留两位小数' : draft.type === 'chart' ? '例如：改为横向柱状图，X轴显示成交金额，展示前10项并显示数据标签' : Store.usesGenerationDate(draft) ? '例如：将生成日期改为 YYYY-MM-DD 格式' : '例如：重点解释节资率下降，控制在 200 字以内';
     renderChat(); renderResult(); status();
@@ -790,13 +799,35 @@
       else if (documentReady) message('当前内容在浏览器预览中尚未匹配位置，请核对原 Word 文档。');
     }
   }
+  function locateFirstByConfirmation(confirmed) {
+    if (!documentReady || busy || !saveDraft()) return;
+    const matchingIds = new Set(skill.parts.filter((part) => isPartConfirmed(part) === confirmed).map((part) => part.id));
+    if (!matchingIds.size) return;
+    for (const page of regionPages()) {
+      let firstId, firstRect;
+      for (const mark of page.querySelectorAll('[data-part-id]')) {
+        if (!matchingIds.has(mark.dataset.partId)) continue;
+        const rect = mark.getBoundingClientRect();
+        if (!firstRect || rect.top < firstRect.top || (rect.top === firstRect.top && rect.left < firstRect.left)) {
+          firstId = mark.dataset.partId;
+          firstRect = rect;
+        }
+      }
+      if (firstId) {
+        if (drawingMode) setDrawingMode(false);
+        selectPart(firstId);
+        return;
+      }
+    }
+    message('该状态的标注尚未匹配到原文位置。');
+  }
   function lock(value) {
     if (value && drawingMode) setDrawingMode(false);
     busy = value;
     $('swConfigFields').querySelectorAll('input,textarea,select,button').forEach((el) => el.disabled = value);
     ['swRun', 'swRunAll', 'swConfirmAll', 'swAISend', 'swSave', 'swAIInput', 'swNext', 'swDeletePart'].forEach((key) => $(key).disabled = value);
     $('swDrawRegion').disabled = value || !documentReady;
-    status(); renderGlobalTest(); updateTestParamLock();
+    status(); renderGlobalTest(); updateTestParamLock(); renderConfirmationStats();
   }
   async function test() {
     if (busy || globalTest || !draft || !saveDraft() || !validateTestParams()) return;
@@ -845,31 +876,33 @@
         if (run.stopRequested) break;
         const batch = snapshots.slice(start, start + 12);
         const completed = await Promise.all(batch.map(async (captured) => ({ captured, result: await executePart(captured, settings, snapshots, 'global', run) })));
-        const applied = new Map();
+        const applied = new Set();
         const finished = completed.filter(({ result }) => !result.stopped);
         if (finished.length) {
+          const progress = { done: run.done + finished.length, passed: run.passed, failed: run.failed, skipped: run.skipped, failedIds: new Set(run.failedIds) };
           skill = updateSkill((s) => {
             finished.forEach(({ captured, result }) => {
               const part = s.parts.find((entry) => entry.id === captured.id);
-              if (!part || part.revision !== captured.revision) return;
+              if (!part || part.revision !== captured.revision) {
+                progress.skipped += 1;
+                return;
+              }
               part.result = result; part.confirmed = false; s.enabled = false;
-              applied.set(captured.id, result.ok);
+              applied.add(captured.id);
+              if (result.ok) progress.passed += 1;
+              else { progress.failed += 1; progress.failedIds.add(captured.id); }
             });
+            s.lastGlobalTest = globalRunRecord({ ...run, ...progress }, 'running');
           });
+          Object.assign(run, progress);
         }
         completed.forEach(({ captured, result }) => {
           run.pending.delete(captured.id);
-          if (result.stopped) return;
-          run.done += 1;
-          if (!applied.has(captured.id)) {
-            run.skipped += 1;
+          if (!result.stopped && !applied.has(captured.id)) {
             const trace = executionRuns.get(captured.id);
             if (trace) { trace.status = 'stale'; trace.expanded = false; }
           }
-          else if (applied.get(captured.id)) run.passed += 1;
-          else { run.failed += 1; run.failedIds.add(captured.id); }
         });
-        skill = updateSkill((s) => { s.lastGlobalTest = globalRunRecord(run, 'running'); });
         if (draft && !dirty && !busy) {
           const current = skill.parts.find((part) => part.id === selectedId);
           if (current) { draft = Store.clone(current); renderResult(); status(); }
@@ -891,7 +924,14 @@
         lastGlobalTestStatus = storedGlobalTestStatus();
         message('全局测试已停止，未完成项目未写入本次结果。');
       } else {
-        skill = updateSkill((s) => { s.lastGlobalTest = globalRunRecord(run, 'completed'); });
+        try {
+          skill = updateSkill((s) => { s.lastGlobalTest = globalRunRecord(run, 'completed'); });
+        } catch (error) {
+          const reason = error?.name === 'QuotaExceededError' ? '浏览器本地存储空间不足' : error?.message || String(error);
+          lastGlobalTestStatus = `${storedGlobalTestStatus()} · 结果已保留，完成状态保存失败（${reason}）`;
+          message(lastGlobalTestStatus);
+          return;
+        }
         lastGlobalTestStatus = storedGlobalTestStatus();
         message(run.failed || run.skipped ? '全局测试已完成，请逐项检查失败或配置变化的内容。' : '全局测试已完成，请逐项检查并确认。');
       }
@@ -1038,11 +1078,11 @@
         $('swPageInfo').textContent = 'Word 原文件预览';
       }
       if (template.source === 'sample') renderOutline();
-      documentReady = true; renderManualMarks(); syncMarks(); status(); renderConfirmAll(); updateOutlineActive();
+      documentReady = true; renderManualMarks(); syncMarks(); status(); renderConfirmAll(); renderConfirmationStats(); updateOutlineActive();
       $('swDrawRegion').disabled = false;
       const selected = $('swDocument').querySelector(`[data-part-id="${CSS.escape(selectedId || '')}"]`);
       if (selected) selected.scrollIntoView({ block: 'center', inline: 'nearest' });
-    } catch (e) { $('swDocument').innerHTML = `<div class="sw-empty sw-error">${esc(e.message || '模板预览失败，请检查 Word 文件。')}</div>`; documentReady = false; $('swDrawRegion').disabled = true; renderOutline(); status(); renderConfirmAll(); }
+    } catch (e) { $('swDocument').innerHTML = `<div class="sw-empty sw-error">${esc(e.message || '模板预览失败，请检查 Word 文件。')}</div>`; documentReady = false; $('swDrawRegion').disabled = true; renderOutline(); status(); renderConfirmAll(); renderConfirmationStats(); }
   }
   function markImportedDocument() {
     const nodes = [], ranges = [];
@@ -1205,6 +1245,8 @@
   $('swSave').onclick = () => { if (saveDraft()) message('当前配置已保存。'); };
   $('swRun').onclick = () => singleTest ? stopSingleTest() : test();
   $('swRunAll').onclick = () => globalTest ? stopGlobalTest() : testAll();
+  $('swLocateConfirmed').onclick = () => locateFirstByConfirmation(true);
+  $('swLocateUnconfirmed').onclick = () => locateFirstByConfirmation(false);
   $('swFailureTrigger').onclick = () => failurePanel ? closeFailurePanel() : openFailurePanel();
   $('swConfirmAll').onclick = confirmAllParts; $('swAISend').onclick = sendAI; $('swConfirmPart').onclick = confirmPart;
   $('swDeletePart').onclick = deletePart;

@@ -98,6 +98,22 @@ a {
   display: none !important;
 }
 
+mark.sq-keyword-hit {
+  color: #8a4e06;
+  background: #fef3c7;
+  border-radius: 3px;
+  font-weight: 700;
+  pointer-events: none;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.sq-tree-search-empty {
+  padding: 12px;
+  color: var(--muted);
+  font-size: var(--font-size-body);
+}
+
 .logo {
   width: 38px;
   height: 38px;

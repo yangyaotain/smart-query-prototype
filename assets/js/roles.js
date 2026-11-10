@@ -797,10 +797,10 @@
       return [
         '<div class="model-domain' + (collapsed ? " is-collapsed" : "") + '">',
         '<button type="button" class="model-domain-row" data-model-domain="' + domain.id + '">',
-        '<span class="model-caret">' + chevronIconHTML() + '</span><span class="dmt-icon">' + domainIconHTML() + '</span><span class="model-domain-name">' + escapeHTML(domain.name) + '</span>',
+        '<span class="model-caret">' + chevronIconHTML() + '</span><span class="dmt-icon">' + domainIconHTML() + '</span><span class="model-domain-name">' + keywordHighlight.html(domain.name, query) + '</span>',
         '</button>',
         '<div class="model-source-children">',
-        sources.map((source) => renderSourceRow(role, source)).join(""),
+        sources.map((source) => renderSourceRow(role, source, query)).join(""),
         '</div>',
         '</div>'
       ].join("");
@@ -808,14 +808,14 @@
     return html || emptyModelList("暂无数据源");
   }
 
-  function renderSourceRow(role, source) {
+  function renderSourceRow(role, source, query) {
     const active = source.id === modelView.sourceId ? " is-active" : "";
     return [
       '<div class="model-source-row' + active + '" data-model-source="' + source.id + '">',
       '<div class="model-check" title="' + escapeHTML(source.name) + '">',
       '<input type="checkbox" data-perm-kind="model" data-perm-id="' + source.id + '"' + (role.models.has(source.id) ? " checked" : "") + ' />',
       '<span class="dmt-icon">' + sourceIconHTML() + '</span>',
-      '<span class="model-source-name">' + escapeHTML(source.name) + '</span>',
+      '<span class="model-source-name">' + keywordHighlight.html(source.name, query) + '</span>',
       '<span class="model-source-type">' + escapeHTML(source.type || "") + '</span>',
       '</div>',
       '</div>'
@@ -826,15 +826,17 @@
     const source = findModelSource(modelView.sourceId);
     const query = modelView.tableQuery.trim().toLowerCase();
     if (!source) return emptyModelList("请选择数据源");
-    const tables = source.tables.filter((tableItem) => !query || tableItem.name.toLowerCase().indexOf(query) > -1 || String(tableItem.comment || "").toLowerCase().indexOf(query) > -1);
+    const tables = source.tables.filter((tableItem) => !query || tableLabel(tableItem).toLowerCase().includes(query) || String(tableItem.comment || "").toLowerCase().includes(query));
     return tables.map((tableItem) => {
       const active = tableItem.id === modelView.tableId ? " is-active" : "";
+      const label = tableLabel(tableItem);
+      const matchLabel = query && !label.toLowerCase().includes(query) ? tableItem.comment : label;
       return [
         '<div class="model-flat-row' + active + '" data-model-table="' + tableItem.id + '">',
         '<div class="model-check" title="' + escapeHTML(tableLabel(tableItem)) + '">',
         '<input type="checkbox" data-perm-kind="model" data-perm-id="' + tableItem.id + '"' + (role.models.has(tableItem.id) ? " checked" : "") + ' />',
         '<span class="dmt-icon">' + tableIconHTML() + '</span>',
-        '<span class="model-row-text">' + escapeHTML(tableLabel(tableItem)) + '</span>',
+        '<span class="model-row-text">' + keywordHighlight.excerptHTML(matchLabel, query, 24) + '</span>',
         '<span class="model-table-type">' + escapeHTML(tableItem.type) + '</span>',
         '</div>',
         '</div>'
@@ -856,7 +858,7 @@
         '<div class="model-check" title="' + escapeHTML(fieldLabel(fieldItem)) + '">',
         '<input type="checkbox" data-perm-kind="model" data-perm-id="' + fieldItem.id + '"' + (role.models.has(fieldItem.id) ? " checked" : "") + ' />',
         '<span class="model-field-tag ' + (fieldItem.tag ? "is-" + fieldItem.tag : "") + '">' + escapeHTML(fieldItem.tag ? fieldItem.tag.toUpperCase() : "F") + '</span>',
-        '<span class="model-row-text">' + escapeHTML(fieldLabel(fieldItem)) + '</span>',
+        '<span class="model-row-text">' + keywordHighlight.excerptHTML(fieldLabel(fieldItem), query, 24) + '</span>',
         '<span class="model-field-type">' + escapeHTML(fieldItem.type) + '</span>',
         '</div>',
         '</div>'
@@ -975,7 +977,7 @@
     const keyword = dimensionFilters.name.trim().toLowerCase();
     const items = dim.values.filter((item) => filterDimensionNode(item.id, item.name, config, keyword));
     return '<div class="dimension-value-grid">' + (items.length ? items.map((item) => {
-      return '<label class="dimension-value-card"><input type="checkbox" data-perm-kind="dimension" data-perm-id="' + dim.id + '::' + item.id + '"' + (config.selected.has(item.id) ? " checked" : "") + ' /><span title="' + escapeHTML(item.name) + '">' + escapeHTML(item.name) + '</span></label>';
+      return '<label class="dimension-value-card"><input type="checkbox" data-perm-kind="dimension" data-perm-id="' + dim.id + '::' + item.id + '"' + (config.selected.has(item.id) ? " checked" : "") + ' /><span title="' + escapeHTML(item.name) + '">' + keywordHighlight.html(item.name, keyword) + '</span></label>';
     }).join("") : '<div class="dimension-empty full">暂无匹配数据</div>') + '</div>';
   }
 
@@ -997,7 +999,7 @@
         '<label class="dimension-tree-row" style="--depth:' + (level - 1) + '">',
         '<span class="dimension-tree-caret">' + (hasChildren ? chevronIconHTML() : '') + '</span>',
         '<input type="checkbox" data-perm-kind="dimension" data-perm-id="' + dim.id + '::' + item.id + '"' + (config.selected.has(item.id) ? " checked" : "") + ' />',
-        '<span title="' + escapeHTML(item.name) + '">' + escapeHTML(item.name) + '</span><em>' + escapeHTML(dim.levels[level - 1] || ("第" + level + "级")) + '</em>',
+        '<span title="' + escapeHTML(item.name) + '">' + keywordHighlight.html(item.name, keyword) + '</span><em>' + escapeHTML(dim.levels[level - 1] || ("第" + level + "级")) + '</em>',
         '</label>',
         hasChildren ? '<div class="dimension-tree-children">' + childHTML + '</div>' : '',
         '</div>'

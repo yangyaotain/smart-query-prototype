@@ -16,6 +16,93 @@ function goTo(path) {
   window.location.href = path;
 }
 
+const keywordHighlight = {
+  pattern(keyword) {
+    const text = String(keyword ?? '').trim();
+    return text ? new RegExp('(' + text.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&') + ')', 'i') : null;
+  },
+
+  html(value, keyword) {
+    const text = String(value ?? '');
+    const pattern = typeof keyword === 'string' ? this.pattern(keyword) : keyword;
+    const parts = pattern ? text.split(pattern) : [text];
+    return parts.map((part, index) => {
+      const escaped = part.replace(/[&<>"']/g, (character) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[character]);
+      return index % 2 ? '<mark class="sq-keyword-hit">' + escaped + '</mark>' : escaped;
+    }).join('');
+  },
+
+  excerptHTML(value, keyword, limit = 64) {
+    const text = String(value ?? '');
+    const pattern = typeof keyword === 'string' ? this.pattern(keyword) : keyword;
+    const match = pattern?.exec(text);
+    if (!match || text.length <= limit) return this.html(text, pattern);
+    const start = Math.max(0, match.index - Math.floor(limit / 4));
+    const end = Math.max(start + limit, match.index + match[0].length);
+    return (start ? '…' : '') + this.html(text.slice(start, end), pattern) + (end < text.length ? '…' : '');
+  },
+
+  apply(label, keyword) {
+    if (!label) return;
+    const marks = label.querySelectorAll('mark.sq-keyword-hit');
+    marks.forEach((mark) => mark.replaceWith(...mark.childNodes));
+    if (marks.length) label.normalize();
+    const pattern = typeof keyword === 'string' ? this.pattern(keyword) : keyword;
+    if (!pattern) return;
+
+    const walker = document.createTreeWalker(label, NodeFilter.SHOW_TEXT);
+    const hits = [];
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (pattern.test(node.data)) hits.push(node);
+    }
+    if (!hits.length) return;
+    const template = document.createElement('template');
+    hits.forEach((node) => {
+      template.innerHTML = this.html(node.data, pattern);
+      node.replaceWith(template.content);
+    });
+  }
+};
+
+function filterKeywordTree(tree, keyword, {
+  nodeSelector = '.tree-node',
+  labelSelector = ':scope > .tree-row > .tree-label',
+  toggleSelector = ':scope > .tree-row > .tree-toggle',
+  emptyText = '未找到匹配目录'
+} = {}) {
+  const pattern = keywordHighlight.pattern(keyword);
+  const visible = new Set();
+  const nodes = tree.querySelectorAll(nodeSelector);
+  nodes.forEach((node) => {
+    const label = node.querySelector(labelSelector);
+    keywordHighlight.apply(label, pattern);
+    if (!pattern || !label || !pattern.test(label.textContent)) return;
+    visible.add(node);
+    for (let parent = node.parentElement.closest(nodeSelector); parent && tree.contains(parent); parent = parent.parentElement.closest(nodeSelector)) {
+      visible.add(parent);
+      parent.classList.remove('collapsed');
+      parent.classList.add('expanded');
+      const toggle = parent.querySelector(toggleSelector);
+      if (toggle && !toggle.classList.contains('empty')) toggle.textContent = '▾';
+    }
+  });
+  nodes.forEach((node) => { node.style.display = !pattern || visible.has(node) ? '' : 'none'; });
+  let empty = tree.querySelector(':scope > .sq-tree-search-empty');
+  if (pattern && !visible.size) {
+    if (!empty) {
+      empty = document.createElement('div');
+      empty.className = 'sq-tree-search-empty';
+      empty.setAttribute('role', 'status');
+      tree.appendChild(empty);
+    }
+    empty.textContent = emptyText;
+  } else if (empty) {
+    empty.remove();
+  }
+}
+
 /* ============================================================
  * 全局主题样式切换（静态原型）
  * - 系统配置页保存 smart-query-theme 后，所有引入 common.js 的页面自动应用

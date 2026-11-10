@@ -393,10 +393,11 @@
     table: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 3v18"/></svg>'
   };
 
-  function tableMatches(table, keyword) {
-    if (!keyword) return true;
-    var k = keyword.toLowerCase();
-    return (table.name + ' ' + (table.alias || '') + ' ' + (table.comment || '')).toLowerCase().indexOf(k) >= 0;
+  function matchingTableLabel(table, pattern) {
+    var label = table.alias || table.name;
+    return pattern && [label, table.name, table.comment].find(function (value) {
+      return value && pattern.test(value);
+    });
   }
 
   function getTableTypeMeta(type) {
@@ -415,10 +416,11 @@
     if (!tree) return;
 
     var keyword = (DM.treeKeyword || '').trim().toLowerCase();
+    var pattern = keywordHighlight.pattern(keyword);
 
     var html = DM.DATA.map(function (domain) {
       var sourcesHTML = domain.sources.map(function (s) {
-        var matchedTables = (s.tables || []).filter(function (t) { return tableMatches(t, keyword); });
+        var matchedTables = keyword ? (s.tables || []).filter(function (t) { return matchingTableLabel(t, pattern); }) : [];
         var sourceMatched = !keyword
           || domain.name.toLowerCase().indexOf(keyword) >= 0
           || s.name.toLowerCase().indexOf(keyword) >= 0;
@@ -443,7 +445,7 @@
             +   '<div class="' + rowCls + '" data-source-id="' + s.id + '" data-table-name="' + DM.escapeHTML(t.name) + '" title="' + DM.escapeHTML(t.name) + (t.alias ? ' · ' + DM.escapeHTML(t.alias) : '') + ' · ' + typeMeta.label + ' · ' + canvasTitle + '">'
             +     '<span class="dmt-toggle empty"></span>'
             +     '<span class="dmt-icon">' + ICONS.table + '</span>'
-            +     '<span class="dmt-label">' + DM.escapeHTML(t.alias || t.name) + '</span>'
+            +     '<span class="dmt-label">' + keywordHighlight.excerptHTML(matchingTableLabel(t, pattern) || t.alias || t.name, pattern, 16) + '</span>'
             +     typeBadge
             +   '</div>'
             + '</div>';
@@ -454,7 +456,7 @@
           +   '<div class="' + sourceCls + '" data-source-id="' + s.id + '">'
           +     '<span class="dmt-toggle">' + ICONS.chevron + '</span>'
           +     '<span class="dmt-icon">' + ICONS.source + '</span>'
-          +     '<span class="dmt-label">' + DM.escapeHTML(s.name) + '</span>'
+          +     '<span class="dmt-label">' + keywordHighlight.html(s.name, pattern) + '</span>'
           +     '<span class="dmt-meta">' + (s.tables || []).length + '</span>'
           +   '</div>'
           +   '<div class="dmt-children">' + tablesHTML + '</div>'
@@ -473,7 +475,7 @@
         +   '<div class="dmt-row" data-domain-id="' + domain.id + '">'
         +     '<span class="dmt-toggle">' + ICONS.chevron + '</span>'
         +     '<span class="dmt-icon">' + ICONS.domain + '</span>'
-        +     '<span class="dmt-label">' + DM.escapeHTML(domain.name) + '</span>'
+        +     '<span class="dmt-label">' + keywordHighlight.html(domain.name, pattern) + '</span>'
         +     '<span class="dmt-meta">' + domain.sources.length + '</span>'
         +   '</div>'
         +   '<div class="dmt-children">' + sourcesHTML + '</div>'
@@ -495,6 +497,7 @@
     renderTree();
     renderHeader();
     renderTopology();
+    updateAnalysisButton();
   }
 
   // ===================================================================
@@ -734,6 +737,7 @@
 
     // ---- 渲染节点（仅 inCanvas 的表） ----
     var FO_PAD = 10; // foreignObject 比节点本身大一圈，给锚点预留空间
+    var tablePattern = keywordHighlight.pattern(DM.tableKeyword);
     canvasTables.forEach(function (t) {
       var visible = DM.getVisibleFields(t, src);
       var h = DM.nodeHeight(t, src);
@@ -752,18 +756,16 @@
       if (DM.selection && DM.selection.type === 'table' && DM.selection.id === t.name) {
         wrap.classList.add('is-active');
       }
-      var kw = (DM.tableKeyword || '').trim().toLowerCase();
-      if (kw) {
-        var matchKw = (t.name + (t.alias || '') + (t.comment || '')).toLowerCase().indexOf(kw) >= 0;
-        if (!matchKw) wrap.classList.add('dim');
-      }
+      var matchLabel = matchingTableLabel(t, tablePattern);
+      if (tablePattern && !matchLabel) wrap.classList.add('dim');
+      var nodeLabel = matchLabel && matchLabel !== t.name ? matchLabel : (t.alias || t.name);
 
       var head = document.createElementNS(XHTML_NS, 'div');
       head.setAttribute('class', 'dm-node-head');
       head.innerHTML = ''
         + '<span class="dm-node-ico">' + ICON_TABLE + '</span>'
-        + '<span class="dm-node-name" title="' + DM.escapeHTML(t.name) + (t.alias ? ' · ' + DM.escapeHTML(t.alias) : '') + '">' + DM.escapeHTML(t.alias || t.name) + '</span>'
-        + '<span class="dm-node-alias" title="' + DM.escapeHTML(t.name) + '">' + DM.escapeHTML(t.name) + '</span>';
+        + '<span class="dm-node-name" title="' + DM.escapeHTML(nodeLabel) + '">' + keywordHighlight.excerptHTML(nodeLabel, tablePattern, 10) + '</span>'
+        + '<span class="dm-node-alias" title="' + DM.escapeHTML(t.name) + '">' + keywordHighlight.excerptHTML(t.name, tablePattern, 16) + '</span>';
       wrap.appendChild(head);
 
       // 左右锚点
@@ -1252,14 +1254,13 @@
 
     wrap.addEventListener('mousedown', function (e) {
       if (e.button !== 0) return;
-      // 只在"画布空白处"触发：避开节点、锚点、连线、缩放/缩略图工具栏、返回按钮、分析遮罩
+      // 只在"画布空白处"触发：避开节点、锚点、连线、缩放/缩略图工具栏、返回按钮
       if (
         e.target.closest('foreignObject.dm-node') ||
         e.target.closest('.dm-anchor') ||
         e.target.closest('g.dm-edge-group') ||
         e.target.closest('.dm-bottom-right') ||
-        e.target.closest('.dm-focus-back') ||
-        e.target.closest('.dm-analyze-mask')
+        e.target.closest('.dm-focus-back')
       ) return;
 
       var DM = window.__DM;
@@ -1826,11 +1827,20 @@
     var okBtn = modal.querySelector('.modal-foot [data-act="ok"]');
     var cancelBtn = modal.querySelector('.modal-foot [data-act="cancel"]');
     var closeBtn = modal.querySelector('.modal-head [data-act="cancel"]');
-    if (okBtn) okBtn.textContent = o.okText;
+    if (okBtn) {
+      okBtn.classList.toggle('dm-confirm-danger', o.danger !== false);
+      okBtn.textContent = o.okText;
+      if (o.danger === false) okBtn.insertAdjacentHTML('afterbegin', analysisIcons.check);
+    }
     if (cancelBtn) cancelBtn.textContent = o.cancelText;
 
     mask.classList.remove('hidden');
     modal.classList.remove('hidden');
+    var previousFocus = document.activeElement;
+    if (o.danger === false && cancelBtn) {
+      cancelBtn.insertAdjacentHTML('afterbegin', analysisIcons.cancel);
+      cancelBtn.focus();
+    }
 
     function cleanup() {
       mask.classList.add('hidden');
@@ -1840,10 +1850,12 @@
       if (closeBtn) closeBtn.onclick = null;
       mask.onclick = null;
       document.removeEventListener('keydown', onKey);
+      if (o.danger === false && previousFocus) previousFocus.focus();
     }
     function onKey(e) {
       if (e.key === 'Escape') { e.preventDefault(); cleanup(); }
-      else if (e.key === 'Enter') { e.preventDefault(); cleanup(); if (o.onConfirm) o.onConfirm(); }
+      else if (e.key === 'Tab' && o.danger === false) keepAnalysisFocus(e, modal);
+      else if (e.key === 'Enter' && o.danger !== false) { e.preventDefault(); cleanup(); if (o.onConfirm) o.onConfirm(); }
     }
     if (okBtn) okBtn.onclick = function () { cleanup(); if (o.onConfirm) o.onConfirm(); };
     if (cancelBtn) cancelBtn.onclick = cleanup;
@@ -1912,6 +1924,7 @@
   window.__DM.bindDeleteKey = function () {
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+      if (!analysisDrawer.classList.contains('hidden')) return;
       var tag = (e.target && e.target.tagName) || '';
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       if (e.target && e.target.isContentEditable) return;
@@ -1939,166 +1952,427 @@
   snapshotInitialPos();
 
   // ===================================================================
-  // 自动关联分析：根据"同名字段 / 一方含主键"自动推断连线
+  // 自动关联分析
   // ===================================================================
   function genRelId() {
     return 'r_' + Date.now().toString(36) + Math.random().toString(16).slice(2, 5);
   }
 
-  /** 真正的关联分析算法：扫描所有表，发现"同名字段 + 一方含主键"的组合，新增 left join 关系 */
-  function runAutoAnalyzeCore() {
+  function sameTablePair(a, b) {
+    return (a.from === b.from && a.to === b.to) || (a.from === b.to && a.to === b.from);
+  }
+
+  function collectRelationCandidates(source) {
+    var candidates = [];
+    source.tables.forEach(function (fromTable) {
+      source.tables.forEach(function (toTable) {
+        if (fromTable === toTable) return;
+        var pair = { from: fromTable.name, to: toTable.name };
+        if (candidates.some(function (candidate) { return sameTablePair(candidate, pair); })) return;
+
+        var fromField = fromTable.fields.find(function (field) {
+          return (field.fk || !field.pk) && toTable.fields.some(function (target) {
+            return target.name === field.name && target.pk;
+          });
+        });
+        if (!fromField) return;
+
+        var toField = toTable.fields.find(function (field) { return field.name === fromField.name && field.pk; });
+        var sameType = fromField.type === toField.type;
+        var singleKey = toTable.fields.filter(function (field) { return field.pk; }).length === 1;
+        candidates.push({
+          from: pair.from,
+          to: pair.to,
+          join: 'left',
+          mappings: [{ fromField: fromField.name, toField: toField.name }],
+          fromTable: { name: fromTable.name, alias: fromTable.alias },
+          toTable: { name: toTable.name, alias: toTable.alias },
+          fromField: { name: fromField.name, alias: fromField.alias },
+          toField: { name: toField.name, alias: toField.alias },
+          cardinality: singleKey && !fromField.pk ? '多对一（推断）' : '',
+          reason: fromField.fk ? '源字段标记为外键，与目标主键同名。' : '源字段与目标主键同名，可作为关联候选。',
+          note: !sameType ? '字段类型不同（' + fromField.type + ' / ' + toField.type + '），建议先核对。'
+            : !singleKey ? '目标使用复合主键，建议核对是否需要补充关联字段。'
+            : !fromField.nn ? '源字段可为空，LEFT JOIN 保留未匹配记录。' : ''
+        });
+      });
+    });
+    return candidates;
+  }
+
+  function writeRecommendedRelation(source, candidate, current) {
+    if (!current) {
+      current = { id: genRelId() };
+      source.relations = source.relations || [];
+      source.relations.push(current);
+    }
+    current.from = candidate.from;
+    current.to = candidate.to;
+    current.join = candidate.join;
+    current.mappings = candidate.mappings.map(function (mapping) { return Object.assign({}, mapping); });
+    window.__DM.findTable(source, candidate.from).inCanvas = true;
+    window.__DM.findTable(source, candidate.to).inCanvas = true;
+  }
+
+  // Excel 导入沿用原有行为，只追加尚未建模的表对。
+  window.__DM.runAutoAnalyzeCore = function () {
     var DM = window.__DM;
     var found = DM.findSource(DM.activeSourceId);
     if (!found) return 0;
-    var src = found.source;
-    var existing = {};
-    (src.relations || []).forEach(function (r) {
-      existing[r.from + '|' + r.to] = true;
-      existing[r.to + '|' + r.from] = true;
+    var source = found.source;
+    var candidates = collectRelationCandidates(source).filter(function (candidate) {
+      return !(source.relations || []).some(function (relation) { return sameTablePair(relation, candidate); });
     });
-
-    var added = 0;
-    for (var i = 0; i < src.tables.length; i++) {
-      for (var j = 0; j < src.tables.length; j++) {
-        if (i === j) continue;
-        var ta = src.tables[i];
-        var tb = src.tables[j];
-        var key2 = ta.name + '|' + tb.name;
-        if (existing[key2]) continue;
-
-        var match = null;
-        for (var x = 0; x < ta.fields.length; x++) {
-          for (var y = 0; y < tb.fields.length; y++) {
-            var fa = ta.fields[x];
-            var fb = tb.fields[y];
-            if (fa.name === fb.name && fb.pk && (fa.fk || !fa.pk)) {
-              match = { fromField: fa.name, toField: fb.name };
-              break;
-            }
-          }
-          if (match) break;
-        }
-        if (match) {
-          src.relations = src.relations || [];
-          src.relations.push({
-            id: genRelId(),
-            from: ta.name,
-            to: tb.name,
-            join: 'left',
-            mappings: [match]
-          });
-          // 推断出来的关联两端，自动加入画布
-          ta.inCanvas = true;
-          tb.inCanvas = true;
-          existing[key2] = true;
-          existing[tb.name + '|' + ta.name] = true;
-          added++;
-        }
-      }
-    }
-    return added;
-  }
-
-  /** 在拓扑画布上覆盖遮罩 + 进度条，模拟分析过程，然后执行核心算法并刷新 */
-  function showAutoAnalyzeOverlay() {
-    var wrap = document.getElementById('dmCanvasWrap');
-    if (!wrap) return null;
-    if (wrap.querySelector('.dm-analyze-mask')) return null; // 已在分析中
-    var mask = document.createElement('div');
-    mask.className = 'dm-analyze-mask';
-    mask.innerHTML = ''
-      + '<div class="dm-analyze-card">'
-      +   '<div class="dm-analyze-spinner">'
-      +     '<svg viewBox="0 0 50 50" aria-hidden="true">'
-      +       '<circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="4"/>'
-      +     '</svg>'
-      +   '</div>'
-      +   '<div class="dm-analyze-title">正在自动分析关联关系…</div>'
-      +   '<div class="dm-analyze-step" data-role="step">扫描表结构与字段</div>'
-      +   '<div class="dm-analyze-bar"><div class="dm-analyze-bar-fill" data-role="fill" style="width:0%"></div></div>'
-      +   '<div class="dm-analyze-pct"><span data-role="pct">0</span>%</div>'
-      + '</div>';
-    wrap.appendChild(mask);
-    return mask;
-  }
-
-  function hideAutoAnalyzeOverlay(mask) {
-    if (!mask) return;
-    mask.classList.add('is-leaving');
-    setTimeout(function () {
-      if (mask && mask.parentNode) mask.parentNode.removeChild(mask);
-    }, 220);
-  }
-
-  window.__DM.runAutoAnalyzeCore = runAutoAnalyzeCore;
-
-  var _analyzing = false;
-  window.__DM.autoAnalyze = function () {
-    if (_analyzing) return;
-    _analyzing = true;
-
-    var btn = document.getElementById('dmBtnAuto');
-    if (btn) btn.disabled = true;
-
-    var mask = showAutoAnalyzeOverlay();
-    var fillEl = mask && mask.querySelector('[data-role="fill"]');
-    var pctEl = mask && mask.querySelector('[data-role="pct"]');
-    var stepEl = mask && mask.querySelector('[data-role="step"]');
-
-    // 模拟阶段：每个阶段对应进度区间 + 文案
-    var STAGES = [
-      { to: 25,  text: '扫描表结构与字段',   delay: 280 },
-      { to: 55,  text: '匹配主键 / 外键候选', delay: 320 },
-      { to: 80,  text: '推断字段映射关系',   delay: 320 },
-      { to: 95,  text: '生成关联连线',       delay: 260 },
-      { to: 100, text: '完成',               delay: 180 }
-    ];
-
-    var stageIdx = 0;
-    var current = 0;
-
-    function tick() {
-      if (stageIdx >= STAGES.length) {
-        // 真正执行分析 + 刷新
-        var added = runAutoAnalyzeCore();
-        renderTopology();
-        renderTree();
-        renderHeader();
-        hideAutoAnalyzeOverlay(mask);
-        if (btn) btn.disabled = false;
-        _analyzing = false;
-        if (typeof showToast === 'function') {
-          showToast(added > 0 ? ('已新增 ' + added + ' 条关联关系') : '未发现可推断的新关联');
-        }
-        return;
-      }
-      var stage = STAGES[stageIdx];
-      if (stepEl) stepEl.textContent = stage.text;
-
-      // 进度从 current → stage.to，按帧推进
-      var start = current;
-      var end = stage.to;
-      var startTs = performance.now();
-      var dur = stage.delay;
-      function frame(now) {
-        var t = Math.min(1, (now - startTs) / dur);
-        // ease-out
-        var p = 1 - Math.pow(1 - t, 2);
-        current = start + (end - start) * p;
-        var pct = Math.round(current);
-        if (fillEl) fillEl.style.width = pct + '%';
-        if (pctEl) pctEl.textContent = pct;
-        if (t < 1) {
-          requestAnimationFrame(frame);
-        } else {
-          stageIdx++;
-          tick();
-        }
-      }
-      requestAnimationFrame(frame);
-    }
-    tick();
+    candidates.forEach(function (candidate) { writeRecommendedRelation(source, candidate); });
+    return candidates.length;
   };
+
+  function mappingKey(mappings, reversed) {
+    return JSON.stringify((mappings || []).map(function (mapping) {
+      return JSON.stringify(reversed ? [mapping.toField, mapping.fromField] : [mapping.fromField, mapping.toField]);
+    }).sort());
+  }
+
+  function compareRecommendation(source, candidate) {
+    var matches = (source.relations || []).filter(function (relation) { return sameTablePair(relation, candidate); });
+    if (!matches.length) return { status: 'new', candidate: candidate };
+    var wanted = mappingKey(candidate.mappings);
+    var sameMapping = matches.filter(function (relation) {
+      return mappingKey(relation.mappings, relation.from !== candidate.from) === wanted;
+    });
+    var identical = sameMapping.find(function (relation) {
+      return relation.from === candidate.from && relation.join === candidate.join;
+    });
+    var current = identical || sameMapping[0] || matches.find(function (relation) {
+      return relation.from === candidate.from;
+    }) || matches[0];
+    return { status: identical ? 'existing' : 'modify', candidate: candidate, current: current };
+  }
+
+  var analysisStates = new Map();
+  var analysisDrawer = analysisElement('dmAnalysisDrawer');
+  var analysisPageSize = 10;
+  var analysisSteps = ['扫描数据表与字段', '匹配主键、外键和同名字段', '评估关联类型与字段兼容性', '比对当前模型并生成推荐'];
+  var analysisProgress = [10, 34, 62, 86];
+  var analysisStatus = {
+    existing: { text: '已存在', style: 'status-ok' },
+    new: { text: '新增', style: 'status-blue' },
+    modify: { text: '推荐修改', style: 'status-warn' }
+  };
+  var analysisIcons = {
+    check: '<svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg> ',
+    cancel: '<svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg> ',
+    add: '<svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> ',
+    edit: '<svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6 4 4M4 20l4-1L20 7l-4-4L4 15z"/></svg> '
+  };
+
+  function analysisElement(id) {
+    return document.getElementById(id);
+  }
+
+  function updateAnalysisButton() {
+    var state = analysisStates.get(window.__DM.activeSourceId);
+    var running = Boolean(state && state.running);
+    analysisElement('dmBtnAuto').classList.toggle('is-analyzing', running);
+    analysisElement('dmAutoLabel').textContent = running ? 'AI 分析中' : '自动关联分析';
+  }
+
+  function formatAnalysisElapsed(milliseconds) {
+    var seconds = Math.floor(milliseconds / 1000);
+    var minutes = Math.floor(seconds / 60);
+    return (minutes ? minutes + ' 分钟 ' : '') + (seconds % 60) + ' 秒';
+  }
+
+  function renderAnalysisElapsed(state) {
+    analysisElement('dmAnalysisElapsed').textContent = formatAnalysisElapsed(performance.now() - state.startedAt);
+  }
+
+  function beginRelationAnalysis(source) {
+    var state = { running: true, startedAt: performance.now(), step: 0, candidates: [], filters: {}, page: 1 };
+    analysisStates.set(source.id, state);
+    analysisElement('dmAnalysisFilters').reset();
+    analysisElement('dmAnalysisTableWrap').scrollTop = 0;
+    updateAnalysisButton();
+    renderAnalysis(source, state);
+
+    var elapsedTimer = setInterval(function () {
+      if (source.id === window.__DM.activeSourceId && !analysisDrawer.classList.contains('hidden')) {
+        renderAnalysisElapsed(state);
+      }
+    }, 1000);
+
+    function advance() {
+      state.step++;
+      if (state.step === analysisSteps.length) {
+        state.candidates = collectRelationCandidates(source);
+        state.elapsedMs = performance.now() - state.startedAt;
+        state.running = false;
+        clearInterval(elapsedTimer);
+      } else {
+        setTimeout(advance, 850);
+      }
+      if (source.id !== window.__DM.activeSourceId) return;
+      updateAnalysisButton();
+      if (!analysisDrawer.classList.contains('hidden')) renderAnalysis(source, state);
+    }
+    setTimeout(advance, 850);
+  }
+
+  function renderAnalysis(source, state) {
+    analysisElement('dmAnalysisTitle').textContent = state.running ? '自动关联分析' : '关联推荐';
+    analysisElement('dmAnalysisProcess').classList.toggle('hidden', !state.running);
+    analysisElement('dmAnalysisResults').classList.toggle('hidden', state.running);
+    analysisElement('dmAnalysisPagination').classList.toggle('hidden', state.running);
+    analysisElement('dmAnalysisSummary').classList.toggle('hidden', state.running);
+    analysisElement('dmAnalysisSource').textContent = source.name + ' · ' + source.tables.length + ' 张表';
+    if (!state.running) {
+      renderAnalysisResults(source, state);
+      return;
+    }
+
+    renderAnalysisElapsed(state);
+    var pct = analysisProgress[state.step] + '%';
+    analysisElement('dmAnalysisPct').textContent = pct;
+    analysisElement('dmAnalysisProgress').setAttribute('aria-valuenow', analysisProgress[state.step]);
+    analysisElement('dmAnalysisFill').style.width = pct;
+    analysisElement('dmAnalysisSteps').innerHTML = analysisSteps.map(function (label, index) {
+      var done = index < state.step;
+      var current = index === state.step;
+      var marker = done ? '✓' : index + 1;
+      var status = done ? '已完成' : current ? '进行中' : '待开始';
+      return '<li class="' + (done ? 'is-done' : current ? 'is-current' : '') + '"'
+        + (current ? ' aria-current="step"' : '') + '><span class="dm-analysis-step-marker" aria-hidden="true">'
+        + marker + '</span><span>' + label + '</span>'
+        + '<small class="dm-analysis-step-status">' + status + '</small></li>';
+    }).join('');
+  }
+
+  function analysisMatches(pattern, from, to) {
+    return !pattern || [from.name, from.alias, to.name, to.alias].some(function (value) {
+      return value && pattern.test(value);
+    });
+  }
+
+  function analysisRow(row, index, tablePattern, fieldPattern) {
+    var esc = window.__DM.escapeHTML;
+    var candidate = row.candidate;
+    var status = analysisStatus[row.status];
+    var current = row.current;
+    var diff = [];
+    if (row.status === 'modify') {
+      var reversed = current.from !== candidate.from;
+      if (reversed) diff.push('连接方向：' + current.from + ' → ' + current.to + ' 改为 ' + candidate.from + ' → ' + candidate.to);
+      if (current.join !== candidate.join) diff.push(current.join.toUpperCase() + ' JOIN → ' + candidate.join.toUpperCase() + ' JOIN');
+      if (mappingKey(current.mappings, reversed) !== mappingKey(candidate.mappings)) {
+        var currentMapping = (current.mappings || []).filter(function (mapping) {
+          return mapping.fromField || mapping.toField;
+        }).map(function (mapping) {
+          return (mapping.fromField || '未设置') + ' = ' + (mapping.toField || '未设置');
+        }).join('、');
+        diff.push('字段映射：' + (currentMapping || '未设置') + ' → ' + candidate.fromField.name + ' = ' + candidate.toField.name);
+      }
+    }
+
+    function label(item, pattern) {
+      return '<strong>' + keywordHighlight.html(item.name, pattern) + '</strong>'
+        + (item.alias ? '<span class="dm-analysis-meta">' + keywordHighlight.html(item.alias, pattern) + '</span>' : '');
+    }
+
+    var action = '—';
+    if (row.status !== 'existing') {
+      var modify = row.status === 'modify';
+      action = '<button type="button" class="ghost-btn" data-analysis-row="' + index + '">'
+        + (modify ? analysisIcons.edit + '应用修改' : analysisIcons.add + '应用') + '</button>';
+    }
+    return '<tr><td>' + label(candidate.fromTable, tablePattern) + '<span class="dm-analysis-direction" aria-hidden="true">↓</span>'
+      + label(candidate.toTable, tablePattern) + '</td><td>' + label(candidate.fromField, fieldPattern)
+      + '<span class="dm-analysis-direction" aria-hidden="true">=</span>' + label(candidate.toField, fieldPattern)
+      + '</td><td><strong>' + esc(candidate.join.toUpperCase()) + ' JOIN</strong>'
+      + '<span class="dm-analysis-meta">' + esc(candidate.cardinality) + '</span></td>'
+      + '<td><span class="' + status.style + '">' + status.text + '</span></td>'
+      + '<td>' + esc(candidate.reason)
+      + (candidate.note ? '<span class="dm-analysis-meta">' + esc(candidate.note) + '</span>' : '')
+      + diff.map(function (line) { return '<span class="dm-analysis-diff">' + esc(line) + '</span>'; }).join('')
+      + '</td><td>' + action + '</td></tr>';
+  }
+
+  function renderAnalysisResults(source, state) {
+    var rows = state.candidates.map(function (candidate) { return compareRecommendation(source, candidate); });
+    var counts = { existing: 0, new: 0, modify: 0 };
+    rows.forEach(function (row) { counts[row.status]++; });
+    var actionable = counts.new + counts.modify;
+    analysisElement('dmApplyAll').disabled = !actionable;
+    analysisElement('dmApplyAllLabel').textContent = '全部应用' + (actionable ? '（' + actionable + '）' : '');
+    analysisElement('dmAnalysisSummary').textContent = ' · ' + rows.length + ' 条候选 · 已存在 ' + counts.existing
+      + ' · 新增 ' + counts.new + ' · 推荐修改 ' + counts.modify + ' · 用时 ' + formatAnalysisElapsed(state.elapsedMs);
+
+    var filters = state.filters;
+    var tablePattern = keywordHighlight.pattern(filters.table);
+    var fieldPattern = keywordHighlight.pattern(filters.field);
+    var visible = rows.filter(function (row) {
+      var candidate = row.candidate;
+      return analysisMatches(tablePattern, candidate.fromTable, candidate.toTable)
+        && analysisMatches(fieldPattern, candidate.fromField, candidate.toField)
+        && (!filters.status || filters.status === row.status);
+    });
+    var totalPages = Math.max(1, Math.ceil(visible.length / analysisPageSize));
+    state.page = Math.min(state.page, totalPages);
+    var offset = (state.page - 1) * analysisPageSize;
+    var message = rows.length ? '没有符合查询条件的推荐关系' : '当前数据源未发现可推荐的关联关系';
+    analysisElement('dmAnalysisRows').innerHTML = visible.slice(offset, offset + analysisPageSize).map(function (row) {
+      return analysisRow(row, state.candidates.indexOf(row.candidate), tablePattern, fieldPattern);
+    }).join('') || '<tr><td class="dm-analysis-empty" colspan="6">' + message + '</td></tr>';
+    analysisElement('dmAnalysisPageInfo').textContent = '共 ' + visible.length + ' 条'
+      + (totalPages > 1 ? ' · 第 ' + state.page + ' / ' + totalPages + ' 页' : '');
+    analysisElement('dmAnalysisPrev').disabled = state.page === 1;
+    analysisElement('dmAnalysisNext').disabled = state.page === totalPages;
+  }
+
+  function applyAnalysisRecommendations(source, state, candidates, bulk) {
+    var rows = candidates.map(function (candidate) { return compareRecommendation(source, candidate); });
+    var additions = rows.filter(function (row) { return row.status === 'new'; }).length;
+    var modifications = rows.filter(function (row) { return row.status === 'modify'; }).length;
+    if (!additions && !modifications) return;
+
+    function apply() {
+      if (window.__DM.activeSourceId !== source.id || analysisStates.get(source.id) !== state) return;
+      var added = 0;
+      var modified = 0;
+      candidates.forEach(function (candidate) {
+        var row = compareRecommendation(source, candidate);
+        if (row.status === 'existing') return;
+        writeRecommendedRelation(source, candidate, row.current);
+        if (row.status === 'new') added++;
+        else modified++;
+      });
+      renderTree();
+      renderHeader();
+      renderTopology();
+      renderAnalysisResults(source, state);
+      if (!analysisDrawer.contains(document.activeElement) || document.activeElement.disabled) {
+        analysisElement('dmAnalysisTitle').focus();
+      }
+      if (typeof showToast === 'function') showToast('应用完成：新增 ' + added + ' 条，修改 ' + modified + ' 条');
+    }
+
+    if (!modifications) {
+      apply();
+      return;
+    }
+    showDmConfirm({
+      title: bulk ? '确认全部应用' : '确认修改关联关系',
+      subtitle: bulk ? '应用本次分析的全部可用候选，包含筛选范围外的结果。' : '现有关联将更新为推荐配置。',
+      message: '本次将新增 <b>' + additions + '</b> 条、修改 <b>' + modifications + '</b> 条关联关系。',
+      okText: '确认应用',
+      danger: false,
+      onConfirm: apply
+    });
+  }
+
+  function keepAnalysisFocus(event, modal) {
+    var controls = Array.from(modal.querySelectorAll('button:not(:disabled), input, select, [tabindex="0"]'))
+      .filter(function (element) { return element.getClientRects().length; });
+    var target = document.activeElement;
+    var first = controls[0];
+    var last = controls[controls.length - 1];
+    if ((event.shiftKey && target === first) || (!event.shiftKey && target === last) || !modal.contains(target)) {
+      event.preventDefault();
+      (event.shiftKey ? last : first).focus();
+    }
+  }
+
+  window.__DM.autoAnalyze = function () {
+    var DM = window.__DM;
+    var found = DM.findSource(DM.activeSourceId);
+    if (!found) return;
+    var source = found.source;
+    var state = analysisStates.get(source.id);
+    var filters = state ? state.filters : {};
+    analysisElement('dmAnalysisTable').value = filters.table || '';
+    analysisElement('dmAnalysisField').value = filters.field || '';
+    analysisElement('dmAnalysisStatus').value = filters.status || '';
+    analysisElement('dmAnalysisMask').classList.remove('hidden');
+    analysisDrawer.classList.remove('hidden');
+    analysisElement('dmBtnAuto').setAttribute('aria-expanded', 'true');
+    if (state) renderAnalysis(source, state);
+    else beginRelationAnalysis(source);
+    analysisElement('dmAnalysisClose').focus();
+  };
+
+  function bindAnalysisDrawer() {
+    var mask = analysisElement('dmAnalysisMask');
+
+    function close() {
+      analysisDrawer.classList.add('hidden');
+      mask.classList.add('hidden');
+      var trigger = analysisElement('dmBtnAuto');
+      trigger.setAttribute('aria-expanded', 'false');
+      trigger.focus();
+    }
+
+    function withCurrentAnalysis(callback) {
+      var DM = window.__DM;
+      var state = analysisStates.get(DM.activeSourceId);
+      if (!state || state.running) return;
+      callback(DM.findSource(DM.activeSourceId).source, state);
+    }
+
+    function query(event) {
+      event.preventDefault();
+      withCurrentAnalysis(function (source, state) {
+        state.filters = {
+          table: analysisElement('dmAnalysisTable').value.trim(),
+          field: analysisElement('dmAnalysisField').value.trim(),
+          status: analysisElement('dmAnalysisStatus').value
+        };
+        state.page = 1;
+        analysisElement('dmAnalysisTableWrap').scrollTop = 0;
+        renderAnalysisResults(source, state);
+      });
+    }
+
+    mask.addEventListener('click', close);
+    analysisElement('dmAnalysisClose').addEventListener('click', close);
+    analysisElement('dmAnalysisFilters').addEventListener('submit', query);
+    analysisElement('dmAnalysisStatus').addEventListener('change', query);
+    analysisElement('dmAnalyzeAgain').addEventListener('click', function () {
+      withCurrentAnalysis(function (source) {
+        beginRelationAnalysis(source);
+        analysisElement('dmAnalysisClose').focus();
+      });
+    });
+    analysisElement('dmApplyAll').addEventListener('click', function () {
+      withCurrentAnalysis(function (source, state) {
+        applyAnalysisRecommendations(source, state, state.candidates, true);
+      });
+    });
+    analysisElement('dmAnalysisRows').addEventListener('click', function (event) {
+      var button = event.target.closest('[data-analysis-row]');
+      if (!button) return;
+      withCurrentAnalysis(function (source, state) {
+        applyAnalysisRecommendations(source, state, [state.candidates[Number(button.dataset.analysisRow)]], false);
+      });
+    });
+    ['dmAnalysisPrev', 'dmAnalysisNext'].forEach(function (id, index) {
+      analysisElement(id).addEventListener('click', function () {
+        withCurrentAnalysis(function (source, state) {
+          state.page += index === 0 ? -1 : 1;
+          analysisElement('dmAnalysisTableWrap').scrollTop = 0;
+          renderAnalysisResults(source, state);
+          if (analysisElement(id).disabled) analysisElement(index === 0 ? 'dmAnalysisNext' : 'dmAnalysisPrev').focus();
+        });
+      });
+    });
+    document.addEventListener('keydown', function (event) {
+      if (analysisDrawer.classList.contains('hidden') || !analysisElement('dmConfirmModal').classList.contains('hidden')) return;
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        close();
+      } else if (event.key === 'Tab') {
+        keepAnalysisFocus(event, analysisDrawer);
+      }
+    });
+  }
 
   // ===================================================================
   // 新增关系：弹出简易选择器（两表 + 字段 + JOIN）
@@ -2879,9 +3153,7 @@
   // ===================================================================
   // 7) 抽屉宽度拖动
   // ===================================================================
-  window.__DM.bindDrawerResize = function () {
-    var resizer = document.getElementById('dmDrawerResizer');
-    var drawer = document.getElementById('dmDrawer');
+  function bindDmDrawerResize(resizer, drawer, minWidth) {
     if (!resizer || !drawer) return;
 
     var dragging = false;
@@ -2889,6 +3161,7 @@
     var startW = 0;
 
     resizer.addEventListener('mousedown', function (e) {
+      if (e.button !== 0) return;
       dragging = true;
       resizer.classList.add('dragging');
       startX = e.clientX;
@@ -2901,7 +3174,8 @@
     document.addEventListener('mousemove', function (e) {
       if (!dragging) return;
       var dx = startX - e.clientX;
-      var nextW = Math.max(760, Math.min(window.innerWidth * 0.92, startW + dx));
+      var maxWidth = window.innerWidth * 0.92;
+      var nextW = Math.min(maxWidth, Math.max(minWidth, startW + dx));
       drawer.style.width = nextW + 'px';
     });
 
@@ -2912,6 +3186,11 @@
       document.body.style.userSelect = '';
       document.body.style.cursor = '';
     });
+  }
+
+  window.__DM.bindDrawerResize = function () {
+    bindDmDrawerResize(document.getElementById('dmDrawerResizer'), document.getElementById('dmDrawer'), 760);
+    bindDmDrawerResize(analysisElement('dmAnalysisResizer'), analysisDrawer, 810);
   };
 
   // ---- 暴露 ----
@@ -3048,7 +3327,8 @@
 
     // ESC 关闭
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') closeDrawer();
+      if (e.key === 'Escape' && !e.defaultPrevented
+        && analysisDrawer.classList.contains('hidden')) closeDrawer();
     });
   };
 
@@ -3137,6 +3417,7 @@
     if (DM.bindMinimap) DM.bindMinimap();
     if (DM.bindPan) DM.bindPan();
     if (DM.bindImportModal) DM.bindImportModal();
+    bindAnalysisDrawer();
   });
 
   document.addEventListener('click', function (e) {

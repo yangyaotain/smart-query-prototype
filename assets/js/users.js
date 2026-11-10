@@ -234,7 +234,7 @@
       '<div class="um-tree-row' + active + nodeType + '" data-org-id="' + escapeAttr(node.id) + '" style="padding-left:' + (8 + level * 18) + 'px">',
       '<span class="chev" data-org-toggle="' + escapeAttr(node.id) + '">' + (hasChildren ? chevronHTML() : "") + "</span>",
       '<span class="um-tree-icon" aria-hidden="true"></span>',
-      '<span class="um-tree-name" title="' + escapeAttr(node.name) + '">' + escapeHTML(node.name) + "</span>",
+      '<span class="um-tree-name" title="' + escapeAttr(node.name) + '">' + keywordHighlight.html(node.name, keyword) + "</span>",
       '<span class="um-tree-count">' + countUsersInOrg(node.id) + "</span>",
       "</div>",
       childrenHTML,
@@ -255,7 +255,7 @@
       if (!orgIds.has(item.deptId)) return false;
       if (state.filters.status && item.status !== state.filters.status) return false;
       if (state.filters.account && item.account.toLowerCase().indexOf(state.filters.account.toLowerCase()) < 0) return false;
-      if (state.filters.name && item.name.indexOf(state.filters.name) < 0) return false;
+      if (state.filters.name && !item.name.toLowerCase().includes(state.filters.name.toLowerCase())) return false;
       if (state.filters.role && roleList(item).indexOf(state.filters.role) < 0) return false;
       return true;
     });
@@ -301,8 +301,8 @@
     return [
       "<tr>",
       '<td><input type="checkbox" data-user-check="' + escapeAttr(item.id) + '"' + (state.selected.has(item.id) ? " checked" : "") + " /></td>",
-      '<td><span class="um-main-text um-user-account" title="' + escapeAttr(item.account) + '">' + escapeHTML(item.account) + "</span></td>",
-      '<td><span class="um-main-text um-user-name" title="' + escapeAttr(item.name) + '">' + escapeHTML(item.name) + "</span></td>",
+      '<td><span class="um-main-text um-user-account" title="' + escapeAttr(item.account) + '">' + keywordHighlight.html(item.account, state.filters.account) + "</span></td>",
+      '<td><span class="um-main-text um-user-name" title="' + escapeAttr(item.name) + '">' + keywordHighlight.html(item.name, state.filters.name) + "</span></td>",
       '<td><span class="um-main-text" title="' + escapeAttr(item.dept) + '">' + escapeHTML(item.dept) + "</span></td>",
       '<td><span class="um-main-text um-user-contact" title="' + escapeAttr(item.phone || "-") + '">' + escapeHTML(item.phone || "-") + "</span></td>",
       '<td><span class="um-main-text um-user-contact" title="' + escapeAttr(item.email || "-") + '">' + escapeHTML(item.email || "-") + "</span></td>",

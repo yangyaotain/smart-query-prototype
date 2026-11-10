@@ -192,6 +192,7 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     return preparePart({ id: 'cover-generated-date', type: 'analysis', name: '报告生成日期', sourceText: '2026 年 7 月 16 日', prompt: '使用本次报告的生成日期，按“YYYY 年 M 月 D 日”格式输出，仅输出日期。', anchor: { kind: 'page', page: 1, x: 48.4, y: 73.8, w: 18.8, h: 1.9 } });
   }
   const usesGenerationDate = (part) => part.type === 'analysis' && /(?:报告|本次).*生成(?:时间|日期)|生成(?:时间|日期)/.test(part.prompt || '');
+  const hasAnalysisSql = (part) => part.type === 'analysis' && !!String(part.sql || '').trim();
   const parameterCatalog = {
     report_month: { label: '报告月份', type: 'month', runtimeKey: 'month', hint: '最近有数据月份' },
     org_name: { label: '组织范围', type: 'text', runtimeKey: 'org', hint: '当前业务组织' },
@@ -457,20 +458,28 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     skill.enabled = false;
     return skill.parts.some((part) => part.id === id) ? 1 : 0;
   }
+  function validateQuerySql(sql) {
+    if (!/^\s*SELECT\b(?!\s+FROM\b)[\s\S]+?\bFROM\s+[^\s;]/i.test(sql)) throw new Error('SQL 应包含 SELECT 查询字段和 FROM 数据来源，请修改后重新测试。');
+  }
   function runDemo(part, params, parts) {
     if (!part.name.trim() || !part.theme) throw new Error('请补充内容名称和分析主题。');
     if (!part.prompt.trim()) throw new Error('请先补充当前内容的提示词。');
+    const analysisSql = hasAnalysisSql(part);
+    if (analysisSql) validateQuerySql(part.sql);
     if (usesGenerationDate(part)) {
-      const date = generationDate(params), year = date.getFullYear(), month = date.getMonth() + 1, day = date.getDate();
+      const generatedAt = generationDate(params);
+      const rows = analysisSql ? [{ generatedAt: generatedAt.toISOString() }] : [];
+      const date = rows.length ? new Date(rows[0].generatedAt) : generatedAt;
+      const year = date.getFullYear(), month = date.getMonth() + 1, day = date.getDate();
       const format = [...part.prompt.matchAll(/YYYY-MM-DD|YYYY\s*年\s*M+\s*月(?:\s*D+\s*日)?/g)].pop()?.[0] || '';
       const text = format === 'YYYY-MM-DD' ? `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}` : format && !/D/.test(format) ? `${year} 年 ${month} 月` : `${year} 年 ${month} 月 ${day} 日`;
-      return { ok: true, demo: true, rows: [], text, at: date.toISOString(), params: clone(params), signature: signature(part, params, parts), stale: false };
+      return { ok: true, demo: true, rows, text, at: date.toISOString(), params: clone(params), signature: signature(part, params, parts), stale: false };
     }
     const requiredKeys = new Set(params.requiredKeys || ['report_month', 'org_name']);
     if (requiredKeys.has('report_month') && !/^\d{4}-\d{2}$/.test(params.month)) throw new Error('请填写格式正确的报告月份。');
     if (requiredKeys.has('org_name') && !params.org?.trim()) throw new Error('请填写组织范围。');
     if (part.type !== 'analysis') {
-      if (!/^\s*SELECT\b/i.test(part.sql) || !/\bFROM\b/i.test(part.sql)) throw new Error('SQL 应包含 SELECT 和 FROM，请修改后重新测试。');
+      validateQuerySql(part.sql);
       if (!/:report_month\b/.test(part.sql) || !/:org_name\b/.test(part.sql)) throw new Error('SQL 缺少 :report_month 或 :org_name 参数绑定。');
       if (!/^[a-zA-Z_]\w*$/.test(part.field) || !new RegExp(`\\bAS\\s+${part.field}\\b`, 'i').test(part.sql)) throw new Error('查询结果中未找到回填字段，请核对 SQL 别名。');
     }
@@ -479,15 +488,20 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     const precision = [...part.prompt.matchAll(/([0-6零一二两三四五六])\s*位小数/g)].pop();
     const requestedDecimals = precision ? ('零一二三四五六'.includes(precision[1]) ? '零一二三四五六'.indexOf(precision[1]) : precision[1] === '两' ? 2 : Number(precision[1])) : part.decimals;
     const decimals = Math.max(0, Math.min(6, Number(requestedDecimals) || 0));
-    const textValue = Number(value.toFixed(decimals)).toLocaleString('zh-CN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + (part.unit ? ` ${part.unit}` : '');
     const rows = part.type === 'chart' ? [{ category: '公开招标', value: 5805.34 }, { category: '询比采购', value: 4905.11 }, { category: '竞争性谈判', value: 3821.60 }, { category: '直接采购', value: 3157.58 }] : [{ value }];
-    let text = textValue;
+    const outputValue = part.type === 'chart' ? value : rows[0].value;
+    let text = Number(outputValue.toFixed(decimals)).toLocaleString('zh-CN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + (part.unit ? ` ${part.unit}` : '');
     if (part.type === 'analysis') {
-      const currentIndex = parts.findIndex((p) => p.id === part.id);
-      const available = parts.filter((p, index) => p.id !== part.id && p.type !== 'analysis' && (currentIndex < 0 || index < currentIndex));
-      const named = available.filter((p) => part.prompt.includes(p.name));
-      const contextParts = (named.length ? named : available.slice(-3)).slice(0, 6);
-      const evidence = contextParts.map((p) => { const r = runDemo(p, params, parts); return `${p.name}为${p.type === 'metric' ? r.text : r.rows.map((row) => `${row.category} ${row.value}`).join('、')}`; });
+      let evidence;
+      if (analysisSql) {
+        evidence = [`SQL 模拟查询结果为${text}`];
+      } else {
+        const currentIndex = parts.findIndex((p) => p.id === part.id);
+        const available = parts.filter((p, index) => p.id !== part.id && p.type !== 'analysis' && (currentIndex < 0 || index < currentIndex));
+        const named = available.filter((p) => part.prompt.includes(p.name));
+        const contextParts = (named.length ? named : available.slice(-3)).slice(0, 6);
+        evidence = contextParts.map((p) => { const r = runDemo(p, params, parts); return `${p.name}为${p.type === 'metric' ? r.text : r.rows.map((row) => `${row.category} ${row.value}`).join('、')}`; });
+      }
       text = `${params.month}，${params.org}的${part.name}：${evidence.length ? evidence.join('；') + '。' : ''}${/下降|降低/.test(part.prompt) ? '缺少可比较的上期口径，暂不能判断下降幅度及原因。' : '建议结合上期同口径数据核实变化，持续跟踪主要采购类别。目前数据不足以直接判断变化原因。'}`;
       const limit = [...part.prompt.matchAll(/(\d{2,4})\s*字/g)].pop();
       if (limit && text.length > Number(limit[1])) text = text.slice(0, Math.max(30, Number(limit[1])) - 1) + '。';
@@ -516,5 +530,5 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     }
     return { next: syncPartMetadata(next, true), reply: `已更新${part.type === 'analysis' ? '提示词' : '提示词及相关配置'}并回填到上方配置。请重新测试，查看结果后确认此项。` };
   }
-  global.SkillCatalogStore = { key: KEY, load, save, update, clone, themes, isReady, preparePart, syncPartMetadata, normalizeSkill, normalizeTestParams, invalidate, signature, runDemo, aiEdit, sampleParts, sampleOutline, usesGenerationDate, removePart };
+  global.SkillCatalogStore = { key: KEY, load, save, update, clone, themes, isReady, preparePart, syncPartMetadata, normalizeSkill, normalizeTestParams, invalidate, signature, runDemo, aiEdit, sampleParts, sampleOutline, usesGenerationDate, hasAnalysisSql, removePart };
 })(window);

@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>数据模型管理 - 智能问数管理后台</title>
-  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/theme.css?v=20261110-keyword-highlight" />
   <link rel="stylesheet" href="../../assets/css/admin.css" />
-  <link rel="stylesheet" href="../../assets/css/data-model.css?v=20260719-unified-fonts" />
+  <link rel="stylesheet" href="../../assets/css/data-model.css?v=20261110-keyword-highlight" />
 </head>
 <body>
   <div class="admin-shell">
@@ -59,14 +59,14 @@
               </div>
               <div class="dm-detail-actions">
                 <input id="dmTableSearch" class="dm-table-search" placeholder="搜索表名 / 别名" />
-                <button class="primary-btn" type="button" id="dmBtnAuto">
+                <button class="primary-btn" type="button" id="dmBtnAuto" aria-haspopup="dialog" aria-controls="dmAnalysisDrawer" aria-expanded="false">
                   <svg viewBox="0 0 24 24" aria-hidden="true" class="btn-ico">
                     <path d="M12 2v4"/><path d="M12 18v4"/>
                     <path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/>
                     <path d="M2 12h4"/><path d="M18 12h4"/>
                     <path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/>
                   </svg>
-                  自动关联分析
+                  <span id="dmAutoLabel">自动关联分析</span>
                 </button>
                 <button class="ghost-btn" type="button" id="dmBtnReset" title="自动布局">
                   <svg viewBox="0 0 24 24" aria-hidden="true" class="btn-ico">
@@ -176,7 +176,95 @@
     </main>
   </div>
 
-  <!-- 删除确认弹窗 -->
+  <!-- 自动关联分析右侧抽屉 -->
+  <div class="dm-drawer-mask dm-analysis-mask hidden" id="dmAnalysisMask"></div>
+  <aside class="dm-drawer dm-analysis-drawer hidden" id="dmAnalysisDrawer" role="dialog" aria-modal="true" aria-labelledby="dmAnalysisTitle">
+    <div class="dm-drawer-resizer" id="dmAnalysisResizer" title="拖动调整宽度"></div>
+    <header class="dm-drawer-head">
+      <div>
+        <h3 id="dmAnalysisTitle" tabindex="-1">自动关联分析</h3>
+        <p><span id="dmAnalysisSource"></span><span id="dmAnalysisSummary" class="hidden" role="status"></span></p>
+      </div>
+      <button class="close" type="button" id="dmAnalysisClose" aria-label="关闭">×</button>
+    </header>
+    <div class="dm-drawer-body dm-analysis-body">
+      <section class="dm-analysis-process" id="dmAnalysisProcess" aria-labelledby="dmAnalysisProcessTitle">
+        <div class="dm-analysis-timing">
+          <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <span>用时 <span id="dmAnalysisElapsed">0 秒</span></span>
+        </div>
+        <div class="dm-analysis-intro">
+          <h4 id="dmAnalysisProcessTitle">AI 正在分析关联关系</h4>
+          <p>根据表结构和字段特征，生成关联推荐。</p>
+        </div>
+        <div class="dm-analysis-progress-head">
+          <span>分析进度</span>
+          <strong id="dmAnalysisPct">0%</strong>
+        </div>
+        <div class="dm-analyze-bar" id="dmAnalysisProgress" role="progressbar" aria-label="关联分析进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div class="dm-analyze-bar-fill" id="dmAnalysisFill"></div>
+        </div>
+        <ol class="dm-analysis-steps" id="dmAnalysisSteps"></ol>
+        <p class="dm-analysis-note">关闭抽屉后分析会继续，点击「AI 分析中」可查看进度。</p>
+      </section>
+      <section class="dm-analysis-results hidden" id="dmAnalysisResults" aria-labelledby="dmAnalysisTitle">
+        <form class="toolbar dm-analysis-filters" id="dmAnalysisFilters">
+          <label>表名<input id="dmAnalysisTable" type="text" placeholder="表名或别名" /></label>
+          <label>字段名<input id="dmAnalysisField" type="text" placeholder="字段名或别名" /></label>
+          <label>关系状态
+            <select id="dmAnalysisStatus">
+              <option value="">全部</option>
+              <option value="existing">已存在</option>
+              <option value="new">新增</option>
+              <option value="modify">推荐修改</option>
+            </select>
+          </label>
+          <button class="ghost-btn" type="submit">
+            <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
+            查询
+          </button>
+          <div class="dm-analysis-actions">
+            <button class="ghost-btn" type="button" id="dmAnalyzeAgain">
+              <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3.1-6.8M21 4v5h-5"/></svg>
+              重新分析
+            </button>
+            <button class="primary-btn" type="button" id="dmApplyAll">
+              <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 12 4 4 8-8m-4 8 8-8"/></svg>
+              <span id="dmApplyAllLabel">全部应用</span>
+            </button>
+          </div>
+        </form>
+        <div class="dm-analysis-table-wrap" id="dmAnalysisTableWrap" tabindex="0" role="region" aria-label="关联推荐列表">
+          <table class="data-table dm-analysis-table">
+            <thead>
+              <tr>
+                <th scope="col">源表 → 目标表</th>
+                <th scope="col">字段映射</th>
+                <th scope="col">关联类型</th>
+                <th scope="col">关系状态</th>
+                <th scope="col">推荐说明</th>
+                <th scope="col">操作</th>
+              </tr>
+            </thead>
+            <tbody id="dmAnalysisRows"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+    <footer class="dm-analysis-pagination hidden" id="dmAnalysisPagination">
+      <span id="dmAnalysisPageInfo" role="status"></span>
+      <button class="ghost-btn" type="button" id="dmAnalysisPrev">
+        <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>
+        上一页
+      </button>
+      <button class="ghost-btn" type="button" id="dmAnalysisNext">
+        <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+        下一页
+      </button>
+    </footer>
+  </aside>
+
+  <!-- 操作确认弹窗 -->
   <div class="modal-mask hidden" id="dmConfirmMask"></div>
   <div class="modal small hidden" id="dmConfirmModal" role="dialog" aria-modal="true" aria-labelledby="dmConfirmTitle">
     <div class="modal-head">
@@ -191,7 +279,7 @@
     </div>
     <div class="modal-foot">
       <button type="button" class="ghost-btn" data-act="cancel">取消</button>
-      <button type="button" class="primary-btn" data-act="ok" style="background:#ef4444;box-shadow:0 8px 20px rgba(239,68,68,.22);">确认删除</button>
+      <button type="button" class="primary-btn dm-confirm-danger" data-act="ok">确认删除</button>
     </div>
   </div>
 
@@ -285,7 +373,7 @@
     </div>
   </div>
 
-  <script src="../../assets/js/common.js?v=20260519-system-config"></script>
-  <script src="../../assets/js/data-model.js"></script>
+  <script src="../../assets/js/common.js?v=20261110-keyword-highlight"></script>
+  <script src="../../assets/js/data-model.js?v=20261110-keyword-highlight"></script>
 </body>
 </html>

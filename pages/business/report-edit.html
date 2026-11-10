@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>编辑报告 - 智能问数</title>
-  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/theme.css?v=20261110-keyword-highlight" />
   <link rel="stylesheet" href="../../assets/css/business.css" />
   <style>
     /* ============================================================
@@ -2257,7 +2257,7 @@
   </div>
 
   <script src="../../assets/js/echarts.min.js"></script>
-  <script src="../../assets/js/common.js"></script>
+  <script src="../../assets/js/common.js?v=20261110-keyword-highlight"></script>
   <script src="../../assets/js/report-chart.js"></script>
   <script src="../../assets/js/report-reference.js?v=20261104-excel-init"></script>
   <script>
@@ -4071,7 +4071,7 @@
             '<div class="pick-card' + sel + '" data-id="' + d.id + '">' +
               '<i class="check"></i>' +
               '<div class="pc-thumb">' + buildPickThumb(d.thumb) + '</div>' +
-              '<div class="pc-name" title="' + escapeAttrJS(d.name) + '">' + escapeHTMLJS(d.name) + '</div>' +
+              '<div class="pc-name" title="' + escapeAttrJS(d.name) + '">' + keywordHighlight.html(d.name, dbCurrentKw) + '</div>' +
               '<div class="pc-meta">' +
                 '<span class="pc-tag">' + (THUMB_TAG[d.thumb] || '图表') + '</span>' +
                 '<span>· ' + escapeHTMLJS(d.modifier) + '</span>' +

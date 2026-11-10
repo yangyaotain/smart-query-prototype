@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>内容配置 - 智能问数管理后台</title>
-  <link rel="stylesheet" href="../../assets/css/theme.css">
+  <link rel="stylesheet" href="../../assets/css/theme.css?v=20261110-keyword-highlight">
   <link rel="stylesheet" href="../../assets/css/admin.css">
   <link rel="stylesheet" href="../../assets/css/knowledge-skill.css">
   <link rel="stylesheet" href="../../assets/css/sql-editor.css?v=20260916-theme-fix">
-  <link rel="stylesheet" href="../../assets/css/skill-workflow.css?v=20260916-skill-actions">
+  <link rel="stylesheet" href="../../assets/css/skill-workflow.css?v=20261110-status-locate">
 </head>
 <body>
   <div class="admin-shell sw-content-shell">
@@ -27,7 +27,17 @@
               <button type="button" class="sw-outline-open hidden" id="swOutlineOpen" aria-label="展开大纲" title="展开大纲"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span>大纲</span></button>
               <div class="sw-document-scroll" id="swDocumentScroll"><div id="swDocxStyles"></div><div id="swDocument" class="sw-document"><div class="sw-empty">正在加载原模板…</div></div></div>
             </div>
-            <div class="sw-preview-foot sw-mark-summary" aria-label="标注统计"><div class="sw-mark-stats"><span id="swTotalCount"></span><span id="swTypeCounts" class="sw-type-counts"></span><span id="swConfirmedCount" role="status" aria-live="polite"></span><span id="swPageInfo" class="hidden">点击标注配置对应内容</span></div><div class="sw-global-test-actions"><span id="swGlobalTestStatus" role="status" aria-live="polite"></span><button type="button" class="sw-failure-trigger sw-button hidden" id="swFailureTrigger" aria-haspopup="dialog" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L2 21h20L12 3M12 9v5M12 18h.01"/></svg><span id="swFailureTriggerText">失败 0 项</span></button><button type="button" class="secondary-btn sw-button" id="swRunAll"><svg viewBox="0 0 24 24"><path d="M8 4v16l12-8L8 4"/></svg><span id="swRunAllText">全局测试</span></button><button type="button" class="primary-btn sw-button" id="swConfirmAll" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12l4 4L15 7M11 15l3 3 7-8"/></svg><span id="swConfirmAllText">全部确认</span></button></div></div>
+            <div class="sw-preview-foot sw-mark-summary" aria-label="标注统计">
+              <div class="sw-mark-stats">
+                <span id="swTotalCount"></span><span id="swTypeCounts" class="sw-type-counts"></span>
+                <span class="sw-confirmation-stats" aria-live="polite">
+                  <button type="button" class="sw-button" id="swLocateConfirmed" title="定位第一处已确认标注" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4L19 6"/></svg><span>已确认 <span id="swConfirmedCount">0</span></span></button>
+                  <button type="button" class="sw-button" id="swLocateUnconfirmed" title="定位第一处未确认标注" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg><span>未确认 <span id="swUnconfirmedCount">0</span></span></button>
+                </span>
+                <span id="swPageInfo" class="hidden">点击标注配置对应内容</span>
+              </div>
+              <div class="sw-global-test-actions"><span id="swGlobalTestStatus" role="status" aria-live="polite"></span><button type="button" class="sw-failure-trigger sw-button hidden" id="swFailureTrigger" aria-haspopup="dialog" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L2 21h20L12 3M12 9v5M12 18h.01"/></svg><span id="swFailureTriggerText">失败 0 项</span></button><button type="button" class="secondary-btn sw-button" id="swRunAll"><svg viewBox="0 0 24 24"><path d="M8 4v16l12-8L8 4"/></svg><span id="swRunAllText">全局测试</span></button><button type="button" class="primary-btn sw-button" id="swConfirmAll" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12l4 4L15 7M11 15l3 3 7-8"/></svg><span id="swConfirmAllText">全部确认</span></button></div>
+            </div>
           </section>
           <div class="sw-resize-handle" id="swResizeHandle" role="separator" aria-label="调整文档预览和配置区域宽度" aria-orientation="vertical" aria-valuemin="35" aria-valuemax="65" aria-valuenow="57" tabindex="0"><span class="sw-resize-grip" aria-hidden="true"><svg viewBox="0 0 12 20"><path d="M4 4v12M8 4v12"/></svg></span><span class="sw-resize-value" id="swResizeValue">左右拖动调整宽度</span></div>
           <section class="sw-config-panel" aria-label="当前内容配置">
@@ -48,14 +58,14 @@
       </section>
     </main>
   </div>
-  <script src="../../assets/js/common.js"></script>
+  <script src="../../assets/js/common.js?v=20261110-keyword-highlight"></script>
   <script src="../../assets/js/skill-template-sample.js?v=20260911"></script>
-  <script src="../../assets/js/skill-workflow-store.js?v=20260916-prototype-reset"></script>
+  <script src="../../assets/js/skill-workflow-store.js?v=20261110-optional-analysis-sql"></script>
   <script src="../../assets/vendor/docx-preview/jszip.min.js"></script>
   <script src="../../assets/vendor/docx-preview/docx-preview.min.js"></script>
   <script src="../../assets/js/skill-template-io.js?v=20260914-outline"></script>
   <script src="../../assets/js/skill-workflow-ui.js?v=20260916-skill-actions"></script>
   <script src="../../assets/js/sql-editor.js"></script>
-  <script src="../../assets/js/skill-workflow-content.js?v=20260916-chart-prompts"></script>
+  <script src="../../assets/js/skill-workflow-content.js?v=20261110-optional-analysis-sql"></script>
 </body>
 </html>

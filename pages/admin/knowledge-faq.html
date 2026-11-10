@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>行业知识 - 智能问数管理后台</title>
-  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/theme.css?v=20261110-keyword-highlight" />
   <link rel="stylesheet" href="../../assets/css/admin.css" />
   <style>
     .ik-page {
@@ -913,7 +913,7 @@
     </div>
   </div>
 
-  <script src="../../assets/js/common.js?v=20260519-system-config"></script>
+  <script src="../../assets/js/common.js?v=20261110-keyword-highlight"></script>
   <script>
     const IK_ICONS = {
       chev: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3.5 10 8l-4.5 4.5z"/></svg>',
@@ -1055,7 +1055,7 @@
         const ctx = node.id === (IK_STATE.ctxTarget && IK_STATE.ctxTarget.id) ? ' is-context' : '';
         return '<div class="ik-tree-row' + active + ctx + '" data-id="' + escapeHTML(node.id) + '" data-level="' + level + '">'
           + '<span class="ik-tree-toggle' + empty + '">' + IK_ICONS.chev + '</span>'
-          + '<span class="ik-tree-name">' + escapeHTML(node.name) + '</span>'
+          + '<span class="ik-tree-name">' + keywordHighlight.html(node.name, kw) + '</span>'
           + '<span class="ik-tree-count">' + countByDir(node.id) + '</span>'
           + '</div>';
       };
@@ -1092,8 +1092,8 @@
 
       document.getElementById('ikTbody').innerHTML = pageList.map(function (row) {
         return '<tr data-id="' + escapeHTML(row.id) + '">'
-          + '<td><span class="ik-title" title="' + escapeHTML(row.business) + '">' + escapeHTML(row.business) + '</span></td>'
-          + '<td><span class="ik-muted" title="' + escapeHTML(row.synonym) + '">' + escapeHTML(row.synonym) + '</span></td>'
+          + '<td><span class="ik-title" title="' + escapeHTML(row.business) + '">' + keywordHighlight.excerptHTML(row.business, IK_STATE.businessQuery, 24) + '</span></td>'
+          + '<td><span class="ik-muted" title="' + escapeHTML(row.synonym) + '">' + keywordHighlight.excerptHTML(row.synonym, IK_STATE.synonymQuery, 24) + '</span></td>'
           + '<td><span class="ik-desc" title="' + escapeHTML(row.explain) + '">' + escapeHTML(row.explain) + '</span></td>'
           + '<td><button type="button" class="ik-switch' + (row.enabled ? ' is-on' : '') + '" data-act="toggle" aria-label="切换状态"></button><span class="ik-status-text">' + (row.enabled ? '启用' : '禁用') + '</span></td>'
           + '<td><span class="ik-actions">'

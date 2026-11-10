@@ -64,6 +64,7 @@
     activeTab: "pending",
     page: { pending: 1, processed: 1 },
     pageSize: { pending: 5, processed: 5 },
+    search: { pending: "", processed: "" },
     sort: {
       pending: { field: "askCount", dir: "desc" },
       processed: { field: "processedAt", dir: "desc" }
@@ -216,7 +217,7 @@
       var action = event.target.closest("[data-act]");
       if (!action) return;
       var act = action.getAttribute("data-act");
-      if (act === "search") { state.page[state.activeTab] = 1; renderAll(); }
+      if (act === "search") applyQuery(state.activeTab);
       else if (act === "reset-filter") resetFilter(state.activeTab);
       else if (act === "sort") sortBy(action.getAttribute("data-sort"));
       else if (act === "process") openProcess(action.getAttribute("data-id"));
@@ -235,17 +236,21 @@
     });
     document.addEventListener("input", function (event) {
       var t = event.target;
-      if (t.matches(".oi-filter input")) state.page[state.activeTab] = 1;
       if (t.hasAttribute("data-bind") || t.hasAttribute("data-row-bind")) updateDraft(t);
       if (t.classList.contains("ke-sql-input")) syncSqlEditor(t);
     });
     document.addEventListener("change", function (event) {
       var t = event.target;
-      if (t.matches(".oi-filter select")) { state.page[state.activeTab] = 1; renderAll(); }
+      if (t.matches(".oi-filter select")) applyQuery(state.activeTab);
       if (t.hasAttribute("data-bind") || t.hasAttribute("data-row-bind")) updateDraft(t);
       if (t.id === "oiPageSize") { state.pageSize[state.activeTab] = Number(t.value) || 5; state.page[state.activeTab] = 1; renderAll(); }
     });
-    document.addEventListener("keydown", function (event) { if (event.key === "Escape") closeDrawer(); });
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") closeDrawer();
+      if (event.key === "Enter" && !event.isComposing && event.target.matches(".oi-filter input")) {
+        applyQuery(state.activeTab);
+      }
+    });
     bindDrawerResize();
   }
 
@@ -265,6 +270,10 @@
   function resetFilter(tab) {
     var ids = tab === "pending" ? ["oiPendingQuestion", "oiPendingTheme"] : ["oiProcessedQuestion", "oiProcessedTheme"];
     ids.forEach(function (id) { var el = $(id); if (el) el.value = ""; });
+    applyQuery(tab);
+  }
+  function applyQuery(tab) {
+    state.search[tab] = $(tab === "pending" ? "oiPendingQuestion" : "oiProcessedQuestion").value.trim();
     state.page[tab] = 1;
     renderAll();
   }
@@ -297,7 +306,7 @@
   function getFilteredItems(tab) {
     var isPending = tab === "pending";
     var arr = (isPending ? pendingItems : processedItems).slice();
-    var q = ($(isPending ? "oiPendingQuestion" : "oiProcessedQuestion").value || "").trim();
+    var q = state.search[tab];
     var theme = $(isPending ? "oiPendingTheme" : "oiProcessedTheme").value;
     var sort = state.sort[tab];
     arr = arr.filter(function (it) { return (!q || it.question.toLowerCase().indexOf(q.toLowerCase()) > -1) && (!theme || it.theme === theme); });
@@ -316,8 +325,12 @@
     if (state.page[state.activeTab] > totalPages) state.page[state.activeTab] = totalPages;
     var page = state.page[state.activeTab], start = (page - 1) * size;
     var pageItems = items.slice(start, start + size);
-    $("oiThead").innerHTML = state.activeTab === "pending" ? pendingHeadHTML() : processedHeadHTML();
-    $("oiTbody").innerHTML = pageItems.length ? pageItems.map(state.activeTab === "pending" ? pendingRowHTML : processedRowHTML).join("") : emptyRowHTML(state.activeTab === "pending" ? 8 : 11);
+    var pending = state.activeTab === "pending";
+    var keyword = state.search[state.activeTab];
+    var rowHTML = pending ? pendingRowHTML : processedRowHTML;
+    $("oiThead").innerHTML = pending ? pendingHeadHTML() : processedHeadHTML();
+    $("oiTbody").innerHTML = pageItems.length
+      ? pageItems.map(function (item) { return rowHTML(item, keyword); }).join("") : emptyRowHTML(pending ? 8 : 11);
     renderPager(items.length, page, totalPages, size);
   }
   function pendingHeadHTML() {
@@ -331,14 +344,14 @@
     var arrows = "<span class='oi-sort-arrow" + (active && sort.dir === "asc" ? " is-on" : "") + "'>▲</span><span class='oi-sort-arrow" + (active && sort.dir === "desc" ? " is-on" : "") + "'>▼</span>";
     return "<th style='width:" + width + ";'><button type='button' class='oi-sort-head" + (active ? " is-active" : "") + "' data-act='sort' data-sort='" + attr(field) + "'><span>" + escapeHTML(label) + "</span><span class='oi-sort-arrows' aria-hidden='true'>" + arrows + "</span></button></th>";
   }
-  function pendingRowHTML(it) {
-    return "<tr><td><span class='oi-main-text' title='" + attr(it.question) + "'>" + escapeHTML(it.question) + "</span></td>"
+  function pendingRowHTML(it, keyword) {
+    return "<tr><td><span class='oi-main-text' title='" + attr(it.question) + "'>" + keywordHighlight.excerptHTML(it.question, keyword, 24) + "</span></td>"
       + "<td>" + themeTag(it.theme) + "</td><td><span class='oi-num'>" + it.userCount + "</span></td><td><span class='oi-num'>" + it.askCount + "</span></td><td><span class='oi-num'>" + it.likeCount + "</span></td><td><span class='oi-num'>" + it.dislikeCount + "</span></td>"
       + "<td><span class='oi-sql-pill' title='" + attr(it.sql) + "'>" + escapeHTML(it.sql) + "</span></td>"
       + "<td><button type='button' class='oi-action-btn' data-act='process' data-id='" + attr(it.id) + "'>处理</button></td></tr>";
   }
-  function processedRowHTML(it) {
-    return "<tr><td><span class='oi-main-text' title='" + attr(it.question) + "'>" + escapeHTML(it.question) + "</span></td>"
+  function processedRowHTML(it, keyword) {
+    return "<tr><td><span class='oi-main-text' title='" + attr(it.question) + "'>" + keywordHighlight.excerptHTML(it.question, keyword, 24) + "</span></td>"
       + "<td>" + themeTag(it.theme) + "</td><td><span class='oi-num'>" + it.userCount + "</span></td><td><span class='oi-num'>" + it.askCount + "</span></td><td><span class='oi-num'>" + it.likeCount + "</span></td><td><span class='oi-num'>" + it.dislikeCount + "</span></td>"
       + "<td><span class='oi-sql-pill' title='" + attr(it.sql) + "'>" + escapeHTML(it.sql) + "</span></td><td>" + escapeHTML(it.processor) + "</td><td><span class='oi-sub-text'>" + escapeHTML(it.processedAt) + "</span></td><td><span class='oi-metric-tag'>" + escapeHTML(it.metricName) + "</span></td>"
       + "<td><button type='button' class='oi-action-btn' data-act='view' data-id='" + attr(it.id) + "'>查看</button></td></tr>";

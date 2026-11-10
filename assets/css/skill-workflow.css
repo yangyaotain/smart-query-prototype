@@ -166,6 +166,12 @@ button.sw-mark { position:absolute; z-index:1; min-width:6px; min-height:6px; }
 .sw-mark-stats,.sw-global-test-actions { display:flex; flex-wrap:wrap; align-items:center; gap:7px 12px; }
 .sw-mark-stats { min-width:0; }
 .sw-mark-stats>span { white-space:nowrap; }
+.sw-confirmation-stats { display:inline-flex; gap:2px; }
+.sw-confirmation-stats .sw-button { gap:3px; padding:3px 4px; color:inherit; background:transparent; border:0; border-radius:4px; font:inherit; }
+.sw-confirmation-stats .sw-button svg { width:12px; height:12px; }
+.sw-confirmation-stats .sw-button:not(:disabled) { color:var(--primary); cursor:pointer; }
+.sw-confirmation-stats .sw-button:not(:disabled):hover { background:var(--primary-soft); }
+.sw-confirmation-stats .sw-button:focus-visible { outline:2px solid var(--focus-ring); outline-offset:1px; }
 .sw-global-test-actions { flex:none; justify-content:flex-end; margin-left:auto; }
 #swGlobalTestStatus { max-width:100%; color:var(--muted); text-align:right; line-height:1.5; white-space:normal; }
 .sw-failure-trigger { padding:7px 9px; color:#c73838; background:#fff5f4; border:1px solid #e9aaa4; border-radius:7px; cursor:pointer; }

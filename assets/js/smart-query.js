@@ -1064,7 +1064,44 @@ function switchSideTab(type) {
   document.getElementById("historyList").classList.toggle("hidden", type !== "history");
   document.getElementById("favoriteList").classList.toggle("hidden", type !== "favorite");
   hideSideMenus();
+  filterSideHistory();
 }
+
+function filterSideHistory() {
+  const pattern = keywordHighlight.pattern(document.getElementById("sideHistorySearch").value);
+  ["historyList", "favoriteList"].forEach((id) => {
+    const list = document.getElementById(id);
+    const visibleGroups = new Set();
+    let group = null;
+    let count = 0;
+    for (const child of list.children) {
+      if (child.classList.contains("group-title")) group = child;
+      if (!child.classList.contains("history-item")) continue;
+      const labels = Array.from(child.querySelectorAll(":scope > strong, :scope > span > em"));
+      const matches = !pattern || labels.some((label) => pattern.test(label.textContent));
+      labels.forEach((label) => keywordHighlight.apply(label, pattern));
+      child.style.display = matches ? "" : "none";
+      if (matches) {
+        count++;
+        visibleGroups.add(group);
+      }
+    }
+    list.querySelectorAll(".group-title").forEach((title) => {
+      title.style.display = !pattern || visibleGroups.has(title) ? "" : "none";
+    });
+    let empty = list.querySelector(".sq-tree-search-empty");
+    if (!empty) {
+      empty = document.createElement("div");
+      empty.className = "sq-tree-search-empty";
+      empty.setAttribute("role", "status");
+      empty.textContent = id === "historyList" ? "没有匹配的历史对话" : "没有匹配的反馈";
+      list.appendChild(empty);
+    }
+    empty.classList.toggle("hidden", !pattern || count > 0);
+  });
+}
+
+document.getElementById("sideHistorySearch").addEventListener("input", filterSideHistory);
 
 function toggleHistoryMore(event) {
   const button = event.currentTarget;
@@ -1289,7 +1326,7 @@ function renderReferencePicker(keyword = "") {
     section.className = "reference-tree-group";
     const heading = document.createElement("div");
     heading.className = "reference-tree-group-title";
-    heading.innerHTML = `<span>${group.category}</span><em>${items.length}</em>`;
+    heading.innerHTML = `<span>${keywordHighlight.html(group.category, query)}</span><em>${items.length}</em>`;
     section.appendChild(heading);
     items.forEach((item) => {
       const row = document.createElement("label");
@@ -1315,7 +1352,7 @@ function renderReferencePicker(keyword = "") {
       const engineTag = item.kind === "board"
         ? `<i class="reference-engine-tag is-${item.boardEngine === "ai-html" ? "ai" : "component"}">${item.boardEngine === "ai-html" ? "AI生成" : "组件搭建"}</i>`
         : "";
-      main.innerHTML = `<strong>${item.name}${engineTag}</strong><em>${item.meta}</em>`;
+      main.innerHTML = `<strong>${keywordHighlight.html(item.name, query)}${engineTag}</strong><em>${escapeHtml(item.meta)}</em>`;
       const check = document.createElement("span");
       check.className = "reference-tree-check";
       check.textContent = "✓";
@@ -1593,20 +1630,10 @@ function renderSuggestions(items, input) {
   items.forEach((text) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.innerHTML = highlightMatch(text, input);
+    btn.innerHTML = keywordHighlight.html(text, input);
     btn.addEventListener("click", () => runSuggestedQuestion(text));
     associateList.appendChild(btn);
   });
-}
-
-function highlightMatch(text, input) {
-  const escapedText = escapeHtml(text);
-  if (!input) return escapedText;
-  const escapedInput = escapeHtml(input);
-  if (escapedText.includes(escapedInput)) {
-    return escapedText.split(escapedInput).join(`<mark>${escapedInput}</mark>`);
-  }
-  return escapedText;
 }
 
 function escapeHtml(s) {
@@ -1668,24 +1695,6 @@ function renderThemeOptions() {
   }).join("");
 }
 
-function highlightThemeIndicatorKeyword(text, keyword) {
-  const source = String(text || "");
-  const needle = String(keyword || "").trim();
-  if (!needle) return escapeHtml(source);
-  const sourceLower = source.toLowerCase();
-  const needleLower = needle.toLowerCase();
-  let cursor = 0;
-  let matchIndex = sourceLower.indexOf(needleLower, cursor);
-  let html = "";
-  while (matchIndex >= 0) {
-    html += escapeHtml(source.slice(cursor, matchIndex));
-    html += `<mark class="theme-indicator-match">${escapeHtml(source.slice(matchIndex, matchIndex + needle.length))}</mark>`;
-    cursor = matchIndex + needle.length;
-    matchIndex = sourceLower.indexOf(needleLower, cursor);
-  }
-  return html + escapeHtml(source.slice(cursor));
-}
-
 function renderThemeIndicators(themes) {
   if (!themeIndicatorList) return;
   const themeList = Array.isArray(themes) ? themes : [themes || "销售分析"];
@@ -1716,8 +1725,8 @@ function renderThemeIndicators(themes) {
   themeIndicatorList.innerHTML = visibleIndicators.map((item) => `
     <div class="theme-indicator-item">
       <div class="theme-indicator-main">
-        <strong>${highlightThemeIndicatorKeyword(item.name, keyword)}</strong>
-        <span title="同义词：${escapeHtml(item.synonyms)}">同义词：${highlightThemeIndicatorKeyword(item.synonyms, keyword)}</span>
+        <strong>${keywordHighlight.html(item.name, keyword)}</strong>
+        <span title="同义词：${escapeHtml(item.synonyms)}">同义词：${keywordHighlight.excerptHTML(item.synonyms, keyword, 28)}</span>
       </div>
       <p>${escapeHtml(item.desc)}</p>
       ${renderIndicatorMeta(item)}
@@ -5671,30 +5680,16 @@ function onDocClickClose(e) {
 }
 
 function filterDirTree(kw) {
-  const q = (kw || '').trim().toLowerCase();
   const tree = document.getElementById('saveDirTree');
-  if (!tree) return;
-  const nodes = tree.querySelectorAll('.dir-tree-node');
-  if (!q) {
-    nodes.forEach((n) => (n.style.display = ''));
-    return;
-  }
-  nodes.forEach((n) => (n.style.display = 'none'));
-  nodes.forEach((n) => {
-    const label = n.querySelector(':scope > .dir-tree-row .dir-tree-label').textContent.toLowerCase();
-    if (label.includes(q)) {
-      let cur = n;
-      while (cur && cur !== tree) {
-        if (cur.classList && cur.classList.contains('dir-tree-node')) {
-          cur.style.display = '';
-          cur.classList.remove('collapsed');
-          cur.classList.add('expanded');
-          const t = cur.querySelector(':scope > .dir-tree-row > .dir-tree-toggle');
-          if (t && !t.classList.contains('empty')) t.textContent = '▾';
-        }
-        cur = cur.parentElement;
-      }
-    }
+  if (tree) filterSaveTree(tree, kw);
+}
+
+function filterSaveTree(tree, keyword, emptyText) {
+  filterKeywordTree(tree, keyword, {
+    nodeSelector: '.dir-tree-node',
+    labelSelector: ':scope > .dir-tree-row .dir-tree-label',
+    toggleSelector: ':scope > .dir-tree-row > .dir-tree-toggle',
+    emptyText
   });
 }
 
@@ -5783,46 +5778,8 @@ function toggleReportTreeNode(node, toggle) {
 
 function filterReportPicker(kind, kw) {
   const cfg = getReportPickerConfig(kind);
-  if (!cfg) return;
-  const tree = document.getElementById(cfg.treeId);
-  if (!tree) return;
-  const q = (kw || '').trim().toLowerCase();
-  const nodes = tree.querySelectorAll('.dir-tree-node');
-  if (!q) {
-    nodes.forEach((n) => (n.style.display = ''));
-    const empty = tree.querySelector('.dir-tree-empty');
-    if (empty) empty.remove();
-    return;
-  }
-  nodes.forEach((n) => (n.style.display = 'none'));
-  nodes.forEach((n) => {
-    const label = n.querySelector(':scope > .dir-tree-row .dir-tree-label').textContent.toLowerCase();
-    if (label.includes(q)) {
-      let cur = n;
-      while (cur && cur !== tree) {
-        if (cur.classList && cur.classList.contains('dir-tree-node')) {
-          cur.style.display = '';
-          cur.classList.remove('collapsed');
-          cur.classList.add('expanded');
-          const t = cur.querySelector(':scope > .dir-tree-row > .dir-tree-toggle');
-          if (t && !t.classList.contains('empty')) t.textContent = '▾';
-        }
-        cur = cur.parentElement;
-      }
-    }
-  });
-  const hasVisible = Array.from(nodes).some((n) => n.style.display !== 'none');
-  let empty = tree.querySelector('.dir-tree-empty');
-  if (!hasVisible) {
-    if (!empty) {
-      empty = document.createElement('div');
-      empty.className = 'dir-tree-empty';
-      tree.appendChild(empty);
-    }
-    empty.textContent = cfg.empty;
-  } else if (empty) {
-    empty.remove();
-  }
+  const tree = cfg && document.getElementById(cfg.treeId);
+  if (tree) filterSaveTree(tree, kw, cfg.empty);
 }
 
 function positionReportPicker(kind) {
@@ -7362,6 +7319,7 @@ function prependScheduledHistory(payload) {
   const firstGroup = historyList.querySelector(".group-title");
   if (firstGroup) firstGroup.insertAdjacentElement("afterend", item);
   else historyList.prepend(item);
+  filterSideHistory();
 }
 
 function insertScheduledConversationContext(payload) {

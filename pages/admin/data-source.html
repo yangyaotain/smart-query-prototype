@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>数据源管理 - 智能问数管理后台</title>
-  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/theme.css?v=20261110-keyword-highlight" />
   <link rel="stylesheet" href="../../assets/css/admin.css" />
   <style>
     /* ============================================================
@@ -1545,7 +1545,7 @@
     </div>
   </div>
 
-  <script src="../../assets/js/common.js?v=20260519-system-config"></script>
+  <script src="../../assets/js/common.js?v=20261110-keyword-highlight"></script>
   <script>
     // ============================================================
     // 数据源 + 表 数据集（按业务域两级目录组织）
@@ -1705,7 +1705,7 @@
               + '<div class="' + cls + '" data-source-id="' + s.id + '">'
                 + '<span class="dst-toggle empty"></span>'
                 + '<span class="dst-icon">' + ICONS.source + '</span>'
-                + '<span class="dst-label">' + escapeHTML(s.name) + '</span>'
+                + '<span class="dst-label">' + keywordHighlight.html(s.name, keyword) + '</span>'
                 + '<span class="dst-meta">' + s.tables.length + '</span>'
               + '</div>'
             + '</div>'
@@ -1716,7 +1716,7 @@
             + '<div class="dst-row" data-domain-id="' + domain.id + '">'
               + '<span class="dst-toggle">' + ICONS.chevron + '</span>'
               + '<span class="dst-icon">' + ICONS.domain + '</span>'
-              + '<span class="dst-label">' + escapeHTML(domain.name) + '</span>'
+              + '<span class="dst-label">' + keywordHighlight.html(domain.name, keyword) + '</span>'
               + '<span class="dst-meta">' + domain.sources.length + '</span>'
             + '</div>'
             + '<div class="dst-children">' + sourceHTML + '</div>'
@@ -1793,7 +1793,7 @@
       emptyEl.classList.add('hidden');
       tbody.innerHTML = list.map((t) => (
         '<tr data-name="' + escapeHTML(t.name) + '">'
-          + '<td>' + escapeHTML(t.name) + '</td>'
+          + '<td>' + keywordHighlight.html(t.name, kw) + '</td>'
           + '<td>'
             + '<span class="dssc-alias-cell">'
               + '<span class="dssc-alias-text">' + escapeHTML(t.alias || '') + '</span>'
@@ -1804,7 +1804,7 @@
           + '</td>'
           + '<td>'
             + '<span class="dssc-alias-cell">'
-              + '<span class="dssc-alias-text">' + escapeHTML(t.comment || '') + '</span>'
+              + '<span class="dssc-alias-text" title="' + escapeHTML(t.comment || '') + '">' + keywordHighlight.excerptHTML(t.comment, kw, 24) + '</span>'
               + '<button type="button" class="dssc-alias-edit" data-role="ds-table-comment-edit" title="编辑注释">'
                 + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>'
               + '</button>'
@@ -1857,14 +1857,19 @@
       renderTree();
     });
 
-    document.getElementById('dsTableSearch').addEventListener('input', (e) => {
-      tableKeyword = e.target.value || '';
+    const dsTableSearch = document.getElementById('dsTableSearch');
+    function applyTableQuery() {
+      tableKeyword = dsTableSearch.value.trim();
       renderTableList();
+    }
+    document.getElementById('dsBtnQuery').addEventListener('click', applyTableQuery);
+    dsTableSearch.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.isComposing) applyTableQuery();
     });
 
     document.getElementById('dsTableType').addEventListener('change', (e) => {
       tableTypeFilter = e.target.value || '';
-      renderTableList();
+      applyTableQuery();
     });
 
     // ----------------------------------------------------------------
@@ -2238,7 +2243,7 @@
               + ' data-id="' + escapeHTML(n.id || '') + '"'
               + ' data-leaf="' + (hasChild ? '0' : '1') + '">'
               + '<span class="toggle">' + (hasChild ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>' : '') + '</span>'
-              + '<span class="text">' + escapeHTML(n.name) + '</span>'
+              + '<span class="text">' + keywordHighlight.html(n.name, keyword) + '</span>'
             + '</div>'
             + (hasChild ? '<div class="dse-tree-children">' + renderNodes(n.children) + '</div>' : '')
           + '</div>'
@@ -2708,8 +2713,8 @@
           return (
             '<tr class="' + rowCls + '" data-id="' + t.id + '">'
               + '<td class="col-check"><input type="checkbox" class="dsr-row-check"' + (checked ? ' checked' : '') + ' /></td>'
-              + '<td>' + escapeHTML(t.name) + '</td>'
-              + '<td>' + escapeHTML(t.alias || '') + '</td>'
+              + '<td>' + keywordHighlight.html(t.name, REG_STATE.keyword) + '</td>'
+              + '<td>' + keywordHighlight.html(t.alias, REG_STATE.keyword) + '</td>'
               + '<td>' + escapeHTML(t.desc || '') + '</td>'
               + '<td class="col-status">' + status + '</td>'
             + '</tr>'

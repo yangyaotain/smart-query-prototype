@@ -234,9 +234,9 @@
     var list = examplesInGroup(state.activeGroupId);
     var f = state.filters;
     return list.filter(function (x) {
-      var hitName = !f.name || x.name.indexOf(f.name) >= 0;
-      var hitDesc = !f.desc || x.desc.indexOf(f.desc) >= 0;
-      var hitKeyword = !f.keyword || x.keywords.indexOf(f.keyword) >= 0;
+      var hitName = String(x.name || '').toLowerCase().includes(f.name.trim().toLowerCase());
+      var hitDesc = String(x.desc || '').toLowerCase().includes(f.desc.trim().toLowerCase());
+      var hitKeyword = String(x.keywords || '').toLowerCase().includes(f.keyword.trim().toLowerCase());
       var hitType = !f.type || x.type === f.type;
       return hitName && hitDesc && hitKeyword && hitType;
     });
@@ -245,32 +245,32 @@
   function renderTree() {
     var box = $('keTree');
     if (!box) return;
-    var kw = state.treeKeyword.trim();
+    var kw = state.treeKeyword.trim().toLowerCase();
     var topActive = state.activeGroupId === '__all__' ? ' is-active' : '';
-    var html = '<div class="ki-tree-row' + topActive + '" data-gid="__all__" oncontextmenu="return false;">'
+    var html = !kw ? '<div class="ki-tree-row' + topActive + '" data-gid="__all__" oncontextmenu="return false;">'
       + '<span class="chev"></span><span class="ki-tr-name">全部示例</span>'
-      + '<span class="ki-tr-cnt">' + EXAMPLES.length + '</span></div>';
+      + '<span class="ki-tr-cnt">' + EXAMPLES.length + '</span></div>' : '';
 
     TREE.forEach(function (g) {
       var childHTML = '';
       (g.children || []).forEach(function (c) {
-        if (kw && c.name.indexOf(kw) < 0 && g.name.indexOf(kw) < 0) return;
+        if (kw && !c.name.toLowerCase().includes(kw) && !g.name.toLowerCase().includes(kw)) return;
         var active = state.activeGroupId === c.id ? ' is-active' : '';
         childHTML += '<div class="ki-tree-row' + active + '" data-gid="' + attr(c.id) + '">'
-          + '<span class="ki-tr-name">' + escapeHTML(c.name) + '</span>'
+          + '<span class="ki-tr-name">' + keywordHighlight.html(c.name, kw) + '</span>'
           + '<span class="ki-tr-cnt">' + examplesInGroup(c.id).length + '</span></div>';
       });
-      if (kw && g.name.indexOf(kw) < 0 && !childHTML) return;
+      if (kw && !g.name.toLowerCase().includes(kw) && !childHTML) return;
       var active = state.activeGroupId === g.id ? ' is-active' : '';
-      var collapsed = g.expanded ? '' : ' is-collapsed';
+      var collapsed = kw || g.expanded ? '' : ' is-collapsed';
       html += '<div class="ki-tree-group' + collapsed + '" data-gid="' + attr(g.id) + '">'
         + '<div class="ki-tree-row' + active + '" data-gid="' + attr(g.id) + '">'
         + '<span class="chev"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span>'
-        + '<span class="ki-tr-name">' + escapeHTML(g.name) + '</span>'
+        + '<span class="ki-tr-name">' + keywordHighlight.html(g.name, kw) + '</span>'
         + '<span class="ki-tr-cnt">' + examplesInGroup(g.id).length + '</span></div>'
         + '<div class="ki-tree-children">' + childHTML + '</div></div>';
     });
-    box.innerHTML = html;
+    box.innerHTML = html || '<div class="ki-empty">未找到匹配目录</div>';
   }
 
   function renderBread() {
@@ -294,10 +294,10 @@
     }
     tbody.innerHTML = rows.map(function (x) {
       return '<tr>'
-        + '<td><button type="button" class="ki-name-title" data-act="view" data-id="' + attr(x.id) + '">' + escapeHTML(x.name) + '</button></td>'
+        + '<td><button type="button" class="ki-name-title" data-act="view" data-id="' + attr(x.id) + '">' + keywordHighlight.html(x.name, state.filters.name) + '</button></td>'
         + '<td><span class="ke-type-tag is-' + attr(x.type) + '">' + escapeHTML(TYPE_LABEL[x.type]) + '</span></td>'
-        + '<td><span class="ke-clip" title="' + attr(x.desc) + '">' + escapeHTML(x.desc) + '</span></td>'
-        + '<td><span class="ke-clip" title="' + attr(x.keywords) + '">' + escapeHTML(x.keywords) + '</span></td>'
+        + '<td><span class="ke-clip" title="' + attr(x.desc) + '">' + keywordHighlight.excerptHTML(x.desc, state.filters.desc, 24) + '</span></td>'
+        + '<td><span class="ke-clip" title="' + attr(x.keywords) + '">' + keywordHighlight.excerptHTML(x.keywords, state.filters.keyword, 24) + '</span></td>'
         + '<td><span class="ke-clip" title="' + attr(x.question) + '">' + escapeHTML(x.question) + '</span></td>'
         + '<td><span class="ke-clip" title="' + attr(sourceName(x.srcId)) + '">' + escapeHTML(sourceName(x.srcId)) + '</span></td>'
         + '<td><span class="ke-clip" title="' + attr(x.tables) + '">' + escapeHTML(x.tables) + '</span></td>'

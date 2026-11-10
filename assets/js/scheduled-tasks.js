@@ -18,6 +18,7 @@
   };
 
   let tasks = [];
+  let appliedKeyword = "";
   let currentTaskId = null;
   let workspaceBaseline = "";
   let workspaceHydrating = false;
@@ -138,14 +139,14 @@
   }
 
   window.renderTaskList = function () {
-    const keyword = document.getElementById("taskKeyword").value.trim().toLowerCase();
+    const keyword = appliedKeyword;
     const type = document.getElementById("taskTypeFilter").value;
     const status = document.getElementById("taskStatusFilter").value;
     const result = document.getElementById("taskResultFilter").value;
     const filtered = tasks.filter(function (task) {
       const latest = latestRecord(task);
       const taskType = task.skill ? "skill" : "general";
-      return (!keyword || (task.name + " " + task.prompt).toLowerCase().includes(keyword)) &&
+      return (!keyword || [task.name, task.prompt].some((text) => String(text ?? "").toLowerCase().includes(keyword))) &&
         (type === "all" || taskType === type) &&
         (status === "all" || task.status === status) &&
         (result === "all" || (latest ? latest.status : "none") === result);
@@ -155,7 +156,7 @@
       const latestStatus = latest ? latest.status : "none";
       const isSkill = !!task.skill;
       const nextText = task.status === "paused" ? "已暂停调度" : task.status === "ended" ? "任务已结束" : displayDateTime(task.nextRun);
-      return '<tr><td><div class="task-name-cell"><span class="task-type-icon ' + (isSkill ? "skill" : "") + '">' + SVG[isSkill ? "skill" : "query"] + '</span><div class="task-name-copy"><button type="button" onclick="openTaskWorkspace(\'' + task.id + '\')" title="' + escapeHTML(task.name) + '">' + escapeHTML(task.name) + '</button><span title="' + escapeHTML(task.prompt) + '">' + escapeHTML(task.prompt) + "</span></div></div></td>" +
+      return '<tr><td><div class="task-name-cell"><span class="task-type-icon ' + (isSkill ? "skill" : "") + '">' + SVG[isSkill ? "skill" : "query"] + '</span><div class="task-name-copy"><button type="button" onclick="openTaskWorkspace(\'' + task.id + '\')" title="' + escapeHTML(task.name) + '">' + keywordHighlight.html(task.name, keyword) + '</button><span title="' + escapeHTML(task.prompt) + '">' + keywordHighlight.excerptHTML(task.prompt, keyword, 32) + "</span></div></div></td>" +
         "<td><strong>" + escapeHTML(task.theme) + '</strong><span class="cell-secondary">' + escapeHTML(skillLabel(task)) + "</span></td>" +
         '<td><div class="task-plan"><strong>' + escapeHTML(scheduleLabel(task)) + '</strong><span class="cell-secondary">北京时间</span></div></td>' +
         '<td><span class="task-badge ' + task.status + '">' + statusLabel(task.status) + "</span></td><td><strong>" + escapeHTML(nextText) + "</strong></td>" +
@@ -170,8 +171,13 @@
   window.resetTaskFilters = function () {
     document.getElementById("taskKeyword").value = "";
     ["taskTypeFilter", "taskStatusFilter", "taskResultFilter"].forEach(function (id) { document.getElementById(id).value = "all"; });
-    window.renderTaskList();
+    applyTaskQuery();
   };
+
+  function applyTaskQuery() {
+    appliedKeyword = document.getElementById("taskKeyword").value.trim().toLowerCase();
+    window.renderTaskList();
+  }
 
   function availableSkills() {
     const store = window.SkillCatalogStore;
@@ -664,9 +670,12 @@
 
   function bindEvents() {
     ["taskTypeFilter", "taskStatusFilter", "taskResultFilter"].forEach(function (id) {
-      document.getElementById(id).addEventListener("change", window.renderTaskList);
+      document.getElementById(id).addEventListener("change", applyTaskQuery);
     });
-    document.getElementById("taskKeyword").addEventListener("keydown", function (event) { if (event.key === "Enter") window.renderTaskList(); });
+    document.getElementById("taskQuery").addEventListener("click", applyTaskQuery);
+    document.getElementById("taskKeyword").addEventListener("keydown", function (event) {
+      if (event.key === "Enter" && !event.isComposing) applyTaskQuery();
+    });
     document.getElementById("workspaceSkillTrigger").addEventListener("click", toggleWorkspaceSkillPicker);
     document.getElementById("workspaceSkillList").addEventListener("click", function (event) {
       const option = event.target.closest("[data-skill]");

@@ -740,7 +740,7 @@
       return ''
         + '<div class="at-theme-item' + active + '" draggable="true" data-id="' + escapeHTML(t.id) + '" oncontextmenu="return false;">'
         +   '<span class="at-drag" title="拖动排序"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="15" cy="18" r="1.4"/></svg></span>'
-        +   '<span class="at-th-name">' + escapeHTML(t.name) + '</span>'
+        +   '<span class="at-th-name">' + keywordHighlight.html(t.name, kw) + '</span>'
         +   '<span class="at-th-count">' + cnt + '</span>'
         + '</div>';
     }).join('');
@@ -879,12 +879,12 @@
         +     '<div class="at-mname is-clickable" data-act="open-model" data-mid="' + escapeHTML(m.id) + '" title="点击查看模型详情">'
         +       '<span class="at-mname-ico">' + escapeHTML(nameInitials(m.name)) + '</span>'
         +       '<div class="at-mname-text">'
-        +         '<strong>' + escapeHTML(m.name) + '</strong>'
-        +         '<span>' + escapeHTML(m.code || '') + '</span>'
+        +         '<strong>' + keywordHighlight.html(m.name, kw) + '</strong>'
+        +         '<span>' + keywordHighlight.html(m.code, kw) + '</span>'
         +       '</div>'
         +     '</div>'
         +   '</td>'
-        +   '<td><span class="at-src-chip" title="' + escapeHTML(srcType) + '">' + escapeHTML(srcName) + '</span></td>'
+        +   '<td><span class="at-src-chip" title="' + escapeHTML(srcType) + '">' + keywordHighlight.html(srcName, kw) + '</span></td>'
         +   '<td>' + (m.fieldCount || 0) + '</td>'
         +   '<td style="color:#64748b;">' + escapeHTML(m.updatedAt || '') + '</td>'
         +   '<td>'
@@ -942,13 +942,13 @@
         +     '<div class="at-mname">'
         +       '<span class="at-mname-ico">' + escapeHTML(nameInitials(it.name)) + '</span>'
         +       '<div class="at-mname-text">'
-        +         '<strong>' + escapeHTML(it.name) + '</strong>'
-        +         '<span>' + escapeHTML(it.synonyms || indicatorGroupName(it.groupId) || '') + '</span>'
+        +         '<strong>' + keywordHighlight.html(it.name, kw) + '</strong>'
+        +         '<span>' + (it.synonyms ? keywordHighlight.html(it.synonyms, kw) : escapeHTML(indicatorGroupName(it.groupId) || '')) + '</span>'
         +       '</div>'
         +     '</div>'
         +   '</td>'
         +   '<td><span class="at-type-chip' + typeCls + '">' + indicatorTypeText(it.type) + '</span></td>'
-        +   '<td><span class="at-src-chip" title="' + escapeHTML(srcType) + '">' + escapeHTML(srcName) + '</span></td>'
+        +   '<td><span class="at-src-chip" title="' + escapeHTML(srcType) + '">' + keywordHighlight.html(srcName, kw) + '</span></td>'
         +   '<td><div class="at-formula-cell" title="' + escapeHTML(formula) + '">' + escapeHTML(formula) + '</div></td>'
         +   '<td style="color:#64748b;">' + escapeHTML(it.updatedAt || '') + '</td>'
         +   '<td>'
@@ -1574,8 +1574,9 @@
     if (!box) return;
     var kw = (state.pickerSourceKw || '').trim().toLowerCase();
     var html = DOMAINS.map(function (d) {
+      var domainMatched = kw && d.name.toLowerCase().includes(kw);
       var sources = (d.sources || []).filter(function (s) {
-        if (!kw) return true;
+        if (!kw || domainMatched) return true;
         return s.name.toLowerCase().indexOf(kw) >= 0
           || (s.type || '').toLowerCase().indexOf(kw) >= 0;
       });
@@ -1585,7 +1586,8 @@
         var active = state.pickerActiveSrc === s.id ? ' is-active' : '';
         return ''
           + '<div class="atp-source-item' + active + '" data-sid="' + escapeHTML(s.id) + '">'
-          +   '<span>' + escapeHTML(s.name) + '</span>'
+          +   '<span>' + keywordHighlight.html(s.name, kw)
+          +     (kw && (s.type || '').toLowerCase().includes(kw) ? ' · ' + keywordHighlight.html(s.type, kw) : '') + '</span>'
           +   '<span class="atp-src-cnt">' + cnt + '</span>'
           + '</div>';
       }).join('');
@@ -1593,7 +1595,7 @@
         + '<div class="atp-domain" data-key="' + escapeHTML(d.key) + '">'
         +   '<div class="atp-domain-head">'
         +     '<span class="chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>'
-        +     '<span>' + escapeHTML(d.name) + '</span>'
+        +     '<span>' + keywordHighlight.html(d.name, kw) + '</span>'
         +   '</div>'
         +   '<div class="atp-domain-children">' + children + '</div>'
         + '</div>';
@@ -1638,8 +1640,8 @@
         + '<div class="' + clsList.join(' ') + '" data-mid="' + escapeHTML(m.id) + '"' + (added ? ' aria-disabled="true"' : '') + '>'
         +   '<div class="atp-model-head">'
         +     '<span class="atp-model-check"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg></span>'
-        +     '<span class="atp-model-name" title="' + escapeHTML(m.code || '') + '">' + escapeHTML(m.name) + '</span>'
-        +     '<span class="atp-model-tag atp-model-code" title="' + escapeHTML(onlineName || '') + '">' + escapeHTML((onlineName || '-').slice(0, 16)) + '</span>'
+        +     '<span class="atp-model-name" title="' + escapeHTML(m.code || '') + '">' + keywordHighlight.html(m.name, kw) + '</span>'
+        +     '<span class="atp-model-tag atp-model-code" title="' + escapeHTML(onlineName || '') + '">' + keywordHighlight.excerptHTML(onlineName || '-', kw, 16) + '</span>'
         +   '</div>'
         +   '<div class="atp-model-meta">'
         +     '<span>' + escapeHTML(srcName) + '</span>'
@@ -1790,12 +1792,12 @@
     if (!box) return;
     var kw = (state.indicatorPickerGroupKw || '').trim().toLowerCase();
     var allActive = state.indicatorPickerActiveGroup === '';
-    var html = ''
+    var allHTML = ''
       + '<div class="atp-indicator-group' + (allActive ? ' is-active' : '') + '" data-gid="">'
       +   '<span>全部指标</span><span class="atp-src-cnt">' + INDICATORS.length + '</span>'
       + '</div>';
 
-    html += INDICATOR_GROUPS.map(function (g) {
+    var html = INDICATOR_GROUPS.map(function (g) {
       var children = (g.children || []).filter(function (c) {
         if (!kw) return true;
         return g.name.toLowerCase().indexOf(kw) >= 0 || c.name.toLowerCase().indexOf(kw) >= 0;
@@ -1805,7 +1807,7 @@
         var active = state.indicatorPickerActiveGroup === c.id ? ' is-active' : '';
         return ''
           + '<div class="atp-indicator-group' + active + '" data-gid="' + escapeHTML(c.id) + '">'
-          +   '<span>' + escapeHTML(c.name) + '</span><span class="atp-src-cnt">' + indicatorCountByGroup(c.id) + '</span>'
+          +   '<span>' + keywordHighlight.html(c.name, kw) + '</span><span class="atp-src-cnt">' + indicatorCountByGroup(c.id) + '</span>'
           + '</div>';
       }).join('');
       var groupActive = state.indicatorPickerActiveGroup === g.id ? ' is-active' : '';
@@ -1813,17 +1815,17 @@
         + '<div class="atp-domain">'
         +   '<div class="atp-domain-head">'
         +     '<span class="chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>'
-        +     '<span>' + escapeHTML(g.name) + '</span>'
+        +     '<span>' + keywordHighlight.html(g.name, kw) + '</span>'
         +   '</div>'
         +   '<div class="atp-domain-children">'
         +     '<div class="atp-indicator-group' + groupActive + '" data-gid="' + escapeHTML(g.id) + '">'
-        +       '<span>全部' + escapeHTML(g.name) + '</span><span class="atp-src-cnt">' + indicatorCountByGroup(g.id) + '</span>'
+        +       '<span>全部' + keywordHighlight.html(g.name, kw) + '</span><span class="atp-src-cnt">' + indicatorCountByGroup(g.id) + '</span>'
         +     '</div>'
         +     childHtml
         +   '</div>'
         + '</div>';
     }).join('');
-    box.innerHTML = html || '<div class="at-empty" style="padding:24px 12px;font-size:12.5px;">未找到匹配的指标目录</div>';
+    box.innerHTML = html ? allHTML + html : '<div class="at-empty" style="padding:24px 12px;font-size:12.5px;">未找到匹配的指标目录</div>';
   }
 
   function renderIndicatorPickerItems() {
@@ -1867,12 +1869,13 @@
         + '<div class="' + clsList.join(' ') + '" data-iid="' + escapeHTML(it.id) + '"' + (added ? ' aria-disabled="true"' : '') + '>'
         +   '<div class="atp-model-head">'
         +     '<span class="atp-model-check"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg></span>'
-        +     '<span class="atp-model-name" title="' + escapeHTML(it.synonyms || '') + '">' + escapeHTML(it.name) + '</span>'
+        +     '<span class="atp-model-name" title="' + escapeHTML(it.synonyms || '') + '">' + keywordHighlight.html(it.name, kw) + '</span>'
         +     '<span class="atp-model-tag">' + indicatorTypeText(it.type) + '</span>'
         +   '</div>'
         +   '<div class="atp-model-meta">'
         +     '<span>' + escapeHTML(srcName) + '</span>'
         +     '<span>' + escapeHTML(indicatorFormulaText(it)) + '</span>'
+        +     (kw && (it.synonyms || '').toLowerCase().includes(kw) ? '<span>' + keywordHighlight.html(it.synonyms, kw) + '</span>' : '')
         +     (added ? '<span class="atp-model-tag is-added">已添加</span>' : '')
         +   '</div>'
         + '</div>';

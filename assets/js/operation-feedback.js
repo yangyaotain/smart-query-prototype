@@ -106,6 +106,7 @@
     activeTab: "pending",
     page: { pending: 1, processed: 1 },
     pageSize: { pending: 5, processed: 5 },
+    search: { pending: {}, processed: {} },
     sqlTheme: "light",
     drawer: { mode: null, item: null, draft: null }
   };
@@ -367,8 +368,7 @@
       var act = action.getAttribute("data-act");
 
       if (act === "search") {
-        state.page[state.activeTab] = 1;
-        renderAll();
+        applyQuery(state.activeTab);
       } else if (act === "reset-filter") {
         resetFilter(state.activeTab);
       } else if (act === "process") {
@@ -407,9 +407,6 @@
 
     document.addEventListener("input", function (event) {
       var target = event.target;
-      if (target.matches(".of-filter input")) {
-        state.page[state.activeTab] = 1;
-      }
       if (target.hasAttribute("data-field") || target.hasAttribute("data-metric") || target.hasAttribute("data-bind") || target.hasAttribute("data-row-bind")) {
         updateDraft(target);
       }
@@ -424,7 +421,7 @@
     document.addEventListener("change", function (event) {
       var target = event.target;
       if (target.matches(".of-filter select")) {
-        state.page[state.activeTab] = 1;
+        applyQuery(state.activeTab);
       }
       if (target.hasAttribute("data-field") || target.hasAttribute("data-metric") || target.hasAttribute("data-bind") || target.hasAttribute("data-row-bind")) {
         updateDraft(target);
@@ -438,9 +435,8 @@
 
     document.addEventListener("keydown", function (event) {
       if (event.key === "Escape") closeDrawer();
-      if (event.key === "Enter" && event.target.closest(".of-filter")) {
-        state.page[state.activeTab] = 1;
-        renderAll();
+      if (event.key === "Enter" && !event.isComposing && event.target.matches(".of-filter input")) {
+        applyQuery(state.activeTab);
       }
     });
 
@@ -485,6 +481,15 @@
       var el = $(id);
       if (el) el.value = "";
     });
+    applyQuery(tab);
+  }
+
+  function applyQuery(tab) {
+    var pending = tab === "pending";
+    state.search[tab] = {
+      question: $(pending ? "ofPendingQuestion" : "ofProcessedQuestion").value.trim(),
+      reporter: $(pending ? "ofPendingReporter" : "ofProcessedReporter").value.trim()
+    };
     state.page[tab] = 1;
     renderAll();
   }
@@ -517,25 +522,22 @@
   }
 
   function getFilteredItems(tab) {
+    var query = state.search[tab];
     if (tab === "pending") {
-      var q = ($("ofPendingQuestion").value || "").trim();
       var type = $("ofPendingType").value;
-      var reporter = ($("ofPendingReporter").value || "").trim();
       return pendingItems.filter(function (it) {
-        return matchesText(it.question, q)
+        return matchesText(it.question, query.question)
           && (!type || it.type === type)
-          && matchesText(it.reporter, reporter);
+          && matchesText(it.reporter, query.reporter);
       });
     }
-    var pq = ($("ofProcessedQuestion").value || "").trim();
     var pt = $("ofProcessedType").value;
     var pr = $("ofProcessedResult").value;
-    var pp = ($("ofProcessedReporter").value || "").trim();
     return processedItems.filter(function (it) {
-      return matchesText(it.question, pq)
+      return matchesText(it.question, query.question)
         && (!pt || it.type === pt)
         && (!pr || it.result === pr)
-        && matchesText(it.reporter, pp);
+        && matchesText(it.reporter, query.reporter);
     });
   }
 
@@ -553,9 +555,12 @@
     var start = (page - 1) * size;
     var pageItems = items.slice(start, start + size);
 
-    $("ofThead").innerHTML = state.activeTab === "pending" ? pendingHeadHTML() : processedHeadHTML();
+    var pending = state.activeTab === "pending";
+    var query = state.search[state.activeTab];
+    var rowHTML = pending ? pendingRowHTML : processedRowHTML;
+    $("ofThead").innerHTML = pending ? pendingHeadHTML() : processedHeadHTML();
     $("ofTbody").innerHTML = pageItems.length
-      ? pageItems.map(state.activeTab === "pending" ? pendingRowHTML : processedRowHTML).join("")
+      ? pageItems.map(function (item) { return rowHTML(item, query.question, query.reporter); }).join("")
       : emptyRowHTML(state.activeTab === "pending" ? 6 : 7);
     renderPager(items.length, page, totalPages, size);
   }
@@ -583,24 +588,24 @@
       + "</tr>";
   }
 
-  function pendingRowHTML(it) {
+  function pendingRowHTML(it, question, reporter) {
     return "<tr>"
-      + '<td><span class="of-main-text of-clip" title="' + attr(it.question) + '">' + escapeHTML(it.question) + "</span></td>"
+      + '<td><span class="of-main-text of-clip" title="' + attr(it.question) + '">' + keywordHighlight.excerptHTML(it.question, question, 28) + "</span></td>"
       + "<td>" + typeTag(it.type) + "</td>"
       + '<td><span class="of-muted-text of-clip" title="' + attr(it.desc) + '">' + escapeHTML(it.desc) + "</span></td>"
-      + '<td><span class="of-sub-text">' + escapeHTML(it.reporter) + "</span></td>"
+      + '<td><span class="of-sub-text">' + keywordHighlight.html(it.reporter, reporter) + "</span></td>"
       + '<td><span class="of-sub-text">' + escapeHTML(it.createdAt) + "</span></td>"
       + '<td><button type="button" class="of-action-btn" data-act="process" data-id="' + attr(it.id) + '">处理</button></td>'
       + "</tr>";
   }
 
-  function processedRowHTML(it) {
+  function processedRowHTML(it, question, reporter) {
     return "<tr>"
-      + '<td><span class="of-main-text of-clip" title="' + attr(it.question) + '">' + escapeHTML(it.question) + "</span></td>"
+      + '<td><span class="of-main-text of-clip" title="' + attr(it.question) + '">' + keywordHighlight.excerptHTML(it.question, question, 28) + "</span></td>"
       + "<td>" + typeTag(it.type) + "</td>"
       + '<td><span class="of-muted-text of-clip" title="' + attr(it.desc) + '">' + escapeHTML(it.desc) + "</span></td>"
       + "<td>" + resultTag(it.result) + "</td>"
-      + '<td><span class="of-sub-text">提：' + escapeHTML(it.reporter) + '</span><span class="of-sub-text">处：' + escapeHTML(it.processor) + "</span></td>"
+      + '<td><span class="of-sub-text">提：' + keywordHighlight.html(it.reporter, reporter) + '</span><span class="of-sub-text">处：' + escapeHTML(it.processor) + "</span></td>"
       + '<td><span class="of-sub-text">提：' + escapeHTML(it.createdAt) + '</span><span class="of-sub-text">处：' + escapeHTML(it.processedAt) + "</span></td>"
       + '<td><button type="button" class="of-action-btn" data-act="view" data-id="' + attr(it.id) + '">查看</button></td>'
       + "</tr>";

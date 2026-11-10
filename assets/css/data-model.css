@@ -437,101 +437,94 @@
 .dm-canvas .dm-anchor { cursor: crosshair; }
 .dm-canvas g.dm-edge-group { cursor: pointer; }
 
-/* —— 自动关联分析：遮罩 + 进度条 —— */
-.dm-analyze-mask {
-  position: absolute;
-  inset: 0;
-  z-index: 25;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(247, 251, 255, 0.78);
-  backdrop-filter: blur(2px);
-  animation: dmMaskIn .18s ease both;
+/* ---------- 自动关联分析抽屉 ---------- */
+.dm-drawer-mask.dm-analysis-mask {
+  position: fixed;
+  z-index: 50;
 }
 
-.dm-analyze-mask.is-leaving {
-  animation: dmMaskOut .2s ease both;
+.dm-drawer.dm-analysis-drawer {
+  position: fixed;
+  z-index: 60;
+  width: min(1050px, 92vw);
+  min-width: 0;
+  max-width: 92vw;
+  box-shadow: -22px 0 50px rgba(15, 23, 42, .16);
+  animation: dmAnalysisDrawerIn .22s cubic-bezier(.2, .7, .2, 1) both;
 }
 
-@keyframes dmMaskIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+@keyframes dmAnalysisDrawerIn {
+  from { transform: translateX(20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
 
-@keyframes dmMaskOut {
-  from { opacity: 1; }
-  to   { opacity: 0; }
-}
+.dm-analysis-drawer .dm-drawer-head { background: #fff; }
 
-.dm-analyze-card {
-  width: 320px;
-  padding: 22px 24px 20px;
-  background: #fff;
-  border: 1px solid var(--primary-border-soft);
-  border-radius: 16px;
-  box-shadow: 0 22px 50px rgba(var(--primary-rgb), 0.18);
+.dm-analysis-body,
+.dm-analysis-results {
   display: flex;
   flex-direction: column;
+}
+
+.dm-drawer-body.dm-analysis-body { padding: 18px 20px; }
+
+.dm-analysis-results {
+  flex: 1;
+  min-height: 0;
+}
+
+.dm-analysis-timing {
+  display: flex;
   align-items: center;
-  text-align: center;
-  animation: dmCardIn .24s cubic-bezier(.2,.7,.2,1) both;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 
-@keyframes dmCardIn {
-  from { transform: translateY(6px) scale(.96); opacity: 0; }
-  to   { transform: translateY(0) scale(1); opacity: 1; }
+.dm-analysis-intro { margin: 16px 0 20px; }
+
+.dm-analysis-intro p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
-.dm-analyze-spinner {
-  width: 40px;
-  height: 40px;
-  margin-bottom: 12px;
+.dm-analysis-progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--heading);
+  font-size: 13px;
+  font-weight: 600;
 }
 
-.dm-analyze-spinner svg {
-  width: 100%;
-  height: 100%;
-  animation: dmSpin 1.4s linear infinite;
+.dm-analysis-body h4 {
+  margin: 0;
+  color: var(--heading);
+  font-size: 16px;
 }
 
-.dm-analyze-spinner .path {
-  stroke: var(--primary);
-  stroke-linecap: round;
-  stroke-dasharray: 90 150;
-  stroke-dashoffset: -35;
-  animation: dmDash 1.4s ease-in-out infinite;
+#dmAnalysisPct {
+  color: var(--primary);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
+
+#dmBtnAuto.is-analyzing .btn-ico { animation: dmSpin 1.4s linear infinite; }
 
 @keyframes dmSpin {
   to { transform: rotate(360deg); }
 }
 
-@keyframes dmDash {
-  0%   { stroke-dasharray: 1 150;  stroke-dashoffset: 0; }
-  50%  { stroke-dasharray: 90 150; stroke-dashoffset: -35; }
-  100% { stroke-dasharray: 90 150; stroke-dashoffset: -124; }
-}
-
-.dm-analyze-title {
-  color: var(--heading);
-  font-size: 14px;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-
-.dm-analyze-step {
-  color: var(--muted);
-  font-size: 12px;
-  margin-bottom: 14px;
-  min-height: 17px;
-  transition: color .2s;
-}
-
 .dm-analyze-bar {
-  width: 100%;
-  height: 8px;
-  background: #eef2f7;
+  margin-top: 8px;
+  height: 4px;
+  background: var(--line);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -542,15 +535,180 @@
   background: linear-gradient(90deg, var(--primary), var(--primary-accent-strong));
   border-radius: 999px;
   box-shadow: 0 0 8px rgba(var(--primary-rgb), 0.45);
-  transition: width .12s linear;
+  transition: width .35s ease;
 }
 
-.dm-analyze-pct {
-  margin-top: 8px;
-  color: var(--primary);
+.dm-analysis-steps {
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dm-analysis-steps li {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.dm-analysis-step-marker {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid var(--line);
   font-size: 12px;
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
+}
+
+.dm-analysis-steps .is-current {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.dm-analysis-steps .is-done { color: var(--heading); }
+.is-current .dm-analysis-step-marker,
+.is-done .dm-analysis-step-marker {
+  color: var(--primary);
+  background: var(--primary-soft);
+  border-color: var(--primary-border-soft);
+}
+
+.dm-analysis-step-status {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.is-current .dm-analysis-step-status { color: var(--primary); }
+
+.dm-analysis-note {
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.dm-analysis-filters {
+  flex: none;
+  flex-wrap: nowrap;
+  gap: 8px;
+  margin: 0 -3px 7px;
+  padding: 3px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.dm-analysis-filters label {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dm-analysis-filters input { width: 112px; }
+
+.dm-analysis-filters input,
+.dm-analysis-filters select,
+.dm-analysis-filters button { height: 32px; padding: 0 9px; }
+
+.dm-analysis-filters input,
+.dm-analysis-filters select { font: inherit; font-weight: 400; }
+
+.dm-analysis-filters button { flex: none; }
+
+.dm-analysis-actions {
+  display: flex;
+  flex: none;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.dm-analysis-table-wrap {
+  min-height: 120px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.dm-analysis-table { min-width: 704px; }
+
+.dm-analysis-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  white-space: nowrap;
+}
+
+.dm-analysis-table td { vertical-align: top; line-height: 1.5; }
+.dm-analysis-table tbody tr:last-child td { border-bottom: 0; }
+.dm-analysis-table th:nth-child(1),
+.dm-analysis-table th:nth-child(2) { width: 16%; }
+.dm-analysis-table th:nth-child(3) { width: 92px; }
+.dm-analysis-table th:nth-child(4) { width: 84px; }
+.dm-analysis-table th:nth-child(6) { width: 114px; }
+.dm-analysis-table td:nth-child(4),
+.dm-analysis-table td:nth-child(6) { white-space: nowrap; }
+
+.dm-analysis-table strong,
+.dm-analysis-meta,
+.dm-analysis-diff {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.dm-analysis-table strong { color: var(--heading); }
+.dm-analysis-meta { color: var(--muted); font-size: 12px; }
+.dm-analysis-diff { margin-top: 6px; color: #b45309; font-size: 12px; }
+.dm-analysis-direction { display: block; color: var(--primary); }
+.dm-analysis-table .dm-analysis-empty { padding: 34px 12px; color: var(--muted); text-align: center; }
+
+.dm-analysis-drawer .btn-ico,
+#dmConfirmModal .btn-ico {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: -2px;
+}
+
+.dm-analysis-table .ghost-btn,
+.dm-analysis-pagination .ghost-btn { padding: 6px 9px; white-space: nowrap; }
+.dm-analysis-drawer button:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+
+.dm-analysis-pagination {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+#dmConfirmMask { z-index: 65; }
+#dmConfirmModal { z-index: 70; }
+#dmConfirmModal .dm-confirm-danger { background: #ef4444; box-shadow: 0 8px 20px rgba(239, 68, 68, .22); }
+
+@media (prefers-reduced-motion: reduce) {
+  .dm-drawer.dm-analysis-drawer { animation: none; }
+  #dmBtnAuto.is-analyzing .btn-ico { animation: none; }
+  .dm-analyze-bar-fill { transition: none; }
 }
 
 .dm-canvas {

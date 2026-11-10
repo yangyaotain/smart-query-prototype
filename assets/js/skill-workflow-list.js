@@ -26,7 +26,8 @@
     try {
       const skills = Store.load(); lastSnapshot = localStorage.getItem(Store.key);
       const orderedSkills = [...skills.filter((s) => s.parseStatus === 'parsing'), ...skills.filter((s) => s.parseStatus !== 'parsing')];
-      const rows = orderedSkills.filter((s) => `${s.name} ${s.code}`.toLowerCase().includes(appliedKeyword.toLowerCase()))
+      const pattern = keywordHighlight.pattern(appliedKeyword);
+      const rows = orderedSkills.filter((s) => !pattern || pattern.test(s.name) || pattern.test(s.code || ''))
         .filter((s) => !$('ksCategoryFilter').value || s.category === $('ksCategoryFilter').value)
         .filter((s) => !$('ksThemeFilter').value || s.themes.includes($('ksThemeFilter').value))
         .filter((s) => !$('ksStatusFilter').value || s.enabled === ($('ksStatusFilter').value === 'enabled'));
@@ -44,7 +45,9 @@
             ? button('edit', '基本信息', `data-action="basic" data-id="${esc(s.id)}"`, 'sw-link') + button('document', '内容配置', `data-action="content" data-id="${esc(s.id)}"`, 'sw-link') + (Store.isReady(s) ? button('check', '启用', `data-action="status" data-id="${esc(s.id)}"`, 'sw-status-action is-enable-action') : '')
             : s.parseStatus === 'failed' ? button('reset', '重新导入', `data-action="retry" data-id="${esc(s.id)}"`, 'sw-link') : '';
         const deleteAction = s.enabled ? '' : button('trash', '删除', `data-action="delete" data-id="${esc(s.id)}"`, 'sw-link sw-danger');
-        return `<tr><td><div class="ks-skill-cell"><span class="ks-skill-icon">${icon('document')}</span><div><strong>${esc(s.name)}</strong><span title="${esc(s.reportTemplate?.name)}">${esc(s.reportTemplate?.name || '待导入 Word 模板')}</span></div></div></td><td>${esc(s.category || '解析后生成')}</td><td><div class="ks-tag-list">${s.themes.slice(0, 2).map((t) => `<span class="ks-tag">${esc(t)}</span>`).join('')}${s.themes.length > 2 ? `<span class="ks-tag" title="${esc(s.themes.join('、'))}">+${s.themes.length - 2}</span>` : ''}</div></td><td class="sw-parse-cell">${progress}</td><td>${enabledStatus}</td><td>${esc(s.updated)}</td><td><div class="sw-row-actions">${actions}${deleteAction}</div></td></tr>`;
+        const codeMatches = pattern?.test(s.code || '');
+        const detail = codeMatches ? s.code : (s.reportTemplate?.name || '待导入 Word 模板');
+        return `<tr><td><div class="ks-skill-cell"><span class="ks-skill-icon">${icon('document')}</span><div><strong>${keywordHighlight.html(s.name, pattern)}</strong><span title="${esc(detail)}">${codeMatches ? keywordHighlight.excerptHTML(detail, pattern, 22) : esc(detail)}</span></div></div></td><td>${esc(s.category || '解析后生成')}</td><td><div class="ks-tag-list">${s.themes.slice(0, 2).map((t) => `<span class="ks-tag">${esc(t)}</span>`).join('')}${s.themes.length > 2 ? `<span class="ks-tag" title="${esc(s.themes.join('、'))}">+${s.themes.length - 2}</span>` : ''}</div></td><td class="sw-parse-cell">${progress}</td><td>${enabledStatus}</td><td>${esc(s.updated)}</td><td><div class="sw-row-actions">${actions}${deleteAction}</div></td></tr>`;
       }).join('');
       $('ksEmpty').classList.toggle('hidden', rows.length > 0);
       $('ksListCount').textContent = `共 ${rows.length} 项技能`;

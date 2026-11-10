@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>我的看板 - 智能问数</title>
-  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="../../assets/css/theme.css?v=20261110-keyword-highlight" />
   <link rel="stylesheet" href="../../assets/css/business.css" />
   <style>
     .board-page .module-content {
@@ -993,7 +993,7 @@
   </aside>
 
   <script src="../../assets/js/echarts.min.js"></script>
-  <script src="../../assets/js/common.js"></script>
+  <script src="../../assets/js/common.js?v=20261110-keyword-highlight"></script>
   <script>
     /* eslint-disable */
     (function () {
@@ -2152,6 +2152,7 @@
           if (input.parentElement) input.parentElement.removeChild(input);
           labelEl.textContent = next;
           if (onCommit) onCommit(next, commit && !!v);
+          if (searchInput.value.trim()) applyTreeSearch();
         };
         input.addEventListener('blur', () => finish(true));
         input.addEventListener('keydown', (e) => {
@@ -2378,6 +2379,7 @@
             const parentCategory = (!isCategory && node.parentElement && node.parentElement.parentElement) ? node.parentElement.parentElement : null;
             const wasActive = !!node.querySelector(':scope > .tree-row.active') || !!(isCategory && node.querySelector('.tree-row.active'));
             node.remove();
+            if (searchInput.value.trim()) applyTreeSearch();
             if (parentCategory && parentCategory.dataset && parentCategory.dataset.type === 'category') {
               refreshCategoryCount(parentCategory);
             }
@@ -2473,6 +2475,7 @@
             }
           }
         }
+        if (searchInput.value.trim()) applyTreeSearch();
         showToast('已调整目录位置');
       });
       function clearDropMarkers() {
@@ -2519,35 +2522,11 @@
       // ====================================================================
       // 9. 搜索过滤
       // ====================================================================
-      searchInput.addEventListener('input', function () {
-        const kw = this.value.trim().toLowerCase();
-        tree.querySelectorAll('.tree-node').forEach((n) => (n.style.display = ''));
-        if (!kw) return;
-        tree.querySelectorAll('.tree-node').forEach((node) => {
-          const label = node.querySelector(':scope > .tree-row > .tree-label').textContent.toLowerCase();
-          if (label.includes(kw)) {
-            node.style.display = '';
-            let p = node.parentElement;
-            while (p && p !== tree) {
-              if (p.classList.contains('tree-node')) {
-                p.style.display = '';
-                p.classList.remove('collapsed');
-                p.classList.add('expanded');
-                const t = p.querySelector(':scope > .tree-row > .tree-toggle');
-                if (t && !t.classList.contains('empty')) t.textContent = '▾';
-              }
-              p = p.parentElement;
-            }
-          }
-        });
-        tree.querySelectorAll('.tree-node').forEach((node) => {
-          const visibleSelf = node.querySelector(':scope > .tree-row > .tree-label')
-            .textContent.toLowerCase().includes(kw);
-          const childList = [...node.querySelectorAll(':scope > .tree-children > .tree-node')];
-          const hasVisibleChild = childList.some((n) => n.style.display !== 'none');
-          if (!visibleSelf && !hasVisibleChild) node.style.display = 'none';
-        });
-      });
+      function applyTreeSearch() {
+        filterKeywordTree(tree, searchInput.value);
+      }
+
+      searchInput.addEventListener('input', applyTreeSearch);
 
       // ====================================================================
       // 10. 看板版本管理
