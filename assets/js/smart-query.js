@@ -100,6 +100,11 @@ const followupContextChip = document.getElementById("followupContextChip");
 const followupChipTitle = document.getElementById("followupChipTitle");
 const followupPrefix = document.getElementById("followupPrefix");
 const sendBtn = document.getElementById("sendBtn");
+const stopQueryBtn = document.getElementById("stopQueryBtn");
+const currentChatMessage = answerBlock?.querySelector(".current-chat-message");
+const questionTurns = new WeakMap();
+const conversationSnapshots = new WeakMap();
+const answerTimeouts = new Set();
 const associateList = document.getElementById("associateList");
 const skillSelectWrap = document.getElementById("skillSelectWrap");
 const skillSelectTrigger = document.getElementById("skillSelectTrigger");
@@ -115,6 +120,11 @@ let thinkingElapsedTimer = null;
 let reportTypingTimer = null;
 let conclusionTypingTimer = null;
 let isAnswering = false;
+let isThinking = false;
+let thinkingCompletion = null;
+let activeConversationItem = null;
+let conversationChanged = false;
+let replayingHistory = false;
 let currentAnswerMode = "qa";
 let currentQuestionText = "近6个月华东区销售额趋势如何？";
 let currentAnswerTitle = "华东区近6个月销售额趋势分析";
@@ -840,6 +850,16 @@ const boardRevisionDraft3 = createBoardDraft(
 
 const HISTORY_SCENARIOS = {
   normal: { question: "近6个月华东区销售额趋势如何？", mode: "qa" },
+  guidedSales: {
+    question: "近6个月华东区销售额趋势如何？",
+    mode: "qa",
+    sentAt: "08:37:50",
+    guides: [
+      { text: "时间改成只看今年 6 月。", sentAt: "08:37:57" },
+      { text: "按城市拆分，只展示表格。", sentAt: "08:38:04" },
+      { text: "时间改回近 6 个月，保留按城市拆分和表格。", sentAt: "08:38:11" }
+    ]
+  },
   free: { question: "再按城市拆分看看", mode: "qa", followup: true },
   interpret: { question: "对这6个月的销售趋势进行整体解读", mode: "analysis", followup: true },
   attribution: { question: "4月销售额为什么增长明显？", mode: "attribution", followup: true },
@@ -1215,6 +1235,11 @@ function openDeleteConfirm() {
 
 function confirmDelete() {
   if (activeSideItem) {
+    if (activeSideItem === activeConversationItem) {
+      setActiveConversationItem(null);
+      conversationChanged = false;
+      resetChat();
+    }
     activeSideItem.remove();
     activeSideItem = null;
   }
@@ -1577,6 +1602,11 @@ function handleQuestionInput() {
   normalizeEditedPromptHints();
   ensureSelectedSkillTag();
   syncQuestionEditorEmptyState();
+  syncComposerSendButton();
+  if (isAnswering) {
+    suggestPop.classList.add("hidden");
+    return;
+  }
   if (selectedSkillKey !== "general" && !pendingFollowupContext) {
     suggestPop.classList.add("hidden");
     return;
@@ -2318,8 +2348,8 @@ function extractSubjectKeyword(text) {
   return "";
 }
 
-function getCurrentThemeSubject() {
-  const text = themeName?.textContent?.trim() || "销售分析";
+function getCurrentThemeSubject(themes) {
+  const text = themes.join("、");
   if (text.includes("客户")) return "客户";
   if (text.includes("库存")) return "库存";
   if (text.includes("财务")) return "财务";
@@ -2327,7 +2357,7 @@ function getCurrentThemeSubject() {
   return "销售";
 }
 
-function generateAnswerTitle(userInput, mode) {
+function generateAnswerTitle(userInput, mode, themes = getSelectedThemeList()) {
   if (mode === "qa") {
     return /城市|拆分/.test(userInput || "")
       ? "华东区城市销售额拆分"
@@ -2335,7 +2365,7 @@ function generateAnswerTitle(userInput, mode) {
   }
 
   const region = extractRegionKeyword(userInput) || "华东区";
-  const subject = extractSubjectKeyword(userInput) || getCurrentThemeSubject();
+  const subject = extractSubjectKeyword(userInput) || getCurrentThemeSubject(themes);
   const time = extractTimeKeyword(userInput);
 
   switch (mode) {
@@ -2511,11 +2541,47 @@ function openReferencedReport(button) {
   if (reportId) goTo(`report.html?report=${encodeURIComponent(reportId)}`);
 }
 
-function runQuestion() {
-  archiveCurrentMessageIfNeeded();
-  const inputText = readQuestionEditorText();
-  const ctx = pendingFollowupContext;
+function runQuestion(edit = null, options = {}) {
+  if (isAnswering || replayingHistory) return;
+  const inputText = edit ? edit.question : readQuestionEditorText();
+  const context = edit?.turn.context || {
+    themes: getSelectedThemeList(),
+    references: selectedReferences.map((reference) => ({ ...reference })),
+    followup: pendingFollowupContext,
+    attachments: Array.from(attachmentPreviewList.querySelectorAll(".attachment-info"), (info) => ({
+      name: info.querySelector("strong").textContent,
+      meta: info.querySelector("span").textContent
+    }))
+  };
+  const ctx = context.followup;
+  const previousSkill = edit?.turn.skillRun;
+  if (!edit && !ctx && !context.references.length && !validateSelectedSkill()) return;
+  closeQuestionEditor();
+  if (edit) {
+    if (edit.message !== currentChatMessage) {
+      saveActiveConversation();
+      createConversationItem(inputText, "编辑重发");
+      for (let message = edit.message; message;) {
+        const next = message.nextElementSibling;
+        message.remove();
+        message = next;
+      }
+    } else {
+      const title = activeConversationItem?.querySelector("strong");
+      if (title?.textContent === edit.turn.question && !conversationHistory.children.length) {
+        title.textContent = inputText;
+        title.title = inputText;
+        filterSideHistory();
+      }
+    }
+    boardDraftStates.clear();
+    reportDraftStates.clear();
+    getArchivedQuestionTurns().forEach(rememberReferenceDrafts);
+  } else {
+    archiveCurrentMessageIfNeeded();
+  }
   activeReferenceRun = null;
+  activeSkillRun = null;
 
   let submittedQuestion;
   let answerTitle;
@@ -2530,27 +2596,25 @@ function runQuestion() {
     else if (ctx.action === "comparison") mode = "comparison";
     else if (ctx.action === "template") mode = "template";
     else mode = "qa";
-    answerTitle = generateAnswerTitle(actionText, mode);
-  } else if (selectedReferences.length) {
+    answerTitle = generateAnswerTitle(actionText, mode, context.themes);
+  } else if (context.references.length) {
     submittedQuestion = inputText || "请分析当前引用内容，并总结主要结论和需要关注的问题。";
-    activeReferenceRun = buildReferenceRun(submittedQuestion, selectedReferences);
+    activeReferenceRun = buildReferenceRun(submittedQuestion, context.references);
     mode = "reference";
     answerTitle = activeReferenceRun.answerTitle;
     activeSkillRun = null;
-  } else if (selectedSkillKey !== "general") {
-    if (!validateSelectedSkill()) return;
-    const skillPrompt = inputText || SKILL_DEFINITIONS[selectedSkillKey]?.prompt || "";
+  } else if (previousSkill || (!edit && selectedSkillKey !== "general")) {
     const selectedSkill = SKILL_DEFINITIONS[selectedSkillKey];
-    activeSkillRun = {
+    activeSkillRun = previousSkill ? { ...previousSkill, prompt: inputText } : {
       key: selectedSkillKey,
       skillId: selectedSkill?.id || selectedSkillKey,
       category: selectedSkill?.category,
-      prompt: skillPrompt,
+      prompt: inputText,
       contentParts: selectedSkill?.contentParts || [],
       reportTemplate: selectedSkill?.reportTemplate || null
     };
     mode = "template";
-    submittedQuestion = getFinalSkillPrompt(activeSkillRun, skillPrompt);
+    submittedQuestion = getFinalSkillPrompt(activeSkillRun, inputText);
     answerTitle = getSkillAnswerTitle(activeSkillRun);
   } else {
     submittedQuestion = inputText || "近6个月华东区销售额趋势如何？";
@@ -2558,7 +2622,7 @@ function runQuestion() {
     activeSkillRun = mode === "template"
       ? { key: "monthly", skillId: null, prompt: submittedQuestion }
       : null;
-    answerTitle = generateAnswerTitle(submittedQuestion, mode);
+    answerTitle = generateAnswerTitle(submittedQuestion, mode, context.themes);
   }
 
   currentQuestionText = submittedQuestion;
@@ -2567,13 +2631,16 @@ function runQuestion() {
   welcomeBlock.classList.add("hidden");
   answerBlock.classList.remove("hidden");
   mainPanel.classList.remove("initial-state");
-  setQuestionEditorContent("");
-  clearFollowupContext();
+  if (!edit) {
+    setQuestionEditorContent("");
+    clearFollowupContext();
+  }
   startAnswerSimulation({
     mode,
     questionText: submittedQuestion,
     answerTitle,
-    references: activeReferenceRun?.references || []
+    context,
+    thinkingDuration: options.thinkingDuration
   });
 }
 
@@ -2588,28 +2655,146 @@ function appendQuestionReference(reference) {
   userQuestionBubble.appendChild(card);
 }
 
-function setCompletedHistoryQuestion(scenario) {
-  if (!userQuestionBubble) return;
-  userQuestionBubble.textContent = scenario.question;
-  if (scenario.reference) appendQuestionReference(scenario.reference);
-  if (!scenario.attachment) return;
+function appendQuestionAttachment(file) {
   const attachment = document.createElement("div");
   attachment.className = "history-question-attachment";
   attachment.innerHTML = ''
     + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 14h6"></path><path d="M9 17h4"></path></svg>'
-    + `<div><strong>${scenario.attachment.name}</strong><span>${scenario.attachment.meta}</span></div>`;
+    + `<div><strong>${escapeHtml(file.name)}</strong><span>${escapeHtml(file.meta)}</span></div>`;
   userQuestionBubble.appendChild(attachment);
 }
+
+function renderMessageTime(element, sentAt) {
+  element.classList.toggle("hidden", !sentAt);
+  element.textContent = "";
+  if (!sentAt) {
+    element.removeAttribute("datetime");
+    return;
+  }
+  element.dateTime = sentAt;
+  element.textContent = /^\d{2}:\d{2}(?::\d{2})?$/.test(sentAt)
+    ? sentAt.slice(0, 5)
+    : new Date(sentAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+}
+
+function renderQuestionTurn(turn) {
+  questionTurns.set(currentChatMessage, turn);
+  const text = document.createElement("div");
+  text.className = "question-text";
+  text.textContent = turn.question;
+  userQuestionBubble.replaceChildren(text);
+  renderMessageTime(currentChatMessage.querySelector(".question-actions time"), turn.sentAt);
+  turn.context.references.forEach(appendQuestionReference);
+  turn.context.attachments.forEach(appendQuestionAttachment);
+  const guides = currentChatMessage.querySelector(".question-guides");
+  guides.replaceChildren();
+  guides.classList.toggle("hidden", !turn.guides.length);
+  turn.guides.forEach(appendQuestionGuide);
+}
+
+function appendQuestionGuide(guide) {
+  const guides = currentChatMessage.querySelector(".question-guides");
+  const entry = document.createElement("div");
+  const bubble = document.createElement("div");
+  const time = document.createElement("time");
+  entry.className = "question-guide-entry";
+  bubble.className = "bubble user question-guide";
+  bubble.textContent = guide.text;
+  time.className = "message-time";
+  renderMessageTime(time, guide.sentAt);
+  entry.append(bubble, time);
+  guides.classList.remove("hidden");
+  guides.appendChild(entry);
+}
+
+function closeQuestionEditor(restoreFocus = false) {
+  const form = answerBlock.querySelector(".question-edit");
+  if (!form) return;
+  const stack = form.parentElement;
+  form.remove();
+  stack.querySelector(".bubble").classList.remove("hidden");
+  const actions = stack.querySelector(".question-actions");
+  actions.classList.remove("hidden");
+  if (restoreFocus) actions.querySelector('[data-question-action="edit"]').focus();
+}
+
+answerBlock.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-question-action]");
+  if (!button) return;
+  const message = button.closest(".chat-message");
+  const turn = questionTurns.get(message);
+  if (!turn) return;
+  if (button.dataset.questionAction === "copy") {
+    copyChatText(turn.question, "已复制问题");
+    return;
+  }
+  if (button.dataset.questionAction === "cancel") {
+    closeQuestionEditor(true);
+    return;
+  }
+  if (isAnswering || replayingHistory) return;
+  closeQuestionEditor();
+  const stack = button.closest(".question-stack");
+  const form = document.getElementById("questionEditTemplate").content.firstElementChild.cloneNode(true);
+  form.querySelector(".question-edit-note").classList.toggle("hidden", message === currentChatMessage);
+  const editor = form.querySelector("textarea");
+  editor.value = turn.question;
+  stack.querySelector(".bubble").classList.add("hidden");
+  stack.querySelector(".question-actions").classList.add("hidden");
+  stack.prepend(form);
+  editor.focus();
+  editor.setSelectionRange(editor.value.length, editor.value.length);
+});
+
+answerBlock.addEventListener("submit", (event) => {
+  const form = event.target;
+  if (!form.matches(".question-edit")) return;
+  event.preventDefault();
+  const message = form.closest(".chat-message");
+  const turn = questionTurns.get(message);
+  const editor = form.querySelector("textarea");
+  const question = editor.value.trim();
+  if (!question) {
+    showToast("请输入问题");
+    editor.focus();
+    return;
+  }
+  if (turn) runQuestion({ message, turn, question });
+});
+
+answerBlock.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !event.isComposing && event.target.closest(".question-edit")) {
+    event.preventDefault();
+    closeQuestionEditor(true);
+  }
+});
 
 function prepareCompletedHistoryTurn(scenario) {
   currentAnswerMode = scenario.mode;
   currentQuestionText = scenario.question;
-  activeSkillRun = scenario.mode === "template"
+  activeSkillRun = scenario.skillRun ?? (scenario.mode === "template"
     ? { key: "monthly", skillId: null, prompt: scenario.question }
-    : null;
-  currentAnswerTitle = scenario.answerTitle || generateAnswerTitle(scenario.question, scenario.mode);
+    : null);
+  const turn = {
+    ...scenario,
+    sentAt: scenario.sentAt ?? activeConversationItem?.querySelector("em:last-child")?.textContent.match(/\b\d{2}:\d{2}\b/)?.[0],
+    skillRun: activeSkillRun,
+    context: scenario.context || {
+      themes: ["销售分析"],
+      references: scenario.references || (scenario.reference ? [scenario.reference] : []),
+      attachments: scenario.attachment ? [scenario.attachment] : [],
+      followup: null
+    },
+    guides: scenario.guides || []
+  };
+  if (!turn.salesScope) {
+    turn.salesScope = getSalesDemoScope(turn.question, turn.mode);
+    if (turn.salesScope) turn.guides.forEach((guide) => applySalesDemoGuide(turn.salesScope, guide.text));
+  }
+  currentAnswerTitle = scenario.answerTitle || getSalesDemoTitle(turn.salesScope)
+    || generateAnswerTitle(scenario.question, scenario.mode, turn.context.themes);
   resetAnswerSimulation();
-  setCompletedHistoryQuestion(scenario);
+  renderQuestionTurn(turn);
   if (resultTitle) resultTitle.textContent = currentAnswerTitle;
   if (resultTitle?.nextElementSibling) {
     if (scenario.mode === "reference") {
@@ -2640,13 +2825,16 @@ function prepareCompletedHistoryTurn(scenario) {
 }
 
 function renderCompletedQaHistory(scenario, options = {}) {
-  const profile = applyQaResultProfile(scenario.question);
+  const profile = applyQaResultProfile(scenario.question, scenario.salesScope);
   insightBox?.classList.remove("hidden");
-  if (aiConclusion) aiConclusion.textContent = profile.text;
-  conclusionTags?.classList.remove("hidden");
+  if (aiConclusion) {
+    aiConclusion.textContent = profile.text;
+    aiConclusion.classList.toggle("hidden", profile.tableOnly);
+  }
+  conclusionTags?.classList.toggle("hidden", profile.tableOnly);
   tableResult?.classList.remove("hidden");
   answerActionBar?.classList.remove("hidden");
-  if (profile.isCityBreakdown) {
+  if (profile.hideChart) {
     resultViewToolbar?.classList.add("hidden");
     chartResult?.classList.add("hidden");
     return;
@@ -2991,26 +3179,41 @@ function saveReferenceChanges() {
     renderReferencePreview();
   }
   result.pendingSave = null;
+  conversationChanged = true;
   renderCompletedReferenceHistory(activeReferenceRun);
   showToast(`${pendingSave.target.name}已保存为${version}`);
 }
 
 function renderCompletedHistoryTurn(scenario, options = {}) {
   prepareCompletedHistoryTurn(scenario);
-  if (scenario.mode === "reference") activeReferenceRun = scenario;
-  if (scenario.mode === "qa") renderCompletedQaHistory(scenario, options);
-  else if (scenario.mode === "file") renderCompletedFileHistory(scenario);
-  else if (scenario.mode === "reference") renderCompletedReferenceHistory(scenario);
-  else renderCompletedReportHistory(scenario);
+  const turn = questionTurns.get(currentChatMessage);
+  activeReferenceRun = turn.mode === "reference" ? turn : null;
+  if (turn.stopped) {
+    renderThinkingTimeline(turn.mode);
+    if (turn.salesScope) syncSalesThinkingSteps(turn.salesScope);
+    showStoppedAnswer();
+    return;
+  }
+  if (turn.mode === "qa") renderCompletedQaHistory(turn, options);
+  else if (turn.mode === "file") renderCompletedFileHistory(turn);
+  else if (turn.mode === "reference") {
+    rememberReferenceDrafts(turn);
+    renderCompletedReferenceHistory(turn);
+  }
+  else renderCompletedReportHistory(turn);
 }
 
 function loadHistoryScenario(key, item) {
+  if (item === activeConversationItem) return;
   const scenario = HISTORY_SCENARIOS[key];
-  if (!scenario) return;
+  const snapshot = conversationSnapshots.get(item);
+  if (!scenario && !snapshot) return;
   resetChat();
-  document.querySelectorAll("#historyList .history-item").forEach((historyItem) => {
-    historyItem.classList.toggle("active", historyItem === item);
-  });
+  setActiveConversationItem(item);
+  if (snapshot) {
+    renderHistoryTurnSequence(snapshot);
+    return;
+  }
   if (key === "reportRevision") {
     const reference = { ...(getReferenceItem("report:r1") || { key: "report:r1", kind: "report", fileType: "word", label: "报告", name: "二季度销售复盘报告", meta: "Word · 销售经营 / 最新版本 V13" }) };
     const first = buildReferenceRun(`请重新整理《${reference.name}》第四章“问题与风险”，并补充库存风险说明。`, [reference]);
@@ -3029,15 +3232,22 @@ function loadHistoryScenario(key, item) {
     archiveCurrentMessageIfNeeded();
   }
   renderCompletedHistoryTurn(scenario);
-  requestAnimationFrame(scrollToAnswerBottom);
+  if (scenario.guides?.length) {
+    requestAnimationFrame(() => { currentChatMessage.closest(".chat-scroll").scrollTop = 0; });
+  } else {
+    requestAnimationFrame(scrollToAnswerBottom);
+  }
 }
 
 function renderHistoryTurnSequence(turns, index = 0, token = historySequenceToken) {
   if (token !== historySequenceToken) return;
   const turn = turns[index];
   if (!turn) return;
+  replayingHistory = true;
   renderCompletedHistoryTurn(turn);
   if (index >= turns.length - 1) {
+    replayingHistory = false;
+    updateSendButton();
     requestAnimationFrame(scrollToAnswerBottom);
     return;
   }
@@ -3050,22 +3260,65 @@ function renderHistoryTurnSequence(turns, index = 0, token = historySequenceToke
   });
 }
 
+function setActiveConversationItem(item) {
+  activeConversationItem = item;
+  document.querySelectorAll("#historyList .history-item").forEach((historyItem) => {
+    historyItem.classList.toggle("active", historyItem === item);
+  });
+}
+
+function createConversationItem(question, type) {
+  const historyList = document.getElementById("historyList");
+  const item = document.createElement("div");
+  item.className = "history-item";
+  item.innerHTML = '<strong></strong><span><em></em><em>刚刚</em></span>';
+  const title = item.querySelector("strong");
+  title.textContent = question;
+  title.title = question;
+  item.querySelector("em").textContent = type;
+  item.addEventListener("click", () => loadHistoryScenario(null, item));
+  item.addEventListener("contextmenu", (event) => openSideMenu(event, "history"));
+  const anchor = historyList.querySelector(".history-item.pinned") || historyList.querySelector(".group-title");
+  if (anchor) anchor.insertAdjacentElement("afterend", item);
+  else historyList.prepend(item);
+  setActiveConversationItem(item);
+  filterSideHistory();
+}
+
+function getArchivedQuestionTurns() {
+  return Array.from(conversationHistory.children, (message) => questionTurns.get(message)).filter(Boolean);
+}
+
+function rememberReferenceDrafts(turn) {
+  if (turn.stopped || !turn.reference) return;
+  const { boardDraft, reportDraft, pendingSave } = turn.result || {};
+  const key = turn.reference.key;
+  if (boardDraft) boardDraftStates.set(key, boardDraft);
+  if (reportDraft) {
+    reportDraftStates.set(key, pendingSave ? reportDraft : { ...reportDraft, changes: [], round: 0 });
+  }
+}
+
+function saveActiveConversation() {
+  if (!activeConversationItem || !conversationChanged) return;
+  const turns = getArchivedQuestionTurns();
+  const current = questionTurns.get(currentChatMessage);
+  if (current) turns.push(current);
+  conversationSnapshots.set(activeConversationItem, turns);
+  conversationChanged = false;
+}
+
 function resetChat() {
   historySequenceToken += 1;
+  replayingHistory = false;
   referencePrefillText = null;
-  if (isAnswering) {
-    isAnswering = false;
-    if (conclusionTypingTimer) {
-      clearInterval(conclusionTypingTimer);
-      conclusionTypingTimer = null;
-    }
-    if (reportTypingTimer) {
-      clearInterval(reportTypingTimer);
-      reportTypingTimer = null;
-    }
-    stopThinkingElapsedTimer();
-  }
-  updateSendButton();
+  if (isAnswering) stopAnswerSimulation(false);
+  saveActiveConversation();
+  conversationChanged = false;
+  setActiveConversationItem(null);
+  closeQuestionEditor();
+  questionTurns.delete(currentChatMessage);
+  cancelAnswerWork();
   welcomeBlock.classList.remove("hidden");
   answerBlock.classList.add("hidden");
   if (conversationHistory) conversationHistory.innerHTML = "";
@@ -3090,90 +3343,198 @@ function resetChat() {
 }
 
 function handleSendClick() {
-  if (isAnswering) {
-    stopAnswerSimulation();
+  if (isThinking) {
+    sendQuestionGuide();
     return;
   }
-  runQuestion();
+  if (!isAnswering) runQuestion();
 }
 
-function stopAnswerSimulation() {
-  isAnswering = false;
-  if (conclusionTypingTimer) {
-    clearInterval(conclusionTypingTimer);
-    conclusionTypingTimer = null;
-  }
-  if (reportTypingTimer) {
-    clearInterval(reportTypingTimer);
-    reportTypingTimer = null;
-  }
+function cancelAnswerTimeouts() {
+  answerTimeouts.forEach((timeout) => clearTimeout(timeout));
+  answerTimeouts.clear();
+}
+
+function scheduleAnswerTask(callback, delay) {
+  const timeout = setTimeout(() => {
+    answerTimeouts.delete(timeout);
+    if (isAnswering) callback();
+  }, delay);
+  answerTimeouts.add(timeout);
+  return timeout;
+}
+
+function cancelAnswerWork() {
+  cancelAnswerTimeouts();
+  thinkingCompletion = null;
+  clearInterval(conclusionTypingTimer);
+  conclusionTypingTimer = null;
+  clearInterval(reportTypingTimer);
+  reportTypingTimer = null;
   stopThinkingElapsedTimer();
+}
+
+function showStoppedAnswer() {
+  thinkingBox.classList.remove("hidden");
+  thinkingBox.classList.add("collapsed");
+  thinkingTitle.textContent = "已停止生成";
+  resultCard.classList.add("hidden");
+}
+
+function stopAnswerSimulation(notify = true) {
+  if (!isAnswering) return;
+  const turn = questionTurns.get(currentChatMessage);
+  if (turn) turn.stopped = true;
+  cancelAnswerWork();
+  isAnswering = false;
+  isThinking = false;
   aiConclusion?.classList.remove("typing-cursor");
+  showStoppedAnswer();
   updateSendButton();
-  showToast("已停止生成");
+  if (notify) showToast("已停止生成");
 }
 
 function finishAnswerSimulation() {
   if (!isAnswering) return;
   isAnswering = false;
+  isThinking = false;
+  cancelAnswerWork();
   updateSendButton();
+}
+
+function syncComposerSendButton() {
+  sendBtn.disabled = isAnswering && (!isThinking || questionInput.dataset.empty === "true");
 }
 
 function updateSendButton() {
-  if (!sendBtn) return;
-  if (isAnswering) {
-    sendBtn.classList.add("is-stopping");
-    sendBtn.setAttribute("aria-label", "停止生成");
-  } else {
-    sendBtn.classList.remove("is-stopping");
-    sendBtn.setAttribute("aria-label", "发送");
-  }
+  syncComposerSendButton();
+  stopQueryBtn.classList.toggle("hidden", !isAnswering);
+  const inputTools = questionInput.closest(".input-main").querySelector(".input-tools");
+  inputTools.inert = isAnswering;
+  answerBlock.querySelectorAll('[data-question-action="edit"]').forEach((button) => {
+    button.disabled = isAnswering || replayingHistory;
+  });
 }
 
 function startAnswerSimulation(options = {}) {
+  cancelAnswerWork();
+  closeQuestionEditor();
   currentAnswerMode = options.mode || currentAnswerMode || "qa";
   currentQuestionText = options.questionText || currentQuestionText;
   currentAnswerTitle = options.answerTitle || currentAnswerTitle;
-  userQuestionBubble.textContent = currentQuestionText;
-  (options.references || []).forEach(appendQuestionReference);
-  if (resultTitle) resultTitle.textContent = currentAnswerTitle;
-  if (resultTitle?.nextElementSibling && currentAnswerMode === "reference") {
-    const firstReference = options.references?.[0];
-    resultTitle.nextElementSibling.textContent = `基于引用内容处理 · ${firstReference?.label || "引用"}：${firstReference?.name || "-"} · 当前对话`;
-  }
-  renderThinkingTimeline(currentAnswerMode);
+  const turn = {
+    ...(currentAnswerMode === "reference" ? activeReferenceRun : null),
+    question: currentQuestionText,
+    sentAt: options.sentAt ?? new Date().toISOString(),
+    mode: currentAnswerMode,
+    answerTitle: currentAnswerTitle,
+    skillRun: currentAnswerMode === "template" ? activeSkillRun : null,
+    context: options.context || { themes: getSelectedThemeList(), references: [], attachments: [], followup: null },
+    guides: options.guides ? [...options.guides] : [],
+    salesScope: options.salesScope ? { ...options.salesScope } : getSalesDemoScope(currentQuestionText, currentAnswerMode),
+    stopped: false
+  };
+  if (turn.mode === "reference") activeReferenceRun = turn;
+  if (!activeConversationItem) createConversationItem(turn.question, "普通问数");
+  conversationChanged = true;
+  renderQuestionTurn(turn);
+  updateQuestionResultHeading(turn);
   resetAnswerSimulation();
   answerBlock.classList.remove("hidden");
   isAnswering = true;
+  isThinking = true;
   updateSendButton();
   startThinkingElapsedTimer();
-  const thinkingDurationMs = 3000;
-  const stepDelayMs = 600;
+  scheduleQuestionThinking(turn, options.thinkingDuration ?? (turn.salesScope ? 18000 : 9000));
+  focusQuestionComposer();
+  scrollToAnswerBottom();
+}
 
-  const dots = thinkingBox.querySelectorAll(".step-dot");
+function updateQuestionResultHeading(turn) {
+  turn.answerTitle = getSalesDemoTitle(turn.salesScope) || turn.answerTitle;
+  currentAnswerTitle = turn.answerTitle;
+  resultTitle.textContent = turn.answerTitle;
+  const reference = turn.context.references[0];
+  resultTitle.nextElementSibling.textContent = turn.mode === "reference"
+    ? `基于引用内容处理 · ${reference?.label || "引用"}：${reference?.name || "-"} · 当前对话`
+    : `分析主题：${turn.context.themes.join("、")} · 当前对话`;
+}
 
-  dots.forEach((dot, index) => {
-    setTimeout(() => {
-      if (!isAnswering) return;
-      dots.forEach((item, itemIndex) => {
-        if (itemIndex < index) {
-          item.classList.remove("loading");
-          item.textContent = "✓";
-        }
+function sendQuestionGuide() {
+  const turn = questionTurns.get(currentChatMessage);
+  const text = readQuestionEditorText();
+  if (!isThinking || !turn || !text) return;
+  const guide = { text, sentAt: new Date().toISOString() };
+  turn.guides.push(guide);
+  appendQuestionGuide(guide);
+  if (turn.salesScope && applySalesDemoGuide(turn.salesScope, text)) {
+    const changedSteps = syncSalesThinkingSteps(turn.salesScope);
+    if (changedSteps.length) {
+      changedSteps.forEach((dot, index) => {
+        if (dot.classList.contains("loading")) return;
+        dot.classList.add("loading");
+        dot.textContent = "·";
+        scheduleAnswerTask(() => completeThinkingStep(dot), 500 + 350 * index);
       });
-    }, index * stepDelayMs);
-  });
-
-  setTimeout(() => {
-    if (!isAnswering) return;
-    dots.forEach((dot) => {
-      dot.classList.remove("loading");
-      dot.textContent = "✓";
-    });
-    if (thinkingElapsedSeconds < 3) {
-      thinkingElapsedSeconds = 3;
-      updateThinkingElapsed();
+      updateQuestionResultHeading(turn);
+      const nextCompletion = Math.max(thinkingCompletion.at, Date.now() + 9000);
+      if (nextCompletion > thinkingCompletion.at) scheduleThinkingCompletion(turn, nextCompletion);
     }
+  }
+  setQuestionEditorContent("");
+  syncComposerSendButton();
+  focusQuestionComposer();
+  scrollToAnswerBottom();
+}
+
+function syncSalesThinkingSteps(scope) {
+  const steps = thinkingBox.querySelectorAll(".step");
+  const period = scope.period === "june" ? "今年 6 月" : "近 6 个月";
+  const dimension = scope.byCity ? "按城市拆分" : "按月份汇总";
+  const showTrendChart = !scope.byCity && scope.period !== "june" && !scope.tableOnly;
+  const output = scope.tableOnly ? "仅表格" : showTrendChart ? "结论、趋势图和明细表" : "结论和明细表";
+  const updates = [
+    [0, "识别业务意图", `${period} · 华东区销售额`],
+    [2, "匹配指标与维度", `销售额 · ${dimension}`],
+    [steps.length - 1, showTrendChart ? "生成图表结果" : "整理明细数据", `${period} · ${dimension} · ${output}`]
+  ];
+  const changed = [];
+  updates.forEach(([index, title, description]) => {
+    const heading = steps[index].querySelector("strong");
+    const detail = steps[index].querySelector("span");
+    if (heading.textContent === title && detail.textContent === description) return;
+    if (heading.textContent !== title) heading.textContent = title;
+    if (detail.textContent !== description) detail.textContent = description;
+    changed.push(steps[index].querySelector(".step-dot"));
+  });
+  return changed;
+}
+
+function completeThinkingStep(dot) {
+  dot.classList.remove("loading");
+  dot.textContent = "✓";
+}
+
+function scheduleQuestionThinking(turn, duration) {
+  renderThinkingTimeline(turn.mode);
+  if (turn.salesScope) syncSalesThinkingSteps(turn.salesScope);
+  thinkingTitle.textContent = "思考中";
+  const dots = thinkingBox.querySelectorAll(".step-dot");
+  dots.forEach((dot, index) => {
+    scheduleAnswerTask(() => completeThinkingStep(dot), duration * (index + 1) / (dots.length + 1));
+  });
+  scheduleThinkingCompletion(turn, Date.now() + duration);
+}
+
+function scheduleThinkingCompletion(turn, at) {
+  if (thinkingCompletion) {
+    clearTimeout(thinkingCompletion.timeout);
+    answerTimeouts.delete(thinkingCompletion.timeout);
+  }
+  const timeout = scheduleAnswerTask(() => {
+    thinkingCompletion = null;
+    isThinking = false;
+    updateSendButton();
     stopThinkingElapsedTimer();
     thinkingTitle.textContent = "思考过程";
     thinkingBox.classList.add("collapsed");
@@ -3203,12 +3564,13 @@ function startAnswerSimulation(options = {}) {
       return;
     }
     if (currentAnswerMode === "reference") {
-      renderCompletedReferenceHistory(activeReferenceRun || {});
+      renderCompletedReferenceHistory(turn);
       finishAnswerSimulation();
       return;
     }
-    startTypewriterConclusion();
-  }, thinkingDurationMs);
+    startTypewriterConclusion(turn);
+  }, Math.max(0, at - Date.now()));
+  thinkingCompletion = { timeout, at };
 }
 
 function resetAnswerSimulation() {
@@ -3221,7 +3583,7 @@ function resetAnswerSimulation() {
   thinkingBox.classList.remove("collapsed");
   resultCard.classList.add("hidden");
   aiConclusion.textContent = "";
-  aiConclusion.classList.remove("typing-cursor");
+  aiConclusion.classList.remove("typing-cursor", "hidden");
   insightBox?.classList.remove("hidden");
   conclusionTags.classList.add("hidden");
   resultViewToolbar.classList.add("hidden");
@@ -3385,10 +3747,53 @@ function stopThinkingElapsedTimer() {
   thinkingElapsedTimer = null;
 }
 
-function applyQaResultProfile(questionText = currentQuestionText) {
-  const isCityBreakdown = /城市|拆分/.test(questionText || "");
+function getSalesDemoScope(question, mode) {
+  if (mode !== "qa" || !/华东/.test(question) || !/销售额/.test(question)) return null;
+  if (!/近\s*[6六]\s*个月|(?:^|[^\d])6\s*月|六月/.test(question)) return null;
+  const scope = { period: "six-months", byCity: false, tableOnly: false };
+  applySalesDemoGuide(scope, question);
+  return scope;
+}
+
+function applySalesDemoGuide(scope, text) {
+  const period = text.match(/近\s*[6六]\s*个月|(?:今年\s*)?(?<!\d)6\s*月|(?:今年\s*)?六月/g)?.at(-1);
+  const dimension = text.match(/按(?:各)?城市|各城市|城市拆分|城市销售额|按月(?:份)?|不按城市|城市不用拆分|只看总(?:额|量)|仅看总(?:额|量)/g)?.at(-1);
+  const display = text.match(/(?:只|仅)(?:展示|显示|看|保留|要)?(?:数据)?表格|不(?:用|要|展示|显示)图表|(?:也|加上|恢复|同时)(?:展示|显示)?图表/g)?.at(-1);
+  if (period) scope.period = period.startsWith("近") ? "six-months" : "june";
+  if (dimension) scope.byCity = /城市/.test(dimension) && !/不/.test(dimension);
+  if (display) scope.tableOnly = /^(只|仅|不)/.test(display);
+  return Boolean(period || dimension || display);
+}
+
+function getSalesDemoTitle(scope) {
+  if (!scope) return "";
+  const period = scope.period === "june" ? "今年 6 月" : "近 6 个月";
+  if (scope.byCity) return `${period}华东区各城市销售额`;
+  if (scope.period === "june") return `${period}华东区销售额`;
+  return "华东区近6个月销售额趋势分析";
+}
+
+function applyQaResultProfile(questionText = currentQuestionText, scope = null) {
+  const qaTable = tableResult?.querySelector("table");
+  const tableOnly = Boolean(scope?.tableOnly);
+  if (scope && !scope.byCity && scope.period === "june") {
+    qaTable.innerHTML = defaultQaTableHTML;
+    Array.from(qaTable.tBodies[0].rows).slice(0, -1).forEach((row) => row.remove());
+    conclusionTags.innerHTML = "<span>6月销售额 3248 万元</span><span>环比增长 4.1%</span>";
+    return { text: "今年 6 月华东区销售额为 3248 万元，环比增长 4.1%。", hideChart: true, tableOnly };
+  }
+  if (scope?.byCity && scope.period === "six-months") {
+    const cityTotals = [["上海", 3450], ["杭州", 3120], ["南京", 2780], ["苏州", 2460], ["其他城市", 4498]];
+    const total = resultChartData.reduce((sum, month) => sum + month.value, 0);
+    qaTable.innerHTML = '<thead><tr><th>城市</th><th class="num">销售额（万元）</th><th class="num">占比</th></tr></thead>'
+      + `<tbody>${cityTotals.map(([city, amount]) => `<tr><td>${city}</td><td class="num">${amount}</td><td class="num">${(amount / total * 100).toFixed(1)}%</td></tr>`).join("")}</tbody>`;
+    conclusionTags.innerHTML = "<span>近6个月</span><span>上海销售额领先</span>";
+    return { text: `近 6 个月华东区销售额合计 ${total} 万元，上海、杭州和南京销售额排名前三。`, hideChart: true, tableOnly };
+  }
+  const isCityBreakdown = scope ? scope.byCity : /城市|拆分/.test(questionText || "");
   const profile = {
-    isCityBreakdown,
+    hideChart: isCityBreakdown || tableOnly,
+    tableOnly,
     text: isCityBreakdown
       ? "按城市拆分后，上海、杭州、南京贡献了华东区近六成销售额。其中杭州环比增长 12.8%，增速最高；苏州销售规模稳定，可继续关注重点客户订单转化。"
       : "近6个月华东区销售额整体呈持续上升趋势，6月销售额达到3248万元，较1月增长约49.0%。其中4月至6月增长明显，主要受渠道促销活动和重点客户订单增长影响。"
@@ -3398,7 +3803,6 @@ function applyQaResultProfile(questionText = currentQuestionText) {
       ? "<span>上海贡献最高</span><span>杭州增速领先</span><span>核心城市贡献近六成</span>"
       : defaultQaTagsHTML;
   }
-  const qaTable = tableResult?.querySelector("table");
   if (qaTable) {
     qaTable.innerHTML = isCityBreakdown
       ? '<thead><tr><th>城市</th><th class="num">销售额（万元）</th><th class="num">占比</th><th class="num">环比增长</th><th class="num">订单量</th></tr></thead>'
@@ -3412,9 +3816,14 @@ function applyQaResultProfile(questionText = currentQuestionText) {
   return profile;
 }
 
-function startTypewriterConclusion() {
-  const qaProfile = applyQaResultProfile(currentQuestionText);
-  const { isCityBreakdown, text } = qaProfile;
+function startTypewriterConclusion(turn) {
+  if (turn.salesScope?.tableOnly) {
+    renderCompletedQaHistory(turn);
+    scrollToAnswerBottom();
+    finishAnswerSimulation();
+    return;
+  }
+  const { hideChart, text } = applyQaResultProfile(turn.question, turn.salesScope);
   let index = 0;
   aiConclusion.textContent = "";
   aiConclusion.classList.add("typing-cursor");
@@ -3433,27 +3842,23 @@ function startTypewriterConclusion() {
       conclusionTypingTimer = null;
       aiConclusion.classList.remove("typing-cursor");
       scrollToAnswerBottom();
-      setTimeout(() => {
-        if (!isAnswering) return;
+      scheduleAnswerTask(() => {
         conclusionTags.classList.remove("hidden");
         scrollToAnswerBottom();
       }, 220);
-      setTimeout(() => {
-        if (!isAnswering) return;
+      scheduleAnswerTask(() => {
         tableResult.classList.remove("hidden");
         scrollToAnswerBottom();
       }, 760);
-      setTimeout(() => {
-        if (!isAnswering) return;
-        if (!isCityBreakdown) {
+      scheduleAnswerTask(() => {
+        if (!hideChart) {
           resultViewToolbar.classList.add("hidden");
           chartResult.classList.remove("hidden");
           setResultView(currentResultView || "line", false);
         }
         scrollToAnswerBottom();
       }, 1320);
-      setTimeout(() => {
-        if (!isAnswering) return;
+      scheduleAnswerTask(() => {
         answerActionBar?.classList.remove("hidden");
         scrollToAnswerBottom();
         finishAnswerSimulation();
@@ -3479,8 +3884,7 @@ function startFileResultSimulation(profile) {
   fileResult?.classList.remove("hidden");
   scrollToAnswerBottom();
 
-  setTimeout(() => {
-    if (!isAnswering) return;
+  scheduleAnswerTask(() => {
     if (generatedFileStatus) {
       generatedFileStatus.classList.remove("is-generating");
       generatedFileStatus.classList.add("is-complete");
@@ -3532,19 +3936,12 @@ function addCurrentResultToDashboard(assetType, button) {
 function showFeedbackDetail(key) {
   const record = feedbackRecords[key];
   if (!record) return;
-  if (isAnswering) {
-    isAnswering = false;
-    if (conclusionTypingTimer) {
-      clearInterval(conclusionTypingTimer);
-      conclusionTypingTimer = null;
-    }
-    if (reportTypingTimer) {
-      clearInterval(reportTypingTimer);
-      reportTypingTimer = null;
-    }
-    stopThinkingElapsedTimer();
-    updateSendButton();
-  }
+  historySequenceToken += 1;
+  replayingHistory = false;
+  if (isAnswering) stopAnswerSimulation(false);
+  saveActiveConversation();
+  setActiveConversationItem(null);
+  closeQuestionEditor();
   hideSideMenus();
   closeModal();
   closeDrawer();
@@ -3558,7 +3955,15 @@ function showFeedbackDetail(key) {
   currentAnswerMode = "qa";
   currentQuestionText = record.question;
   currentAnswerTitle = record.answerTitle || generateAnswerTitle(record.question, "qa");
-  userQuestionBubble.textContent = currentQuestionText;
+  renderQuestionTurn({
+    mode: "qa",
+    question: currentQuestionText,
+    sentAt: "08:43",
+    answerTitle: currentAnswerTitle,
+    context: { themes: ["销售分析"], references: [], attachments: [], followup: null },
+    guides: []
+  });
+  updateSendButton();
   if (resultTitle) resultTitle.textContent = currentAnswerTitle;
   if (resultTitle && resultTitle.nextElementSibling) {
     resultTitle.nextElementSibling.textContent = "分析主题：销售分析 · 查询时间：2026-05-09 08:43 · 数据更新时间：2026-05-09 08:00";
@@ -3879,8 +4284,7 @@ function startAnalysisReportTypewriter() {
   const typeNext = () => {
     if (!isAnswering) return;
     if (taskIndex >= tasks.length) {
-      setTimeout(() => {
-        if (!isAnswering) return;
+      scheduleAnswerTask(() => {
         revealReportFooter();
         finishAnswerSimulation();
       }, 240);
@@ -3902,22 +4306,21 @@ function startAnalysisReportTypewriter() {
         taskIndex += 1;
 
         if (tasks[finishedTaskIndex].id === "reportCoreConclusion") {
-          setTimeout(() => {
-            if (!isAnswering) return;
+          scheduleAnswerTask(() => {
             revealReportEmbeddedChart();
-            setTimeout(typeNext, 320);
+            scheduleAnswerTask(typeNext, 320);
           }, 160);
           return;
         }
 
-        setTimeout(typeNext, 80);
+        scheduleAnswerTask(typeNext, 80);
       });
     };
 
     if (!revealedBlocks.has(task.block)) {
       revealedBlocks.add(task.block);
       revealReportBlock(task.block);
-      setTimeout(startTyping, 280);
+      scheduleAnswerTask(startTyping, 280);
       return;
     }
 
@@ -3945,7 +4348,7 @@ function startAnalysisReportSimulation() {
   }
   analysisResult?.classList.remove("hidden");
   scrollToAnswerBottom();
-  setTimeout(startAnalysisReportTypewriter, 240);
+  scheduleAnswerTask(startAnalysisReportTypewriter, 240);
 }
 
 function revealAttributionBlock(index) {
@@ -4133,8 +4536,7 @@ function startAttributionReportTypewriter() {
   const typeNext = () => {
     if (!isAnswering) return;
     if (taskIndex >= tasks.length) {
-      setTimeout(() => {
-        if (!isAnswering) return;
+      scheduleAnswerTask(() => {
         revealAttributionFooter();
         finishAnswerSimulation();
       }, 240);
@@ -4156,29 +4558,27 @@ function startAttributionReportTypewriter() {
         taskIndex += 1;
 
         if (finishedTask.embedChart) {
-          setTimeout(() => {
-            if (!isAnswering) return;
+          scheduleAnswerTask(() => {
             revealAttributionEmbeddedChart();
-            setTimeout(() => {
-              if (!isAnswering) return;
+            scheduleAnswerTask(() => {
               if (!revealedBlocks.has(1)) {
                 revealedBlocks.add(1);
                 revealAttributionBlock(1);
               }
-              setTimeout(typeNext, 520);
+              scheduleAnswerTask(typeNext, 520);
             }, 320);
           }, 160);
           return;
         }
 
-        setTimeout(typeNext, 80);
+        scheduleAnswerTask(typeNext, 80);
       });
     };
 
     if (!revealedBlocks.has(task.block)) {
       revealedBlocks.add(task.block);
       revealAttributionBlock(task.block);
-      setTimeout(startTyping, 280);
+      scheduleAnswerTask(startTyping, 280);
       return;
     }
 
@@ -4206,7 +4606,7 @@ function startAttributionReportSimulation() {
   }
   attributionResult?.classList.remove("hidden");
   scrollToAnswerBottom();
-  setTimeout(startAttributionReportTypewriter, 240);
+  scheduleAnswerTask(startAttributionReportTypewriter, 240);
 }
 
 function revealTrendBlock(index) {
@@ -4442,8 +4842,7 @@ function startTrendReportTypewriter() {
   const typeNext = () => {
     if (!isAnswering) return;
     if (taskIndex >= tasks.length) {
-      setTimeout(() => {
-        if (!isAnswering) return;
+      scheduleAnswerTask(() => {
         revealTrendFooter();
         finishAnswerSimulation();
       }, 240);
@@ -4465,29 +4864,27 @@ function startTrendReportTypewriter() {
         taskIndex += 1;
 
         if (finishedTask.embedChart) {
-          setTimeout(() => {
-            if (!isAnswering) return;
+          scheduleAnswerTask(() => {
             revealTrendEmbeddedChart();
-            setTimeout(() => {
-              if (!isAnswering) return;
+            scheduleAnswerTask(() => {
               if (!revealedBlocks.has(1)) {
                 revealedBlocks.add(1);
                 revealTrendBlock(1);
               }
-              setTimeout(typeNext, 460);
+              scheduleAnswerTask(typeNext, 460);
             }, 320);
           }, 160);
           return;
         }
 
-        setTimeout(typeNext, 80);
+        scheduleAnswerTask(typeNext, 80);
       });
     };
 
     if (!revealedBlocks.has(task.block)) {
       revealedBlocks.add(task.block);
       revealTrendBlock(task.block);
-      setTimeout(startTyping, 280);
+      scheduleAnswerTask(startTyping, 280);
       return;
     }
 
@@ -4515,7 +4912,7 @@ function startTrendReportSimulation() {
   }
   trendResult?.classList.remove("hidden");
   scrollToAnswerBottom();
-  setTimeout(startTrendReportTypewriter, 240);
+  scheduleAnswerTask(startTrendReportTypewriter, 240);
 }
 
 // ==================== 对比分析 (Comparison) ====================
@@ -4729,8 +5126,7 @@ function startComparisonReportTypewriter() {
   const typeNext = () => {
     if (!isAnswering) return;
     if (taskIndex >= tasks.length) {
-      setTimeout(() => {
-        if (!isAnswering) return;
+      scheduleAnswerTask(() => {
         revealComparisonFooter();
         finishAnswerSimulation();
       }, 240);
@@ -4752,35 +5148,33 @@ function startComparisonReportTypewriter() {
         taskIndex += 1;
 
         if (finishedTask.embedChart) {
-          setTimeout(() => {
-            if (!isAnswering) return;
+          scheduleAnswerTask(() => {
             // 先显示对比表格区块（block 1），让用户看到数据
             if (!revealedBlocks.has(1)) {
               revealedBlocks.add(1);
               revealComparisonBlock(1);
             }
-            setTimeout(() => {
-              if (!isAnswering) return;
+            scheduleAnswerTask(() => {
               // 再展示对比图表区块（block 2）
               if (!revealedBlocks.has(2)) {
                 revealedBlocks.add(2);
                 revealComparisonBlock(2);
               }
               revealComparisonEmbeddedChart();
-              setTimeout(typeNext, 480);
+              scheduleAnswerTask(typeNext, 480);
             }, 360);
           }, 200);
           return;
         }
 
-        setTimeout(typeNext, 80);
+        scheduleAnswerTask(typeNext, 80);
       });
     };
 
     if (!revealedBlocks.has(task.block)) {
       revealedBlocks.add(task.block);
       revealComparisonBlock(task.block);
-      setTimeout(startTyping, 280);
+      scheduleAnswerTask(startTyping, 280);
       return;
     }
 
@@ -4808,7 +5202,7 @@ function startComparisonReportSimulation() {
   }
   comparisonResult?.classList.remove("hidden");
   scrollToAnswerBottom();
-  setTimeout(startComparisonReportTypewriter, 240);
+  scheduleAnswerTask(startComparisonReportTypewriter, 240);
 }
 
 // ==================== 模板分析 (Template) ====================
@@ -4857,8 +5251,7 @@ function startTemplateReportTypewriter() {
   const typeNext = () => {
     if (!isAnswering) return;
     if (taskIndex >= tasks.length) {
-      setTimeout(() => {
-        if (!isAnswering) return;
+      scheduleAnswerTask(() => {
         // 摘要后还要展示完成情况、区域贡献两个静态块
         if (!revealedBlocks.has(2)) {
           revealedBlocks.add(2);
@@ -4868,8 +5261,7 @@ function startTemplateReportTypewriter() {
           revealedBlocks.add(3);
           revealTemplateBlock(3);
         }
-        setTimeout(() => {
-          if (!isAnswering) return;
+        scheduleAnswerTask(() => {
           revealTemplateFooter();
           finishAnswerSimulation();
         }, 320);
@@ -4896,25 +5288,24 @@ function startTemplateReportTypewriter() {
             revealedBlocks.add(2);
             revealTemplateBlock(2);
           }
-          setTimeout(() => {
-            if (!isAnswering) return;
+          scheduleAnswerTask(() => {
             if (!revealedBlocks.has(3)) {
               revealedBlocks.add(3);
               revealTemplateBlock(3);
             }
-            setTimeout(typeNext, 360);
+            scheduleAnswerTask(typeNext, 360);
           }, 360);
           return;
         }
 
-        setTimeout(typeNext, 80);
+        scheduleAnswerTask(typeNext, 80);
       });
     };
 
     if (!revealedBlocks.has(task.block)) {
       revealedBlocks.add(task.block);
       revealTemplateBlock(task.block);
-      setTimeout(startTyping, 280);
+      scheduleAnswerTask(startTyping, 280);
       return;
     }
 
@@ -4946,7 +5337,7 @@ function startTemplateReportSimulation() {
   comparisonResult?.classList.add("hidden");
   templateResult?.classList.remove("hidden");
   scrollToAnswerBottom();
-  setTimeout(startTemplateReportTypewriter, 240);
+  scheduleAnswerTask(startTemplateReportTypewriter, 240);
 }
 
 function copyAnswerContent() {
@@ -4985,33 +5376,47 @@ function copyAnswerContent() {
     showToast("当前无可复制内容");
     return;
   }
-  if (navigator.clipboard?.writeText) {
-    navigator.clipboard.writeText(text)
-      .then(() => showToast("已复制回答内容"))
-      .catch(() => fallbackCopyText(text));
-    return;
-  }
-  fallbackCopyText(text);
+  copyChatText(text, "已复制回答内容");
 }
 
-function fallbackCopyText(text) {
+function copyChatText(text, successMessage) {
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text)
+      .then(() => showToast(successMessage))
+      .catch(() => fallbackCopyText(text, successMessage));
+    return;
+  }
+  fallbackCopyText(text, successMessage);
+}
+
+function fallbackCopyText(text, successMessage) {
   const textarea = document.createElement("textarea");
   textarea.value = text;
   textarea.style.position = "fixed";
   textarea.style.opacity = "0";
   document.body.appendChild(textarea);
   textarea.select();
-  const copied = document.execCommand("copy");
+  let copied = false;
+  try {
+    copied = document.execCommand("copy");
+  } catch {}
   textarea.remove();
-  showToast(copied ? "已复制回答内容" : "复制失败，请手动复制");
+  showToast(copied ? successMessage : "复制失败，请手动复制");
 }
 
 function regenerateAnswer() {
+  if (isAnswering || replayingHistory) return;
+  const turn = questionTurns.get(currentChatMessage);
+  if (turn?.skillRun) activeSkillRun = turn.skillRun;
   showToast("正在重新生成回答");
   startAnswerSimulation({
     mode: currentAnswerMode,
     questionText: currentQuestionText,
-    answerTitle: currentAnswerTitle
+    sentAt: turn?.sentAt,
+    answerTitle: currentAnswerTitle,
+    context: turn?.context,
+    guides: turn?.guides,
+    salesScope: turn?.salesScope
   });
 }
 
@@ -5026,6 +5431,7 @@ function setAnswerVote(vote) {
 }
 
 function startDataInterpretation() {
+  if (isAnswering || replayingHistory) return;
   archiveCurrentMessageIfNeeded();
   const baseTitle = resultTitle?.textContent?.trim() || currentAnswerTitle;
   currentQuestionText = `${baseTitle}-数据解读`;
@@ -5041,17 +5447,20 @@ function startDataInterpretation() {
 function archiveCurrentMessageIfNeeded() {
   if (!answerBlock || answerBlock.classList.contains("hidden")) return;
   if (!conversationHistory) return;
-  const currentMessage = answerBlock.querySelector(".current-chat-message");
-  const questionText = userQuestionBubble?.textContent?.trim();
-  if (!currentMessage || !questionText) return;
+  const currentMessage = currentChatMessage;
+  const turn = questionTurns.get(currentMessage);
+  if (!turn) return;
+  closeQuestionEditor();
 
   const sourceBoardDraftCanvases = Array.from(currentMessage.querySelectorAll(".board-draft-section:not(.hidden) canvas"));
-  const canArchiveQueryBoard = Object.prototype.hasOwnProperty.call(QUERY_BOARD_MODE_LABELS, currentAnswerMode)
+  const canArchiveQueryBoard = !turn.stopped
+    && Object.prototype.hasOwnProperty.call(QUERY_BOARD_MODE_LABELS, currentAnswerMode)
     && boardDraftResult?.classList.contains("hidden");
   const queryBoardData = canArchiveQueryBoard ? getCurrentQueryBoardData(getCurrentResultTitle()) : null;
   const archived = currentMessage.cloneNode(true);
   archived.classList.remove("current-chat-message");
   archived.classList.add("archived-message");
+  questionTurns.set(archived, turn);
   if (activeReferenceRun?.result?.reportDraft && activeReferenceRun.result.pendingSave) {
     const save = archived.querySelector('[onclick^="saveReferenceChanges"]');
     if (save) { save.disabled = true; save.removeAttribute("onclick"); save.querySelector("span").textContent = "请保存最新草稿"; }
@@ -6545,6 +6954,8 @@ function startTrendAnalysis() {
     showToast("当前正在生成回答，稍后再试");
     return;
   }
+  if (replayingHistory) return;
+  closeQuestionEditor();
   archiveCurrentMessageIfNeeded();
   const baseTitle = resultTitle?.textContent?.trim() || currentAnswerTitle || "当前问题";
   currentQuestionText = `基于"${baseTitle}"预测未来3个月的销售趋势`;
@@ -6566,9 +6977,8 @@ if (questionInput) {
     if (event.isComposing || event.keyCode === 229) return;
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      if (isAnswering) return;
       suggestPop?.classList.add("hidden");
-      runQuestion();
+      handleSendClick();
     }
   });
 }
@@ -7310,16 +7720,7 @@ function findScheduledSkillKey(payload) {
 }
 
 function prependScheduledHistory(payload) {
-  const historyList = document.getElementById("historyList");
-  if (!historyList) return;
-  historyList.querySelectorAll(".history-item").forEach((item) => item.classList.remove("active"));
-  const item = document.createElement("div");
-  item.className = "history-item active";
-  item.innerHTML = `<strong title="${escapeHtml(payload.name || "定时任务会话")}">${escapeHtml(payload.name || "定时任务会话")}</strong><span><em>${payload.mode === "trial" ? "定时任务试运行" : "定时任务执行"}</em><em>刚刚</em></span>`;
-  const firstGroup = historyList.querySelector(".group-title");
-  if (firstGroup) firstGroup.insertAdjacentElement("afterend", item);
-  else historyList.prepend(item);
-  filterSideHistory();
+  createConversationItem(payload.name || "定时任务会话", payload.mode === "trial" ? "定时任务试运行" : "定时任务执行");
 }
 
 function insertScheduledConversationContext(payload) {
@@ -7413,7 +7814,7 @@ function completeScheduledTrialRecord(payload) {
   handleQuestionInput();
   prependScheduledHistory(payload);
   window.setTimeout(() => {
-    runQuestion();
+    runQuestion(null, { thinkingDuration: 3000 });
     insertScheduledConversationContext(payload);
     completeScheduledTrialRecord(payload);
     showToast(payload.mode === "trial" ? "已创建独立会话并开始试运行" : "已打开定时任务执行会话");

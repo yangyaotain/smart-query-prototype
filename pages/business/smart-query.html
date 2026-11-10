@@ -8,6 +8,73 @@
   <link rel="stylesheet" href="../../assets/css/business.css?v=20261110-keyword-highlight" />
   <link rel="stylesheet" href="../../assets/css/skill-picker.css?v=20260914-skill-copy" />
   <link rel="stylesheet" href="../../assets/css/scheduled-tasks.css?v=20260914-skill-copy" />
+  <style>
+    .question-stack { min-width: 0; max-width: 70%; }
+    .question-stack .bubble { max-width: none; overflow-wrap: anywhere; }
+    .question-text, .question-guide { white-space: pre-wrap; }
+    .question-actions, .question-edit-actions, .query-send-controls {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .question-actions { gap: 2px; margin-top: 4px; }
+    .question-actions .answer-action-btn:disabled { opacity: calc(var(--question-icon-opacity, 1) * .5); }
+    @media (hover: hover) {
+      .question-actions { --question-icon-opacity: 0; }
+      .question-actions .answer-action-btn { opacity: var(--question-icon-opacity); transition: opacity 0.15s ease; }
+      .question-stack:hover .question-actions, .question-stack:focus-within .question-actions { --question-icon-opacity: 1; }
+    }
+    .archived-message .question-stack { pointer-events: auto; }
+    .question-guides { display: grid; justify-items: end; gap: 6px; margin-top: 8px; }
+    .question-guide-entry { display: grid; justify-items: end; gap: 4px; min-width: 0; max-width: 100%; }
+    .question-guide-entry .bubble { max-width: 100%; }
+    .message-time {
+      margin-right: 4px;
+      color: var(--muted);
+      font-size: var(--font-size-secondary);
+      font-variant-numeric: tabular-nums;
+      line-height: 1.5;
+    }
+    .question-stack:has(.question-edit) { width: min(100%, 520px); }
+    .question-edit {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid var(--primary-border);
+      border-radius: 12px;
+      background: #fff;
+    }
+    .question-edit textarea {
+      width: 100%;
+      min-height: 74px;
+      padding: 8px 10px;
+      resize: vertical;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font: inherit;
+      font-size: 14px;
+      line-height: 1.65;
+      color: var(--heading);
+    }
+    .question-edit textarea:focus { outline: 1px solid var(--primary); border-color: var(--primary); }
+    .question-edit-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: var(--font-size-secondary);
+      line-height: 1.55;
+    }
+    .query-send-controls { flex-wrap: nowrap; }
+    .send-btn.query-stop-btn {
+      color: var(--primary-dark);
+      background: #fff;
+      border: 1px solid var(--primary-border);
+      box-shadow: none;
+    }
+    .send-btn.query-stop-btn:hover { background: var(--primary-hover-bg); }
+    .query-send-controls button:disabled, .question-actions button:disabled { opacity: .5; cursor: default; }
+  </style>
 </head>
 <body>
   <header class="topbar">
@@ -48,6 +115,10 @@
         <div class="history-item active pinned" onclick="loadHistoryScenario('normal', this)" oncontextmenu="openSideMenu(event, 'history')">
           <strong title="近6个月华东区销售额趋势如何？">近6个月华东区销售额趋势如何？</strong>
           <span><em>普通问数</em><em>置顶 · 08:40</em></span>
+        </div>
+        <div class="history-item" onclick="loadHistoryScenario('guidedSales', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="华东区销售额：连续引导与纠正">华东区销售额：连续引导与纠正</strong>
+          <span><em>思考中引导</em><em>08:38</em></span>
         </div>
         <div class="history-item" onclick="loadHistoryScenario('free', this)" oncontextmenu="openSideMenu(event, 'history')">
           <strong title="再按城市拆分看看">再按城市拆分看看</strong>
@@ -153,7 +224,19 @@
           <div id="conversationHistory" class="conversation-history"></div>
           <div class="chat-message current-chat-message">
             <div class="user-bubble">
-              <div id="userQuestionBubble" class="bubble user">近6个月华东区销售额趋势如何？</div>
+              <div class="question-stack">
+                <div id="userQuestionBubble" class="bubble user"><div class="question-text">近6个月华东区销售额趋势如何？</div></div>
+                <div class="question-actions">
+                  <time class="message-time hidden"></time>
+                  <button class="answer-action-btn" type="button" data-question-action="copy" data-tip="复制问题" aria-label="复制问题">
+                    <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+                  </button>
+                  <button class="answer-action-btn" type="button" data-question-action="edit" data-tip="编辑问题" aria-label="编辑问题">
+                    <svg class="action-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6 4 4M4 20l4.5-1L20 7.5 16.5 4 5 15.5 4 20Z"/></svg>
+                  </button>
+                </div>
+                <div class="question-guides hidden" aria-live="polite"></div>
+              </div>
               <div class="avatar">张</div>
             </div>
 
@@ -1206,8 +1289,8 @@
                 role="textbox"
                 aria-multiline="true"
                 aria-label="请输入业务问题"
-                aria-placeholder="请输入你想了解的业务问题，例如：近6个月华东区销售额趋势如何？"
-                data-placeholder="请输入你想了解的业务问题，例如：近6个月华东区销售额趋势如何？"
+                aria-placeholder="请输入你想了解的业务问题"
+                data-placeholder="请输入你想了解的业务问题"
                 data-empty="true"
                 spellcheck="true"
               ></div>
@@ -1246,14 +1329,14 @@
               </button>
             </div>
           </div>
-          <button id="sendBtn" class="send-btn" type="button" onclick="handleSendClick()" aria-label="发送">
-            <svg class="send-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4.5 19.2L20.2 4.8M20.2 4.8L14.8 20.4L11.4 13.1L4.5 9.8L20.2 4.8Z" />
-            </svg>
-            <svg class="stop-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <rect x="6.5" y="6.5" width="11" height="11" rx="2.2" fill="currentColor" stroke="none"></rect>
-            </svg>
-          </button>
+          <div class="query-send-controls">
+            <button id="stopQueryBtn" class="send-btn query-stop-btn hidden" type="button" onclick="stopAnswerSimulation()" aria-label="停止生成" title="停止生成">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="2.2" fill="currentColor" stroke="none"/></svg>
+            </button>
+            <button id="sendBtn" class="send-btn" type="button" onclick="handleSendClick()" aria-label="发送">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.2L20.2 4.8M20.2 4.8L14.8 20.4L11.4 13.1L4.5 9.8L20.2 4.8Z"/></svg>
+            </button>
+          </div>
         </div>
         <input id="imageUploadInput" type="file" accept="image/*" hidden />
         <input id="fileUploadInput" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" hidden />
@@ -1631,6 +1714,22 @@
   <script src="../../assets/js/skill-picker.js?v=20260914-skill-copy"></script>
   <script src="../../assets/js/scheduled-task-form.js?v=20260914-skill-copy"></script>
   <script src="../../assets/js/report-reference.js?v=20261109-ppt-report"></script>
-  <script src="../../assets/js/smart-query.js?v=20261110-keyword-highlight"></script>
+  <template id="questionEditTemplate">
+    <form class="question-edit">
+      <textarea aria-label="编辑问题" required></textarea>
+      <p class="question-edit-note hidden">重新发送后将从此处开启新对话，原对话会保留。</p>
+      <div class="question-edit-actions">
+        <button class="action-dropdown-btn" type="button" data-question-action="cancel">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+          <span>取消</span>
+        </button>
+        <button class="action-dropdown-btn primary" type="submit">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11a8 8 0 1 1 2 6M4 5v6h6"/></svg>
+          <span>重新发送</span>
+        </button>
+      </div>
+    </form>
+  </template>
+  <script src="../../assets/js/smart-query.js?v=20261110-message-time"></script>
 </body>
 </html>
