@@ -16,6 +16,10 @@
 - 功能按钮使用图标+文字；示例数据要贴合智能问数、数据源、分析主题、报告、看板、知识库等业务语境。
 - 用户说“先分析”“先看看理解”时，不写文件；用户限定范围时，不扩展新功能。
 
+TB 需求录入：
+- 对应 TB 项目为「AI Agent开发」，从[需求列表](https://tb.aotain.com:1443/project/69dc405148b05f55c624b13c/story/section/all)录入。
+- 默认在「需求」列表新建独立需求。仅在用户明确指定父项时创建为子任务。
+
 提交和部署：
 - 本项目有 `deploy-update.cmd` 和 `setup-codex-git-token.cmd`，用户要求“提交 git / 部署更新”时优先使用全局 `git-deploy-update` 技能和本项目脚本。
 - 如果根目录 `.git` 无法写入，不要反复直接 `git add`，走 `.codex-submit-test/publish-worktree` 或 `deploy-update.cmd`。

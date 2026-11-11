@@ -3,6 +3,9 @@ const answerBlock = document.getElementById("answerBlock");
 const conversationHistory = document.getElementById("conversationHistory");
 const mainPanel = document.getElementById("mainPanel");
 const questionInput = document.getElementById("questionInput");
+let questionEditorSelection = null;
+let questionEditorRevision = 0;
+let insertingQuestionContext = false;
 const suggestPop = document.getElementById("suggestPop");
 const userQuestionBubble = document.getElementById("userQuestionBubble");
 const thinkingBox = document.getElementById("thinkingBox");
@@ -83,15 +86,6 @@ const referencePickerSearch = document.getElementById("referencePickerSearch");
 const referencePickerTree = document.getElementById("referencePickerTree");
 const referencePickerEmpty = document.getElementById("referencePickerEmpty");
 const referenceSelectedCount = document.getElementById("referenceSelectedCount");
-const themeName = document.getElementById("themeName");
-const themeDesc = document.getElementById("themeDesc");
-const themeBadge = document.getElementById("themeBadge");
-const themeIndicatorCount = document.getElementById("themeIndicatorCount");
-const themeIndicatorList = document.getElementById("themeIndicatorList");
-const themeSummaryCard = document.getElementById("themeSummaryCard");
-const themeIndicatorSearchBox = document.getElementById("themeIndicatorSearchBox");
-const themeIndicatorSearchInput = document.getElementById("themeIndicatorSearchInput");
-const themeIndicatorSearchClear = document.getElementById("themeIndicatorSearchClear");
 const themeSelectDropdown = document.getElementById("themeSelectDropdown");
 const themeSelectTrigger = document.getElementById("themeSelectTrigger");
 const themeSelectText = document.getElementById("themeSelectText");
@@ -488,154 +482,8 @@ const themeDescMap = {
   "经营概览": "整合销售、客户、库存和财务指标，形成经营全景与关键风险预警。"
 };
 
-const themeIndicatorMap = {
-  "销售分析": [
-    { name: "销售额", synonyms: "销售收入、GMV、成交金额", desc: "统计指定时间范围内的销售收入表现，用于分析销售规模和趋势。" },
-    { name: "订单量", synonyms: "订单数、成交单量、交易笔数", desc: "统计订单成交数量，用于判断业务活跃度和销售规模。" },
-    { name: "成交客户数", synonyms: "购买客户、下单客户、成交人数", desc: "统计产生实际成交的客户数量，用于衡量客户转化效果。" },
-    { name: "客单价", synonyms: "平均订单金额、人均消费", desc: "衡量单笔订单的平均价值，用于分析价格带和客户消费能力。" },
-    { name: "渠道转化率", synonyms: "转化率、渠道成交率", desc: "统计各销售渠道从访问到成交的转化表现，用于评估渠道效率。" },
-    { name: "区域销售额", synonyms: "区域收入、地区GMV", desc: "按区域统计销售收入，用于对比不同区域的业绩贡献。" },
-    { name: "商品销售额", synonyms: "商品收入、产品销售额", desc: "统计商品维度的销售收入，用于识别重点商品和热销品类。" },
-    { name: "销售件数", synonyms: "销量、销售数量、售出件数", desc: "统计商品售出数量，用于判断商品动销情况和需求变化。" },
-    { name: "毛利额", synonyms: "毛利、销售毛利、利润贡献", desc: "统计销售产生的毛利贡献，用于分析经营质量和利润空间。" },
-    { name: "新增客户数", synonyms: "新客数、首次成交客户", desc: "统计首次产生交易的客户数量，用于观察拉新效果。" },
-    { name: "复购率", synonyms: "重复购买率、回购率", desc: "衡量客户重复购买情况，用于评估客户留存和忠诚度。" }
-  ],
-  "客户分析": [
-    { name: "新增客户数", synonyms: "新客数、首次成交客户", desc: "统计首次产生交易的客户数量，用于观察拉新效果。" },
-    { name: "成交客户数", synonyms: "购买客户、下单客户、成交人数", desc: "统计产生实际成交的客户数量，用于衡量客户转化效果。" },
-    { name: "复购率", synonyms: "重复购买率、回购率", desc: "衡量客户重复购买情况，用于评估客户留存和忠诚度。" },
-    { name: "客户流失率", synonyms: "流失率、客户减少率", desc: "统计客户流失占比，用于识别客户关系风险。" },
-    { name: "客户生命周期价值", synonyms: "客户价值、LTV", desc: "衡量客户在生命周期内创造的综合价值。" },
-    { name: "高价值客户数", synonyms: "重点客户、核心客户", desc: "统计达到高价值标准的客户数量，用于支持重点客户运营。" }
-  ],
-  "库存分析": [
-    { name: "库存金额", synonyms: "库存价值、在库金额", desc: "统计当前库存占用金额，用于分析库存资金压力。" },
-    { name: "库存周转天数", synonyms: "周转天数、存货周转周期", desc: "衡量库存从入库到销售的周转效率，用于识别库存积压。" },
-    { name: "滞销商品数", synonyms: "滞销品、慢动销商品", desc: "统计销售缓慢的商品数量，用于发现清理和促销对象。" },
-    { name: "缺货风险商品数", synonyms: "缺货预警、断货风险", desc: "统计存在缺货风险的商品数量，用于辅助补货决策。" },
-    { name: "安全库存达成率", synonyms: "安全库存率、库存保障率", desc: "衡量库存是否满足安全库存要求，用于判断供应保障能力。" }
-  ],
-  "财务分析": [
-    { name: "收入", synonyms: "营业收入、业务收入", desc: "统计企业经营收入，用于观察整体经营规模。" },
-    { name: "毛利率", synonyms: "销售毛利率、利润率", desc: "衡量销售收入中的毛利占比，用于分析盈利质量。" },
-    { name: "费用率", synonyms: "费用占比、经营费用率", desc: "衡量费用相对收入的占比，用于评估费用控制水平。" },
-    { name: "利润额", synonyms: "利润、净收益", desc: "统计经营利润结果，用于衡量业务盈利贡献。" },
-    { name: "预算完成率", synonyms: "预算达成率、预算执行率", desc: "衡量实际结果与预算目标的完成情况，用于跟踪经营计划。" }
-  ],
-  "经营概览": [
-    { name: "销售额", synonyms: "销售收入、GMV、成交金额", desc: "统计指定时间范围内的销售收入表现，用于分析销售规模和趋势。" },
-    { name: "订单量", synonyms: "订单数、成交单量、交易笔数", desc: "统计订单成交数量，用于判断业务活跃度和销售规模。" },
-    { name: "成交客户数", synonyms: "购买客户、下单客户、成交人数", desc: "统计产生实际成交的客户数量，用于衡量客户转化效果。" },
-    { name: "库存金额", synonyms: "库存价值、在库金额", desc: "统计当前库存占用金额，用于分析库存资金压力。" },
-    { name: "毛利率", synonyms: "销售毛利率、利润率", desc: "衡量销售收入中的毛利占比，用于分析盈利质量。" },
-    { name: "预算完成率", synonyms: "预算达成率、预算执行率", desc: "衡量实际结果与预算目标的完成情况，用于跟踪经营计划。" }
-  ]
-};
-
-const indicatorMetaMap = {
-  "销售额": {
-    dimensions: ["时间", "区域", "渠道", "产品线"],
-    example: "示例：近6个月华东区销售额趋势如何？"
-  },
-  "订单量": {
-    dimensions: ["时间", "区域", "渠道", "订单状态"],
-    example: "示例：本月各渠道订单量对比。"
-  },
-  "成交客户数": {
-    dimensions: ["时间", "区域", "客户类型", "渠道"],
-    example: "示例：本季度华南区成交客户数环比变化。"
-  },
-  "客单价": {
-    dimensions: ["时间", "区域", "渠道", "客户等级"],
-    example: "示例：近一年华东区客单价变化。"
-  },
-  "渠道转化率": {
-    dimensions: ["时间", "渠道", "活动", "客户来源"],
-    example: "示例：本月各渠道订单转化率对比。"
-  },
-  "区域销售额": {
-    dimensions: ["时间", "区域", "城市", "销售部门"],
-    example: "示例：本季度各区域销售业绩对比。"
-  },
-  "商品销售额": {
-    dimensions: ["时间", "产品线", "商品", "品牌"],
-    example: "示例：各产品线销售贡献占比如何？"
-  },
-  "销售件数": {
-    dimensions: ["时间", "产品线", "商品", "渠道"],
-    example: "示例：本月热销商品销售件数 TOP10。"
-  },
-  "毛利额": {
-    dimensions: ["时间", "区域", "产品线", "渠道"],
-    example: "示例：本月各产品线毛利额贡献。"
-  },
-  "新增客户数": {
-    dimensions: ["时间", "区域", "渠道", "客户来源"],
-    example: "示例：上月新增客户数量及来源分布。"
-  },
-  "复购率": {
-    dimensions: ["时间", "区域", "客户等级", "产品线"],
-    example: "示例：近3个月新客复购率趋势。"
-  },
-  "客户流失率": {
-    dimensions: ["时间", "区域", "客户等级", "行业"],
-    example: "示例：华南区客户流失率下降原因。"
-  },
-  "客户生命周期价值": {
-    dimensions: ["时间", "客户等级", "渠道", "行业"],
-    example: "示例：高价值客户生命周期价值分布。"
-  },
-  "高价值客户数": {
-    dimensions: ["时间", "区域", "客户等级", "销售部门"],
-    example: "示例：本月高价值客户数按区域分布。"
-  },
-  "库存金额": {
-    dimensions: ["时间", "仓库", "产品线", "商品"],
-    example: "示例：本月各仓库库存金额占比。"
-  },
-  "库存周转天数": {
-    dimensions: ["时间", "仓库", "产品线", "商品"],
-    example: "示例：哪些产品库存周转偏慢？"
-  },
-  "滞销商品数": {
-    dimensions: ["时间", "仓库", "品类", "商品"],
-    example: "示例：本月滞销商品数按品类分布。"
-  },
-  "缺货风险商品数": {
-    dimensions: ["时间", "仓库", "品类", "供应商"],
-    example: "示例：未来7天缺货风险商品有哪些？"
-  },
-  "安全库存达成率": {
-    dimensions: ["时间", "仓库", "品类", "供应商"],
-    example: "示例：各仓库安全库存达成率对比。"
-  },
-  "收入": {
-    dimensions: ["时间", "业务线", "区域", "收入类型"],
-    example: "示例：本季度各业务线收入结构。"
-  },
-  "毛利率": {
-    dimensions: ["时间", "业务线", "产品线", "渠道"],
-    example: "示例：近30天销售毛利率变化。"
-  },
-  "费用率": {
-    dimensions: ["时间", "部门", "费用类型", "项目"],
-    example: "示例：本月各部门费用率对比。"
-  },
-  "利润额": {
-    dimensions: ["时间", "业务线", "区域", "产品线"],
-    example: "示例：本季度区域利润额贡献排名。"
-  },
-  "预算完成率": {
-    dimensions: ["时间", "部门", "业务线", "预算科目"],
-    example: "示例：今年累计销售预算完成进度。"
-  }
-};
-
 const themeOptionNames = Object.keys(themeDescMap);
 const selectedThemes = new Set(["销售分析"]);
-let themeIndicatorKeyword = "";
 
 const qaThinkingSteps = [
   ["识别业务意图", "识别问题类型、业务对象和时间范围。"],
@@ -1550,6 +1398,14 @@ function syncQuestionEditorEmptyState() {
 
 function setQuestionEditorContent(text, options = {}) {
   if (!questionInput) return;
+  questionEditorSelection = null;
+  questionEditorRevision += 1;
+  // 清除将被重建的原生选区，避免 blur 把浏览器回退到开头的旧位置重新保存。
+  const selection = window.getSelection();
+  if (selection?.rangeCount) {
+    const range = selection.getRangeAt(0);
+    if (questionInput.contains(range.startContainer) || questionInput.contains(range.endContainer)) selection.removeAllRanges();
+  }
   const withHints = options.withHints === true;
   questionInput.replaceChildren();
   if (selectedSkillKey !== "general" && !pendingFollowupContext) {
@@ -1595,6 +1451,63 @@ function placeQuestionCaretAtEnd() {
   selection?.addRange(range);
 }
 
+// 只保存编辑区内部的选区，右侧目录与搜索框的选区不能覆盖此记录。
+function rememberQuestionSelection() {
+  const selection = window.getSelection();
+  if (!questionInput || !selection?.rangeCount) return;
+  const range = selection.getRangeAt(0);
+  if (questionInput.contains(range.startContainer) && questionInput.contains(range.endContainer)) {
+    questionEditorSelection = range.cloneRange();
+  }
+}
+
+function captureQuestionInsertTarget() {
+  if (document.activeElement === questionInput) rememberQuestionSelection();
+  suggestPop?.classList.add("hidden");
+  return { range: questionEditorSelection?.cloneRange() || null, revision: questionEditorRevision };
+}
+
+function insertQuestionAtCaret(text, target = captureQuestionInsertTarget()) {
+  if (!questionInput || !text) return;
+  const saved = target?.revision === questionEditorRevision ? target.range : null;
+  let range;
+  if (saved && questionInput.contains(saved.startContainer) && questionInput.contains(saved.endContainer)) {
+    range = saved.cloneRange();
+  } else {
+    range = document.createRange();
+    range.selectNodeContents(questionInput);
+    range.collapse(false);
+  }
+
+  // 技能标签位于正文之前，不作为可替换文字，也不允许在标签内部插入。
+  const skillTag = questionInput.querySelector("[data-skill-tag]");
+  if (skillTag) {
+    const textStart = document.createRange();
+    textStart.setStartAfter(skillTag);
+    textStart.collapse(true);
+    if (range.compareBoundaryPoints(Range.START_TO_START, textStart) < 0) range.setStartAfter(skillTag);
+  }
+
+  // 获取焦点和 input 都会刷新联想；此次插入期间仅同步编辑状态，避免弹层介入。
+  insertingQuestionContext = true;
+  try {
+    questionInput.focus({ preventScroll: true });
+    range.deleteContents();
+    const name = document.createTextNode(String(text));
+    range.insertNode(name);
+    range.setStartAfter(name);
+    range.collapse(true);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    questionInput.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: String(text) }));
+    rememberQuestionSelection();
+  } finally {
+    insertingQuestionContext = false;
+    suggestPop?.classList.add("hidden");
+  }
+}
+
 function fillQuestion(text) {
   if (!questionInput) return;
   setQuestionEditorContent(text);
@@ -1624,6 +1537,10 @@ function handleQuestionInput() {
   ensureSelectedSkillTag();
   syncQuestionEditorEmptyState();
   syncComposerSendButton();
+  if (insertingQuestionContext) {
+    suggestPop.classList.add("hidden");
+    return;
+  }
   if (isAnswering) {
     suggestPop.classList.add("hidden");
     return;
@@ -1719,19 +1636,6 @@ function getThemeSummary(themes) {
   return `${themes.slice(0, 2).join("、")}等${themes.length}个`;
 }
 
-function getThemeIndicators(themes) {
-  const seen = new Set();
-  const indicators = [];
-  themes.forEach((theme) => {
-    (themeIndicatorMap[theme] || []).forEach((item) => {
-      if (seen.has(item.name)) return;
-      seen.add(item.name);
-      indicators.push(item);
-    });
-  });
-  return indicators;
-}
-
 function renderThemeOptions() {
   if (!themeSelectOptions) return;
   const selected = getSelectedThemeList();
@@ -1746,77 +1650,12 @@ function renderThemeOptions() {
   }).join("");
 }
 
-function renderThemeIndicators(themes) {
-  if (!themeIndicatorList) return;
-  const themeList = Array.isArray(themes) ? themes : [themes || "销售分析"];
-  const indicators = getThemeIndicators(themeList);
-  const keyword = themeIndicatorKeyword.trim().toLowerCase();
-  const visibleIndicators = keyword
-    ? indicators.filter((item) => {
-        const searchableText = `${item.name || ""} ${item.synonyms || ""}`.toLowerCase();
-        return searchableText.includes(keyword);
-      })
-    : indicators;
-  if (themeIndicatorCount) {
-    themeIndicatorCount.textContent = `关联指标 ${indicators.length} 个`;
-  }
-  themeSummaryCard?.classList.toggle("hidden", Boolean(keyword));
-  themeIndicatorSearchBox?.classList.toggle("is-searching", Boolean(keyword));
-  themeIndicatorSearchClear?.classList.toggle("hidden", !themeIndicatorKeyword);
-  if (!visibleIndicators.length) {
-    themeIndicatorList.innerHTML = `
-      <div class="theme-indicator-empty" role="status">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 4 4"></path><path d="M8.5 8.5l4 4"></path><path d="m12.5 8.5-4 4"></path></svg>
-        <strong>未找到匹配指标</strong>
-        <span>请尝试其他指标名称或同义词</span>
-      </div>
-    `;
-    return;
-  }
-  themeIndicatorList.innerHTML = visibleIndicators.map((item) => `
-    <div class="theme-indicator-item">
-      <div class="theme-indicator-main">
-        <strong>${keywordHighlight.html(item.name, keyword)}</strong>
-        <span title="同义词：${escapeHtml(item.synonyms)}">同义词：${keywordHighlight.excerptHTML(item.synonyms, keyword, 28)}</span>
-      </div>
-      <p>${escapeHtml(item.desc)}</p>
-      ${renderIndicatorMeta(item)}
-    </div>
-  `).join("");
-}
-
-function renderIndicatorMeta(item) {
-  const meta = indicatorMetaMap[item.name] || {};
-  const dimensions = item.dimensions || meta.dimensions || [];
-  const example = item.example || meta.example || "";
-  const dimensionHtml = dimensions.length
-    ? `<div class="theme-indicator-dims" aria-label="${escapeHtml(item.name)}相关维度">
-        <span class="theme-indicator-dim-label">相关维度</span>
-        <div class="theme-indicator-dim-list">${dimensions.map((dim) => `<span>${escapeHtml(dim)}</span>`).join("")}</div>
-      </div>`
-    : "";
-  const exampleHtml = example
-    ? `<div class="theme-indicator-example">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg>
-        <span>${escapeHtml(example)}</span>
-      </div>`
-    : "";
-  return dimensionHtml + exampleHtml;
-}
-
 function syncThemeSelection() {
   const themes = getSelectedThemeList();
   const summary = getThemeSummary(themes);
   if (themeSelectText) themeSelectText.textContent = summary;
-  if (themeName) themeName.textContent = summary;
-  if (themeBadge) themeBadge.textContent = themes.length > 1 ? "当前选择" : "当前主题";
-  if (themeDesc) {
-    themeDesc.textContent = themes.length === 1
-      ? themeDescMap[themes[0]]
-      : `已选择${themes.length}个分析主题：${themes.join("、")}。系统将基于这些主题的指标范围进行问数匹配。`;
-  }
   renderThemeOptions();
-  renderThemeIndicators(themes);
+  window.SmartQueryContext?.render(themes);
 }
 
 function toggleThemeDropdown(event) {
@@ -1858,18 +1697,6 @@ window.toggleModelItem = toggleModelItem;
 window.handleThemeChange = handleThemeChange;
 window.toggleThemeDropdown = toggleThemeDropdown;
 window.toggleThemeOption = toggleThemeOption;
-
-themeIndicatorSearchInput?.addEventListener("input", () => {
-  themeIndicatorKeyword = themeIndicatorSearchInput.value || "";
-  renderThemeIndicators(getSelectedThemeList());
-});
-
-themeIndicatorSearchClear?.addEventListener("click", () => {
-  themeIndicatorKeyword = "";
-  themeIndicatorSearchInput.value = "";
-  renderThemeIndicators(getSelectedThemeList());
-  themeIndicatorSearchInput.focus();
-});
 
 syncThemeSelection();
 
@@ -7163,6 +6990,10 @@ function startTrendAnalysis() {
 }
 
 if (questionInput) {
+  document.addEventListener("selectionchange", () => {
+    if (document.activeElement === questionInput) rememberQuestionSelection();
+  });
+  questionInput.addEventListener("blur", rememberQuestionSelection);
   questionInput.addEventListener("input", handleQuestionInput);
   questionInput.addEventListener("focus", () => {
     if (readQuestionEditorText()) handleQuestionInput();
