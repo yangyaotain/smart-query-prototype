@@ -1,0 +1,73 @@
+/* 智能问数附件：输入区、消息区和历史记录复用同一预览入口。 */
+.question-attachments { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; min-width: 0; margin-bottom: 8px; }
+.question-attachments:empty { display: none; }
+.question-attachment { cursor: pointer; font: inherit; text-align: left; transition: border-color .15s, box-shadow .15s; }
+.question-attachment:hover { border-color: var(--focus-border); box-shadow: 0 3px 12px var(--primary-shadow-soft); }
+.question-attachment:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.question-image { width: 88px; height: 88px; padding: 4px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); overflow: hidden; }
+.question-image img { display: block; width: 100%; height: 100%; object-fit: contain; border-radius: 8px; }
+.question-file { display: flex; align-items: center; gap: 10px; width: 260px; max-width: 100%; min-height: 68px; padding: 10px 12px; border: 1px solid var(--primary-border-soft); border-radius: 12px; background: var(--primary-panel-bg); color: var(--text); }
+.question-file-copy { min-width: 0; display: grid; gap: 3px; }
+.question-file-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--font-size-body); font-weight: 600; color: var(--heading); }
+.question-file-copy small { font-size: var(--font-size-secondary); color: var(--muted); }
+.question-file-copy em { display: flex; align-items: center; gap: 4px; font-size: var(--font-size-secondary); color: var(--primary); font-style: normal; }
+.question-file-copy em svg { width: 13px; height: 13px; }
+.query-file-type { flex: none; width: 38px; height: 42px; display: grid; place-items: center; border-radius: 8px; font-size: var(--font-size-caption); font-weight: 700; background: var(--primary-soft); color: var(--primary); }
+.query-file-type.is-pdf { background: #fff0ee; color: #dc5547; }
+.query-file-type.is-ppt, .query-file-type.is-pptx { background: #fff2e8; color: #c86628; }
+.query-file-type.is-xlsx, .query-file-type.is-xls, .query-file-type.is-csv { background: #eaf6ef; color: #25875a; }
+.query-file-type.is-txt { background: #eef1f5; color: #64748b; }
+.attachment-chip:has(.question-attachment) { padding: 0 60px 0 0; max-width: min(320px, 100%); }
+.attachment-chip .question-file { width: 240px; border: 0; background: transparent; border-radius: 12px 0 0 12px; }
+.attachment-chip:has(.question-image) { background: var(--card); }
+.attachment-chip .question-image { border: 0; }
+.attachment-chip .attachment-remove { top: 6px; right: 6px; display: flex; align-items: center; justify-content: center; gap: 3px; width: 48px; height: 24px; border-radius: 6px; }
+.attachment-chip .attachment-remove svg { width: 10px; height: 10px; }
+.archived-message .question-attachments, .archived-message [data-attachment-id] { pointer-events: auto; }
+.comparison-upload-chip[data-attachment-id] { cursor: pointer; }
+.comparison-upload-chip[data-attachment-id]:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.attachment-preview-overlay { position: fixed; inset: 0; z-index: 1300; display: grid; place-items: center; padding: 28px; background: rgba(15, 23, 42, .68); }
+.attachment-preview-dialog { display: flex; flex-direction: column; width: min(1120px, 100%); height: min(860px, calc(100dvh - 56px)); min-width: 0; overflow: hidden; background: var(--card); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); }
+.attachment-preview-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+.attachment-preview-title { min-width: 0; flex: 1 1 220px; }
+.attachment-preview-title h3 { margin: 0 0 4px; font-size: 16px; color: var(--heading); overflow-wrap: anywhere; }
+.attachment-preview-title p { margin: 0; font-size: var(--font-size-secondary); color: var(--muted); }
+.attachment-preview-actions, .attachment-image-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.attachment-preview-dialog svg, .question-attachment svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.attachment-preview-content { flex: 1; min-height: 0; overflow: auto; background: var(--bg); }
+.attachment-preview-content.is-image { display: flex; }
+.attachment-image-stage { min-width: 100%; min-height: 100%; width: max-content; display: grid; place-items: center; padding: 24px; }
+.attachment-image-stage img { display: block; flex: none; max-width: none; object-fit: contain; box-shadow: var(--soft-shadow); background: #fff; }
+.attachment-image-tools { justify-content: center; padding: 10px 16px; border-top: 1px solid var(--border); }
+.attachment-image-tools output { min-width: 48px; text-align: center; font-size: var(--font-size-control); color: var(--muted); }
+.attachment-preview-dialog button:disabled { opacity: .45; cursor: default; }
+.attachment-pdf-frame { display: block; width: 100%; height: 100%; min-height: 300px; border: 0; background: #e5e7eb; }
+.attachment-preview-note { padding: 10px 20px; margin: 0; border-bottom: 1px solid var(--border); font-size: var(--font-size-secondary); color: var(--muted); background: var(--card); }
+.attachment-text { padding: 24px; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text); font: var(--font-size-body)/1.8 Consolas, "Microsoft YaHei", monospace; }
+.attachment-table-wrap { padding: 20px; }
+.attachment-table-wrap .data-table { width: 100%; background: var(--card); border-collapse: collapse; font-size: var(--font-size-body); }
+.attachment-table-wrap th, .attachment-table-wrap td { padding: 10px 14px; border: 1px solid var(--border); text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; min-width: 100px; max-width: 420px; }
+.attachment-table-wrap th { color: var(--heading); background: var(--primary-panel-bg); }
+.attachment-fallback { display: grid; justify-items: center; align-content: center; gap: 12px; min-height: 100%; padding: 36px; text-align: center; }
+.attachment-fallback h4 { margin: 0; font-size: 16px; color: var(--heading); }
+.attachment-fallback p { margin: 0; color: var(--muted); font-size: var(--font-size-body); line-height: 1.8; }
+.attachment-word-content { padding: 20px; }
+.attachment-word-content .docx-wrapper { padding: 0; background: transparent; }
+.attachment-word-content .docx-wrapper > section.docx { max-width: 100%; margin: 0 auto 20px; }
+.attachment-preview-summary { margin: 0; white-space: pre-line; font-size: var(--font-size-body); line-height: 1.9; color: var(--text); }
+.attachment-file-view { height: 100dvh; overflow: hidden; }
+.attachment-file-root { height: 100%; }
+.attachment-file-root .attachment-preview-dialog { width: 100%; height: 100%; border: 0; border-radius: 0; box-shadow: none; }
+.attachment-file-root .attachment-preview-content { overscroll-behavior: contain; }
+.attachment-file-root .attachment-text { width: min(960px, 100%); min-height: 100%; margin: 0 auto; background: var(--card); }
+.attachment-document-pages { padding: 24px; display: grid; justify-items: center; gap: 24px; }
+.attachment-document-pages figure { margin: 0; width: min(794px, 100%); }
+.attachment-document-pages.is-slides figure { width: min(1280px, 100%); }
+.attachment-document-pages img { display: block; width: 100%; height: auto; background: white; box-shadow: var(--soft-shadow); }
+.attachment-document-pages figcaption { padding: 10px; text-align: center; color: var(--muted); font-size: var(--font-size-secondary); }
+@media (max-width: 760px) {
+  .attachment-preview-overlay { padding: 12px; }
+  .attachment-preview-dialog { height: calc(100dvh - 24px); }
+  .attachment-preview-head { padding: 12px; }
+  .question-file { width: 230px; }
+}

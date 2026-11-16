@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>文件预览 - 智能问数</title>
+  <link rel="stylesheet" href="../../assets/css/theme.css?v=20261110-keyword-highlight" />
+  <link rel="stylesheet" href="../../assets/css/business.css?v=20261111-context-name-insert" />
+  <link rel="stylesheet" href="../../assets/css/query-attachments.css?v=20261116-file-page" />
+</head>
+<body data-attachment-file-page="true" class="attachment-file-view">
+  <main id="attachmentPreviewOverlay" class="attachment-file-root">
+    <div class="attachment-preview-dialog">
+      <header class="attachment-preview-head">
+        <div class="attachment-preview-title"><h3 id="attachmentPreviewName">正在打开文件…</h3><p id="attachmentPreviewMeta">智能问数 · 只读预览</p></div>
+        <div class="attachment-preview-actions">
+          <a class="action-dropdown-btn" href="smart-query.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6-6 6 6 6M4 12h16"/></svg><span>返回问数</span></a>
+          <button class="action-dropdown-btn" type="button" data-preview-action="download" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M5 16v5h14v-5"/></svg><span>下载文件</span></button>
+          <button class="action-dropdown-btn" type="button" data-preview-action="close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg><span>关闭页面</span></button>
+        </div>
+      </header>
+      <div id="attachmentPreviewContent" class="attachment-preview-content"><div class="attachment-fallback"><p role="status">正在加载文件内容…</p></div></div>
+    </div>
+  </main>
+  <script src="../../assets/js/common.js?v=20261110-keyword-highlight"></script>
+  <script src="../../assets/js/query-attachments.js?v=20261116-file-page"></script>
+</body>
+</html>

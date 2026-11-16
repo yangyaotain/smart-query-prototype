@@ -6,6 +6,7 @@
   <title>智能问数 - 业务端</title>
   <link rel="stylesheet" href="../../assets/css/theme.css?v=20261110-keyword-highlight" />
   <link rel="stylesheet" href="../../assets/css/business.css?v=20261111-context-name-insert" />
+  <link rel="stylesheet" href="../../assets/css/query-attachments.css?v=20261116-file-page" />
   <link rel="stylesheet" href="../../assets/css/skill-picker.css?v=20260914-skill-copy" />
   <link rel="stylesheet" href="../../assets/css/scheduled-tasks.css?v=20260914-skill-copy" />
   <style>
@@ -115,6 +116,22 @@
         <div class="history-item active pinned" onclick="loadHistoryScenario('normal', this)" oncontextmenu="openSideMenu(event, 'history')">
           <strong title="近6个月华东区销售额趋势如何？">近6个月华东区销售额趋势如何？</strong>
           <span><em>普通问数</em><em>置顶 · 08:40</em></span>
+        </div>
+        <div class="history-item" role="button" tabindex="0" data-attachment-history onclick="loadHistoryScenario('attachmentFormats', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="查看五种格式的经营资料附件">查看五种格式的经营资料附件</strong>
+          <span><em>PDF / Excel / Word / PPT / TXT</em><em>09:25</em></span>
+        </div>
+        <div class="history-item" role="button" tabindex="0" data-attachment-history onclick="loadHistoryScenario('attachmentImages', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="根据销售看板截图分析区域差异">根据销售看板截图分析区域差异</strong>
+          <span><em>图片分析 · 3 张图片</em><em>09:20</em></span>
+        </div>
+        <div class="history-item" role="button" tabindex="0" data-attachment-history onclick="loadHistoryScenario('attachmentPdf', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="解读二季度销售经营分析报告">解读二季度销售经营分析报告</strong>
+          <span><em>PDF 附件分析</em><em>09:15</em></span>
+        </div>
+        <div class="history-item" role="button" tabindex="0" data-attachment-history onclick="loadHistoryScenario('attachmentMixed', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="对比销售明细与经营报告">对比销售明细与经营报告</strong>
+          <span><em>Excel + PDF 核对</em><em>09:10</em></span>
         </div>
         <div class="history-item" id="salesConfirmationHistory" role="button" tabindex="0" onclick="loadHistoryScenario('salesConfirmation', this)" oncontextmenu="openSideMenu(event, 'history')">
           <strong title="华东区销售额趋势 · 口径确认">华东区销售额趋势 · 口径确认</strong>
@@ -683,7 +700,7 @@
                       <h4 id="comparisonReportTitle">对比分析报告</h4>
                       <div class="analysis-report-block" data-comparison-block="0">
                         <h5>一、对比分析概述</h5>
-                        <div class="comparison-upload-chip" aria-label="上传文件信息">
+                        <div class="comparison-upload-chip" role="button" tabindex="0" data-attachment-id="sample-comparison-xlsx" title="打开销售明细文件" aria-label="打开上传的销售明细文件">
                           <span class="comparison-upload-ic">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                               <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>
@@ -1390,8 +1407,8 @@
             </button>
           </div>
         </div>
-        <input id="imageUploadInput" type="file" accept="image/*" hidden />
-        <input id="fileUploadInput" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" hidden />
+        <input id="imageUploadInput" type="file" accept="image/*" multiple hidden />
+        <input id="fileUploadInput" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt" multiple hidden />
       </div>
     </section>
 
@@ -1623,6 +1640,28 @@
   </div>
   <div id="toast" class="toast hidden">操作成功</div>
 
+  <div id="attachmentPreviewOverlay" class="attachment-preview-overlay hidden">
+    <section class="attachment-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="attachmentPreviewName" aria-describedby="attachmentPreviewMeta">
+      <header class="attachment-preview-head">
+        <div class="attachment-preview-title"><h3 id="attachmentPreviewName">文件预览</h3><p id="attachmentPreviewMeta">只读预览</p></div>
+        <div class="attachment-preview-actions">
+          <button class="action-dropdown-btn" type="button" data-preview-action="download"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M5 16v5h14v-5"/></svg><span>下载文件</span></button>
+          <button class="action-dropdown-btn" type="button" data-preview-action="close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg><span>关闭</span></button>
+        </div>
+      </header>
+      <div id="attachmentPreviewContent" class="attachment-preview-content"></div>
+      <footer id="attachmentImageTools" class="attachment-image-tools hidden">
+        <button class="action-dropdown-btn" type="button" data-preview-action="previous"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg><span>上一张</span></button>
+        <output id="attachmentImageCount" aria-label="图片序号">1 / 1</output>
+        <button class="action-dropdown-btn" type="button" data-preview-action="next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg><span>下一张</span></button>
+        <button class="action-dropdown-btn" type="button" data-preview-action="zoom-out"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5M7 10h6"/></svg><span>缩小</span></button>
+        <output id="attachmentZoomValue" aria-live="polite">100%</output>
+        <button class="action-dropdown-btn" type="button" data-preview-action="zoom-in"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5M7 10h6m-3-3v6"/></svg><span>放大</span></button>
+        <button class="action-dropdown-btn" type="button" data-preview-action="reset"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11a8 8 0 1 1 2 6M4 5v6h6"/></svg><span>还原</span></button>
+      </footer>
+    </section>
+  </div>
+
   <script src="../../assets/js/echarts.min.js"></script>
   <script src="../../assets/js/common.js?v=20261110-keyword-highlight"></script>
   <script src="../../assets/js/skill-template-sample.js?v=20260911"></script>
@@ -1647,6 +1686,7 @@
     </form>
   </template>
   <script src="../../assets/js/smart-query-context.js?v=20261111-context-insert-suggest-fix"></script>
-  <script src="../../assets/js/smart-query.js?v=20261111-context-insert-suggest-fix"></script>
+  <script src="../../assets/js/query-attachments.js?v=20261116-file-page"></script>
+  <script src="../../assets/js/smart-query.js?v=20261113-attachment-preview"></script>
 </body>
 </html>

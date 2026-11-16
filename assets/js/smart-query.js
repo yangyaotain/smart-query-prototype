@@ -712,6 +712,7 @@ const SALES_CONFIRMATION_METRICS = {
 const SALES_CONFIRMATION_MONTHS = ["5月", "6月", "7月", "8月", "9月", "10月"];
 
 const HISTORY_SCENARIOS = {
+  ...QueryAttachments.scenarios,
   normal: { question: "近6个月华东区销售额趋势如何？", mode: "qa" },
   salesConfirmation: {
     question: "近6个月华东区销售额趋势如何？",
@@ -737,7 +738,7 @@ const HISTORY_SCENARIOS = {
     question: "与去年同期数据进行对比分析",
     mode: "comparison",
     followup: true,
-    attachment: { name: "2025年1-6月华东区销售明细.xlsx", meta: "Excel 文件 · 2.4 MB" }
+    attachment: QueryAttachments.comparisonFile
   },
   template: { question: "按销售月报模板分析5月份经营情况", mode: "template", followup: true },
   file: {
@@ -1126,8 +1127,7 @@ function triggerUpload(type) {
 
 function handleUploadSelected(type, file) {
   if (!file) return;
-  const previewUrl = type === "image" ? URL.createObjectURL(file) : "";
-  addAttachmentPreview({ type, file, previewUrl });
+  QueryAttachments.add(type, file);
 }
 
 function openUploadModal(type) {
@@ -2396,10 +2396,7 @@ function runQuestion(edit = null, options = {}) {
     themes: getSelectedThemeList(),
     references: selectedReferences.map((reference) => ({ ...reference })),
     followup: pendingFollowupContext,
-    attachments: Array.from(attachmentPreviewList.querySelectorAll(".attachment-info"), (info) => ({
-      name: info.querySelector("strong").textContent,
-      meta: info.querySelector("span").textContent
-    }))
+    attachments: QueryAttachments.getPending()
   };
   const ctx = context.followup;
   const previousSkill = edit?.turn.skillRun;
@@ -2490,6 +2487,7 @@ function runQuestion(edit = null, options = {}) {
     context,
     thinkingDuration: options.thinkingDuration
   });
+  if (!edit) QueryAttachments.clearPending();
 }
 
 function appendQuestionReference(reference) {
@@ -2501,15 +2499,6 @@ function appendQuestionReference(reference) {
     : `<span class="history-reference-file-icon is-${getReferenceFileType(reference)}"><b>${getReferenceFileTypeLabel(reference)}</b></span>`;
   card.innerHTML = `${icon}<div><span>${reference.label || "引用"}</span><strong>${reference.name}</strong><em>${reference.meta || "已引用"}</em></div>`;
   userQuestionBubble.appendChild(card);
-}
-
-function appendQuestionAttachment(file) {
-  const attachment = document.createElement("div");
-  attachment.className = "history-question-attachment";
-  attachment.innerHTML = ''
-    + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 14h6"></path><path d="M9 17h4"></path></svg>'
-    + `<div><strong>${escapeHtml(file.name)}</strong><span>${escapeHtml(file.meta)}</span></div>`;
-  userQuestionBubble.appendChild(attachment);
 }
 
 function renderMessageTime(element, sentAt) {
@@ -2534,7 +2523,7 @@ function renderQuestionTurn(turn) {
   userQuestionBubble.replaceChildren(text);
   renderMessageTime(currentChatMessage.querySelector(".question-actions time"), turn.sentAt);
   turn.context.references.forEach(appendQuestionReference);
-  turn.context.attachments.forEach(appendQuestionAttachment);
+  QueryAttachments.renderMessage(currentChatMessage.querySelector(".question-stack"), turn.context.attachments);
   const guides = currentChatMessage.querySelector(".question-guides");
   guides.replaceChildren();
   guides.classList.toggle("hidden", !turn.guides.length);
@@ -2675,6 +2664,19 @@ function prepareCompletedHistoryTurn(scenario) {
 }
 
 function renderCompletedQaHistory(scenario, options = {}) {
+  if (scenario.attachmentSummary) {
+    insightBox?.classList.remove("hidden");
+    aiConclusion.textContent = scenario.attachmentSummary;
+    aiConclusion.classList.remove("hidden");
+    aiConclusion.classList.add("attachment-preview-summary");
+    conclusionTags?.classList.add("hidden");
+    tableResult?.classList.add("hidden");
+    chartResult?.classList.add("hidden");
+    resultViewToolbar?.classList.add("hidden");
+    answerActionBar?.classList.add("hidden");
+    return;
+  }
+  aiConclusion?.classList.remove("attachment-preview-summary");
   const profile = applyQaResultProfile(scenario.question, scenario.salesScope);
   insightBox?.classList.remove("hidden");
   if (aiConclusion) {
@@ -3321,6 +3323,8 @@ function resetChat() {
   referencePrefillText = null;
   if (isAnswering) stopAnswerSimulation(false);
   saveActiveConversation();
+  QueryAttachments.close();
+  QueryAttachments.clearPending(true);
   conversationChanged = false;
   setActiveConversationItem(null);
   closeQuestionEditor();
@@ -3596,7 +3600,7 @@ function resetAnswerSimulation() {
   resultCard.classList.remove("is-confirmation-result");
   qaChartHeading.textContent = defaultQaChartHeading;
   aiConclusion.textContent = "";
-  aiConclusion.classList.remove("typing-cursor", "hidden");
+  aiConclusion.classList.remove("typing-cursor", "hidden", "attachment-preview-summary");
   insightBox?.classList.remove("hidden");
   conclusionTags.classList.add("hidden");
   resultViewToolbar.classList.add("hidden");
@@ -7063,14 +7067,14 @@ if (modalMask) {
 
 if (imageUploadInput) {
   imageUploadInput.addEventListener("change", (event) => {
-    handleUploadSelected("image", event.target.files?.[0]);
+    Array.from(event.target.files || []).forEach((file) => handleUploadSelected("image", file));
     event.target.value = "";
   });
 }
 
 if (fileUploadInput) {
   fileUploadInput.addEventListener("change", (event) => {
-    handleUploadSelected("file", event.target.files?.[0]);
+    Array.from(event.target.files || []).forEach((file) => handleUploadSelected("file", file));
     event.target.value = "";
   });
 }
