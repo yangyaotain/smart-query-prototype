@@ -65,7 +65,7 @@ window.QueryAttachments = (() => {
       remove.type = "button";
       remove.title = `移除 ${file.name}`;
       remove.setAttribute("aria-label", remove.title);
-      remove.innerHTML = `${closeIcon}<span>移除</span>`;
+      remove.innerHTML = closeIcon;
       remove.addEventListener("click", () => {
         pending.delete(file.id);
         files.delete(file.id);

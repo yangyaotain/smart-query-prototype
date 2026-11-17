@@ -6993,12 +6993,90 @@ function startTrendAnalysis() {
   });
 }
 
+function readQuestionClipboardFiles(data) {
+  const items = Array.from(data.items || []);
+  const itemFiles = items.filter((item) => item.kind === "file").map((item) => item.getAsFile()).filter(Boolean);
+  // items 和 files 常指向同一批文件，只取一份，且仅对本次粘贴去重。
+  const candidates = itemFiles.length ? itemFiles : Array.from(data.files || []);
+  const seen = new Set();
+  return candidates.filter((file) => {
+    const key = JSON.stringify([file.name, file.size, file.type, file.lastModified]);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function readQuestionClipboardText(data) {
+  const plain = data.getData("text/plain");
+  if (plain) return plain;
+  const html = data.getData("text/html");
+  if (!html) return "";
+  // template 内容保持惰性，仅提取文字，不加载复制来源的图片或框架。
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  const read = (node) => {
+    if (node.nodeType === 3) return node.textContent;
+    if (node.nodeType !== 1 || /^(IMG|SCRIPT|STYLE|META|LINK|IFRAME|OBJECT|SVG|NOSCRIPT)$/.test(node.tagName)) return "";
+    if (node.tagName === "BR") return "\n";
+    const text = Array.from(node.childNodes, read).join("");
+    return /^(P|DIV|LI|TR|H[1-6]|BLOCKQUOTE|PRE)$/.test(node.tagName) ? `${text}\n` : text;
+  };
+  return Array.from(template.content.childNodes, read).join("").replace(/\n{3,}/g, "\n\n").replace(/^\n|\n$/g, "");
+}
+
+function handleQuestionPaste(event) {
+  // 阻止 contenteditable 将 HTML 或图片直接插入问题正文。
+  event.preventDefault();
+  const data = event.clipboardData;
+  if (!data) { showToast("无法读取剪贴板，请使用图片或附件按钮选择文件"); return; }
+  const target = captureQuestionInsertTarget();
+  const files = readQuestionClipboardFiles(data);
+  const hasFileData = files.length || Array.from(data.types || []).includes("Files")
+    || Array.from(data.items || []).some((item) => item.kind === "file");
+  const html = data.getData("text/html");
+  let text = readQuestionClipboardText(data);
+  if (files.length) {
+    // 某些复制来源还会提供同一文件的名称或本地路径，不把它再次写入正文。
+    text = text.split(/\r?\n/).filter((line) => {
+      const value = line.trim();
+      return !files.some((file) => value === file.name || ((/^(file:\/\/|[a-z]:[\\/]|\\\\)/i.test(value)) && value.replace(/\\/g, "/").split("/").pop() === file.name));
+    }).join("\n");
+    if (!text.trim()) text = "";
+    if (isAnswering || replayingHistory || hasPendingQueryConfirmation()) {
+      showToast("当前对话暂不能添加附件，请在本轮完成后粘贴");
+    } else {
+      const accepted = (fileUploadInput.accept || "").toLowerCase().split(",").map((value) => value.trim());
+      let rejected = 0;
+      files.forEach((file) => {
+        const image = file.type.startsWith("image/") || /\.(png|jpe?g|gif|webp|bmp|svg|avif|ico|tiff?|heic)$/i.test(file.name);
+        const ext = file.name.match(/\.[^.]+$/)?.[0].toLowerCase();
+        if (!image && !accepted.includes(ext)) { rejected += 1; return; }
+        handleUploadSelected(image ? "image" : "file", file);
+      });
+      if (rejected) showToast(`${rejected} 个文件格式暂不支持，请选择图片或支持的附件格式`);
+    }
+  } else if (hasFileData) {
+    text = "";
+    showToast("无法读取剪贴板文件，请使用图片或附件按钮选择上传");
+  } else if (html && /<img\b/i.test(html)) {
+    showToast("未获取到图片文件，请复制图片本身或使用图片按钮上传");
+  }
+  if (text) insertQuestionAtCaret(text, target);
+  else {
+    questionInput.focus({ preventScroll: true });
+    rememberQuestionSelection();
+    suggestPop?.classList.add("hidden");
+  }
+}
+
 if (questionInput) {
   document.addEventListener("selectionchange", () => {
     if (document.activeElement === questionInput) rememberQuestionSelection();
   });
   questionInput.addEventListener("blur", rememberQuestionSelection);
   questionInput.addEventListener("input", handleQuestionInput);
+  questionInput.addEventListener("paste", handleQuestionPaste);
   questionInput.addEventListener("focus", () => {
     if (readQuestionEditorText()) handleQuestionInput();
   });

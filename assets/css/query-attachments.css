@@ -17,12 +17,14 @@
 .query-file-type.is-ppt, .query-file-type.is-pptx { background: #fff2e8; color: #c86628; }
 .query-file-type.is-xlsx, .query-file-type.is-xls, .query-file-type.is-csv { background: #eaf6ef; color: #25875a; }
 .query-file-type.is-txt { background: #eef1f5; color: #64748b; }
-.attachment-chip:has(.question-attachment) { padding: 0 60px 0 0; max-width: min(320px, 100%); }
-.attachment-chip .question-file { width: 240px; border: 0; background: transparent; border-radius: 12px 0 0 12px; }
+.attachment-chip:has(.question-attachment) { padding: 0; max-width: min(260px, 100%); overflow: visible; }
+.attachment-chip .question-file { width: 240px; padding-right: 20px; border: 0; background: transparent; border-radius: 12px; }
 .attachment-chip:has(.question-image) { background: var(--card); }
 .attachment-chip .question-image { border: 0; }
-.attachment-chip .attachment-remove { top: 6px; right: 6px; display: flex; align-items: center; justify-content: center; gap: 3px; width: 48px; height: 24px; border-radius: 6px; }
-.attachment-chip .attachment-remove svg { width: 10px; height: 10px; }
+.attachment-chip .attachment-remove { top: -7px; right: -7px; z-index: 1; display: grid; place-items: center; width: 22px; height: 22px; padding: 0; color: var(--heading); background: var(--card); border: 1px solid var(--border); border-radius: 50%; box-shadow: 0 1px 4px rgba(15, 23, 42, .12); cursor: pointer; transition: background-color .15s, border-color .15s; }
+.attachment-chip .attachment-remove svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.attachment-chip .attachment-remove:hover { background: var(--primary-soft); border-color: var(--focus-border); }
+.attachment-chip .attachment-remove:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .archived-message .question-attachments, .archived-message [data-attachment-id] { pointer-events: auto; }
 .comparison-upload-chip[data-attachment-id] { cursor: pointer; }
 .comparison-upload-chip[data-attachment-id]:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
