@@ -11,6 +11,10 @@
       menus: [
         menu("biz.query", "智能问数", [
           ["biz.query.new", "新建问数"],
+          ["biz.query.indicator.view", "查看指标"],
+          ["biz.query.indicator.create", "新增指标"],
+          ["biz.query.indicator.edit", "修改指标与目录"],
+          ["biz.query.indicator.delete", "删除指标"],
           ["biz.query.uploadImage", "上传图片"],
           ["biz.query.uploadFile", "上传附件"],
           ["biz.query.feedback", "提交反馈"],

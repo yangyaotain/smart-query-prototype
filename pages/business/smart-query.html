@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>智能问数 - 业务端</title>
   <link rel="stylesheet" href="../../assets/css/theme.css?v=20261110-keyword-highlight" />
-  <link rel="stylesheet" href="../../assets/css/business.css?v=20261111-context-name-insert" />
+  <link rel="stylesheet" href="../../assets/css/indicator-chat.css?v=20261118-natural-dialogue" />
+  <link rel="stylesheet" href="../../assets/css/business.css?v=20261118-chat-width" />
   <link rel="stylesheet" href="../../assets/css/query-attachments.css?v=20261116-remove-icon" />
   <link rel="stylesheet" href="../../assets/css/skill-picker.css?v=20260914-skill-copy" />
   <link rel="stylesheet" href="../../assets/css/scheduled-tasks.css?v=20260914-skill-copy" />
@@ -67,13 +68,6 @@
       line-height: 1.55;
     }
     .query-send-controls { flex-wrap: nowrap; }
-    .send-btn.query-stop-btn {
-      color: var(--primary-dark);
-      background: #fff;
-      border: 1px solid var(--primary-border);
-      box-shadow: none;
-    }
-    .send-btn.query-stop-btn:hover { background: var(--primary-hover-bg); }
     .query-send-controls button:disabled, .question-actions button:disabled { opacity: .5; cursor: default; }
   </style>
 </head>
@@ -116,6 +110,22 @@
         <div class="history-item active pinned" onclick="loadHistoryScenario('normal', this)" oncontextmenu="openSideMenu(event, 'history')">
           <strong title="近6个月华东区销售额趋势如何？">近6个月华东区销售额趋势如何？</strong>
           <span><em>普通问数</em><em>置顶 · 08:40</em></span>
+        </div>
+        <div class="history-item" role="button" tabindex="0" data-indicator-history onclick="loadHistoryScenario('indicatorCreate', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="新增指标：平台服务费合计">新增指标：平台服务费合计</strong>
+          <span><em>自然语言维护 · 新增指标</em><em>09:40</em></span>
+        </div>
+        <div class="history-item" role="button" tabindex="0" data-indicator-history onclick="loadHistoryScenario('indicatorEdit', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="多轮修改：非招服务费口径">多轮修改：非招服务费口径</strong>
+          <span><em>自然语言维护 · 连续修改 3 轮</em><em>09:38</em></span>
+        </div>
+        <div class="history-item" role="button" tabindex="0" data-indicator-history onclick="loadHistoryScenario('indicatorDelete', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="删除指标：确认与影响核对">删除指标：确认与影响核对</strong>
+          <span><em>自然语言维护 · 删除确认与取消</em><em>09:36</em></span>
+        </div>
+        <div class="history-item" role="button" tabindex="0" data-indicator-history onclick="loadHistoryScenario('indicatorDependency', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="删除拦截：指标仍被其他指标引用">删除拦截：指标仍被其他指标引用</strong>
+          <span><em>自然语言维护 · 依赖拦截</em><em>09:34</em></span>
         </div>
         <div class="history-item" role="button" tabindex="0" data-attachment-history onclick="loadHistoryScenario('attachmentFormats', this)" oncontextmenu="openSideMenu(event, 'history')">
           <strong title="查看五种格式的经营资料附件">查看五种格式的经营资料附件</strong>
@@ -300,6 +310,7 @@
                     </div>
                   </div>
                   <div class="result-body">
+                    <section id="indicatorChatResult" class="indicator-chat hidden" aria-label="指标维护结果"></section>
                     <section id="insightBox" class="insight-box">
                       <p id="aiConclusion"></p>
                       <div id="conclusionTags" class="tag-row hidden"><span>持续增长</span><span>6月达到峰值</span><span>4-6月增长明显</span></div>
@@ -1380,6 +1391,10 @@
                   <div class="skill-picker-foot"><span>技能标签保持选中；除标签外的提示内容均可自由修改。</span></div>
                 </div>
               </div>
+              <button type="button" id="indicatorMaintenanceTrigger" onclick="IndicatorChat.prefill('管理指标')" title="通过自然语言新增、修改或删除指标">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10h4v10M10 20V4h4v16M15 20v-7h4v7"/></svg>
+                指标维护
+              </button>
               <button type="button" id="scheduledTaskCreateTrigger" onclick="openScheduledTaskComposer()" title="创建定时任务">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 7v5l3 2"></path></svg>
                 定时任务
@@ -1399,11 +1414,9 @@
             </div>
           </div>
           <div class="query-send-controls">
-            <button id="stopQueryBtn" class="send-btn query-stop-btn hidden" type="button" onclick="stopAnswerSimulation()" aria-label="停止生成" title="停止生成">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="2.2" fill="currentColor" stroke="none"/></svg>
-            </button>
-            <button id="sendBtn" class="send-btn" type="button" onclick="handleSendClick()" aria-label="发送">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.2L20.2 4.8M20.2 4.8L14.8 20.4L11.4 13.1L4.5 9.8L20.2 4.8Z"/></svg>
+            <button id="sendBtn" class="send-btn" type="button" onclick="handleSendClick()" aria-label="发送" title="发送" disabled>
+              <svg class="send-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.2L20.2 4.8M20.2 4.8L14.8 20.4L11.4 13.1L4.5 9.8L20.2 4.8Z"/></svg>
+              <svg class="stop-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="2.2" stroke="none"/></svg>
             </button>
           </div>
         </div>
@@ -1686,8 +1699,10 @@
       </div>
     </form>
   </template>
-  <script src="../../assets/js/smart-query-context.js?v=20261111-context-insert-suggest-fix"></script>
+  <script src="../../assets/js/indicator-store.js?v=20261118-chat-maintenance"></script>
+  <script src="../../assets/js/smart-query-context.js?v=20261118-natural-dialogue"></script>
   <script src="../../assets/js/query-attachments.js?v=20261116-remove-icon"></script>
-  <script src="../../assets/js/smart-query.js?v=20261116-clipboard-attachments"></script>
+  <script src="../../assets/js/indicator-chat.js?v=20261118-natural-dialogue"></script>
+  <script src="../../assets/js/smart-query.js?v=20261118-single-send-stop"></script>
 </body>
 </html>

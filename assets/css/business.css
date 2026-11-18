@@ -885,6 +885,9 @@
 }
 
 .chat-message {
+  /* 历史消息为纵向 Flex 子项，显式宽度避免随回复内容收窄。 */
+  width: 100%;
+  min-width: 0;
   max-width: 1000px;
   margin: 0 auto 16px;
 }
@@ -1017,6 +1020,7 @@
 
 .thinking-box,
 .result-card {
+  width: 100%;
   overflow: hidden;
   background: #fff;
   border: 1px solid var(--primary-border-soft);

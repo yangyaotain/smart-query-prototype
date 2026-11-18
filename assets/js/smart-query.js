@@ -94,7 +94,6 @@ const followupContextChip = document.getElementById("followupContextChip");
 const followupChipTitle = document.getElementById("followupChipTitle");
 const followupPrefix = document.getElementById("followupPrefix");
 const sendBtn = document.getElementById("sendBtn");
-const stopQueryBtn = document.getElementById("stopQueryBtn");
 const currentChatMessage = answerBlock?.querySelector(".current-chat-message");
 const questionTurns = new WeakMap();
 const conversationSnapshots = new WeakMap();
@@ -706,6 +705,10 @@ const SALES_CONFIRMATION_MONTHS = ["5月", "6月", "7月", "8月", "9月", "10�
 
 const HISTORY_SCENARIOS = {
   ...QueryAttachments.scenarios,
+  indicatorCreate: { indicatorHistory: "create" },
+  indicatorEdit: { indicatorHistory: "edit" },
+  indicatorDelete: { indicatorHistory: "delete" },
+  indicatorDependency: { indicatorHistory: "dependency" },
   normal: { question: "近6个月华东区销售额趋势如何？", mode: "qa" },
   salesConfirmation: {
     question: "近6个月华东区销售额趋势如何？",
@@ -1303,6 +1306,7 @@ function renderReferencePreview() {
   if (referencePickerTriggerText) {
     referencePickerTriggerText.textContent = selectedReferences.length ? `引用 ${selectedReferences.length}` : "引用";
   }
+  syncComposerSendButton();
 }
 
 function confirmReferenceSelection() {
@@ -1387,6 +1391,7 @@ function appendPromptTemplate(container, template, withHints) {
 function syncQuestionEditorEmptyState() {
   if (!questionInput) return;
   questionInput.dataset.empty = String(!readQuestionEditorText());
+  syncComposerSendButton();
 }
 
 function setQuestionEditorContent(text, options = {}) {
@@ -1529,7 +1534,6 @@ function handleQuestionInput() {
   normalizeEditedPromptHints();
   ensureSelectedSkillTag();
   syncQuestionEditorEmptyState();
-  syncComposerSendButton();
   if (insertingQuestionContext) {
     suggestPop.classList.add("hidden");
     return;
@@ -2392,6 +2396,9 @@ function runQuestion(edit = null, options = {}) {
     attachments: QueryAttachments.getPending()
   };
   const ctx = context.followup;
+  const previousIndicator = edit?.turn.indicator || questionTurns.get(currentChatMessage)?.indicator;
+  const indicatorRun = !context.references.length && (selectedSkillKey === "general" || edit?.turn.mode === "indicator")
+    ? window.IndicatorChat?.resolve(inputText, previousIndicator, context.themes) : null;
   const previousSkill = edit?.turn.skillRun;
   if (!edit && !ctx && !context.references.length && !validateSelectedSkill()) return;
   closeQuestionEditor();
@@ -2416,10 +2423,26 @@ function runQuestion(edit = null, options = {}) {
     reportDraftStates.clear();
     getArchivedQuestionTurns().forEach(rememberReferenceDrafts);
   } else {
+    if (indicatorRun) window.IndicatorChat.invalidate(previousIndicator);
     archiveCurrentMessageIfNeeded();
   }
   activeReferenceRun = null;
   activeSkillRun = null;
+
+  if (indicatorRun) {
+    if (edit) window.IndicatorChat.invalidate(previousIndicator);
+    if (indicatorRun.confirmRequested) window.IndicatorChat.confirm(indicatorRun);
+    if (!activeConversationItem) createConversationItem(inputText, "指标维护");
+    const turn = {
+      question: inputText, sentAt: new Date().toISOString(), mode: "indicator",
+      answerTitle: "指标维护与管理", context, guides: [], indicator: indicatorRun
+    };
+    conversationChanged = true;
+    renderCompletedHistoryTurn(turn);
+    setQuestionEditorContent(""); clearFollowupContext(); QueryAttachments.clearPending();
+    focusQuestionComposer(); scrollToAnswerBottom();
+    return;
+  }
 
   let submittedQuestion;
   let answerTitle;
@@ -3182,9 +3205,24 @@ document.getElementById("salesConfirmationHistory").addEventListener("keydown", 
   if (hasPendingQueryConfirmation()) focusQueryConfirmation();
 });
 
+document.getElementById("historyList").addEventListener("keydown", (event) => {
+  const item = event.target.closest("[data-indicator-history]");
+  if (!item || event.isComposing || (event.key !== "Enter" && event.key !== " ")) return;
+  event.preventDefault();
+  item.click();
+});
+
 function renderCompletedHistoryTurn(scenario, options = {}) {
   prepareCompletedHistoryTurn(scenario);
   const turn = questionTurns.get(currentChatMessage);
+  if (turn.mode === "indicator") {
+    insightBox?.classList.add("hidden");
+    resultTitle.nextElementSibling.textContent = turn.indicator.historyExample
+      ? "指标维护 · 历史示例 · 只读回放"
+      : "指标体系 · 自然语言维护 · 回复确认后同步公共指标与主题目录";
+    window.IndicatorChat.render(document.getElementById("indicatorChatResult"), turn.indicator);
+    return;
+  }
   activeReferenceRun = turn.mode === "reference" ? turn : null;
   if (turn.confirmation) {
     renderConfirmedQueryResult(turn.confirmation);
@@ -3214,6 +3252,12 @@ function loadHistoryScenario(key, item) {
   setActiveConversationItem(item);
   if (snapshot) {
     renderHistoryTurnSequence(snapshot);
+    return;
+  }
+  if (scenario.indicatorHistory) {
+    const turns = window.IndicatorChat.history(scenario.indicatorHistory);
+    conversationSnapshots.set(item, turns);
+    renderHistoryTurnSequence(turns, 0, historySequenceToken);
     return;
   }
   if (key === "reportRevision") {
@@ -3347,7 +3391,13 @@ function resetChat() {
   closeDrawer();
 }
 
-function handleSendClick() {
+function handleSendClick(fromKeyboard = false) {
+  syncComposerSendButton();
+  if (sendBtn.disabled) return;
+  if (sendBtn.classList.contains("is-stopping")) {
+    if (!fromKeyboard) stopAnswerSimulation();
+    return;
+  }
   if (isThinking) {
     sendQuestionGuide();
     return;
@@ -3408,12 +3458,18 @@ function finishAnswerSimulation() {
 }
 
 function syncComposerSendButton() {
-  sendBtn.disabled = hasPendingQueryConfirmation() || (isAnswering && (!isThinking || questionInput.dataset.empty === "true"));
+  const hasText = Boolean(readQuestionEditorText());
+  const isStopping = isAnswering && (!isThinking || !hasText);
+  const hasContent = hasText || selectedReferences.length > 0 || QueryAttachments.getPending().length > 0 || Boolean(pendingFollowupContext);
+  sendBtn.classList.toggle("is-stopping", isStopping);
+  sendBtn.disabled = hasPendingQueryConfirmation() || replayingHistory || (!isStopping && !hasContent);
+  const label = isStopping ? "停止生成" : "发送";
+  sendBtn.setAttribute("aria-label", label);
+  sendBtn.title = label;
 }
 
 function updateSendButton() {
   syncComposerSendButton();
-  stopQueryBtn.classList.toggle("hidden", !isAnswering);
   const inputTools = questionInput.closest(".input-main").querySelector(".input-tools");
   inputTools.inert = isAnswering;
   answerBlock.querySelectorAll('[data-question-action="edit"]').forEach((button) => {
@@ -3450,7 +3506,7 @@ function startAnswerSimulation(options = {}) {
   isThinking = true;
   updateSendButton();
   startThinkingElapsedTimer();
-  scheduleQuestionThinking(turn, options.thinkingDuration ?? (turn.salesScope ? 18000 : 9000));
+  scheduleQuestionThinking(turn, options.thinkingDuration ?? (turn.salesScope ? 6000 : 3000));
   focusQuestionComposer();
   scrollToAnswerBottom();
 }
@@ -3482,12 +3538,11 @@ function sendQuestionGuide() {
         scheduleAnswerTask(() => completeThinkingStep(dot), 500 + 350 * index);
       });
       updateQuestionResultHeading(turn);
-      const nextCompletion = Math.max(thinkingCompletion.at, Date.now() + 9000);
+      const nextCompletion = Math.max(thinkingCompletion.at, Date.now() + 3000);
       if (nextCompletion > thinkingCompletion.at) scheduleThinkingCompletion(turn, nextCompletion);
     }
   }
   setQuestionEditorContent("");
-  syncComposerSendButton();
   focusQuestionComposer();
   scrollToAnswerBottom();
 }
@@ -3580,6 +3635,7 @@ function scheduleThinkingCompletion(turn, at) {
 
 function resetAnswerSimulation() {
   if (!thinkingBox || !resultCard) return;
+  document.getElementById("indicatorChatResult")?.classList.add("hidden");
   stopThinkingElapsedTimer();
   thinkingElapsedSeconds = 0;
   updateThinkingElapsed();
@@ -3855,11 +3911,11 @@ function startTypewriterConclusion(turn) {
       scheduleAnswerTask(() => {
         conclusionTags.classList.remove("hidden");
         scrollToAnswerBottom();
-      }, 220);
+      }, 120);
       scheduleAnswerTask(() => {
         tableResult.classList.remove("hidden");
         scrollToAnswerBottom();
-      }, 760);
+      }, 360);
       scheduleAnswerTask(() => {
         if (!hideChart) {
           resultViewToolbar.classList.add("hidden");
@@ -3867,14 +3923,14 @@ function startTypewriterConclusion(turn) {
           setResultView(currentResultView || "line", false);
         }
         scrollToAnswerBottom();
-      }, 1320);
+      }, 600);
       scheduleAnswerTask(() => {
         answerActionBar?.classList.remove("hidden");
         scrollToAnswerBottom();
         finishAnswerSimulation();
-      }, 1420);
+      }, 700);
     }
-  }, 34);
+  }, 18);
 }
 
 function startFileResultSimulation(profile) {
@@ -7093,7 +7149,7 @@ if (questionInput) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       suggestPop?.classList.add("hidden");
-      handleSendClick();
+      handleSendClick(true);
     }
   });
 }
@@ -7178,6 +7234,10 @@ window.addEventListener('storage', (event) => {
 syncSkillPickerSelection();
 syncSkillQuestionPlaceholder();
 syncQuestionEditorEmptyState();
+
+if (attachmentPreviewList) {
+  new MutationObserver(syncComposerSendButton).observe(attachmentPreviewList, { childList: true });
+}
 
 document.querySelectorAll(".chip").forEach((chip) => {
   chip.addEventListener("click", () => {
@@ -7935,3 +7995,9 @@ function completeScheduledTrialRecord(payload) {
     showToast(payload.mode === "trial" ? "已创建独立会话并开始试运行" : "已打开定时任务执行会话");
   }, 0);
 })();
+
+// 指标维护卡片共用当前会话归档与历史恢复机制。
+window.IndicatorChat.configure({
+  busy: () => isAnswering || replayingHistory || hasPendingQueryConfirmation(),
+  prefill: (text) => { selectSkill('general', null, true); setQuestionEditorContent(text); focusQuestionComposer(); }
+});

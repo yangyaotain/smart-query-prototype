@@ -1,6 +1,6 @@
 /* 智能问数右侧目录：仅控制主题目录、查询与悬浮详情，不修改问数流程。
  * 指标目录/基础信息对齐 knowledge-indicator.js 当前示例；维度取自分析主题的数据模型。
- * 后台当前未提供统一数据存储，以下主题关联仅用于本页静态原型展示。
+ * 指标与主题关联从 IndicatorStore 读取，与管理端维护即时联动。
  */
 (function () {
   'use strict';
@@ -13,36 +13,24 @@
   const card = document.getElementById('themeDetailCard');
   if (!list || !form || !input || !clear || !status || !card) return;
 
-  const directories = [
-    { id: 'g_revenue', name: '收入指标', children: [
-      { id: 'g_rev_sale', name: '销售收入' },
-      { id: 'g_rev_service', name: '服务收入' },
-      { id: 'g_rev_other', name: '其他收入' }
-    ] },
-    { id: 'g_cost', name: '成本指标', children: [
-      { id: 'g_cost_direct', name: '直接成本' }, { id: 'g_cost_indirect', name: '间接成本' }
-    ] },
-    { id: 'g_efficiency', name: '运营效率', children: [
-      { id: 'g_eff_conv', name: '转化率' }, { id: 'g_eff_cycle', name: '周期/时长' }
-    ] }
-  ];
-  const indicators = [
-    { id: 'i_non_bid_amt', groupId: 'g_rev_sale', name: '非招成交金额', synonyms: '非招成交金额', desc: '非招标项目的成交金额合计。', dimensions: ['统计时间', '采购方式', '项目'], example: '近6个月非招成交金额趋势如何？' },
-    { id: 'i_bid_amt', groupId: 'g_rev_sale', name: '招标成交金额', synonyms: '招标项目成交金额', desc: '招标项目的成交金额合计。', dimensions: ['统计时间', '项目'], example: '本季度招标成交金额与上季度相比如何？' },
-    { id: 'i_platform_fee', groupId: 'g_rev_service', name: '招标平台服务费', synonyms: '平台服务费收入', desc: '招标平台收取的服务费收入。', dimensions: ['统计时间', '项目'], example: '本月招标平台服务费收入是多少？' },
-    { id: 'i_non_bid_fee', groupId: 'g_rev_service', name: '非招服务费', synonyms: '非招服务费收入', desc: '非招标项目的服务费收入。', dimensions: ['统计时间', '采购方式', '项目'], example: '近3个月非招服务费收入变化如何？' },
-    { id: 'i_ca_income', groupId: 'g_rev_other', name: 'CA证书收入', synonyms: 'CA 证书', desc: 'CA 数字证书业务收入。', dimensions: ['统计时间'], example: '本季度CA证书收入是多少？' },
-    { id: 'i_total_income', groupId: 'g_rev_sale', name: '总收入', synonyms: '总收入', desc: '统计周期内平台各项业务收入的合计金额，用于反映整体经营收入规模。', dimensions: ['统计时间', '收入类型'], example: '近6个月总收入趋势如何？' },
-    { id: 'i_arpu', groupId: 'g_eff_conv', name: '客单价', synonyms: 'ARPU,人均客单', desc: '统计周期内每位成交客户贡献的平均收入金额。', dimensions: ['统计时间', '客户'], example: '近3个月客单价变化如何？' }
-  ];
-  // 与本页原有五个主题保持一致；未配置关联的主题展示明确空状态。
-  const themeIndicatorIds = {
-    '销售分析': ['i_non_bid_amt', 'i_bid_amt', 'i_platform_fee', 'i_non_bid_fee', 'i_ca_income', 'i_total_income', 'i_arpu'],
-    '客户分析': ['i_arpu'],
-    '库存分析': [],
-    '财务分析': ['i_platform_fee', 'i_non_bid_fee', 'i_ca_income', 'i_total_income'],
-    '经营概览': ['i_non_bid_amt', 'i_bid_amt', 'i_platform_fee', 'i_non_bid_fee', 'i_ca_income', 'i_total_income', 'i_arpu']
-  };
+  let directories = [];
+  let indicators = [];
+  let themeIndicatorIds = {};
+  function loadCatalog() {
+    const data = window.IndicatorStore.snapshot();
+    directories = data.groups;
+    const ids = new Set(window.IndicatorStore.groups(data).map((group) => group.id));
+    indicators = data.indicators.map((item) => ({ ...item,
+      dimensions: item.dimensions || (item.timeField ? ['统计时间'] : []),
+      example: item.example || '近6个月' + item.name + '趋势如何？'
+    }));
+    if (indicators.some((item) => !ids.has(item.groupId) || item.groupId === '__uncategorized__')) {
+      directories = [...directories, { id: '__uncategorized__', name: '未分类' }];
+      indicators = indicators.map((item) => ({ ...item, groupId: ids.has(item.groupId) ? item.groupId : '__uncategorized__' }));
+    }
+    themeIndicatorIds = data.themes;
+  }
+  loadCatalog();
 
   function dimension(id, name, synonyms, desc, example) {
     return { id, name, synonyms, desc, example, kind: 'dimension' };
@@ -244,7 +232,7 @@
       <dl><div><dt>同义词</dt><dd>${escape(item.synonyms || '暂无同义词')}</dd></div><div><dt>说明</dt><dd>${escape(item.desc || '暂无说明')}</dd></div>
       ${item.kind === 'metric' ? `<div><dt>相关维度</dt><dd class="sq-context-detail-tags">${dimensions.length ? dimensions.map((name) => `<span>${escape(name)}</span>`).join('') : '暂无相关维度'}</dd></div>` : ''}</dl>
       <div class="sq-context-detail-example"><span class="sq-context-example-label">示例问法</span><p>${escape(item.example || '暂无示例')}</p></div>
-      <p class="sq-context-insert-hint">双击名称插入问题</p>`;
+      <p class="sq-context-insert-hint">双击名称插入问题${item.kind === 'metric' ? '；可在会话中直接描述指标维护要求。' : ''}</p>`;
     card.hidden = false;
     const anchor = row.getBoundingClientRect();
     const width = card.getBoundingClientRect().width;
@@ -283,8 +271,10 @@
   document.addEventListener('scroll', (event) => { if (!card.contains(event.target)) hideCard(); }, true);
   window.addEventListener('resize', hideCard);
   window.addEventListener('blur', hideCard);
+  window.addEventListener('indicator-catalog-change', () => { loadCatalog(); render(); });
   window.SmartQueryContext = {
     render(selected) {
+      loadCatalog();
       themes = [...selected];
       applySearch();
     }
