@@ -187,24 +187,11 @@ const TEMP_BOARD_STORAGE_KEYS = [
   "smart-query-component-board-overrides"
 ];
 
-function isForcedPageReload() {
-  const navigation = performance.getEntriesByType?.("navigation")?.[0];
-  return navigation?.type === "reload";
-}
-
-function resetTemporaryBoardsOnReload() {
-  if (!isForcedPageReload()) return;
-  TEMP_BOARD_STORAGE_KEYS.forEach((key) => {
-    sessionStorage.removeItem(key);
-    localStorage.removeItem(key);
-  });
-}
-
 function getPrototypeStorage(key) {
   return TEMP_BOARD_STORAGE_KEYS.includes(key) ? sessionStorage : localStorage;
 }
 
-resetTemporaryBoardsOnReload();
+
 
 function readPrototypeStorageList(key) {
   try {
@@ -277,6 +264,12 @@ syncSavedQueryBoardsToReferences();
 syncComponentBoardOverridesToReferences();
 syncReportReferencesFromCatalog();
 syncVersionCountersFromStorage();
+try {
+  const deletedBoards = JSON.parse(sessionStorage.getItem("smart-query-deleted-board-nodes") || "[]");
+  REFERENCE_CATALOG.board.forEach((group) => {
+    group.items = group.items.filter((item) => !deletedBoards.includes(item.key.replace(/^board:/, "")));
+  });
+} catch (error) {}
 
 function syncReportReferencesFromCatalog() {
   const items = window.ReportReference?.readCatalog() || [];
@@ -3950,6 +3943,34 @@ function addCurrentResultToDashboard(assetType, button) {
   });
 }
 
+// 保存被点击的单个图表/表格，仪表盘与组件看板使用同一份资产。
+function captureDashboardAsset(name, directoryId) {
+  const isTable = currentDashboardAssetType === "table";
+  const selector = isTable ? "table" : ".chart-canvas, .report-chart-canvas";
+  let container = activeDashboardAssetButton?.parentElement;
+  while (container && !container.querySelector(selector)) {
+    if (container.matches(".current-chat-message, .chat-message, .result-card")) return null;
+    container = container.parentElement;
+  }
+  const node = container?.querySelector(selector);
+  if (!node) return null;
+  const asset = { name, directoryId, subject: Array.from(selectedThemes).join("、") || "销售分析", period: "", unit: "" };
+  if (isTable) {
+    asset.thumb = "table";
+    asset.headers = Array.from(node.querySelectorAll("thead th")).map((cell) => cell.textContent.trim());
+    asset.rows = Array.from(node.querySelectorAll("tbody tr")).map((row) => Array.from(row.querySelectorAll("td")).map((cell) => cell.textContent.trim()));
+    if (!asset.headers.length || !asset.rows.length) return null;
+  } else {
+    asset.option = cloneSerializableChartOption(node);
+    if (!asset.option) return null;
+    const type = asset.option.series?.[0]?.type;
+    asset.thumb = type === "pie" ? "pie" : type === "bar" ? "bars" : "line";
+    const axis = Array.isArray(asset.option.yAxis) ? asset.option.yAxis[0] : asset.option.yAxis;
+    asset.unit = axis?.name || "";
+  }
+  return asset;
+}
+
 function showFeedbackDetail(key) {
   const record = feedbackRecords[key];
   if (!record) return;
@@ -5950,34 +5971,7 @@ function openFeedback() {
 }
 
 // 仪表盘图表目录（与「我的仪表盘」侧栏保持一致）
-const DASHBOARD_DIR_TREE = [
-  { id: 'n1', name: '销售分析', children: [
-    { id: 'n1-1', name: '区域销售', children: [
-      { id: 'n1-1-1', name: '华东大区' },
-      { id: 'n1-1-2', name: '华北大区' },
-      { id: 'n1-1-3', name: '华南大区' },
-    ]},
-    { id: 'n1-2', name: '渠道转化', children: [
-      { id: 'n1-2-1', name: '线上渠道' },
-      { id: 'n1-2-2', name: '线下渠道' },
-    ]},
-    { id: 'n1-3', name: '目标达成' },
-  ]},
-  { id: 'n2', name: '客户分析', children: [
-    { id: 'n2-1', name: '客户画像', children: [
-      { id: 'n2-1-1', name: '行业分布' },
-      { id: 'n2-1-2', name: '等级分布' },
-    ]},
-    { id: 'n2-2', name: '客户复购' },
-  ]},
-  { id: 'n3', name: '库存分析', children: [
-    { id: 'n3-1', name: '仓库分布', children: [
-      { id: 'n3-1-1', name: '华东仓' },
-      { id: 'n3-1-2', name: '华北仓' },
-    ]},
-  ]},
-  { id: 'n4', name: '财务分析' },
-];
+const DASHBOARD_DIR_TREE = DashboardAssets.directories();
 
 // 我的看板目录（与「我的看板」侧栏保持一致）
 const BOARD_DIR_TREE = [
@@ -6002,14 +5996,14 @@ function renderDirTree() {
       const hasChildren = !!(it.children && it.children.length);
       const isLeaf = !hasChildren;
       let html = '<div class="dir-tree-node ' + (hasChildren ? 'expanded' : 'leaf') + '" data-id="' + it.id + '">';
-      html += '<div class="dir-tree-row" data-path="' + path.join(' / ') + '" data-leaf="' + (isLeaf ? 1 : 0) + '" style="padding-left:' + (10 + (level - 1) * 18) + 'px">';
+      html += '<div class="dir-tree-row" data-path="' + escapeHtml(path.join(' / ')) + '" data-leaf="' + (isLeaf ? 1 : 0) + '" style="padding-left:' + (10 + (level - 1) * 18) + 'px">';
       if (hasChildren) {
         html += '<span class="dir-tree-toggle">▾</span>';
       } else {
         html += '<span class="dir-tree-toggle empty"></span>';
       }
       html += '<span class="dir-tree-icon"></span>';
-      html += '<span class="dir-tree-label">' + it.name + '</span>';
+      html += '<span class="dir-tree-label">' + escapeHtml(it.name) + '</span>';
       html += '</div>';
       if (hasChildren) {
         html += '<div class="dir-tree-children">' + walk(it.children, level + 1, path) + '</div>';
@@ -6042,6 +6036,7 @@ function renderDirTree() {
     row.classList.add('active');
     const path = row.dataset.path;
     document.getElementById('saveDirText').textContent = path;
+    document.getElementById('saveDirText').dataset.directoryId = node.dataset.id;
     closeDirPicker();
   };
 }
@@ -6384,7 +6379,7 @@ function getCurrentQueryBoardData(title) {
     viewType: "query-html",
     querySnapshot,
     title: title || getCurrentResultTitle(),
-    meta: "来源：智能问数完整结果 · 当前版本 V1 · 最近更新：刚刚",
+    meta: "来源：智能问数完整结果 · 当前版本 V1 · 版本生成：刚刚",
     kpis: [
       { label: "最新销售额（万元）", value: lastValue.toLocaleString("zh-CN"), delta: "+4.1% 环比", deltaCls: "up", primary: true },
       { label: "统计周期", value: `${values.length}个月`, delta: "1月—6月", deltaCls: "up" },
@@ -6502,7 +6497,7 @@ function recordBoardDraftVersionEvent(context, version, method, boardData) {
   const events = readPrototypeStorageList("smart-query-board-version-events");
   const payload = cloneBoardDraft(boardData);
   payload.title = context.name;
-  payload.meta = `来源：智能问数修改 · 当前版本 V${version} · 最近更新：刚刚`;
+  payload.meta = `来源：智能问数修改 · 当前版本 V${version} · 版本生成：刚刚`;
   events.unshift({
     name: context.name,
     key: context.key,
@@ -6546,7 +6541,8 @@ function openSave(type, options = {}) {
     document.getElementById("saveInputNameLabel").textContent = isBoardSave ? "看板名称" : `${assetLabel}名称`;
     document.getElementById("saveInputName").value = isBoardSave ? (options.boardTitle || getCurrentResultTitle()) : (options.assetTitle || `当前${assetLabel}`);
     document.querySelector("#saveModeDashboard .field:nth-child(2) > label").textContent = isBoardSave ? "我的看板目录" : "保存目录";
-    document.getElementById("saveDirText").textContent = isBoardSave ? "销售经营" : "销售分析 / 区域销售";
+    document.getElementById("saveDirText").textContent = isBoardSave ? "销售经营" : (DashboardAssets.flatten().find((node) => node.id === "n1-1")?.path || DashboardAssets.flatten()[0]?.path || "");
+    document.getElementById("saveDirText").dataset.directoryId = isBoardSave ? "" : (DashboardAssets.flatten().find((node) => node.id === "n1-1")?.id || DashboardAssets.flatten()[0]?.id || "");
     if (saveConfirmButton) saveConfirmButton.textContent = isBoardSave ? "确认保存" : "确认添加";
     const boardSaveContext = document.getElementById("boardSaveContext");
     const boardSaveMethods = document.getElementById("boardSaveMethods");
@@ -6672,6 +6668,18 @@ function saveSuccess() {
       showToast("请选择保存目录");
       return;
     }
+    const selectedDirectoryId = document.getElementById("saveDirText").dataset.directoryId;
+    const targetDirectory = DashboardAssets.flatten().find((node) => node.id === selectedDirectoryId);
+    if (!targetDirectory) {
+      showToast("保存目录已变更，请重新选择");
+      return;
+    }
+    const asset = captureDashboardAsset(name, targetDirectory.id);
+    if (!asset) {
+      showToast("当前图表或表格尚未就绪，请等待结果展示后添加");
+      return;
+    }
+    DashboardAssets.add(asset);
     if (activeDashboardAssetButton) {
       activeDashboardAssetButton.classList.add("is-added");
       activeDashboardAssetButton.disabled = true;

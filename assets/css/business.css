@@ -6787,6 +6787,35 @@ textarea {
   grid-column: 1 / -1;
 }
 
+/* 仪表盘表格资产在看板查看页和编辑画布中使用相同布局。 */
+.board-page .asset-table-widget {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.board-page .asset-table-widget > h3 {
+  flex-shrink: 0;
+}
+
+.board-page .canvas-widget .inline-table {
+  max-width: 100%;
+  max-height: 360px;
+  margin-top: 0;
+  overflow: auto;
+}
+
+.board-page .asset-table-widget > .inline-table {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.board-page .canvas-widget .inline-table table {
+  width: 100%;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
 .board-page .board-canvas.saved-query-board-canvas {
   display: block;
   min-height: max-content;

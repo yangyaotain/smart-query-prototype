@@ -22,365 +22,8 @@
       position: relative;
     }
 
-    .preview-update-mask {
-      position: absolute;
-      inset: 0;
-      z-index: 8;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 18px;
-      background: rgba(15, 23, 42, 0.34);
-      backdrop-filter: blur(10px);
-    }
-
-    .preview-update-panel {
-      width: min(610px, calc(100% - 28px));
-      max-height: calc(100% - 24px);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      background: #fff;
-      border: 1px solid rgba(var(--primary-rgb), 0.18);
-      border-radius: 18px;
-      box-shadow: 0 24px 56px rgba(15, 23, 42, 0.22);
-      animation: previewUpdateIn 0.2s ease both;
-    }
-
-    @keyframes previewUpdateIn {
-      from { opacity: 0; transform: translateY(8px) scale(0.985); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
-    }
-
-    .preview-update-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      padding: 16px 18px;
-      background: linear-gradient(135deg, var(--primary-soft), var(--primary-panel-bg));
-      border-bottom: 1px solid var(--line);
-    }
-
-    .preview-update-title {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      min-width: 0;
-    }
-
-    .preview-update-orb {
-      position: relative;
-      width: 40px;
-      height: 40px;
-      flex: 0 0 auto;
-      display: grid;
-      place-items: center;
-      color: #fff;
-      background: linear-gradient(135deg, var(--primary), var(--primary-accent));
-      border-radius: 14px;
-      box-shadow: 0 12px 26px var(--primary-shadow);
-    }
-
-    .preview-update-orb::after {
-      content: "";
-      position: absolute;
-      inset: -4px;
-      border: 1px solid rgba(var(--primary-rgb), 0.24);
-      border-radius: 18px;
-      animation: previewUpdateGlow 1.6s ease-out infinite;
-    }
-
-    @keyframes previewUpdateGlow {
-      0% { transform: scale(0.94); opacity: 0.75; }
-      100% { transform: scale(1.22); opacity: 0; }
-    }
-
-    .preview-update-orb svg,
-    .preview-update-stop svg {
-      fill: none;
-      stroke: currentColor;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-
-    .preview-update-orb svg {
-      width: 20px;
-      height: 20px;
-      stroke-width: 1.9;
-    }
-
-    .preview-update-title h3 {
-      margin: 0 0 5px;
-      color: var(--heading);
-      font-size: 17px;
-      font-weight: 800;
-    }
-
-    .preview-update-title p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.45;
-    }
-
-    .preview-update-badge {
-      height: 28px;
-      padding: 0 10px;
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      flex: 0 0 auto;
-      color: var(--primary);
-      background: #fff;
-      border: 1px solid var(--primary-border-soft);
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
-      box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.08);
-    }
-
-    .preview-update-badge::before {
-      content: "";
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--primary);
-      box-shadow: 0 0 0 5px rgba(var(--primary-rgb), 0.1);
-    }
-
-    .preview-update-body {
-      min-height: 0;
-      overflow: auto;
-      padding: 16px 18px 18px;
-    }
-
-    .preview-update-overview {
-      display: grid;
-      grid-template-columns: 96px 1fr;
-      gap: 16px;
-      align-items: center;
-      margin-bottom: 16px;
-      padding: 14px;
-      background: linear-gradient(135deg, var(--primary-panel-bg), #fff);
-      border: 1px solid var(--primary-border-soft);
-      border-radius: 16px;
-    }
-
-    .preview-update-ring {
-      --update-progress: 0%;
-      width: 92px;
-      height: 92px;
-      display: grid;
-      place-items: center;
-      background:
-        radial-gradient(circle at center, #fff 58%, transparent 59%),
-        conic-gradient(var(--primary) var(--update-progress), var(--primary-border-soft) 0);
-      border-radius: 50%;
-      box-shadow: inset 0 0 0 1px rgba(var(--primary-rgb), 0.08);
-    }
-
-    .preview-update-ring strong {
-      color: var(--heading);
-      font-size: 20px;
-      font-weight: 800;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .preview-update-summary h4 {
-      margin: 0 0 8px;
-      color: var(--heading);
-      font-size: 14px;
-      font-weight: 800;
-    }
-
-    .preview-update-summary p {
-      margin: 0;
-      color: #475569;
-      font-size: 12px;
-      line-height: 1.65;
-    }
-
-    .preview-update-metrics {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 10px;
-    }
-
-    .preview-update-metric {
-      min-height: 28px;
-      padding: 5px 9px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: #475569;
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 9px;
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .preview-update-metric strong {
-      color: var(--primary);
-      font-variant-numeric: tabular-nums;
-    }
-
-    .preview-update-progress {
-      height: 8px;
-      overflow: hidden;
-      background: var(--primary-border-soft);
-      border-radius: 999px;
-    }
-
-    .preview-update-progress span {
-      width: 0;
-      height: 100%;
-      display: block;
-      background: linear-gradient(90deg, var(--primary), var(--primary-accent));
-      border-radius: inherit;
-      transition: width 0.28s ease;
-    }
-
-    .preview-update-process {
-      margin-top: 14px;
-      overflow: hidden;
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 16px;
-    }
-
-    .preview-update-process-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 12px 14px;
-      background: var(--primary-panel-bg);
-      border-bottom: 1px solid var(--line);
-    }
-
-    .preview-update-process-head h4 {
-      margin: 0;
-      color: var(--heading);
-      font-size: 13px;
-      font-weight: 800;
-    }
-
-    .preview-update-process-head span {
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .preview-update-timeline {
-      padding: 14px 16px 0;
-    }
-
-    .preview-update-step {
-      position: relative;
-      display: grid;
-      grid-template-columns: 22px 1fr;
-      gap: 9px;
-      padding-bottom: 14px;
-    }
-
-    .preview-update-step:not(:last-child)::before {
-      content: "";
-      position: absolute;
-      left: 8px;
-      top: 21px;
-      bottom: 0;
-      width: 1px;
-      background: var(--primary-border-soft);
-    }
-
-    .preview-update-step-dot {
-      z-index: 1;
-      width: 18px;
-      height: 18px;
-      margin-top: 2px;
-      display: grid;
-      place-items: center;
-      color: #94a3b8;
-      background: #fff;
-      border: 1px solid #dbe2ec;
-      border-radius: 50%;
-      font-size: 10px;
-      font-weight: 800;
-    }
-
-    .preview-update-step.is-done .preview-update-step-dot {
-      color: #fff;
-      background: var(--primary);
-      border-color: var(--primary);
-    }
-
-    .preview-update-step.is-current .preview-update-step-dot {
-      color: #fff;
-      background: var(--orange);
-      border-color: var(--orange);
-      animation: thinkingPulse 1.1s infinite;
-    }
-
-    .preview-update-step strong {
-      display: block;
-      margin-bottom: 3px;
-      color: var(--heading);
-      font-size: 12px;
-      font-weight: 800;
-    }
-
-    .preview-update-step p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 11px;
-      line-height: 1.55;
-    }
-
-    .preview-update-step.is-current strong {
-      color: var(--primary);
-    }
-
-    .preview-update-foot {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      padding: 13px 18px;
-      background: #fff;
-      border-top: 1px solid var(--line);
-    }
-
-    .preview-update-foot p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.6;
-    }
-
-    .preview-update-stop {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      flex: 0 0 auto;
-      color: #dc2626;
-      background: #fff;
-      border-color: #fecaca;
-    }
-
-    .preview-update-stop:hover {
-      color: #b91c1c;
-      background: #fef2f2;
-      border-color: #fca5a5;
-    }
-
-    .preview-update-stop svg {
-      width: 14px;
-      height: 14px;
-      stroke-width: 2;
-    }
+    #dashboardModule .dash-table .col-actions { width: 166px; white-space: nowrap; }
+    #dashboardModule .row-icon { width: auto; padding: 0 8px; gap: 4px; font-size: 13px; }
   </style>
 </head>
 <body>
@@ -415,177 +58,7 @@
         </div>
         <input class="search-box" id="treeSearch" style="margin-top:12px;" placeholder="搜索目录" />
       </div>
-      <div class="tree-list dir-tree" id="dirTree">
-        <div class="tree-node expanded" data-id="n1" data-level="1" draggable="true">
-          <div class="tree-row active">
-            <span class="tree-toggle">▾</span>
-            <span class="tree-icon"></span>
-            <span class="tree-label">销售分析</span>
-            <span class="tree-count">8</span>
-          </div>
-          <div class="tree-children">
-            <div class="tree-node expanded" data-id="n1-1" data-level="2" draggable="true">
-              <div class="tree-row">
-                <span class="tree-toggle">▾</span>
-                <span class="tree-icon"></span>
-                <span class="tree-label">区域销售</span>
-                <span class="tree-count">5</span>
-              </div>
-              <div class="tree-children">
-                <div class="tree-node leaf" data-id="n1-1-1" data-level="3" draggable="true">
-                  <div class="tree-row">
-                    <span class="tree-toggle empty"></span>
-                    <span class="tree-icon"></span>
-                    <span class="tree-label">华东大区</span>
-                    <span class="tree-count">3</span>
-                  </div>
-                </div>
-                <div class="tree-node leaf" data-id="n1-1-2" data-level="3" draggable="true">
-                  <div class="tree-row">
-                    <span class="tree-toggle empty"></span>
-                    <span class="tree-icon"></span>
-                    <span class="tree-label">华北大区</span>
-                    <span class="tree-count">2</span>
-                  </div>
-                </div>
-                <div class="tree-node leaf" data-id="n1-1-3" data-level="3" draggable="true">
-                  <div class="tree-row">
-                    <span class="tree-toggle empty"></span>
-                    <span class="tree-icon"></span>
-                    <span class="tree-label">华南大区</span>
-                    <span class="tree-count">0</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="tree-node collapsed" data-id="n1-2" data-level="2" draggable="true">
-              <div class="tree-row">
-                <span class="tree-toggle">▸</span>
-                <span class="tree-icon"></span>
-                <span class="tree-label">渠道转化</span>
-                <span class="tree-count">4</span>
-              </div>
-              <div class="tree-children">
-                <div class="tree-node leaf" data-id="n1-2-1" data-level="3" draggable="true">
-                  <div class="tree-row">
-                    <span class="tree-toggle empty"></span>
-                    <span class="tree-icon"></span>
-                    <span class="tree-label">线上渠道</span>
-                    <span class="tree-count">2</span>
-                  </div>
-                </div>
-                <div class="tree-node leaf" data-id="n1-2-2" data-level="3" draggable="true">
-                  <div class="tree-row">
-                    <span class="tree-toggle empty"></span>
-                    <span class="tree-icon"></span>
-                    <span class="tree-label">线下渠道</span>
-                    <span class="tree-count">2</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="tree-node leaf" data-id="n1-3" data-level="2" draggable="true">
-              <div class="tree-row">
-                <span class="tree-toggle empty"></span>
-                <span class="tree-icon"></span>
-                <span class="tree-label">目标达成</span>
-                <span class="tree-count">0</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="tree-node expanded" data-id="n2" data-level="1" draggable="true">
-          <div class="tree-row">
-            <span class="tree-toggle">▾</span>
-            <span class="tree-icon"></span>
-            <span class="tree-label">客户分析</span>
-            <span class="tree-count">6</span>
-          </div>
-          <div class="tree-children">
-            <div class="tree-node expanded" data-id="n2-1" data-level="2" draggable="true">
-              <div class="tree-row">
-                <span class="tree-toggle">▾</span>
-                <span class="tree-icon"></span>
-                <span class="tree-label">客户画像</span>
-                <span class="tree-count">4</span>
-              </div>
-              <div class="tree-children">
-                <div class="tree-node leaf" data-id="n2-1-1" data-level="3" draggable="true">
-                  <div class="tree-row">
-                    <span class="tree-toggle empty"></span>
-                    <span class="tree-icon"></span>
-                    <span class="tree-label">行业分布</span>
-                    <span class="tree-count">2</span>
-                  </div>
-                </div>
-                <div class="tree-node leaf" data-id="n2-1-2" data-level="3" draggable="true">
-                  <div class="tree-row">
-                    <span class="tree-toggle empty"></span>
-                    <span class="tree-icon"></span>
-                    <span class="tree-label">等级分布</span>
-                    <span class="tree-count">2</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="tree-node leaf" data-id="n2-2" data-level="2" draggable="true">
-              <div class="tree-row">
-                <span class="tree-toggle empty"></span>
-                <span class="tree-icon"></span>
-                <span class="tree-label">客户复购</span>
-                <span class="tree-count">2</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="tree-node collapsed" data-id="n3" data-level="1" draggable="true">
-          <div class="tree-row">
-            <span class="tree-toggle">▸</span>
-            <span class="tree-icon"></span>
-            <span class="tree-label">库存分析</span>
-            <span class="tree-count">3</span>
-          </div>
-          <div class="tree-children">
-            <div class="tree-node expanded" data-id="n3-1" data-level="2" draggable="true">
-              <div class="tree-row">
-                <span class="tree-toggle">▾</span>
-                <span class="tree-icon"></span>
-                <span class="tree-label">仓库分布</span>
-                <span class="tree-count">3</span>
-              </div>
-              <div class="tree-children">
-                <div class="tree-node leaf" data-id="n3-1-1" data-level="3" draggable="true">
-                  <div class="tree-row">
-                    <span class="tree-toggle empty"></span>
-                    <span class="tree-icon"></span>
-                    <span class="tree-label">华东仓</span>
-                    <span class="tree-count">2</span>
-                  </div>
-                </div>
-                <div class="tree-node leaf" data-id="n3-1-2" data-level="3" draggable="true">
-                  <div class="tree-row">
-                    <span class="tree-toggle empty"></span>
-                    <span class="tree-icon"></span>
-                    <span class="tree-label">华北仓</span>
-                    <span class="tree-count">1</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="tree-node leaf" data-id="n4" data-level="1" draggable="true">
-          <div class="tree-row">
-            <span class="tree-toggle empty"></span>
-            <span class="tree-icon"></span>
-            <span class="tree-label">财务分析</span>
-            <span class="tree-count">2</span>
-          </div>
-        </div>
-      </div>
+      <div class="tree-list dir-tree" id="dirTree"></div>
 
       <!-- 右键菜单 -->
       <div class="context-menu hidden" id="treeContextMenu">
@@ -600,7 +73,7 @@
       <div class="module-content-head">
         <div>
           <h2>我的仪表盘</h2>
-          <p style="margin:6px 0 0;color:#6b7280;font-size:13px;">来源智能问数，沉淀个人常用图表资产。</p>
+          <p style="margin:6px 0 0;color:#6b7280;font-size:13px;">来源智能问数，沉淀个人常用图表资产，数据实时展示。</p>
         </div>
         <div class="toolbar dash-toolbar">
           <button class="danger-btn icon-btn hidden" id="btnBatchDelete"><span class="btn-icon">🗑</span>批量删除 <span class="num-badge" id="batchCount">0</span></button>
@@ -617,8 +90,8 @@
       <div class="dash-query-bar">
         <label for="dashNameQuery">名称</label>
         <input id="dashNameQuery" type="text" placeholder="请输入仪表盘名称" />
-        <button type="button" class="primary-btn" id="btnDashQuery">查询</button>
-        <button type="button" class="ghost-btn" id="btnDashReset">重置</button>
+        <button type="button" class="primary-btn" id="btnDashQuery"><span aria-hidden="true">⌕</span>查询</button>
+        <button type="button" class="ghost-btn" id="btnDashReset"><span aria-hidden="true">↺</span>重置</button>
       </div>
       <div class="module-scroll">
         <!-- 平铺视图 -->
@@ -669,13 +142,10 @@
     <div class="drawer-head">
       <div>
         <h3 id="previewTitle">仪表盘预览</h3>
-        <p id="previewMeta">分析主题：销售分析 · 查询时间：2026-04-28 08:43 · 数据更新时间：2026-04-28 08:00</p>
+        <p id="previewMeta">分析主题：销售分析 · 实时数据</p>
       </div>
       <div class="preview-drawer-actions">
-        <button class="action-dropdown-btn" type="button" id="previewDataUpdateBtn" onclick="startPreviewDataUpdate()">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.5 6.2"></path><path d="M3 12A9 9 0 0 1 18.5 5.8"></path><path d="M18 2v5h-5"></path><path d="M6 22v-5h5"></path></svg>
-          <span>数据更新</span>
-        </button>
+
         <button class="close" data-act="close">×</button>
       </div>
     </div>
@@ -699,82 +169,11 @@
         </div>
       </section>
 
-      <div class="preview-update-mask hidden" id="previewUpdateMask" role="dialog" aria-modal="true" aria-labelledby="previewUpdateTitle">
-        <section class="preview-update-panel">
-          <div class="preview-update-head">
-            <div class="preview-update-title">
-              <div class="preview-update-orb">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3"></path><path d="M12 18v3"></path><path d="M3 12h3"></path><path d="M18 12h3"></path><path d="M5.6 5.6l2.1 2.1"></path><path d="M16.3 16.3l2.1 2.1"></path><path d="M18.4 5.6l-2.1 2.1"></path><path d="M7.7 16.3l-2.1 2.1"></path><circle cx="12" cy="12" r="3"></circle></svg>
-              </div>
-              <div>
-                <h3 id="previewUpdateTitle">数据更新中</h3>
-                <p id="previewUpdateSubtitle">AI 正在刷新当前仪表盘资产数据</p>
-              </div>
-            </div>
-            <div class="preview-update-badge" id="previewUpdateBadge">运行中</div>
-          </div>
-          <div class="preview-update-body">
-            <div class="preview-update-overview">
-              <div class="preview-update-ring" id="previewUpdateRing">
-                <strong id="previewUpdatePercent">0%</strong>
-              </div>
-              <div class="preview-update-summary">
-                <h4 id="previewUpdatePhase">准备更新</h4>
-                <p id="previewUpdateDesc">正在读取当前仪表盘资产类型和数据更新时间。</p>
-                <div class="preview-update-metrics">
-                  <span class="preview-update-metric">当前仪表盘 <strong id="previewUpdateName">近6个月销售额趋势</strong></span>
-                  <span class="preview-update-metric">已用时间 <strong id="previewUpdateElapsed">0.0s</strong></span>
-                  <span class="preview-update-metric">模拟耗时 <strong>10s</strong></span>
-                </div>
-              </div>
-            </div>
-            <div class="preview-update-progress"><span id="previewUpdateProgressBar"></span></div>
-            <div class="preview-update-process">
-              <div class="preview-update-process-head">
-                <h4>AI 思考与数据执行过程</h4>
-                <span id="previewUpdateStepSummary">0 / 6 已完成</span>
-              </div>
-              <div class="preview-update-timeline" id="previewUpdateTimeline">
-                <div class="preview-update-step" data-step="0">
-                  <div class="preview-update-step-dot">1</div>
-                  <div><strong>识别资产内容</strong><p>读取仪表盘名称、分析主题和资产类型。</p></div>
-                </div>
-                <div class="preview-update-step" data-step="1">
-                  <div class="preview-update-step-dot">2</div>
-                  <div><strong>确认指标口径</strong><p>匹配销售额、订单量、环比、同比和客单价等指标口径。</p></div>
-                </div>
-                <div class="preview-update-step" data-step="2">
-                  <div class="preview-update-step-dot">3</div>
-                  <div><strong>刷新资产数据</strong><p>同步当前图表或表格所需的数据切片。</p></div>
-                </div>
-                <div class="preview-update-step" data-step="3">
-                  <div class="preview-update-step-dot">4</div>
-                  <div><strong>校验更新结果</strong><p>检查缺失值、异常波动和统计口径差异。</p></div>
-                </div>
-                <div class="preview-update-step" data-step="4">
-                  <div class="preview-update-step-dot">5</div>
-                  <div><strong>重新生成预览</strong><p>使用最新数据重新绘制图表或更新表格。</p></div>
-                </div>
-                <div class="preview-update-step" data-step="5">
-                  <div class="preview-update-step-dot">6</div>
-                  <div><strong>完成数据更新</strong><p>记录更新时间，准备恢复资产预览。</p></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="preview-update-foot">
-            <p id="previewUpdateFootNote">更新期间当前预览内容暂不变更，可关闭抽屉或打开其他预览。</p>
-            <button class="ghost-btn preview-update-stop" type="button" id="previewUpdateStopBtn">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"></rect></svg>
-              <span>停止更新</span>
-            </button>
-          </div>
-        </section>
-      </div>
+
     </div>
 
     <div class="drawer-foot">
-      <button class="ghost-btn" data-act="close">关闭</button>
+      <button class="ghost-btn" data-act="close"><span aria-hidden="true">×</span>关闭</button>
     </div>
   </aside>
 
@@ -797,6 +196,8 @@
     </div>
   </section>
 
+  <script src="../../assets/js/echarts.min.js"></script>
+  <script src="../../assets/js/dashboard-assets.js?v=20261118"></script>
   <script src="../../assets/js/common.js?v=20261110-keyword-highlight"></script>
   <script>
     (function () {
@@ -807,24 +208,11 @@
       let dragNode = null;
 
       // ---- 仪表盘示例数据（来源：智能问数常用问题与指标）----
-      const DASHBOARDS = [
-        { id: 'd1',  name: '近6个月销售额趋势',   thumb: 'line',  modifier: '张三', time: '2026-04-22 18:18:28' },
-        { id: 'd2',  name: '各大区订单量对比',     thumb: 'bars',  modifier: '李四', time: '2026-04-22 17:16:25' },
-        { id: 'd3',  name: '客户行业分布TOP10',   thumb: 'pie',   modifier: '王五', time: '2026-04-21 17:43:17' },
-        { id: 'd4',  name: '月度销售目标完成度',   thumb: 'line',  modifier: '张三', time: '2026-04-20 17:16:40' },
-        { id: 'd5',  name: 'TOP10客户贡献排行',   thumb: 'bars',  modifier: '李四', time: '2026-04-20 11:17:00' },
-        { id: 'd6',  name: '渠道转化率分析',       thumb: 'line',  modifier: '赵六', time: '2026-04-19 17:17:28' },
-        { id: 'd7',  name: '库存周转率走势',       thumb: 'bars',  modifier: '王五', time: '2026-04-18 09:32:45' },
-        { id: 'd8',  name: '产品线毛利率TOP榜',   thumb: 'table', modifier: '张三', time: '2026-04-17 14:08:12' },
-        { id: 'd9',  name: '新老客户复购对比',     thumb: 'pie',   modifier: '李四', time: '2026-04-16 16:55:33' },
-        { id: 'd10', name: '城市订单量明细',       thumb: 'table', modifier: '赵六', time: '2026-04-15 10:24:50' },
-        { id: 'd11', name: '产品线销售占比',       thumb: 'pie',   modifier: '王五', time: '2026-04-14 19:42:18' },
-        { id: 'd12', name: '关键经营指标KPI总览', thumb: 'table', modifier: '张三', time: '2026-04-13 18:18:28' },
-      ];
+      let DASHBOARDS = DashboardAssets.list();
 
       const DASH_STATE = {
         keyword: '',
-        deletedIds: new Set(),
+        directoryId: '',
       };
 
       const ICON_PREVIEW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
@@ -876,433 +264,44 @@
         return buildBars();
       }
 
-      // ---- 预览抽屉数据模板（单个图表或单个表格） ----
-      const PREVIEW_TPL = {
-        line: {
-          subject: '销售分析',
-          chartTitle: '月度销售额趋势',
-          chartMeta: '单位：万元 · 数据更新：今日 08:00'
-        },
-        bars: {
-          subject: '销售分析',
-          chartTitle: '分组销售额对比',
-          chartMeta: '单位：万元 · 数据更新：今日 08:00'
-        },
-        pie: {
-          subject: '客户分析',
-          chartTitle: '行业分布占比',
-          chartMeta: '统计周期：近 6 个月'
-        },
-        table: {
-          subject: '销售运营',
-          chartTitle: '明细汇总',
-          chartMeta: '近 30 天数据',
-          headers: ['城市', '订单量', '销售额（万元）', '环比', '同比'],
-          rows: [
-            ['上海', '18,520', '2,840', '+12.4%', '+18.2%'],
-            ['北京', '15,360', '2,460', '+9.8%', '+15.6%'],
-            ['深圳', '12,780', '2,120', '+8.6%', '+13.4%'],
-            ['广州', '10,940', '1,860', '+6.2%', '+10.8%'],
-            ['杭州', '9,260', '1,580', '+5.4%', '+9.2%'],
-            ['成都', '7,820', '1,320', '+3.6%', '+7.6%'],
-          ],
-        },
-      };
-
-      const PREVIEW_LINE_PATHS = {
-        full: 'M30,180 L100,150 L170,138 L240,90 L310,72 L380,55 L450,40',
-        dots: [[30,180],[100,150],[170,138],[240,90],[310,72],[380,55],[450,40]],
-        labels: ['1月','2月','3月','4月','5月','6月','7月']
-      };
-
-      function buildPreviewLine() {
-        const theme = window.getSmartQueryThemeColors();
-        const path = PREVIEW_LINE_PATHS.full;
-        const dots = PREVIEW_LINE_PATHS.dots;
-        const labels = PREVIEW_LINE_PATHS.labels;
-        const yLabels = ['3500','2800','2100','1400','700','0'];
-        let svg = '<svg viewBox="0 0 500 240" class="prev-svg">';
-        svg += '<defs><linearGradient id="prevLF" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="' + theme.primary + '" stop-opacity="0.32"/><stop offset="100%" stop-color="' + theme.primary + '" stop-opacity="0"/></linearGradient></defs>';
-        for (let i = 0; i < 5; i++) {
-          const y = 40 + i * 36;
-          svg += '<line x1="30" y1="' + y + '" x2="480" y2="' + y + '" stroke="#eef2f7" stroke-dasharray="3 4"/>';
-        }
-        yLabels.forEach((l, i) => {
-          svg += '<text x="22" y="' + (44 + i * 36) + '" fill="#94a3b8" font-size="10" text-anchor="end">' + l + '</text>';
-        });
-        labels.forEach((l, i) => {
-          svg += '<text x="' + (30 + i * 70) + '" y="216" fill="#64748b" font-size="11" text-anchor="middle">' + l + '</text>';
-        });
-        svg += '<path d="' + path + ' L450,200 L30,200 Z" fill="url(#prevLF)"/>';
-        svg += '<path d="' + path + '" fill="none" stroke="' + theme.primary + '" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
-        dots.forEach(([x,y]) => {
-          svg += '<circle cx="' + x + '" cy="' + y + '" r="3.5" fill="#fff" stroke="' + theme.primary + '" stroke-width="2"/>';
-        });
-        svg += '</svg>';
-        return svg;
-      }
-
-      function buildPreviewBars() {
-        const theme = window.getSmartQueryThemeColors();
-        const data = [4820, 3560, 2180, 1920, 1640, 1210];
-        const labels = ['华东','华南','华北','西南','华中','东北'];
-        const max = 5000;
-        let svg = '<svg viewBox="0 0 500 240" class="prev-svg">';
-        for (let i = 0; i < 5; i++) {
-          const y = 40 + i * 36;
-          svg += '<line x1="40" y1="' + y + '" x2="480" y2="' + y + '" stroke="#eef2f7" stroke-dasharray="3 4"/>';
-        }
-        ['5000','4000','3000','2000','1000','0'].forEach((l, i) => {
-          svg += '<text x="32" y="' + (44 + i * 36) + '" fill="#94a3b8" font-size="10" text-anchor="end">' + l + '</text>';
-        });
-        const barW = 38;
-        const gap = (480 - 40 - barW * 6) / 7;
-        data.forEach((v, i) => {
-          const h = (v / max) * 180;
-          const x = 40 + gap + i * (barW + gap);
-          const y = 220 - h;
-          svg += '<rect x="' + x + '" y="' + y + '" width="' + barW + '" height="' + h + '" rx="4" fill="url(#prevBG)"/>';
-          svg += '<text x="' + (x + barW/2) + '" y="' + (y - 6) + '" fill="' + theme.primary + '" font-size="10" font-weight="600" text-anchor="middle">' + v + '</text>';
-          svg += '<text x="' + (x + barW/2) + '" y="234" fill="#64748b" font-size="11" text-anchor="middle">' + labels[i] + '</text>';
-        });
-        svg += '<defs><linearGradient id="prevBG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="' + theme.primaryAccent + '"/><stop offset="100%" stop-color="' + theme.primary + '"/></linearGradient></defs>';
-        svg += '</svg>';
-        return svg;
-      }
-
-      function buildPreviewPie() {
-        const theme = window.getSmartQueryThemeColors();
-        const data = [
-          { name: '电子产品', val: 32, color: theme.primary },
-          { name: '快消品',   val: 24, color: theme.primaryAccent },
-          { name: '服装服饰', val: 18, color: theme.focusBorder },
-          { name: '家居家装', val: 14, color: theme.primaryBorder },
-          { name: '食品生鲜', val: 8,  color: theme.primaryBorderSoft },
-          { name: '其他',     val: 4,  color: '#f1f5fb' },
-        ];
-        const cx = 130, cy = 110, r = 80;
-        let acc = 0;
-        let slices = '';
-        data.forEach((d) => {
-          const start = acc / 100 * Math.PI * 2 - Math.PI / 2;
-          acc += d.val;
-          const end = acc / 100 * Math.PI * 2 - Math.PI / 2;
-          const x1 = cx + Math.cos(start) * r;
-          const y1 = cy + Math.sin(start) * r;
-          const x2 = cx + Math.cos(end) * r;
-          const y2 = cy + Math.sin(end) * r;
-          const large = d.val > 50 ? 1 : 0;
-          slices += '<path d="M' + cx + ',' + cy + ' L' + x1.toFixed(2) + ',' + y1.toFixed(2) + ' A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2.toFixed(2) + ',' + y2.toFixed(2) + ' Z" fill="' + d.color + '" stroke="#fff" stroke-width="1.5"/>';
-        });
-        let legend = '<g transform="translate(290,30)">';
-        data.forEach((d, i) => {
-          const y = i * 28;
-          legend += '<rect x="0" y="' + y + '" width="14" height="14" rx="3" fill="' + d.color + '"/>';
-          legend += '<text x="22" y="' + (y + 11) + '" fill="#374151" font-size="12">' + d.name + '</text>';
-          legend += '<text x="180" y="' + (y + 11) + '" fill="' + theme.primary + '" font-size="12" font-weight="600" text-anchor="end">' + d.val + '%</text>';
-        });
-        legend += '</g>';
-        return '<svg viewBox="0 0 500 240" class="prev-svg">' + slices
-          + '<circle cx="' + cx + '" cy="' + cy + '" r="42" fill="#fff"/>'
-          + '<text x="' + cx + '" y="' + (cy - 4) + '" fill="#94a3b8" font-size="11" text-anchor="middle">合计客户</text>'
-          + '<text x="' + cx + '" y="' + (cy + 16) + '" fill="#17375e" font-size="20" font-weight="700" text-anchor="middle">1,517</text>'
-          + legend + '</svg>';
-      }
-
-      function renderPreviewChart(type) {
-        if (type === 'line') return buildPreviewLine();
-        if (type === 'bars') return buildPreviewBars();
-        if (type === 'pie')  return buildPreviewPie();
-        return '';
-      }
-
-      // ---- 预览抽屉控制 ----
+      // 预览和看板读取同一份图表资产，不包含手动更新流程。
       const previewMask = document.getElementById('previewMask');
       const previewDrawer = document.getElementById('previewDrawer');
-      let currentPreviewItem = null;
-
-      const PREVIEW_UPDATE_KEY = 'smart-query-dashboard-preview-update-task';
-      const PREVIEW_UPDATE_DURATION = 10000;
-      const PREVIEW_UPDATE_STEPS = [
-        { at: 0, phase: '资产识别', desc: '正在识别当前仪表盘名称、分析主题和资产类型。' },
-        { at: 1600, phase: '指标口径确认', desc: '正在匹配销售额、订单量、环比、同比和客单价等核心指标。' },
-        { at: 3200, phase: '资产数据刷新', desc: '正在同步当前图表或表格所需的数据切片。' },
-        { at: 5000, phase: '更新结果校验', desc: '正在检查缺失值、异常波动和统计口径差异。' },
-        { at: 6800, phase: '资产预览生成', desc: '正在使用最新数据重新生成当前资产预览。' },
-        { at: 8400, phase: '更新完成', desc: '正在记录更新时间，准备恢复资产预览。' }
-      ];
-      let previewUpdateTimer = null;
-      let previewUpdateTask = null;
-
-      const previewUpdateEls = {
-        mask: document.getElementById('previewUpdateMask'),
-        title: document.getElementById('previewUpdateTitle'),
-        subtitle: document.getElementById('previewUpdateSubtitle'),
-        badge: document.getElementById('previewUpdateBadge'),
-        ring: document.getElementById('previewUpdateRing'),
-        percent: document.getElementById('previewUpdatePercent'),
-        phase: document.getElementById('previewUpdatePhase'),
-        desc: document.getElementById('previewUpdateDesc'),
-        name: document.getElementById('previewUpdateName'),
-        elapsed: document.getElementById('previewUpdateElapsed'),
-        progressBar: document.getElementById('previewUpdateProgressBar'),
-        stepSummary: document.getElementById('previewUpdateStepSummary'),
-        timeline: document.getElementById('previewUpdateTimeline'),
-        footNote: document.getElementById('previewUpdateFootNote'),
-        stopBtn: document.getElementById('previewUpdateStopBtn'),
-        trigger: document.getElementById('previewDataUpdateBtn')
-      };
-
-      function savePreviewUpdateTask(task) {
-        try {
-          localStorage.setItem(PREVIEW_UPDATE_KEY, JSON.stringify(task));
-        } catch (e) {}
-      }
-
-      function clearPreviewUpdateTask() {
-        try {
-          localStorage.removeItem(PREVIEW_UPDATE_KEY);
-        } catch (e) {}
-      }
-
-      function readPreviewUpdateTask() {
-        try {
-          const raw = localStorage.getItem(PREVIEW_UPDATE_KEY);
-          if (!raw) return null;
-          const task = JSON.parse(raw);
-          if (!task || !task.startedAt || task.status !== 'running') return null;
-          return task;
-        } catch (e) {
-          return null;
-        }
-      }
-
-      function getPreviewUpdateElapsed(task) {
-        return Math.max(0, Date.now() - Number(task.startedAt || 0));
-      }
-
-      function getPreviewUpdateStepIndex(elapsed) {
-        let index = 0;
-        PREVIEW_UPDATE_STEPS.forEach((step, i) => {
-          if (elapsed >= step.at) index = i;
-        });
-        return index;
-      }
-
-      function getPreviewDataUpdateText(item) {
-        return (item && item.dataUpdatedAt) || '今日 08:00';
-      }
-
-      function buildPreviewMetaText(item, tpl) {
-        return '分析主题：' + tpl.subject + ' · 查询时间：' + item.time + ' · 数据更新时间：' + getPreviewDataUpdateText(item);
-      }
-
-      function buildPreviewChartMetaText(item, tpl) {
-        return tpl.chartMeta.replace(/数据更新：.*$/, '数据更新：' + getPreviewDataUpdateText(item));
-      }
-
-      function refreshPreviewTimeText(item) {
-        if (!item || !currentPreviewItem || currentPreviewItem.id !== item.id || previewDrawer.classList.contains('hidden')) return;
-        const tpl = PREVIEW_TPL[item.thumb] || PREVIEW_TPL.line;
-        document.getElementById('previewMeta').textContent = buildPreviewMetaText(item, tpl);
-        document.getElementById('previewChartMeta').textContent = buildPreviewChartMetaText(item, tpl);
-        document.getElementById('previewTableMeta').textContent = buildPreviewChartMetaText(item, tpl);
-      }
-
-      function setPreviewUpdateVisible(visible) {
-        if (!previewUpdateEls.mask) return;
-        previewUpdateEls.mask.classList.toggle('hidden', !visible);
-        if (previewUpdateEls.trigger) previewUpdateEls.trigger.disabled = visible;
-      }
-
-      function isPreviewUpdateForCurrent(task) {
-        return !!task && !!currentPreviewItem && task.dashboardId === currentPreviewItem.id && !previewDrawer.classList.contains('hidden');
-      }
-
-      function paintPreviewUpdate(task) {
-        const elapsed = Math.min(getPreviewUpdateElapsed(task), PREVIEW_UPDATE_DURATION);
-        const progress = Math.min(1, elapsed / PREVIEW_UPDATE_DURATION);
-        const percent = Math.round(progress * 100);
-        const stepIndex = getPreviewUpdateStepIndex(elapsed);
-        const currentStep = PREVIEW_UPDATE_STEPS[stepIndex];
-        const isFinished = elapsed >= PREVIEW_UPDATE_DURATION;
-        const completedCount = isFinished ? PREVIEW_UPDATE_STEPS.length : stepIndex;
-
-        previewUpdateEls.title.textContent = isFinished ? '数据更新完成' : '数据更新中';
-        previewUpdateEls.subtitle.textContent = isFinished
-          ? '已完成当前仪表盘资产数据刷新和结果校验'
-          : 'AI 正在刷新当前仪表盘资产数据';
-        previewUpdateEls.badge.textContent = isFinished ? '已完成' : '运行中';
-        previewUpdateEls.percent.textContent = percent + '%';
-        previewUpdateEls.ring.style.setProperty('--update-progress', percent + '%');
-        previewUpdateEls.progressBar.style.width = percent + '%';
-        previewUpdateEls.phase.textContent = isFinished ? '更新完成' : currentStep.phase;
-        previewUpdateEls.desc.textContent = isFinished ? '最新资产数据已完成同步，预览已更新。' : currentStep.desc;
-        previewUpdateEls.name.textContent = task.dashboardName || '当前仪表盘';
-        previewUpdateEls.elapsed.textContent = (elapsed / 1000).toFixed(1) + 's';
-        previewUpdateEls.stepSummary.textContent = completedCount + ' / ' + PREVIEW_UPDATE_STEPS.length + ' 已完成';
-        previewUpdateEls.footNote.textContent = isFinished
-          ? '更新已完成，正在恢复抽屉内容。'
-          : '更新期间当前预览内容暂不变更，可关闭抽屉或打开其他预览。';
-
-        previewUpdateEls.timeline.querySelectorAll('.preview-update-step').forEach((stepNode, i) => {
-          const dot = stepNode.querySelector('.preview-update-step-dot');
-          stepNode.classList.remove('is-done', 'is-current');
-          if (isFinished || i < stepIndex) {
-            stepNode.classList.add('is-done');
-            dot.textContent = '✓';
-          } else if (i === stepIndex) {
-            stepNode.classList.add('is-current');
-            dot.textContent = '•';
-          } else {
-            dot.textContent = String(i + 1);
-          }
-        });
-      }
-
-      function finishPreviewDataUpdate() {
-        if (!previewUpdateTask) return;
-        const finishedTask = previewUpdateTask;
-        clearInterval(previewUpdateTimer);
-        previewUpdateTimer = null;
-        if (isPreviewUpdateForCurrent(finishedTask)) {
-          paintPreviewUpdate(finishedTask);
-        }
-        clearPreviewUpdateTask();
-
-        const now = new Date();
-        const timeText = '今日 ' + now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
-        const target = DASHBOARDS.find((d) => d.id === finishedTask.dashboardId);
-        if (target) {
-          target.dataUpdatedAt = timeText;
-          refreshPreviewTimeText(target);
-        }
-
-        previewUpdateTask = null;
-        setTimeout(() => {
-          setPreviewUpdateVisible(false);
-          showToast((finishedTask.dashboardName || '仪表盘') + ' 数据更新完成');
-        }, isPreviewUpdateForCurrent(finishedTask) ? 650 : 0);
-      }
-
-      function syncPreviewUpdateMask() {
-        if (!previewUpdateTask) {
-          setPreviewUpdateVisible(false);
-          return;
-        }
-        if (getPreviewUpdateElapsed(previewUpdateTask) >= PREVIEW_UPDATE_DURATION) {
-          finishPreviewDataUpdate();
-          return;
-        }
-        if (isPreviewUpdateForCurrent(previewUpdateTask)) {
-          setPreviewUpdateVisible(true);
-          paintPreviewUpdate(previewUpdateTask);
-        } else {
-          setPreviewUpdateVisible(false);
-        }
-      }
-
-      function openPreviewUpdateTask(task) {
-        previewUpdateTask = task;
-        clearInterval(previewUpdateTimer);
-        syncPreviewUpdateMask();
-        previewUpdateTimer = setInterval(() => {
-          if (!previewUpdateTask) return;
-          if (getPreviewUpdateElapsed(previewUpdateTask) >= PREVIEW_UPDATE_DURATION) {
-            finishPreviewDataUpdate();
-          } else {
-            syncPreviewUpdateMask();
-          }
-        }, 180);
-      }
-
-      function restorePreviewUpdateTask() {
-        const storedTask = readPreviewUpdateTask();
-        if (!storedTask) {
-          setPreviewUpdateVisible(false);
-          return;
-        }
-        if (getPreviewUpdateElapsed(storedTask) >= PREVIEW_UPDATE_DURATION) {
-          previewUpdateTask = storedTask;
-          finishPreviewDataUpdate();
-        } else {
-          openPreviewUpdateTask(storedTask);
-        }
-      }
-
-      window.startPreviewDataUpdate = function () {
-        const storedTask = readPreviewUpdateTask();
-        if (storedTask && getPreviewUpdateElapsed(storedTask) < PREVIEW_UPDATE_DURATION) {
-          openPreviewUpdateTask(storedTask);
-          if (!currentPreviewItem || storedTask.dashboardId !== currentPreviewItem.id) {
-            showToast('「' + (storedTask.dashboardName || '仪表盘') + '」正在更新，打开该预览可查看进度');
-          }
-          return;
-        }
-        if (!currentPreviewItem) return;
-        const task = {
-          status: 'running',
-          dashboardId: currentPreviewItem.id,
-          dashboardName: currentPreviewItem.name,
-          startedAt: Date.now(),
-          duration: PREVIEW_UPDATE_DURATION
-        };
-        savePreviewUpdateTask(task);
-        openPreviewUpdateTask(task);
-      };
-
-      previewUpdateEls.stopBtn.addEventListener('click', function () {
-        clearInterval(previewUpdateTimer);
-        previewUpdateTimer = null;
-        previewUpdateTask = null;
-        clearPreviewUpdateTask();
-        setPreviewUpdateVisible(false);
-        showToast('已停止更新，预览内容保持不变');
-      });
-
+      let previewChart = null;
+      let previewRequest = 0;
       function openPreview(item) {
-        currentPreviewItem = item;
-        const tpl = PREVIEW_TPL[item.thumb] || PREVIEW_TPL.line;
+        const request = ++previewRequest;
+        item = DashboardAssets.get(item.id);
+        if (!item) return;
+        if (previewChart) { previewChart.dispose(); previewChart = null; }
         document.getElementById('previewTitle').textContent = item.name + ' · 预览';
-        document.getElementById('previewMeta').textContent = buildPreviewMetaText(item, tpl);
-        document.getElementById('previewChartTitle').textContent = tpl.chartTitle;
-        document.getElementById('previewChartMeta').textContent = buildPreviewChartMetaText(item, tpl);
-        document.getElementById('previewTableTitle').textContent = tpl.chartTitle;
-        document.getElementById('previewTableMeta').textContent = buildPreviewChartMetaText(item, tpl);
-
-        const chartArea = document.getElementById('previewChartArea');
-        const chartCard = document.getElementById('previewChartCard');
-        const tableCard = document.getElementById('previewTableCard');
-        if (item.thumb === 'table') {
-          chartCard.classList.add('hidden');
-          tableCard.classList.remove('hidden');
-          const tableEl = document.getElementById('previewTable');
-          tableEl.innerHTML =
-            '<thead><tr>' + tpl.headers.map((h, i) => '<th' + (i > 0 ? ' class="num"' : '') + '>' + h + '</th>').join('') + '</tr></thead>' +
-            '<tbody>' + tpl.rows.map((row) => (
-              '<tr>' + row.map((c, i) => {
-                if (i === 0) return '<td>' + c + '</td>';
-                const cls = /^\+/.test(c) ? 'num up' : (/^-/.test(c) ? 'num down' : 'num');
-                return '<td class="' + cls + '">' + c + '</td>';
-              }).join('') + '</tr>'
-            )).join('') + '</tbody>';
-        } else {
-          chartCard.classList.remove('hidden');
-          tableCard.classList.add('hidden');
-          chartArea.innerHTML = renderPreviewChart(item.thumb);
-        }
-
+        document.getElementById('previewMeta').textContent = '分析主题：' + item.subject + ' · ' + DashboardAssets.meta(item);
+        document.getElementById('previewChartTitle').textContent = item.name;
+        document.getElementById('previewTableTitle').textContent = item.name;
+        document.getElementById('previewChartMeta').textContent = item.unit ? '单位：' + item.unit : '';
+        document.getElementById('previewTableMeta').textContent = item.period ? '统计周期：' + item.period : '';
+        const isTable = item.thumb === 'table';
+        document.getElementById('previewChartCard').classList.toggle('hidden', isTable);
+        document.getElementById('previewTableCard').classList.toggle('hidden', !isTable);
+        if (isTable) document.getElementById('previewTable').innerHTML = DashboardAssets.tableHTML(item).replace(/^<div[^>]*><table>|<\/table><\/div>$/g, '');
         previewMask.classList.remove('hidden');
         previewDrawer.classList.remove('hidden');
         previewDrawer.classList.add('open');
-        restorePreviewUpdateTask();
+        if (!isTable) requestAnimationFrame(() => {
+          if (request !== previewRequest || previewDrawer.classList.contains('hidden')) return;
+          previewChart = echarts.init(document.getElementById('previewChartArea'));
+          previewChart.setOption(DashboardAssets.option(item), true);
+          previewChart.resize();
+        });
       }
+      window.addEventListener('resize', () => previewChart?.resize());
 
       function closePreview() {
+        previewRequest += 1;
         previewMask.classList.add('hidden');
         previewDrawer.classList.add('hidden');
         previewDrawer.classList.remove('open');
-        setPreviewUpdateVisible(false);
+        if (previewChart) { previewChart.dispose(); previewChart = null; }
       }
 
       previewMask.addEventListener('click', closePreview);
@@ -1316,8 +315,9 @@
 
       function getVisibleDashboards() {
         const kw = DASH_STATE.keyword.trim().toLowerCase();
+        DASHBOARDS = DashboardAssets.list();
         return DASHBOARDS.filter((d) => {
-          if (DASH_STATE.deletedIds.has(d.id)) return false;
+          if (!DashboardAssets.inDirectory(d, DASH_STATE.directoryId)) return false;
           return !kw || d.name.toLowerCase().includes(kw);
         });
       }
@@ -1331,7 +331,7 @@
           return;
         }
         grid.innerHTML = data.map((d) => (
-          '<article class="dash-card" data-id="' + d.id + '" data-name="' + d.name + '">' +
+          '<article class="dash-card" data-id="' + d.id + '" data-name="' + DashboardAssets.escapeHTML(d.name) + '">' +
             thumbHTML(d.thumb) +
             '<div class="dash-overlay">' +
               '<button class="overlay-btn primary"><span class="overlay-ic">' + ICON_PREVIEW + '</span>预览</button>' +
@@ -1355,23 +355,45 @@
           '<tr data-id="' + d.id + '">' +
             '<td class="col-check"><label class="cb"><input type="checkbox" class="row-check" /><span class="cb-box"></span></label></td>' +
             '<td class="cell-name">' + keywordHighlight.html(d.name, DASH_STATE.keyword) + '</td>' +
-            '<td>' + d.modifier + '</td>' +
-            '<td>' + d.time + '</td>' +
+            '<td>' + DashboardAssets.escapeHTML(d.modifier) + '</td>' +
+            '<td>' + DashboardAssets.escapeHTML(d.time) + '</td>' +
             '<td class="col-actions">' +
-              '<button class="row-icon" title="预览">' + ICON_PREVIEW + '</button>' +
-              '<button class="row-icon danger" title="删除">' + ICON_DELETE + '</button>' +
+              '<button class="row-icon" title="预览">' + ICON_PREVIEW + '<span>预览</span></button>' +
+              '<button class="row-icon danger" title="删除">' + ICON_DELETE + '<span>删除</span></button>' +
             '</td>' +
           '</tr>'
         )).join('');
         document.getElementById('rowTotal').textContent = body.children.length;
       }
 
+      function renderAssetDirectories() {
+        const esc = DashboardAssets.escapeHTML;
+        function walk(nodes, level) {
+          return nodes.map((node) => {
+            const children = node.children || [];
+            const count = DashboardAssets.list().filter((asset) => DashboardAssets.inDirectory(asset, node.id)).length;
+            return '<div class="tree-node ' + (children.length ? 'expanded' : 'leaf') + '" data-id="' + esc(node.id) + '" data-level="' + level + '" draggable="true"><div class="tree-row"><span class="tree-toggle' + (children.length ? '' : ' empty') + '">' + (children.length ? '▾' : '') + '</span><span class="tree-icon"></span><span class="tree-label">' + esc(node.name) + '</span><span class="tree-count">' + count + '</span></div>' + (children.length ? '<div class="tree-children">' + walk(children, level + 1) + '</div>' : '') + '</div>';
+          }).join('');
+        }
+        tree.innerHTML = walk(DashboardAssets.directories(), 1);
+      }
+      function persistAssetDirectories() {
+        const walk = (parent) => Array.from(parent.children).filter((node) => node.classList.contains('tree-node')).map((node) => ({ id: node.dataset.id, name: node.querySelector(':scope > .tree-row > .tree-label').textContent.trim(), children: node.querySelector(':scope > .tree-children') ? walk(node.querySelector(':scope > .tree-children')) : [] }));
+        DashboardAssets.setDirectories(walk(tree));
+        if (!DashboardAssets.flatten().some((node) => node.id === DASH_STATE.directoryId)) DASH_STATE.directoryId = '';
+        renderDashboards();
+      }
       function renderDashboards() {
         const list = getVisibleDashboards();
         renderTiles(list);
         renderTable(list);
+        tree.querySelectorAll('.tree-node').forEach((node) => {
+          const count = node.querySelector(':scope > .tree-row > .tree-count');
+          if (count) count.textContent = DashboardAssets.list().filter((asset) => DashboardAssets.inDirectory(asset, node.dataset.id)).length;
+        });
       }
 
+      renderAssetDirectories();
       renderDashboards();
 
       // ---- info-tip 顶层 tooltip（避免被侧栏 overflow 截断） ----
@@ -1506,6 +528,8 @@
 
         tree.querySelectorAll('.tree-row.active').forEach((el) => el.classList.remove('active'));
         row.classList.add('active');
+        DASH_STATE.directoryId = node.dataset.id;
+        applyDashboardQuery();
       });
 
       // ---- 2. 右键菜单 ----
@@ -1595,7 +619,7 @@
         children.appendChild(newNode);
         const labelEl = newNode.querySelector(':scope > .tree-row > .tree-label');
         enterEdit(labelEl, '新建目录', (v, ok) => {
-          if (ok) showToast('已新增子目录：' + v);
+          if (ok) { persistAssetDirectories(); showToast('已新增子目录：' + v); }
         });
       }
 
@@ -1605,27 +629,29 @@
         node.parentElement.insertBefore(newNode, node.nextSibling);
         const labelEl = newNode.querySelector(':scope > .tree-row > .tree-label');
         enterEdit(labelEl, '新建目录', (v, ok) => {
-          if (ok) showToast('已新增同级目录：' + v);
+          if (ok) { persistAssetDirectories(); showToast('已新增同级目录：' + v); }
         });
       }
 
       function renameNode(node) {
         const labelEl = node.querySelector(':scope > .tree-row > .tree-label');
         enterEdit(labelEl, labelEl.textContent, (v, ok) => {
-          if (ok) showToast('已重命名为：' + v);
+          if (ok) { persistAssetDirectories(); showToast('已重命名为：' + v); }
         });
       }
 
       function deleteNode(node) {
+        if (DashboardAssets.list().some((asset) => DashboardAssets.inDirectory(asset, node.dataset.id))) { showToast('该目录下存在图表或表格，请先删除资产后再删除目录'); return; }
         const labelEl = node.querySelector(':scope > .tree-row > .tree-label');
         const name = labelEl.textContent;
         const hasChild = !!node.querySelector(':scope > .tree-children > .tree-node');
         showConfirm({
           title: '删除确认',
           subtitle: hasChild ? '删除后，该目录及其下子目录将不再展示。' : '删除后，该目录将不再展示。',
-          message: '确定要删除「<span style="color:#17375e;font-weight:700;">' + name + '</span>」吗？',
+          message: '确定要删除「<span style="color:#17375e;font-weight:700;">' + DashboardAssets.escapeHTML(name) + '</span>」吗？',
           onConfirm: function () {
             node.remove();
+            persistAssetDirectories();
             if (searchInput.value.trim()) applyTreeSearch();
             showToast('已删除：' + name);
           },
@@ -1724,6 +750,7 @@
         }
 
         cleanupEmptyParents();
+        persistAssetDirectories();
         if (searchInput.value.trim()) applyTreeSearch();
         showToast('已调整目录位置');
       });
@@ -1815,6 +842,8 @@
       btnDashReset.addEventListener('click', function () {
         dashNameQuery.value = '';
         DASH_STATE.keyword = '';
+        DASH_STATE.directoryId = '';
+        tree.querySelectorAll('.tree-row.active').forEach((row) => row.classList.remove('active'));
         renderDashboards();
         refreshBatchState();
       });
@@ -1861,10 +890,10 @@
         if (btn.classList.contains('danger')) {
           showConfirm({
             title: '删除确认',
-            subtitle: '删除后，该仪表盘将不再展示。',
-            message: '确定要删除「<span style="color:#17375e;font-weight:700;">' + name + '</span>」吗？',
+            subtitle: '删除后，该仪表盘将不再展示；已加入看板的组件继续保留。',
+            message: '确定要删除「<span style="color:#17375e;font-weight:700;">' + DashboardAssets.escapeHTML(name) + '</span>」吗？',
             onConfirm: function () {
-              DASH_STATE.deletedIds.add(tr.dataset.id);
+              DashboardAssets.remove([tr.dataset.id]);
               renderDashboards();
               refreshBatchState();
               showToast('已删除：' + name);
@@ -1881,13 +910,13 @@
         if (!checked.length) return;
         showConfirm({
           title: '批量删除',
-          subtitle: '删除后，选中的仪表盘将不再展示。',
+          subtitle: '删除后，选中的仪表盘将不再展示；已加入看板的组件继续保留。',
           message: '确定要批量删除选中的 <span style="color:#17375e;font-weight:700;">' + checked.length + '</span> 个仪表盘吗？',
           okText: '批量删除',
           onConfirm: function () {
             checked.forEach((cb) => {
               const tr = cb.closest('tr');
-              if (tr && tr.dataset.id) DASH_STATE.deletedIds.add(tr.dataset.id);
+              if (tr && tr.dataset.id) DashboardAssets.remove([tr.dataset.id]);
             });
             renderDashboards();
             refreshBatchState();
@@ -1906,10 +935,10 @@
         if (btn.classList.contains('danger')) {
           showConfirm({
             title: '删除确认',
-            subtitle: '删除后，该仪表盘将不再展示。',
-            message: '确定要删除「<span style="color:#17375e;font-weight:700;">' + name + '</span>」吗？',
+            subtitle: '删除后，该仪表盘将不再展示；已加入看板的组件继续保留。',
+            message: '确定要删除「<span style="color:#17375e;font-weight:700;">' + DashboardAssets.escapeHTML(name) + '</span>」吗？',
             onConfirm: function () {
-              DASH_STATE.deletedIds.add(card.dataset.id);
+              DashboardAssets.remove([card.dataset.id]);
               renderDashboards();
               refreshBatchState();
               showToast('已删除：' + name);
