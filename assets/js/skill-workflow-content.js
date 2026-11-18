@@ -6,6 +6,7 @@
   const id = new URLSearchParams(location.search).get('id');
   const names = { metric: '指标', chart: '图表', analysis: '自定义' };
   let skill, draft, selectedId, dirty = false, busy = false, documentReady = false;
+  let activeSqlId = '';
   let singleTest = null, globalTest = null, lastGlobalTestStatus = '';
   const executionRuns = new Map();
   const runIcon = 'M8 4v16l12-8L8 4', stopIcon = 'M7 7h10v10H7z';
@@ -557,13 +558,13 @@
     ];
     const date = Store.usesGenerationDate(part);
     let source = { label: '识别所需业务内容', detail: '根据提示词识别已配置的指标和图表结果' };
-    if (Store.hasAnalysisSql(part)) source = { label: '校验并模拟执行 SQL', detail: '校验查询语句，并将模拟结果提供给提示词' };
+    if (Store.hasAnalysisSql(part)) source = { label: '校验并模拟执行多个 SQL', detail: `逐项校验 ${Store.analysisQueries(part).length} 段查询，汇总指标值并提供给统一提示词` };
     else if (date) source = { label: '读取报告生成时间', detail: `本次测试值 ${settings.generatedAt}` };
     return [
       { label: '读取当前标注配置', detail: `自定义：${part.name}` },
       { label: '解析提示词与测试参数', detail: `已读取 ${part.prompt.length} 字提示词；${settingsText(settings)}` },
       source,
-      date ? { label: '生成日期内容', detail: '按提示词指定格式转换日期' } : { label: '生成文字内容', detail: '依据提示词组织分析结果' },
+      date && !Store.hasAnalysisSql(part) ? { label: '生成日期内容', detail: '按提示词指定格式转换日期' } : { label: '生成文字内容', detail: '依据统一提示词及各指标值生成分析建议' },
       { label: '检查输出格式', detail: date ? '保持原文档位置与格式，仅替换内容' : '检查长度和内容完整性' }
     ];
   }
@@ -591,7 +592,7 @@
   function enrichExecution(trace, part, result) {
     if (!result?.ok) return;
     const analysisSql = Store.hasAnalysisSql(part);
-    if (analysisSql) trace.steps[2].detail = `模拟查询完成，返回 ${result.rows.length} 条数据，用于内容生成`;
+    if (analysisSql) trace.steps[2].detail = `已汇总 ${result.queryResults.length} 个模拟指标：${result.queryResults.map((query) => `${query.name} ${query.text}`).join('；')}`;
     if (Store.usesGenerationDate(part)) {
       if (!analysisSql) trace.steps[2].detail = `已读取 ${new Date(result.at).toLocaleString('zh-CN', { hour12: false })}`;
       trace.steps[3].detail = `生成结果：${result.text}`;
@@ -707,13 +708,103 @@
     const control = options.select ? `<select data-field="${key}">${options.select.map((v) => `<option value="${esc(v)}" ${v === value ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select>` : options.textarea ? `<textarea data-field="${key}" rows="${options.rows || 4}" maxlength="6000">${esc(value)}</textarea>` : `<input data-field="${key}" value="${esc(value)}" ${options.number ? 'type="number" min="0" max="6" step="1"' : 'maxlength="100"'}>`;
     return `<label class="sw-field">${label}${control}</label>`;
   }
+  function activeSqlQuery() {
+    const queries = Store.analysisQueries(draft);
+    if (!queries.some((query) => query.id === activeSqlId)) activeSqlId = queries[0]?.id || '';
+    return queries.find((query) => query.id === activeSqlId);
+  }
+  function analysisSqlMarkup() {
+    const queries = Store.analysisQueries(draft), active = activeSqlQuery();
+    return `<div class="sw-sql-heading"><span>SQL 配置（选填）<small>共 ${queries.length} 项</small></span>${button('plus', '新增 SQL', 'data-sql-query-action="add"', 'secondary-btn')}</div>` +
+      (active ? `<div class="sw-sql-tabs" role="tablist" aria-label="指标 SQL">${queries.map((query) => `<div class="sw-sql-tab-item" role="presentation"><button type="button" class="sw-sql-tab sw-button ${query.id === activeSqlId ? 'is-active' : ''}" id="swSqlTab-${esc(query.id)}" role="tab" aria-controls="swSqlQueryPanel" aria-selected="${query.id === activeSqlId}" tabindex="${query.id === activeSqlId ? 0 : -1}" data-sql-query-id="${esc(query.id)}" title="${esc(query.name || '未命名 SQL')}（双击修改名称）">${UI.icon('document')}<span>${esc(query.name || '未命名 SQL')}</span></button><button type="button" class="sw-sql-tab-delete" data-delete-sql-id="${esc(query.id)}" aria-label="删除 ${esc(query.name || '未命名 SQL')}" title="删除 SQL">${UI.icon('close')}</button></div>`).join('')}</div>
+        <div class="sw-sql-query-panel" id="swSqlQueryPanel" role="tabpanel" aria-labelledby="swSqlTab-${esc(active.id)}">${sqlQueryEditor(active)}</div>` : '<div class="sw-sql-empty">暂未配置 SQL，将按提示词生成内容。点击“新增 SQL”添加指标查询。</div>') +
+      '<p class="sw-help">每个 Tab 独立查询，下方提示词统一分析全部指标。示例使用报告月份和组织范围；成交项目数沿用一行一项目的示例口径。</p>';
+  }
+  function sqlQueryEditor(query) {
+    return window.SmartQuerySqlEditor.render({ value: query.sql, bind: 'analysisSql', minLines: 6, ariaLabel: `${query.name || '当前指标'} SQL`, placeholder: '编写查询语句，使用 AS value 返回指标值' });
+  }
+  function activateSqlQuery(queryId) {
+    const query = draft.sqlQueries.find((item) => item.id === queryId);
+    if (!query) return;
+    activeSqlId = query.id;
+    $('swAnalysisSql').querySelectorAll('[data-sql-query-id]').forEach((tab) => {
+      const selected = tab.dataset.sqlQueryId === queryId;
+      tab.classList.toggle('is-active', selected);
+      tab.setAttribute('aria-selected', String(selected)); tab.tabIndex = selected ? 0 : -1;
+    });
+    const panel = $('swSqlQueryPanel');
+    panel.setAttribute('aria-labelledby', `swSqlTab-${query.id}`);
+    panel.innerHTML = sqlQueryEditor(query);
+  }
+  function beginSqlTabRename(tab) {
+    if (busy || tab.parentElement.querySelector('[data-sql-rename-id]')) return;
+    const query = draft.sqlQueries.find((item) => item.id === tab.dataset.sqlQueryId);
+    if (!query) return;
+    const input = document.createElement('input');
+    input.type = 'text'; input.className = 'sw-sql-tab-name'; input.maxLength = 40;
+    input.value = query.name; input.dataset.sqlRenameId = query.id;
+    input.setAttribute('aria-label', '修改指标名称');
+    tab.hidden = true; tab.after(input); input.focus(); input.select();
+  }
+  function finishSqlTabRename(input, cancel = false) {
+    const tab = input.parentElement?.querySelector('[data-sql-query-id]');
+    if (!tab) return;
+    const query = draft?.sqlQueries?.find((item) => item.id === input.dataset.sqlRenameId);
+    const name = input.value.trim();
+    let changed = false;
+    if (query && !cancel && !busy && name !== query.name) {
+      const duplicate = draft.sqlQueries.some((item) => item.id !== query.id && item.name.trim() === name);
+      if (!name || /[{}.\r\n]/.test(name)) message('指标名称不能为空，且不能包含花括号、点号或换行，已保留原名称。');
+      else if (duplicate) message('指标名称重复，已保留原名称。');
+      else {
+        const oldName = query.name;
+        query.name = name;
+        draft.prompt = draft.prompt.replace(/\{\{\s*([^{}]+?)\s*\.value\s*\}\}/g, (token, referenced) => referenced.trim() === oldName.trim() ? `{{${name}.value}}` : token);
+        $('swConfigFields').querySelector('[data-field="prompt"]').value = draft.prompt;
+        tab.querySelector('span').textContent = name; tab.title = `${name}（双击修改名称）`;
+        tab.parentElement.querySelector('[data-delete-sql-id]').setAttribute('aria-label', `删除 ${name}`);
+        $('swSqlQueryPanel').querySelector('.sq-sql-input')?.setAttribute('aria-label', `${activeSqlQuery().name} SQL`);
+        changed = true;
+      }
+    }
+    delete input.dataset.sqlRenameId; input.remove(); tab.hidden = false;
+    if (changed) { renderSqlReferences(); markConfigDirty(); }
+  }
+  function renderSqlReferences() {
+    const host = $('swSqlReferences');
+    if (!host || draft?.type !== 'analysis') return;
+    const queries = Store.analysisQueries(draft), missing = Store.missingSqlReferences(draft);
+    host.innerHTML = `${queries.length ? `<span class="sw-help">点击插入指标值引用：</span><div class="sw-sql-references">${queries.map((query) => button('plus', `{{${esc(query.name || '未命名 SQL')}.value}}`, `data-insert-sql-reference="${esc(query.id)}" ${!query.name.trim() ? 'disabled' : ''}`, 'sw-link')).join('')}</div>` : '<p class="sw-help">无 SQL 时沿用提示词生成流程。</p>'}<p class="sw-error sw-sql-reference-error" role="alert">${missing.length ? `提示词引用的指标不存在：${esc(missing.join('、'))}。请调整引用后重新测试。` : ''}</p>`;
+  }
+  function renderAnalysisSql() {
+    $('swAnalysisSql').innerHTML = analysisSqlMarkup();
+    renderSqlReferences();
+  }
+  function markConfigDirty() {
+    dirty = true;
+    status(); renderResult(); syncMarks(); renderHeader();
+  }
+  function deleteSqlQuery(queryId) {
+    const query = draft.sqlQueries.find((item) => item.id === queryId);
+    if (!query) return;
+    const partId = draft.id;
+    const { host, close } = UI.modal('删除 SQL', '删除后，该查询结果将不再提供给统一提示词。', `<p>确认删除指标查询“${esc(query.name || '未命名 SQL')}”？</p><p class="sw-help">若提示词仍引用此指标，删除后需调整引用。删除全部 SQL 后将恢复仅通过提示词生成内容。</p>`, button('back', '取消', 'data-close') + button('trash', '确认删除', 'id="swDeleteSqlConfirm"', 'primary-btn'));
+    host.querySelector('#swDeleteSqlConfirm').onclick = () => {
+      if (busy || draft?.id !== partId) { close(); return; }
+      const index = draft.sqlQueries.findIndex((item) => item.id === queryId);
+      if (index < 0) { close(); return; }
+      draft.sqlQueries.splice(index, 1);
+      if (activeSqlId === queryId) activeSqlId = draft.sqlQueries[Math.min(index, draft.sqlQueries.length - 1)]?.id || '';
+      renderAnalysisSql(); markConfigDirty(); close();
+      ($('swAnalysisSql').querySelector('[aria-selected="true"]') || $('swAnalysisSql').querySelector('[data-sql-query-action="add"]')).focus();
+    };
+  }
   function renderFields() {
     if (!draft) return;
     $('swPartType').className = `sw-type is-${draft.type}`;
     $('swPartType').textContent = `标注对象 · ${names[draft.type]}${draft.anchor?.page ? ` · 第 ${draft.anchor.page} 页` : ''}`;
     $('swPartTitle').textContent = draft.name;
     $('swPartTitle').title = draft.name;
-    const sqlLabel = draft.type === 'analysis' ? 'SQL 配置（选填）' : 'SQL 配置';
     const sqlEditor = window.SmartQuerySqlEditor.render({
       value: draft.sql,
       bind: 'sql',
@@ -721,8 +812,10 @@
       ariaLabel: draft.type === 'analysis' ? '当前内容 SQL（选填）' : '当前内容 SQL',
       placeholder: draft.type === 'analysis' ? '请输入 SQL，留空时沿用提示词生成流程' : undefined
     });
-    $('swConfigFields').innerHTML = `<div class="sw-field"><span>${sqlLabel}</span>${sqlEditor}</div>` +
-      field('提示词', 'prompt', draft.prompt, { textarea: true, rows: draft.type === 'chart' ? 9 : 5 });
+    $('swConfigFields').innerHTML = (draft.type === 'analysis' ? `<div class="sw-field sw-analysis-sql" id="swAnalysisSql">${analysisSqlMarkup()}</div>` : `<div class="sw-field"><span>SQL 配置</span>${sqlEditor}</div>`) +
+      field('提示词', 'prompt', draft.prompt, { textarea: true, rows: draft.type === 'analysis' ? 7 : draft.type === 'chart' ? 9 : 5 }) +
+      (draft.type === 'analysis' ? '<div id="swSqlReferences"></div>' : '');
+    renderSqlReferences();
     $('swAIInput').value = '';
     $('swAIInput').placeholder = draft.type === 'metric' ? '例如：排除已取消订单，并保留两位小数' : draft.type === 'chart' ? '例如：改为横向柱状图，X轴显示成交金额，展示前10项并显示数据标签' : Store.usesGenerationDate(draft) ? '例如：将生成日期改为 YYYY-MM-DD 格式' : '例如：重点解释节资率下降，控制在 200 字以内';
     renderChat(); renderResult(); status();
@@ -747,6 +840,7 @@
     renderExecutionTrace();
     const testing = !!draft && !!globalTest?.pending.has(draft.id);
     const trace = draft ? executionRuns.get(draft.id) : null;
+    if (dirty || result?.stale) { $('swResult').innerHTML = '<div class="sw-empty">配置已修改，请重新测试后查看最新结果并确认此项。</div>'; return; }
     if (!result) {
       const emptyText = trace?.status === 'stopped' ? '测试已停止，本次未生成结果' : trace?.status === 'cancelled' ? '本次全局测试未执行此项' : testing ? '当前项正在等待或执行全局测试' : '测试后在这里预览回填结果';
       $('swResult').innerHTML = `<div class="sw-empty">${emptyText}</div>`; return;
@@ -758,7 +852,10 @@
     else if (draft.type === 'chart') {
       const max = Math.max(...result.rows.map((r) => r.value), 1);
       html += `<div class="sw-chart-bars">${result.rows.map((r) => `<div class="sw-chart-row"><span>${esc(r.category)}</span><i style="width:${r.value / max * 100}%"></i><span>${esc(r.value)}</span></div>`).join('')}</div>`;
-    } else html += `<div class="sw-analysis-result">${esc(result.text)}</div>`;
+    } else {
+      if (result.queryResults?.length) html += `<div class="sw-sql-result-heading">指标查询结果 <small>模拟数据</small></div><div class="sw-sql-result-wrap"><table class="sw-result-table"><thead><tr><th>指标</th><th>指标值</th><th>单位</th></tr></thead><tbody>${result.queryResults.map((query) => `<tr><td>${esc(query.name)}</td><td>${esc(query.value.toLocaleString('zh-CN', { maximumFractionDigits: 6 }))}</td><td>${esc(query.unit || '—')}</td></tr>`).join('')}</tbody></table></div><div class="sw-sql-result-heading">综合分析与建议</div>`;
+      html += `<div class="sw-analysis-result">${esc(result.text)}</div>`;
+    }
     $('swResult').innerHTML = html;
   }
   function renderChat() {
@@ -951,7 +1048,8 @@
     const request = $('swAIInput').value.trim();
     if (!request || !draft || busy || !saveDraft()) return;
     const captured = Store.clone(draft);
-    const context = `${captured.name}\n分析主题：${captured.theme}\nSQL：${captured.sql || '无'}\n提示词：${captured.prompt || '无'}\n参数：${JSON.stringify(params())}\n测试结果：${captured.result ? captured.result.ok ? captured.result.text : captured.result.error : '尚未测试'}\n数据口径：${captured.definition}`;
+    const sqlContext = captured.type === 'analysis' ? Store.analysisQueries(captured).map((query) => `${query.name}（${query.unit || '无单位'}）：\n${query.sql}`).join('\n\n') : captured.sql;
+    const context = `${captured.name}\n分析主题：${captured.theme}\nSQL：${sqlContext || '无'}\n提示词：${captured.prompt || '无'}\n参数：${JSON.stringify(params())}\n测试结果：${captured.result ? captured.result.ok ? captured.result.text : captured.result.error : '尚未测试'}\n数据口径：${captured.definition}`;
     lock(true); $('swAIInput').value = '';
     draft.messages.push({ role: 'user', text: request, context }); renderChat();
     $('swChat').insertAdjacentHTML('beforeend', '<div class="sw-chat-message is-assistant">正在理解问题并修改配置…</div>');
@@ -1215,11 +1313,69 @@
   $('swDocument').addEventListener('pointercancel', cancelDrag);
   document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && drawingMode) { event.preventDefault(); setDrawingMode(false); } });
   $('swConfigFields').addEventListener('input', (e) => {
+    if (!draft || busy) return;
+    if (draft.type === 'analysis' && e.target.dataset.bind === 'analysisSql') {
+      const query = activeSqlQuery();
+      if (!query) return;
+      query.sql = e.target.value;
+      renderSqlReferences(); markConfigDirty(); return;
+    }
     const key = e.target.dataset.field || e.target.dataset.bind;
-    if (!draft || !['sql', 'prompt'].includes(key)) return;
+    if (!['sql', 'prompt'].includes(key)) return;
     draft[key] = e.target.value;
-    dirty = true;
-    status(); renderResult(); syncMarks(); renderHeader();
+    renderSqlReferences(); markConfigDirty();
+  });
+  $('swConfigFields').addEventListener('click', (event) => {
+    if (!draft || draft.type !== 'analysis' || busy) return;
+    const remove = event.target.closest('[data-delete-sql-id]');
+    if (remove) { deleteSqlQuery(remove.dataset.deleteSqlId); return; }
+    const tab = event.target.closest('[data-sql-query-id]');
+    if (tab) {
+      activateSqlQuery(tab.dataset.sqlQueryId); tab.focus(); return;
+    }
+    const action = event.target.closest('[data-sql-query-action]')?.dataset.sqlQueryAction;
+    if (action === 'add') {
+      const queries = draft.sqlQueries;
+      let index = queries.length + 1;
+      while (queries.some((query) => query.name.trim() === `指标 ${index}`)) index++;
+      const query = { id: `sql-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, name: `指标 ${index}`, sql: '', unit: '' };
+      queries.push(query); activeSqlId = query.id;
+      renderAnalysisSql(); markConfigDirty(); $('swAnalysisSql').querySelector('[aria-selected="true"]').focus();
+    }
+    const trigger = event.target.closest('[data-insert-sql-reference]');
+    if (trigger) {
+      const query = draft.sqlQueries.find((item) => item.id === trigger.dataset.insertSqlReference);
+      if (!query?.name.trim() || /[{}.\r\n]/.test(query.name)) return message('请先填写有效的指标名称，再插入引用。');
+      const editor = $('swConfigFields').querySelector('[data-field="prompt"]');
+      const token = `{{${query.name.trim()}.value}}`;
+      if (editor.value.length - (editor.selectionEnd - editor.selectionStart) + token.length > editor.maxLength) return message('提示词不能超过 6000 字。');
+      editor.setRangeText(token, editor.selectionStart, editor.selectionEnd, 'end');
+      editor.dispatchEvent(new Event('input', { bubbles: true })); editor.focus();
+    }
+  });
+  $('swConfigFields').addEventListener('dblclick', (event) => {
+    const tab = event.target.closest('[data-sql-query-id]');
+    if (tab && draft?.type === 'analysis' && !busy) { event.preventDefault(); beginSqlTabRename(tab); }
+  });
+  $('swConfigFields').addEventListener('focusout', (event) => {
+    if (event.target.matches('[data-sql-rename-id]')) finishSqlTabRename(event.target);
+  });
+  $('swConfigFields').addEventListener('keydown', (event) => {
+    if (event.target.matches('[data-sql-rename-id]')) {
+      if (!event.isComposing && ['Enter', 'Escape'].includes(event.key)) {
+        event.preventDefault(); event.stopPropagation();
+        const tab = event.target.parentElement.querySelector('[data-sql-query-id]');
+        finishSqlTabRename(event.target, event.key === 'Escape'); tab.focus();
+      }
+      return;
+    }
+    const tab = event.target.closest('[role="tab"][data-sql-query-id]');
+    if (tab && !busy && event.key === 'F2') { event.preventDefault(); beginSqlTabRename(tab); return; }
+    if (!tab || busy || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const queries = draft.sqlQueries, index = queries.findIndex((query) => query.id === tab.dataset.sqlQueryId);
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? queries.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + queries.length) % queries.length;
+    activateSqlQuery(queries[next].id); $('swAnalysisSql').querySelector('[aria-selected="true"]').focus();
   });
   $('swTestPrompt').addEventListener('input', () => {
     if (busy || globalTest) return;

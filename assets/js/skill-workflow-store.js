@@ -10,6 +10,37 @@
   const themes = ['成交与节资', '采购方式与品类', '供应商管理', '采购效能与闲废', '销售分析', '客户分析', '库存分析', '活动分析'];
   const today = () => new Date().toLocaleDateString('sv-SE');
   const parameterSQL = 'WHERE report_month = :report_month\n  AND org_name = :org_name';
+  const DEFAULT_ANALYSIS_PROMPT = '结合当前内容前文已配置的指标和图表结果，解释本期采购表现、主要变化与需关注的问题。只使用已提供的数据，缺失依据时明确说明，不推断无依据的原因。控制在 200 字以内。';
+  const MULTI_SQL_PROMPT = '请基于成交金额 {{成交金额.value}} 万元、成交项目数 {{成交项目数.value}} 项、平均项目金额 {{平均项目金额.value}} 万元/项，综合分析本期采购规模和项目金额特征，并给出两条后续关注建议。仅使用查询结果，不将缺失数据视为 0；没有上期或目标数据时，不判断增长、下降或是否达标，不推断变化原因。控制在 200 字以内。';
+  function analysisSqlExamples() {
+    return [
+      { id: 'sql-amount', name: '成交金额', unit: '万元', sql: `SELECT ROUND(SUM(transaction_amount) / 10000, 2) AS value\nFROM procurement_transactions\n${parameterSQL};` },
+      { id: 'sql-count', name: '成交项目数', unit: '项', sql: `SELECT COUNT(*) AS value\nFROM procurement_transactions\n${parameterSQL};` },
+      { id: 'sql-average', name: '平均项目金额', unit: '万元/项', sql: `SELECT ROUND(SUM(transaction_amount) / NULLIF(COUNT(*), 0) / 10000, 2) AS value\nFROM procurement_transactions\n${parameterSQL};` }
+    ];
+  }
+  function analysisQueries(part) {
+    if (part.type !== 'analysis') return [];
+    if (Array.isArray(part.sqlQueries)) return part.sqlQueries;
+    return String(part.sql || '').trim() ? [{ id: 'sql-legacy', name: '查询结果', sql: part.sql, unit: part.unit || '' }] : [];
+  }
+  function missingSqlReferences(part) {
+    const names = new Set(analysisQueries(part).map((query) => query.name.trim()));
+    return [...new Set([...String(part.prompt || '').matchAll(/\{\{\s*([^{}]+?)\s*\.value\s*\}\}/g)].map((match) => match[1].trim()).filter((name) => !names.has(name)))];
+  }
+  function validateAnalysisQueries(part) {
+    const queries = analysisQueries(part), names = new Set();
+    queries.forEach((query, index) => {
+      const name = query.name.trim(), label = name || `SQL ${index + 1}`;
+      if (!name || /[{}.\r\n]/.test(name)) throw new Error(`SQL Tab「${label}」：指标名称不能为空，且不能包含花括号、点号或换行。`);
+      if (names.has(name)) throw new Error(`SQL Tab「${name}」：指标名称重复，请修改后重新测试。`);
+      names.add(name);
+      try { validateQuerySql(query.sql); } catch (error) { throw new Error(`SQL Tab「${label}」：${error.message}`); }
+      if (!/\bAS\s+value\b/i.test(query.sql)) throw new Error(`SQL Tab「${label}」：查询结果需使用 AS value 作为指标值别名。`);
+    });
+    const missing = missingSqlReferences(part);
+    if (missing.length) throw new Error(`提示词引用的 SQL 指标不存在：${missing.join('、')}，请修改引用后重新测试。`);
+  }
   const LEGACY_CHART_PROMPT = '按采购方式展示成交金额，按金额降序排列；沿用模板图表类型、配色和尺寸。';
   const DEFAULT_CHART_PROMPT = `图表类型：纵向柱状图。
 X轴：采购方式名称，对应分类字段 category。
@@ -182,17 +213,21 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     const prepared = {
       id: part.id || `part-${index + 1}`, type, name: part.name || '待识别内容', theme: themes[0],
       definition: `按报告月份和组织范围统计${part.name || '当前指标'}。`, sql: type === 'analysis' ? '' : sql,
-      prompt: type === 'metric' ? '按 SQL 查询结果回填当前指标，沿用原文单位和数值格式，仅输出指标值。' : type === 'chart' ? chartPrompt(part) : '结合当前内容前文已配置的指标和图表结果，解释本期采购表现、主要变化与需关注的问题。只使用已提供的数据，缺失依据时明确说明，不推断无依据的原因。控制在 200 字以内。',
+      prompt: type === 'metric' ? '按 SQL 查询结果回填当前指标，沿用原文单位和数值格式，仅输出指标值。' : type === 'chart' ? chartPrompt(part) : DEFAULT_ANALYSIS_PROMPT,
       field: 'value', categoryField: 'category', unit: part.unit || '', decimals: 2,
       confirmed: false, revision: 1, messages: [], result: null, ...clone(part)
     };
+    if (type === 'analysis') {
+      prepared.sqlQueries = analysisQueries(prepared).map((query, queryIndex) => ({ id: String(query.id || `sql-${queryIndex + 1}`), name: String(query.name ?? `SQL ${queryIndex + 1}`), sql: String(query.sql || ''), unit: String(query.unit || '') }));
+      prepared.sql = '';
+    }
     return syncPartMetadata(prepared);
   }
   function coverDatePart() {
     return preparePart({ id: 'cover-generated-date', type: 'analysis', name: '报告生成日期', sourceText: '2026 年 7 月 16 日', prompt: '使用本次报告的生成日期，按“YYYY 年 M 月 D 日”格式输出，仅输出日期。', anchor: { kind: 'page', page: 1, x: 48.4, y: 73.8, w: 18.8, h: 1.9 } });
   }
   const usesGenerationDate = (part) => part.type === 'analysis' && /(?:报告|本次).*生成(?:时间|日期)|生成(?:时间|日期)/.test(part.prompt || '');
-  const hasAnalysisSql = (part) => part.type === 'analysis' && !!String(part.sql || '').trim();
+  const hasAnalysisSql = (part) => analysisQueries(part).length > 0;
   const parameterCatalog = {
     report_month: { label: '报告月份', type: 'month', runtimeKey: 'month', hint: '最近有数据月份' },
     org_name: { label: '组织范围', type: 'text', runtimeKey: 'org', hint: '当前业务组织' },
@@ -231,7 +266,8 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     const labels = [...String(skill?.userPrompt || '').matchAll(/【([^【】\r\n]+)】/g)].map((match) => match[1].trim()).filter(Boolean);
     [...new Set(labels)].forEach((label, index) => add(parameterKey(label, index), label, '业务端变量'));
     (skill?.parts || []).forEach((part) => {
-      for (const match of String(part.sql || '').matchAll(/:([a-zA-Z_]\w*)/g)) add(match[1], parameterCatalog[match[1]]?.label || match[1], `SQL :${match[1]}`);
+      const sql = part.type === 'analysis' ? analysisQueries(part).map((query) => query.sql).join('\n') : part.sql;
+      for (const match of String(sql || '').matchAll(/:([a-zA-Z_]\w*)/g)) add(match[1], parameterCatalog[match[1]]?.label || match[1], `SQL :${match[1]}`);
     });
     if ((skill?.parts || []).some(usesGenerationDate)) add('generated_at', parameterCatalog.generated_at.label, '内容生成');
     const saved = Array.isArray(current) ? current : [];
@@ -252,6 +288,8 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
       part.confirmed = pending.has(part.type);
       pending.add(part.type);
     }
+    const example = parts.find((part) => part.id === 'part-25' && part.type === 'analysis');
+    if (example) Object.assign(example, { name: '采购规模综合分析（多 SQL 示例）', sqlQueries: analysisSqlExamples(), prompt: MULTI_SQL_PROMPT, confirmed: false });
     return [coverDatePart(), ...parts];
   }
   function sampleOutline() {
@@ -339,6 +377,9 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     if (result.reportTemplate) ['generatedContentPrompt', 'generatedFormatPrompt', 'generatedPrompt'].forEach((key) => delete result.reportTemplate[key]);
     result.parts = (result.parts || []).map((part) => {
       const prepared = preparePart(part);
+      if (migrateSampleChartPrompt && !result.enabled && prepared.id === 'part-25' && !Array.isArray(part.sqlQueries) && !String(part.sql || '').trim() && prepared.prompt === DEFAULT_ANALYSIS_PROMPT) {
+        Object.assign(prepared, { name: '采购规模综合分析（多 SQL 示例）', sqlQueries: analysisSqlExamples(), prompt: MULTI_SQL_PROMPT, confirmed: false, result: null, revision: prepared.revision + 1 });
+      }
       if (migrateSampleChartPrompt && prepared.type === 'chart' && prepared.prompt === LEGACY_CHART_PROMPT) prepared.prompt = chartPrompt(prepared);
       delete prepared.dependencies;
       delete prepared.missingDependencies;
@@ -441,7 +482,9 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     return normalizeSkill(skill);
   }
   function signature(part, params, parts) {
-    return usesGenerationDate(part) ? JSON.stringify([part.revision, generationDate(params).toLocaleDateString('sv-SE'), params.question || '']) : JSON.stringify([part.revision, params]);
+    if (part.type !== 'analysis') return JSON.stringify([part.revision, params]);
+    const configuration = [analysisQueries(part), part.prompt];
+    return usesGenerationDate(part) && !hasAnalysisSql(part) ? JSON.stringify([part.revision, generationDate(params).toLocaleDateString('sv-SE'), params.question || '', configuration]) : JSON.stringify([part.revision, params, configuration]);
   }
   function removePart(skill, id) {
     const part = skill.parts.find((p) => p.id === id);
@@ -461,15 +504,41 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
   function validateQuerySql(sql) {
     if (!/^\s*SELECT\b(?!\s+FROM\b)[\s\S]+?\bFROM\s+[^\s;]/i.test(sql)) throw new Error('SQL 应包含 SELECT 查询字段和 FROM 数据来源，请修改后重新测试。');
   }
+  function simulateAnalysisQuery(query, params) {
+    for (const match of query.sql.matchAll(/:([a-zA-Z_]\w*)/g)) {
+      const key = parameterCatalog[match[1]]?.runtimeKey || match[1];
+      if (!String(params[key] ?? '').trim()) throw new Error(`SQL Tab「${query.name}」：请补充参数 :${match[1]} 的测试值。`);
+      if (match[1] === 'report_month' && !/^\d{4}-(0[1-9]|1[0-2])$/.test(params[key])) throw new Error(`SQL Tab「${query.name}」：报告月份应为 YYYY-MM 格式。`);
+    }
+    // Static prototype: simulate the demonstrated aggregate expressions only.
+    const expression = query.sql.slice(0, query.sql.search(/\bFROM\b/i));
+    let amount = 176896300, count = 1126, value;
+    if (/status\s*<>\s*'cancelled'/i.test(query.sql)) { amount *= 0.96; count = 1081; }
+    if (/SUM\s*\(\s*transaction_amount\s*\)/i.test(expression)) {
+      value = amount;
+      if (/COUNT\s*\(\s*\*\s*\)/i.test(expression)) value /= count;
+    } else if (/AVG\s*\(\s*transaction_amount\s*\)/i.test(expression)) value = amount / count;
+    else if (/COUNT\s*\(\s*\*\s*\)/i.test(expression)) value = count;
+    else {
+      const literal = expression.match(/^\s*SELECT\s+(-?\d+(?:\.\d+)?)\s+AS\s+value\b/i);
+      if (!literal) throw new Error(`SQL Tab「${query.name}」：当前静态原型支持示例金额、项目数及平均金额查询，请使用示例表达式演示。`);
+      value = Number(literal[1]);
+    }
+    if (/\/\s*10000\b/.test(expression)) value /= 10000;
+    const round = expression.match(/,\s*([0-6])\s*\)\s+AS\s+value\b/i);
+    const decimals = round ? Number(round[1]) : Number.isInteger(value) ? 0 : 2;
+    value = Number(value.toFixed(decimals));
+    const text = value.toLocaleString('zh-CN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + (query.unit ? ` ${query.unit}` : '');
+    return { id: query.id, name: query.name.trim(), value, unit: query.unit, text };
+  }
   function runDemo(part, params, parts) {
     if (!part.name.trim() || !part.theme) throw new Error('请补充内容名称和分析主题。');
     if (!part.prompt.trim()) throw new Error('请先补充当前内容的提示词。');
     const analysisSql = hasAnalysisSql(part);
-    if (analysisSql) validateQuerySql(part.sql);
-    if (usesGenerationDate(part)) {
+    if (part.type === 'analysis') validateAnalysisQueries(part);
+    if (usesGenerationDate(part) && !analysisSql) {
       const generatedAt = generationDate(params);
-      const rows = analysisSql ? [{ generatedAt: generatedAt.toISOString() }] : [];
-      const date = rows.length ? new Date(rows[0].generatedAt) : generatedAt;
+      const rows = [], date = generatedAt;
       const year = date.getFullYear(), month = date.getMonth() + 1, day = date.getDate();
       const format = [...part.prompt.matchAll(/YYYY-MM-DD|YYYY\s*年\s*M+\s*月(?:\s*D+\s*日)?/g)].pop()?.[0] || '';
       const text = format === 'YYYY-MM-DD' ? `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}` : format && !/D/.test(format) ? `${year} 年 ${month} 月` : `${year} 年 ${month} 月 ${day} 日`;
@@ -491,10 +560,13 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     const rows = part.type === 'chart' ? [{ category: '公开招标', value: 5805.34 }, { category: '询比采购', value: 4905.11 }, { category: '竞争性谈判', value: 3821.60 }, { category: '直接采购', value: 3157.58 }] : [{ value }];
     const outputValue = part.type === 'chart' ? value : rows[0].value;
     let text = Number(outputValue.toFixed(decimals)).toLocaleString('zh-CN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + (part.unit ? ` ${part.unit}` : '');
+    let queryResults = [], resolvedPrompt = part.prompt;
     if (part.type === 'analysis') {
       let evidence;
       if (analysisSql) {
-        evidence = [`SQL 模拟查询结果为${text}`];
+        queryResults = analysisQueries(part).map((query) => simulateAnalysisQuery(query, params));
+        resolvedPrompt = part.prompt.replace(/\{\{\s*([^{}]+?)\s*\.value\s*\}\}/g, (_, name) => String(queryResults.find((query) => query.name === name.trim()).value));
+        evidence = queryResults.map((query) => `${query.name}为${query.text}`);
       } else {
         const currentIndex = parts.findIndex((p) => p.id === part.id);
         const available = parts.filter((p, index) => p.id !== part.id && p.type !== 'analysis' && (currentIndex < 0 || index < currentIndex));
@@ -502,7 +574,8 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
         const contextParts = (named.length ? named : available.slice(-3)).slice(0, 6);
         evidence = contextParts.map((p) => { const r = runDemo(p, params, parts); return `${p.name}为${p.type === 'metric' ? r.text : r.rows.map((row) => `${row.category} ${row.value}`).join('、')}`; });
       }
-      text = `${params.month}，${params.org}的${part.name}：${evidence.length ? evidence.join('；') + '。' : ''}${/下降|降低/.test(part.prompt) ? '缺少可比较的上期口径，暂不能判断下降幅度及原因。' : '建议结合上期同口径数据核实变化，持续跟踪主要采购类别。目前数据不足以直接判断变化原因。'}`;
+      const advice = analysisSql ? '建议：①分层关注大额项目，核查采购执行情况；②补充同口径上期数据，持续跟踪规模与项目金额变化。缺少上期及目标数据，暂不判断趋势或达标情况。' : /下降|降低/.test(part.prompt) ? '缺少可比较的上期口径，暂不能判断下降幅度及原因。' : '建议结合上期同口径数据核实变化，持续跟踪主要采购类别。目前数据不足以直接判断变化原因。';
+      text = `${[params.month, params.org].filter(Boolean).join('，')}${params.month || params.org ? '：' : ''}${evidence.length ? evidence.join('；') + '。' : ''}${advice}`;
       const limit = [...part.prompt.matchAll(/(\d{2,4})\s*字/g)].pop();
       if (limit && text.length > Number(limit[1])) text = text.slice(0, Math.max(30, Number(limit[1])) - 1) + '。';
     }
@@ -512,7 +585,7 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
       const limit = part.sql.match(/LIMIT\s+(\d+)/i);
       if (limit) rows.splice(Number(limit[1]));
     }
-    return { ok: true, demo: true, rows, text, at: new Date().toISOString(), params: clone(params), signature: signature(part, params, parts), stale: false };
+    return { ok: true, demo: true, rows: analysisSql ? queryResults.map(({ value }) => ({ value })) : rows, queryResults, resolvedPrompt, text, at: new Date().toISOString(), params: clone(params), signature: signature(part, params, parts), stale: false };
   }
   function aiEdit(part, request) {
     const next = clone(part);
@@ -530,5 +603,5 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     }
     return { next: syncPartMetadata(next, true), reply: `已更新${part.type === 'analysis' ? '提示词' : '提示词及相关配置'}并回填到上方配置。请重新测试，查看结果后确认此项。` };
   }
-  global.SkillCatalogStore = { key: KEY, load, save, update, clone, themes, isReady, preparePart, syncPartMetadata, normalizeSkill, normalizeTestParams, invalidate, signature, runDemo, aiEdit, sampleParts, sampleOutline, usesGenerationDate, hasAnalysisSql, removePart };
+  global.SkillCatalogStore = { key: KEY, load, save, update, clone, themes, isReady, preparePart, syncPartMetadata, normalizeSkill, normalizeTestParams, invalidate, signature, runDemo, aiEdit, sampleParts, sampleOutline, usesGenerationDate, hasAnalysisSql, analysisQueries, missingSqlReferences, analysisSqlExamples, removePart };
 })(window);
