@@ -2854,9 +2854,9 @@
 
     var schemaRows = table.fields.map(function (fld) {
       var attrs = [];
-      if (fld.pk) attrs.push('<span class="dmd-attr dmd-attr-pk">PK</span>');
-      if (fld.fk) attrs.push('<span class="dmd-attr dmd-attr-fk">FK</span>');
-      if (fld.nn && !fld.pk) attrs.push('<span class="dmd-attr dmd-attr-nn">NN</span>');
+      if (fld.pk) attrs.push('<span class="dmd-attr dmd-attr-pk">主键</span>');
+      if (fld.fk) attrs.push('<span class="dmd-attr dmd-attr-fk">外键</span>');
+      if (fld.nn && !fld.pk) attrs.push('<span class="dmd-attr dmd-attr-nn">非空</span>');
       return ''
         + '<tr>'
         +   '<td>' + DM.escapeHTML(fld.name) + '</td>'
@@ -2871,7 +2871,7 @@
       + '<div class="dmd-tab-pane" data-pane="schema">'
       +   '<div class="dmd-schema-wrap">'
       +     '<table class="dmd-table dmd-schema-table">'
-      +       '<thead><tr><th>字段名</th><th>别名</th><th>类型</th><th>技术属性</th><th>业务属性</th></tr></thead>'
+      +       '<thead><tr><th>字段名</th><th>别名</th><th>数据类型</th><th>属性</th><th>业务属性</th></tr></thead>'
       +       '<tbody>' + schemaRows + '</tbody>'
       +     '</table>'
       +   '</div>'

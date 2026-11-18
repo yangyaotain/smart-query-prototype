@@ -6,6 +6,8 @@
   <title>数据源管理 - 智能问数管理后台</title>
   <link rel="stylesheet" href="../../assets/css/theme.css?v=20261110-keyword-highlight" />
   <link rel="stylesheet" href="../../assets/css/admin.css" />
+  <link rel="stylesheet" href="../../assets/css/data-model.css?v=20261110-keyword-highlight" />
+  <link rel="stylesheet" href="../../assets/css/data-source-alias.css" />
   <style>
     /* ============================================================
      * 数据源管理页面 - 左侧目录树 + 右侧表列表
@@ -1172,6 +1174,10 @@
                 </p>
               </div>
               <div class="ds-detail-actions">
+                <button class="primary-btn" type="button" id="dsBtnAlias" aria-haspopup="dialog" aria-controls="dsAliasDrawer" aria-expanded="false">
+                  <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4L12 3z"/><path d="M20 2v4M18 4h4"/></svg>
+                  <span id="dsAliasButtonLabel">自动填充别名</span>
+                </button>
                 <button class="primary-btn" type="button" id="dsBtnAdd">
                   <svg viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
                   新增
@@ -1276,19 +1282,15 @@
                     <colgroup>
                       <col style="width:18%;" />
                       <col style="width:20%;" />
-                      <col style="width:11%;" />
-                      <col style="width:7%;" />
-                      <col style="width:7%;" />
                       <col style="width:18%;" />
-                      <col style="width:19%;" />
+                      <col style="width:18%;" />
+                      <col style="width:26%;" />
                     </colgroup>
                     <thead>
                       <tr>
                         <th>字段名</th>
                         <th>别名</th>
                         <th>数据类型</th>
-                        <th>长度</th>
-                        <th>精度</th>
                         <th class="col-attrs">属性</th>
                         <th>注释</th>
                       </tr>
@@ -1545,6 +1547,68 @@
     </div>
   </div>
 
+  <!-- 复用数据模型的分析抽屉、进度和分页样式 -->
+  <div class="dm-drawer-mask dm-analysis-mask hidden" id="dsAliasMask"></div>
+  <aside class="dm-drawer dm-analysis-drawer dsa-drawer hidden" id="dsAliasDrawer" role="dialog" aria-modal="true" aria-labelledby="dsAliasTitle">
+    <div class="dm-drawer-resizer" id="dsAliasResizer" title="拖动调整宽度"></div>
+    <header class="dm-drawer-head">
+      <div>
+        <h3 id="dsAliasTitle" tabindex="-1">自动填充别名</h3>
+        <p id="dsAliasScope"></p>
+      </div>
+      <button class="close" type="button" id="dsAliasClose" aria-label="关闭">×</button>
+    </header>
+    <div class="dm-drawer-body dm-analysis-body">
+      <section id="dsAliasProcess" aria-label="别名分析进度">
+        <div class="dm-analysis-timing">
+          <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <span>用时 <span id="dsAliasElapsed">0 秒</span></span>
+        </div>
+        <div class="dm-analysis-intro">
+          <h4>AI 正在分析表和字段别名</h4>
+          <p>结合名称、注释及所属表的业务语境，推荐简洁、统一的中文别名。</p>
+        </div>
+        <div class="dm-analysis-progress-head"><span>分析进度</span><strong id="dsAliasPct">0%</strong></div>
+        <div class="dm-analyze-bar" id="dsAliasProgress" role="progressbar" aria-label="别名分析进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="dm-analyze-bar-fill" id="dsAliasFill"></div></div>
+        <ol class="dm-analysis-steps" id="dsAliasSteps"></ol>
+        <p class="dm-analysis-note">关闭抽屉后分析会继续，点击「AI 分析中」可查看进度。分析完成后需应用推荐，才会更新别名。</p>
+      </section>
+      <section class="dm-analysis-results hidden" id="dsAliasResults" aria-label="别名推荐结果">
+        <p class="dsa-summary" id="dsAliasSummary" role="status"></p>
+        <form class="toolbar dm-analysis-filters dsa-filters" id="dsAliasFilters">
+          <label>表名<input id="dsAliasTableQuery" placeholder="表名或别名" /></label>
+          <label>字段名<input id="dsAliasFieldQuery" placeholder="字段名或别名" /></label>
+          <label>状态<select id="dsAliasStatus"><option value="">全部</option><option value="new">新增</option><option value="existing">已存在</option><option value="modify">推荐修改</option></select></label>
+          <button class="ghost-btn" type="submit"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg> 查询</button>
+          <div class="dm-analysis-actions">
+            <button class="ghost-btn" type="button" id="dsAliasAgain"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3.1-6.8M21 4v5h-5"/></svg> 重新分析</button>
+            <button class="primary-btn" type="button" id="dsAliasApplyAll"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 12 4 4 8-8m-4 8 8-8"/></svg> <span id="dsAliasApplyLabel">全部应用</span></button>
+          </div>
+        </form>
+        <p class="dsa-help">表下展开显示所属字段，点击表名前的箭头可收起。推荐别名可直接编辑；信息不足时请补充别名。「全部应用」包含收起的字段、其他页及筛选范围外的可用推荐。</p>
+        <div id="dsAliasPanel" class="dsa-panel">
+          <div class="dm-analysis-table-wrap" id="dsAliasTableWrap" tabindex="0" role="region" aria-label="别名推荐列表">
+            <table class="data-table dsa-table"><colgroup id="dsAliasCols"></colgroup><thead id="dsAliasHead"></thead><tbody id="dsAliasRows"></tbody></table>
+          </div>
+        </div>
+      </section>
+    </div>
+    <footer class="dm-analysis-pagination hidden" id="dsAliasPagination">
+      <span id="dsAliasPageInfo" role="status"></span>
+      <button class="ghost-btn" type="button" id="dsAliasPrev"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg> 上一页</button>
+      <button class="ghost-btn" type="button" id="dsAliasNext">下一页 <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg></button>
+    </footer>
+  </aside>
+  <div class="modal-mask hidden" id="dsAliasConfirmMask"></div>
+  <div class="modal small hidden" id="dsAliasConfirm" role="dialog" aria-modal="true" aria-labelledby="dsAliasConfirmTitle" aria-describedby="dsAliasConfirmMessage">
+    <div class="modal-head"><div><h3 id="dsAliasConfirmTitle">确认应用别名</h3><p>请核对本次填充和覆盖范围。</p></div><button class="close" type="button" data-alias-cancel aria-label="关闭">×</button></div>
+    <div class="modal-body"><p id="dsAliasConfirmMessage"></p></div>
+    <div class="modal-foot">
+      <button class="ghost-btn" type="button" data-alias-cancel><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg> 取消</button>
+      <button class="primary-btn" type="button" id="dsAliasConfirmApply"><svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg> 确认应用</button>
+    </div>
+  </div>
+
   <script src="../../assets/js/common.js?v=20261110-keyword-highlight"></script>
   <script>
     // ============================================================
@@ -1757,7 +1821,10 @@
 
     function renderDetail() {
       const found = findSource(activeSourceId);
-      if (!found) return;
+      if (!found) {
+        if (window.SmartQueryAliasUI) window.SmartQueryAliasUI.refresh();
+        return;
+      }
       const { source } = found;
       document.getElementById('dsTitle').textContent = source.name;
       const typeEl = document.getElementById('dsTagType');
@@ -1766,6 +1833,7 @@
       statusEl.textContent = source.status === 'ok' ? '连接正常' : '待同步';
       statusEl.className = 'ds-tag ' + (source.status === 'ok' ? 'ok' : 'warn');
       document.getElementById('dsAddr').textContent = source.addr + ' · ' + source.tables.length + ' 张表 · 最近同步 ' + source.sync;
+      if (window.SmartQueryAliasUI) window.SmartQueryAliasUI.refresh();
     }
 
     function renderTableList() {
@@ -3213,6 +3281,19 @@
       { name: 'operator',     alias: '操作人',     type: 'VARCHAR',  length: 32, precision: 0, pk: false, nn: false, ai: false, pt: false, comment: '操作人账号' }
     ];
 
+    // 月度目标表用于演示空别名填充、已有别名优化及语义不足的情况。
+    SCHEMA_DATA['sales_target'] = [
+      { name: 'target_id', alias: '', type: 'BIGINT', length: 20, precision: 0, pk: true, nn: true, comment: '销售目标编号' },
+      { name: 'target_month', alias: '目标月份', type: 'DATE', length: 0, precision: 0, nn: true, pt: true, comment: '目标所属月份' },
+      { name: 'region_id', alias: '区域ID', type: 'VARCHAR', length: 16, precision: 0, nn: true, comment: '销售区域编号' },
+      { name: 'channel_id', alias: '渠道ID', type: 'VARCHAR', length: 16, precision: 0, nn: true, comment: '销售渠道编号' },
+      { name: 'target_amount', alias: 'target_amount', type: 'DECIMAL', length: 18, precision: 2, nn: true, comment: '月度目标金额（元）' },
+      { name: 'target_qty', alias: '', type: 'INT', length: 11, precision: 0, comment: '月度目标销量' },
+      { name: 'owner', alias: '负责人', type: 'VARCHAR', length: 32, precision: 0, comment: '目标负责人' },
+      { name: 'ext_code', alias: '', type: 'VARCHAR', length: 32, precision: 0, comment: '' },
+      { name: 'updated_at', alias: '更新时间', type: 'DATETIME', length: 0, precision: 0, comment: '更新时间' }
+    ];
+
     function buildSchemaFallback(tableName) {
       return [
         { name: 'id',           alias: '主键ID',     type: 'BIGINT',   length: 20, precision: 0, pk: true,  nn: true,  ai: true,  pt: false, comment: '主键（自增）' },
@@ -3226,11 +3307,15 @@
       ];
     }
 
-    function getSchema(tableName) {
-      if (!SCHEMA_DATA[tableName]) {
-        SCHEMA_DATA[tableName] = buildSchemaFallback(tableName);
+    // 别名按数据源独立维护，避免同名表在不同数据源之间串改。
+    const SOURCE_SCHEMAS = new Map();
+    function getSchema(tableName, sourceId = activeSourceId) {
+      const key = JSON.stringify([sourceId, tableName]);
+      if (!SOURCE_SCHEMAS.has(key)) {
+        const template = SCHEMA_DATA[tableName] || buildSchemaFallback(tableName);
+        SOURCE_SCHEMAS.set(key, template.map((field) => Object.assign({}, field)));
       }
-      return SCHEMA_DATA[tableName];
+      return SOURCE_SCHEMAS.get(key);
     }
 
     let CURRENT_SCHEMA_TABLE = '';
@@ -3242,6 +3327,14 @@
       if (f.ai) tags.push('<span class="dssc-attr dssc-attr-ai">自增长</span>');
       if (f.pt) tags.push('<span class="dssc-attr dssc-attr-pt">分区</span>');
       return tags.length ? tags.join('') : '<span style="color:#9ca3af;">-</span>';
+    }
+
+    function formatSchemaType(field) {
+      const type = String(field.type || '');
+      if (type.includes('(') || !(field.length > 0)) return type;
+      const scale = /^(DECIMAL|NUMERIC|NUMBER)$/i.test(type) && field.precision != null
+        ? ',' + field.precision : '';
+      return type + '(' + field.length + scale + ')';
     }
 
     function renderSchema(tableName) {
@@ -3262,8 +3355,6 @@
 
       const tbody = document.getElementById('dsscTbody');
       tbody.innerHTML = fields.map((f, idx) => {
-        const lenTxt = (f.length === 0 || f.length == null) ? '-' : String(f.length);
-        const preTxt = (f.precision === 0 || f.precision == null) ? '-' : String(f.precision);
         return (
           '<tr data-idx="' + idx + '">'
             + '<td>' + escapeHTML(f.name) + '</td>'
@@ -3275,9 +3366,7 @@
                 + '</button>'
               + '</span>'
             + '</td>'
-            + '<td>' + escapeHTML(f.type) + '</td>'
-            + '<td>' + lenTxt + '</td>'
-            + '<td>' + preTxt + '</td>'
+            + '<td>' + escapeHTML(formatSchemaType(f)) + '</td>'
             + '<td class="col-attrs">' + renderAttrs(f) + '</td>'
             + '<td>'
               + '<span class="dssc-alias-cell">'
@@ -3306,7 +3395,7 @@
     });
 
     function startFieldEdit(cellEl, idx, kind) {
-      const fields = SCHEMA_DATA[CURRENT_SCHEMA_TABLE] || [];
+      const fields = getSchema(CURRENT_SCHEMA_TABLE);
       const f = fields[idx];
       if (!f) return;
       const isAlias = kind === 'alias';
@@ -3431,6 +3520,22 @@
     });
 
     /* === DSSC-JS-INSERT === */
+    window.SmartQueryAliasData = {
+      activeSource: () => { const found = findSource(activeSourceId); return found ? found.source : null; },
+      sourceById: (id) => { const found = findSource(id); return found ? found.source : null; },
+      fields: (sourceId, tableName) => getSchema(tableName, sourceId),
+      refresh: () => {
+        renderTableList();
+        if (!document.getElementById('dsViewSchema').classList.contains('hidden')) renderSchema(CURRENT_SCHEMA_TABLE);
+        if (!document.getElementById('dsViewPreview').classList.contains('hidden')) {
+          const found = findSource(activeSourceId);
+          const name = document.getElementById('dspvTableName').textContent;
+          const table = found && found.source.tables.find((item) => item.name === name);
+          document.getElementById('dspvTableAlias').textContent = table && table.alias || '未设置';
+        }
+      }
+    };
   </script>
+  <script src="../../assets/js/data-source-alias.js"></script>
 </body>
 </html>

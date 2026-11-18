@@ -1,0 +1,76 @@
+/* 数据源别名推荐：复用 data-model.css 的分析抽屉及通用组件。 */
+#dsBtnAlias .btn-ico,
+#dsAliasConfirm .btn-ico {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: -2px;
+}
+#dsBtnAlias.is-analyzing .btn-ico { animation: dmSpin 1.4s linear infinite; }
+#dsBtnAlias:disabled { opacity: .5; cursor: not-allowed; }
+.dsa-drawer .dm-drawer-head p { line-height: 1.6; }
+#dsAliasPct { color: var(--primary); font-size: 13px; }
+.dsa-summary { margin: 0 0 12px; color: var(--heading); font-size: 13px; line-height: 1.6; }
+.dsa-filters { flex-wrap: wrap; overflow: visible; row-gap: 10px; }
+.dsa-filters input { width: 120px; }
+.dsa-filters .dm-analysis-actions { margin-left: auto; }
+.dsa-help { margin: 0 0 12px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.dsa-panel { display: flex; flex: 1; min-width: 0; min-height: 0; }
+.dsa-panel .dm-analysis-table-wrap { flex: 1; min-width: 0; }
+.dsa-table { width: 100%; min-width: 0; table-layout: fixed; }
+.dsa-table th,
+.dsa-table td { padding-left: 8px; padding-right: 8px; }
+.dsa-table th { position: sticky; top: 0; z-index: 1; white-space: normal; }
+.dsa-table td { vertical-align: top; line-height: 1.6; overflow-wrap: anywhere; white-space: normal; }
+.dsa-table td:last-child { white-space: normal; }
+.dsa-table tbody tr:last-child td { border-bottom: 0; }
+.dsa-table .dsa-empty { padding: 36px 16px; text-align: center; color: var(--muted); }
+.dsa-name { display: block; min-width: 0; color: var(--heading); font-weight: 600; }
+.dsa-table-row > td { background: var(--primary-panel-bg); border-top: 1px solid var(--line); }
+.dsa-table-row:first-child > td { border-top: 0; }
+.dsa-tree-name,
+.dsa-tree-toggle { display: flex; align-items: flex-start; gap: 6px; min-width: 0; }
+.dsa-tree-toggle {
+  width: 100%; padding: 0; border: 0; border-radius: 4px; background: transparent;
+  color: var(--heading); font: inherit; text-align: left; cursor: pointer;
+}
+.dsa-tree-toggle:hover .dsa-name { color: var(--primary); }
+.dsa-tree-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.dsa-tree-toggle .btn-ico,
+.dsa-tree-name .btn-ico { flex: none; margin-top: 3px; }
+.dsa-tree-chevron { color: var(--muted); transition: transform .15s ease; }
+.dsa-tree-toggle[aria-expanded="true"] .dsa-tree-chevron { transform: rotate(90deg); }
+.dsa-table-icon { color: var(--primary); }
+.dsa-field-count { margin: 3px 0 0 40px; }
+.dsa-tree-no-fields { padding-left: 20px; }
+.dsa-field-name { padding-left: 28px; }
+.dsa-field-name .btn-ico { color: var(--muted); }
+.dsa-field-name .dsa-name { font-weight: 400; }
+.dsa-table .ghost-btn { max-width: 100%; padding: 6px 8px; white-space: normal; }
+.dsa-alias-input {
+  width: 100%; min-width: 0; height: 32px; box-sizing: border-box;
+  padding: 0 8px; border: 1px solid var(--line); border-radius: 8px;
+  background: #fff; color: var(--heading); font: inherit;
+}
+.dsa-alias-input:hover { border-color: var(--focus-border); }
+.dsa-alias-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--focus-ring); }
+.dsa-alias-input[aria-invalid="true"] { border-color: #ef4444; }
+.dsa-validation { display: block; margin-top: 4px; color: #ef4444; font-size: 12px; }
+.dsa-current { color: var(--muted); }
+.dsa-overwrite { color: #b45309; }
+#dsAliasConfirmMask { z-index: 65; }
+#dsAliasConfirm { z-index: 70; max-width: calc(100vw - 32px); }
+#dsAliasConfirmMessage { margin: 0; color: #374151; font-size: 14px; line-height: 1.8; overflow-wrap: anywhere; }
+#dsAliasConfirmMessage strong { color: var(--heading); }
+#dsAliasConfirmMessage .dsa-overwrite { display: block; margin-top: 8px; }
+@media (max-width: 1100px) {
+  .dsa-filters .dm-analysis-actions { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #dsBtnAlias.is-analyzing .btn-ico { animation: none; }
+  .dsa-tree-chevron { transition: none; }
+}
