@@ -754,13 +754,10 @@
     let changed = false;
     if (query && !cancel && !busy && name !== query.name) {
       const duplicate = draft.sqlQueries.some((item) => item.id !== query.id && item.name.trim() === name);
-      if (!name || /[{}.\r\n]/.test(name)) message('指标名称不能为空，且不能包含花括号、点号或换行，已保留原名称。');
+      if (!name) message('指标名称不能为空，已保留原名称。');
       else if (duplicate) message('指标名称重复，已保留原名称。');
       else {
-        const oldName = query.name;
         query.name = name;
-        draft.prompt = draft.prompt.replace(/\{\{\s*([^{}]+?)\s*\.value\s*\}\}/g, (token, referenced) => referenced.trim() === oldName.trim() ? `{{${name}.value}}` : token);
-        $('swConfigFields').querySelector('[data-field="prompt"]').value = draft.prompt;
         tab.querySelector('span').textContent = name; tab.title = `${name}（双击修改名称）`;
         tab.parentElement.querySelector('[data-delete-sql-id]').setAttribute('aria-label', `删除 ${name}`);
         $('swSqlQueryPanel').querySelector('.sq-sql-input')?.setAttribute('aria-label', `${activeSqlQuery().name} SQL`);
@@ -768,17 +765,10 @@
       }
     }
     delete input.dataset.sqlRenameId; input.remove(); tab.hidden = false;
-    if (changed) { renderSqlReferences(); markConfigDirty(); }
-  }
-  function renderSqlReferences() {
-    const host = $('swSqlReferences');
-    if (!host || draft?.type !== 'analysis') return;
-    const queries = Store.analysisQueries(draft), missing = Store.missingSqlReferences(draft);
-    host.innerHTML = `${queries.length ? `<span class="sw-help">点击插入指标值引用：</span><div class="sw-sql-references">${queries.map((query) => button('plus', `{{${esc(query.name || '未命名 SQL')}.value}}`, `data-insert-sql-reference="${esc(query.id)}" ${!query.name.trim() ? 'disabled' : ''}`, 'sw-link')).join('')}</div>` : '<p class="sw-help">无 SQL 时沿用提示词生成流程。</p>'}<p class="sw-error sw-sql-reference-error" role="alert">${missing.length ? `提示词引用的指标不存在：${esc(missing.join('、'))}。请调整引用后重新测试。` : ''}</p>`;
+    if (changed) markConfigDirty();
   }
   function renderAnalysisSql() {
     $('swAnalysisSql').innerHTML = analysisSqlMarkup();
-    renderSqlReferences();
   }
   function markConfigDirty() {
     dirty = true;
@@ -788,7 +778,7 @@
     const query = draft.sqlQueries.find((item) => item.id === queryId);
     if (!query) return;
     const partId = draft.id;
-    const { host, close } = UI.modal('删除 SQL', '删除后，该查询结果将不再提供给统一提示词。', `<p>确认删除指标查询“${esc(query.name || '未命名 SQL')}”？</p><p class="sw-help">若提示词仍引用此指标，删除后需调整引用。删除全部 SQL 后将恢复仅通过提示词生成内容。</p>`, button('back', '取消', 'data-close') + button('trash', '确认删除', 'id="swDeleteSqlConfirm"', 'primary-btn'));
+    const { host, close } = UI.modal('删除 SQL', '删除后，分析将使用其余 SQL 的查询结果。', `<p>确认删除指标查询“${esc(query.name || '未命名 SQL')}”？</p><p class="sw-help">删除全部 SQL 后将恢复仅通过提示词生成内容。</p>`, button('back', '取消', 'data-close') + button('trash', '确认删除', 'id="swDeleteSqlConfirm"', 'primary-btn'));
     host.querySelector('#swDeleteSqlConfirm').onclick = () => {
       if (busy || draft?.id !== partId) { close(); return; }
       const index = draft.sqlQueries.findIndex((item) => item.id === queryId);
@@ -813,9 +803,7 @@
       placeholder: draft.type === 'analysis' ? '请输入 SQL，留空时沿用提示词生成流程' : undefined
     });
     $('swConfigFields').innerHTML = (draft.type === 'analysis' ? `<div class="sw-field sw-analysis-sql" id="swAnalysisSql">${analysisSqlMarkup()}</div>` : `<div class="sw-field"><span>SQL 配置</span>${sqlEditor}</div>`) +
-      field('提示词', 'prompt', draft.prompt, { textarea: true, rows: draft.type === 'analysis' ? 7 : draft.type === 'chart' ? 9 : 5 }) +
-      (draft.type === 'analysis' ? '<div id="swSqlReferences"></div>' : '');
-    renderSqlReferences();
+      field('提示词', 'prompt', draft.prompt, { textarea: true, rows: draft.type === 'analysis' ? 7 : draft.type === 'chart' ? 9 : 5 });
     $('swAIInput').value = '';
     $('swAIInput').placeholder = draft.type === 'metric' ? '例如：排除已取消订单，并保留两位小数' : draft.type === 'chart' ? '例如：改为横向柱状图，X轴显示成交金额，展示前10项并显示数据标签' : Store.usesGenerationDate(draft) ? '例如：将生成日期改为 YYYY-MM-DD 格式' : '例如：重点解释节资率下降，控制在 200 字以内';
     renderChat(); renderResult(); status();
@@ -1318,12 +1306,12 @@
       const query = activeSqlQuery();
       if (!query) return;
       query.sql = e.target.value;
-      renderSqlReferences(); markConfigDirty(); return;
+      markConfigDirty(); return;
     }
     const key = e.target.dataset.field || e.target.dataset.bind;
     if (!['sql', 'prompt'].includes(key)) return;
     draft[key] = e.target.value;
-    renderSqlReferences(); markConfigDirty();
+    markConfigDirty();
   });
   $('swConfigFields').addEventListener('click', (event) => {
     if (!draft || draft.type !== 'analysis' || busy) return;
@@ -1341,16 +1329,6 @@
       const query = { id: `sql-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, name: `指标 ${index}`, sql: '', unit: '' };
       queries.push(query); activeSqlId = query.id;
       renderAnalysisSql(); markConfigDirty(); $('swAnalysisSql').querySelector('[aria-selected="true"]').focus();
-    }
-    const trigger = event.target.closest('[data-insert-sql-reference]');
-    if (trigger) {
-      const query = draft.sqlQueries.find((item) => item.id === trigger.dataset.insertSqlReference);
-      if (!query?.name.trim() || /[{}.\r\n]/.test(query.name)) return message('请先填写有效的指标名称，再插入引用。');
-      const editor = $('swConfigFields').querySelector('[data-field="prompt"]');
-      const token = `{{${query.name.trim()}.value}}`;
-      if (editor.value.length - (editor.selectionEnd - editor.selectionStart) + token.length > editor.maxLength) return message('提示词不能超过 6000 字。');
-      editor.setRangeText(token, editor.selectionStart, editor.selectionEnd, 'end');
-      editor.dispatchEvent(new Event('input', { bubbles: true })); editor.focus();
     }
   });
   $('swConfigFields').addEventListener('dblclick', (event) => {

@@ -11,7 +11,9 @@
   const today = () => new Date().toLocaleDateString('sv-SE');
   const parameterSQL = 'WHERE report_month = :report_month\n  AND org_name = :org_name';
   const DEFAULT_ANALYSIS_PROMPT = '结合当前内容前文已配置的指标和图表结果，解释本期采购表现、主要变化与需关注的问题。只使用已提供的数据，缺失依据时明确说明，不推断无依据的原因。控制在 200 字以内。';
-  const MULTI_SQL_PROMPT = '请基于成交金额 {{成交金额.value}} 万元、成交项目数 {{成交项目数.value}} 项、平均项目金额 {{平均项目金额.value}} 万元/项，综合分析本期采购规模和项目金额特征，并给出两条后续关注建议。仅使用查询结果，不将缺失数据视为 0；没有上期或目标数据时，不判断增长、下降或是否达标，不推断变化原因。控制在 200 字以内。';
+  const MULTI_SQL_PROMPT = '请结合各 SQL 查询返回的成交金额、成交项目数和平均项目金额，综合分析本期采购规模和项目金额特征，并给出两条后续关注建议。仅使用查询结果，不将缺失数据视为 0；没有上期或目标数据时，不判断增长、下降或是否达标，不推断变化原因。控制在 200 字以内。';
+  // Recognize only the previous built-in example when upgrading saved prototype data.
+  const LEGACY_MULTI_SQL_PROMPT = '请基于成交金额 {{成交金额.value}} 万元、成交项目数 {{成交项目数.value}} 项、平均项目金额 {{平均项目金额.value}} 万元/项，综合分析本期采购规模和项目金额特征，并给出两条后续关注建议。仅使用查询结果，不将缺失数据视为 0；没有上期或目标数据时，不判断增长、下降或是否达标，不推断变化原因。控制在 200 字以内。';
   function analysisSqlExamples() {
     return [
       { id: 'sql-amount', name: '成交金额', unit: '万元', sql: `SELECT ROUND(SUM(transaction_amount) / 10000, 2) AS value\nFROM procurement_transactions\n${parameterSQL};` },
@@ -24,22 +26,16 @@
     if (Array.isArray(part.sqlQueries)) return part.sqlQueries;
     return String(part.sql || '').trim() ? [{ id: 'sql-legacy', name: '查询结果', sql: part.sql, unit: part.unit || '' }] : [];
   }
-  function missingSqlReferences(part) {
-    const names = new Set(analysisQueries(part).map((query) => query.name.trim()));
-    return [...new Set([...String(part.prompt || '').matchAll(/\{\{\s*([^{}]+?)\s*\.value\s*\}\}/g)].map((match) => match[1].trim()).filter((name) => !names.has(name)))];
-  }
   function validateAnalysisQueries(part) {
     const queries = analysisQueries(part), names = new Set();
     queries.forEach((query, index) => {
       const name = query.name.trim(), label = name || `SQL ${index + 1}`;
-      if (!name || /[{}.\r\n]/.test(name)) throw new Error(`SQL Tab「${label}」：指标名称不能为空，且不能包含花括号、点号或换行。`);
+      if (!name) throw new Error(`SQL Tab「${label}」：指标名称不能为空。`);
       if (names.has(name)) throw new Error(`SQL Tab「${name}」：指标名称重复，请修改后重新测试。`);
       names.add(name);
       try { validateQuerySql(query.sql); } catch (error) { throw new Error(`SQL Tab「${label}」：${error.message}`); }
       if (!/\bAS\s+value\b/i.test(query.sql)) throw new Error(`SQL Tab「${label}」：查询结果需使用 AS value 作为指标值别名。`);
     });
-    const missing = missingSqlReferences(part);
-    if (missing.length) throw new Error(`提示词引用的 SQL 指标不存在：${missing.join('、')}，请修改引用后重新测试。`);
   }
   const LEGACY_CHART_PROMPT = '按采购方式展示成交金额，按金额降序排列；沿用模板图表类型、配色和尺寸。';
   const DEFAULT_CHART_PROMPT = `图表类型：纵向柱状图。
@@ -380,6 +376,10 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
       if (migrateSampleChartPrompt && !result.enabled && prepared.id === 'part-25' && !Array.isArray(part.sqlQueries) && !String(part.sql || '').trim() && prepared.prompt === DEFAULT_ANALYSIS_PROMPT) {
         Object.assign(prepared, { name: '采购规模综合分析（多 SQL 示例）', sqlQueries: analysisSqlExamples(), prompt: MULTI_SQL_PROMPT, confirmed: false, result: null, revision: prepared.revision + 1 });
       }
+      if (prepared.type === 'analysis' && prepared.prompt === LEGACY_MULTI_SQL_PROMPT) {
+        Object.assign(prepared, { prompt: MULTI_SQL_PROMPT, confirmed: false, result: null, revision: prepared.revision + 1 });
+      }
+      if (prepared.result) delete prepared.result.resolvedPrompt;
       if (migrateSampleChartPrompt && prepared.type === 'chart' && prepared.prompt === LEGACY_CHART_PROMPT) prepared.prompt = chartPrompt(prepared);
       delete prepared.dependencies;
       delete prepared.missingDependencies;
@@ -560,12 +560,11 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     const rows = part.type === 'chart' ? [{ category: '公开招标', value: 5805.34 }, { category: '询比采购', value: 4905.11 }, { category: '竞争性谈判', value: 3821.60 }, { category: '直接采购', value: 3157.58 }] : [{ value }];
     const outputValue = part.type === 'chart' ? value : rows[0].value;
     let text = Number(outputValue.toFixed(decimals)).toLocaleString('zh-CN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + (part.unit ? ` ${part.unit}` : '');
-    let queryResults = [], resolvedPrompt = part.prompt;
+    let queryResults = [];
     if (part.type === 'analysis') {
       let evidence;
       if (analysisSql) {
         queryResults = analysisQueries(part).map((query) => simulateAnalysisQuery(query, params));
-        resolvedPrompt = part.prompt.replace(/\{\{\s*([^{}]+?)\s*\.value\s*\}\}/g, (_, name) => String(queryResults.find((query) => query.name === name.trim()).value));
         evidence = queryResults.map((query) => `${query.name}为${query.text}`);
       } else {
         const currentIndex = parts.findIndex((p) => p.id === part.id);
@@ -585,7 +584,7 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
       const limit = part.sql.match(/LIMIT\s+(\d+)/i);
       if (limit) rows.splice(Number(limit[1]));
     }
-    return { ok: true, demo: true, rows: analysisSql ? queryResults.map(({ value }) => ({ value })) : rows, queryResults, resolvedPrompt, text, at: new Date().toISOString(), params: clone(params), signature: signature(part, params, parts), stale: false };
+    return { ok: true, demo: true, rows: analysisSql ? queryResults.map(({ value }) => ({ value })) : rows, queryResults, text, at: new Date().toISOString(), params: clone(params), signature: signature(part, params, parts), stale: false };
   }
   function aiEdit(part, request) {
     const next = clone(part);
@@ -603,5 +602,5 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     }
     return { next: syncPartMetadata(next, true), reply: `已更新${part.type === 'analysis' ? '提示词' : '提示词及相关配置'}并回填到上方配置。请重新测试，查看结果后确认此项。` };
   }
-  global.SkillCatalogStore = { key: KEY, load, save, update, clone, themes, isReady, preparePart, syncPartMetadata, normalizeSkill, normalizeTestParams, invalidate, signature, runDemo, aiEdit, sampleParts, sampleOutline, usesGenerationDate, hasAnalysisSql, analysisQueries, missingSqlReferences, analysisSqlExamples, removePart };
+  global.SkillCatalogStore = { key: KEY, load, save, update, clone, themes, isReady, preparePart, syncPartMetadata, normalizeSkill, normalizeTestParams, invalidate, signature, runDemo, aiEdit, sampleParts, sampleOutline, usesGenerationDate, hasAnalysisSql, analysisQueries, analysisSqlExamples, removePart };
 })(window);
