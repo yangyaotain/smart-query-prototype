@@ -7,6 +7,7 @@
   const names = { metric: '指标', chart: '图表', analysis: '自定义' };
   let skill, draft, selectedId, dirty = false, busy = false, documentReady = false;
   let activeSqlId = '';
+  const positionedSqlInputs = new WeakSet();
   let singleTest = null, globalTest = null, lastGlobalTestStatus = '';
   const executionRuns = new Map();
   const runIcon = 'M8 4v16l12-8L8 4', stopIcon = 'M7 7h10v10H7z';
@@ -59,6 +60,13 @@
   function promptParameterNode(key) {
     return [...$('swTestPrompt').querySelectorAll('[data-test-param]')].find((node) => node.dataset.testParam === key);
   }
+  function promptParameterValues(key) {
+    return [...$('swTestPrompt').querySelectorAll('[data-test-param]')].filter((node) => node.dataset.testParam === key)
+      .map((node) => {
+        const value = node.textContent.replace(/\u00a0/g, ' ').trim();
+        return value === node.dataset.placeholder ? '' : value;
+      }).filter(Boolean);
+  }
   function createTestSkillTag() {
     const tag = document.createElement('span');
     tag.className = 'sw-context-skill-tag'; tag.dataset.skillTag = skill.id; tag.contentEditable = 'false'; tag.textContent = skill.name;
@@ -70,10 +78,7 @@
   }
   function parameterValue(parameter) {
     if (!(parameter.usage || []).includes('业务端变量')) return String(parameter.value ?? '').trim();
-    const node = promptParameterNode(parameter.key);
-    if (!node) return '';
-    const value = String(node.textContent || '').replace(/\u00a0/g, ' ').trim();
-    return value === node.dataset.placeholder ? '' : value;
+    return promptParameterValues(parameter.key)[0] || '';
   }
   function readTestQuestion() {
     const editor = $('swTestPrompt');
@@ -87,14 +92,7 @@
     return [...editor.childNodes].map(readNode).join('').replace(/\u00a0/g, ' ').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
   }
   function params() {
-    const settings = { month: '', org: '', generatedAt: '', variables: {}, requiredKeys: [], question: readTestQuestion() };
-    (skill.testParams || []).forEach((parameter) => {
-      const value = parameterValue(parameter);
-      settings[parameter.runtimeKey || parameter.key] = value;
-      settings.variables[parameter.label] = value;
-      if (parameter.required && (parameter.usage || []).includes('业务端变量')) settings.requiredKeys.push(parameter.key);
-    });
-    return settings;
+    return Store.parameterSettings(skill.testParams, parameterValue, readTestQuestion());
   }
   function missingTestParams() {
     return promptParameters().filter((parameter) => parameter.required && !parameterValue(parameter));
@@ -129,7 +127,7 @@
       const parameter = promptParameters().find((item) => item.label === label);
       const variable = document.createElement('span');
       variable.className = 'sw-context-variable'; variable.dataset.testParam = parameter?.key || '';
-      variable.dataset.placeholder = label; variable.title = `变量：${label}`;
+      variable.dataset.placeholder = label; variable.title = label;
       variable.textContent = parameter?.value || label;
       variable.classList.toggle('is-filled', !!parameter?.value);
       editor.appendChild(variable);
@@ -143,6 +141,12 @@
     updateTestParamLock();
   }
   function validateTestParams() {
+    const conflict = promptParameters().find(({ key }) => new Set(promptParameterValues(key)).size > 1);
+    if (conflict) {
+      $('swTestParamError').textContent = '请让同一变量「' + conflict.label + '」的填写值保持一致。';
+      $('swTestParamError').classList.remove('hidden');
+      return false;
+    }
     const missing = missingTestParams();
     if (!missing.length) { $('swTestParamError').classList.add('hidden'); renderTestParamStatus(); return true; }
     const labels = missing.map((parameter) => parameter.label).join('、');
@@ -721,7 +725,15 @@
       '<p class="sw-help">每个 Tab 独立查询，下方提示词统一分析全部指标。示例使用报告月份和组织范围；成交项目数沿用一行一项目的示例口径。</p>';
   }
   function sqlQueryEditor(query) {
-    return window.SmartQuerySqlEditor.render({ value: query.sql, bind: 'analysisSql', minLines: 6, ariaLabel: `${query.name || '当前指标'} SQL`, placeholder: '编写查询语句，使用 AS value 返回指标值' });
+    return window.SmartQuerySqlEditor.render({ value: query.sql, bind: 'analysisSql', minLines: 6, ariaLabel: `${query.name || '当前指标'} SQL`, placeholder: '编写查询语句，使用 AS value 返回指标值' }) + sqlVariableHelp();
+  }
+  function sqlVariableHelp() {
+    const variables = skill.promptVariables.map(({ label }) => button('plus',
+      esc(label), 'data-sql-variable="' + esc(label) + '"', 'secondary-btn'));
+    return '<div class="sw-sql-help"><p>用 <code>${变量名}</code> 引用业务端预置提示词变量。先在 SQL 框内定位光标，再点击变量插入。变量外无需加引号。</p>' +
+      (variables.length ? '<div class="sw-prompt-variables" role="group" aria-label="插入 SQL 变量">' + variables.join('') + '</div>'
+        : '<p>当前技能还没有可用变量，可在「基本信息 → 业务端预置提示词」中添加。</p>') +
+      '</div>';
   }
   function activateSqlQuery(queryId) {
     const query = draft.sqlQueries.find((item) => item.id === queryId);
@@ -802,7 +814,7 @@
       ariaLabel: draft.type === 'analysis' ? '当前内容 SQL（选填）' : '当前内容 SQL',
       placeholder: draft.type === 'analysis' ? '请输入 SQL，留空时沿用提示词生成流程' : undefined
     });
-    $('swConfigFields').innerHTML = (draft.type === 'analysis' ? `<div class="sw-field sw-analysis-sql" id="swAnalysisSql">${analysisSqlMarkup()}</div>` : `<div class="sw-field"><span>SQL 配置</span>${sqlEditor}</div>`) +
+    $('swConfigFields').innerHTML = (draft.type === 'analysis' ? `<div class="sw-field sw-analysis-sql" id="swAnalysisSql">${analysisSqlMarkup()}</div>` : `<div class="sw-field"><span>SQL 配置</span>${sqlEditor}${sqlVariableHelp()}</div>`) +
       field('提示词', 'prompt', draft.prompt, { textarea: true, rows: draft.type === 'analysis' ? 7 : draft.type === 'chart' ? 9 : 5 });
     $('swAIInput').value = '';
     $('swAIInput').placeholder = draft.type === 'metric' ? '例如：排除已取消订单，并保留两位小数' : draft.type === 'chart' ? '例如：改为横向柱状图，X轴显示成交金额，展示前10项并显示数据标签' : Store.usesGenerationDate(draft) ? '例如：将生成日期改为 YYYY-MM-DD 格式' : '例如：重点解释节资率下降，控制在 200 字以内';
@@ -836,6 +848,10 @@
     if (!result.stale && result.signature !== Store.signature(draft, params(), skill.parts)) { $('swResult').innerHTML = '<div class="sw-empty">测试提问已变更，请使用当前内容重新测试。</div>'; return; }
     if (!result.ok) { $('swResult').innerHTML = `<div class="sw-empty sw-error">${esc(result.error)}</div>`; return; }
     let html = trace?.status === 'stopped' ? '<div class="sw-result-state-note">本次测试已停止，以下为上次测试结果。</div>' : trace?.status === 'cancelled' ? '<div class="sw-result-state-note">本次全局测试未执行此项，以下为上次测试结果。</div>' : '';
+    if (result.bindings?.length) {
+      const bindings = [...new Map(result.bindings.map((binding) => [binding.key, binding])).values()];
+      html += '<div class="sw-result-bindings">本次绑定 ' + bindings.map(({ label, value }) => esc(label + ' ' + value)).join(' · ') + '</div>';
+    }
     if (draft.type === 'metric') html += `<div class="sw-fill-value"><small>回填值</small>${esc(result.text)}</div>`;
     else if (draft.type === 'chart') {
       const max = Math.max(...result.rows.map((r) => r.value), 1);
@@ -864,6 +880,13 @@
         Store.invalidate(s, selectedId);
       });
       draft = Store.clone(skill.parts.find((p) => p.id === selectedId)); dirty = false;
+      const input = $('swConfigFields').querySelector('.sq-sql-input');
+      const sql = (draft.type === 'analysis' ? activeSqlQuery()?.sql : draft.sql) || '';
+      if (input && input.value !== sql) {
+        input.value = sql;
+        positionedSqlInputs.delete(input);
+        window.SmartQuerySqlEditor.sync(input);
+      }
       renderHeader(); renderIndex(); syncMarks(); renderResult(); status(); return true;
     } catch (e) { fail(e); return false; }
   }
@@ -1043,7 +1066,7 @@
     $('swChat').insertAdjacentHTML('beforeend', '<div class="sw-chat-message is-assistant">正在理解问题并修改配置…</div>');
     await new Promise((resolve) => setTimeout(resolve, 1000));
     try {
-      const response = Store.aiEdit(captured, request);
+      const response = Store.aiEdit(captured, request, skill.promptVariables);
       skill = updateSkill((s) => {
         const index = s.parts.findIndex((p) => p.id === captured.id);
         if (index < 0 || s.parts[index].revision !== captured.revision) throw new Error('当前配置已变化，本次 AI 修改未写入，请重新发送。');
@@ -1263,7 +1286,7 @@
       saving = true;
       try {
         skill = updateSkill((s) => {
-          s.parts.push(Store.preparePart({ id: partId, type, name, theme: s.themes[0] || Store.themes[0], source: 'manual', sourceText: `第 ${anchor.page} 页手动框选区域`, anchor, confirmed: false, result: null, messages: [] }));
+          s.parts.push(Store.preparePart({ id: partId, type, name, theme: s.themes[0] || Store.themes[0], source: 'manual', sourceText: `第 ${anchor.page} 页手动框选区域`, anchor, confirmed: false, result: null, messages: [] }, 0, s.promptVariables));
           s.enabled = false;
         });
         saving = false; close();
@@ -1302,6 +1325,7 @@
   document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && drawingMode) { event.preventDefault(); setDrawingMode(false); } });
   $('swConfigFields').addEventListener('input', (e) => {
     if (!draft || busy) return;
+    if (e.isTrusted && e.target.matches('.sq-sql-input')) positionedSqlInputs.add(e.target);
     if (draft.type === 'analysis' && e.target.dataset.bind === 'analysisSql') {
       const query = activeSqlQuery();
       if (!query) return;
@@ -1314,7 +1338,35 @@
     markConfigDirty();
   });
   $('swConfigFields').addEventListener('click', (event) => {
-    if (!draft || draft.type !== 'analysis' || busy) return;
+    if (!draft || busy) return;
+    if (event.target.matches('.sq-sql-input')) {
+      positionedSqlInputs.add(event.target);
+      return;
+    }
+    const format = event.target.closest('[data-sql-action="format"]');
+    if (format) {
+      positionedSqlInputs.delete(format.closest('.sq-sql-editor').querySelector('.sq-sql-input'));
+      return;
+    }
+    const variable = event.target.closest('[data-sql-variable]');
+    if (variable) {
+      const input = variable.closest('.sw-sql-help').previousElementSibling.querySelector('.sq-sql-input');
+      if (!input || input.disabled || input.readOnly) return;
+      const label = variable.dataset.sqlVariable;
+      if (!Store.validSqlVariableName(label)) {
+        message('此变量名不能用于 SQL，请在技能基本信息中修改。');
+        return;
+      }
+      if (!positionedSqlInputs.has(input)) {
+        message('请先在 SQL 框内将光标移到要插入变量的位置。');
+        return;
+      }
+      input.setRangeText(Store.sqlVariableToken(label), input.selectionStart, input.selectionEnd, 'end');
+      input.focus({ preventScroll: true });
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      return;
+    }
+    if (draft.type !== 'analysis') return;
     const remove = event.target.closest('[data-delete-sql-id]');
     if (remove) { deleteSqlQuery(remove.dataset.deleteSqlId); return; }
     const tab = event.target.closest('[data-sql-query-id]');
@@ -1339,6 +1391,12 @@
     if (event.target.matches('[data-sql-rename-id]')) finishSqlTabRename(event.target);
   });
   $('swConfigFields').addEventListener('keydown', (event) => {
+    const movesSqlCaret = /^(Arrow(Left|Right|Up|Down)|Home|End|PageUp|PageDown|Tab)$/.test(event.key)
+      || ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a');
+    if (event.target.matches('.sq-sql-input') && movesSqlCaret) {
+      positionedSqlInputs.add(event.target);
+      return;
+    }
     if (event.target.matches('[data-sql-rename-id]')) {
       if (!event.isComposing && ['Enter', 'Escape'].includes(event.key)) {
         event.preventDefault(); event.stopPropagation();
@@ -1371,6 +1429,15 @@
       if (!missingTestParams().length) $('swTestPromptState').textContent = '已调整本次测试提问';
       renderResult(); status(); renderGlobalTest();
     } catch (error) { fail(error); }
+  });
+  $('swTestPrompt').addEventListener('click', (event) => {
+    const variable = event.target.closest('[data-test-param]');
+    if (!variable || busy || globalTest || (variable.textContent && variable.textContent !== variable.dataset.placeholder)) return;
+    const range = document.createRange();
+    range.selectNodeContents(variable);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
   });
   $('swSearchForm').onsubmit = searchDocument;
   $('swPartSearch').oninput = () => { if (!$('swPartSearch').value.trim()) { searchTerm = ''; renderIndex(); syncMarks(); } };

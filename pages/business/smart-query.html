@@ -48,7 +48,7 @@
       border-radius: 12px;
       background: #fff;
     }
-    .question-edit textarea {
+    .question-edit textarea,.question-edit-prompt {
       width: 100%;
       min-height: 74px;
       padding: 8px 10px;
@@ -60,7 +60,9 @@
       line-height: 1.65;
       color: var(--heading);
     }
-    .question-edit textarea:focus { outline: 1px solid var(--primary); border-color: var(--primary); }
+    .question-edit-prompt { max-height:240px; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; resize:none; }
+    .composer-prompt-hint[data-sql-param]:empty::before { content:attr(data-prompt-hint); }
+    .question-edit textarea:focus,.question-edit-prompt:focus { outline: 1px solid var(--primary); border-color: var(--primary); }
     .question-edit-note {
       margin: 0;
       color: var(--muted);
@@ -1679,7 +1681,7 @@
   <script src="../../assets/js/dashboard-assets.js?v=20261118"></script>
   <script src="../../assets/js/common.js?v=20261110-keyword-highlight"></script>
   <script src="../../assets/js/skill-template-sample.js?v=20260911"></script>
-    <script src="../../assets/js/skill-workflow-store.js?v=20261118-natural-prompt"></script>
+    <script src="../../assets/js/skill-workflow-store.js?v=20261119-cn-variables"></script>
   <script src="../../assets/js/skill-picker.js?v=20260914-skill-copy"></script>
   <script src="../../assets/js/scheduled-task-form.js?v=20260914-skill-copy"></script>
   <script src="../../assets/js/report-reference.js?v=20261109-ppt-report"></script>
@@ -1703,6 +1705,6 @@
   <script src="../../assets/js/smart-query-context.js?v=20261118-natural-dialogue"></script>
   <script src="../../assets/js/query-attachments.js?v=20261116-remove-icon"></script>
   <script src="../../assets/js/indicator-chat.js?v=20261118-natural-dialogue"></script>
-  <script src="../../assets/js/smart-query.js?v=20261118-single-send-stop"></script>
+  <script src="../../assets/js/smart-query.js?v=20261119-cn-variables"></script>
 </body>
 </html>

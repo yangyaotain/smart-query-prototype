@@ -27,20 +27,33 @@
     host.querySelector('input:not([type=file]),textarea,button')?.focus();
     return { host, close };
   }
-  function promptEditor(host, initialValue) {
+  function promptEditor(host, skill) {
+    const Store = global.SkillCatalogStore;
     const editor = host.querySelector('#swUserPrompt');
     const toolbar = host.querySelector('#swPromptVariables');
     const count = host.querySelector('#swPromptCount');
-    let savedRange = null;
+    const variables = skill.promptVariables.map((variable) => ({ ...variable }));
+    count.insertAdjacentHTML('afterend', '<div class="sw-note sw-prompt-variable-form hidden" id="swVariableForm"><label>变量名<input type="text" data-variable-label maxlength="40" placeholder="例如：采购品类" aria-describedby="swVariableHelp"></label><small id="swVariableHelp"></small><small class="sw-error hidden" data-variable-error role="alert"></small><div class="sw-prompt-variables">' + button('close', '取消', 'data-variable-cancel') + button('check', '应用变量', 'data-variable-apply', 'secondary-btn') + '</div></div>');
+    const panel = host.querySelector('#swVariableForm');
+    const labelInput = panel.querySelector('[data-variable-label]');
+    const error = panel.querySelector('[data-variable-error]');
+    let savedRange = null, editing = null;
     const value = () => String(editor.innerText || editor.textContent || '').replace(/\u00a0/g, ' ').trim();
-    function token(label) {
-      const chip = document.createElement('span');
+    const activeVariables = () => {
+      const labels = new Set(Store.promptLabels(value()));
+      return variables.filter(({ label }) => labels.has(label));
+    };
+    function updateToken(chip, variable) {
+      chip.dataset.promptKey = variable.key;
+      chip.textContent = '【' + variable.label + '】';
+      chip.title = variable.label;
+      chip.setAttribute('aria-label', '编辑变量：' + chip.title);
+    }
+    function token(variable) {
+      const chip = document.createElement('button');
+      chip.type = 'button';
       chip.className = 'sw-prompt-variable'; chip.contentEditable = 'false';
-      const text = document.createElement('span');
-      text.className = 'sw-prompt-variable-text'; text.contentEditable = 'true'; text.tabIndex = -1; text.spellcheck = false;
-      text.textContent = label.trim() || '自定义';
-      text.setAttribute('aria-label', '变量名称');
-      chip.append(document.createTextNode('【'), text, document.createTextNode('】'));
+      updateToken(chip, variable);
       return chip;
     }
     function refresh() {
@@ -48,8 +61,7 @@
       count.textContent = `${length} / 2000`;
       count.classList.toggle('sw-error', length > 2000);
       editor.setAttribute('aria-invalid', String(length > 2000));
-      const labels = [...new Set([...editor.querySelectorAll('.sw-prompt-variable-text')].map((el) => el.textContent.trim()).filter(Boolean))];
-      toolbar.innerHTML = labels.map((label) => button('plus', esc(label), `data-prompt-variable="${esc(label)}"`)).join('') + button('plus', '新增变量', 'data-new-variable');
+      toolbar.innerHTML = variables.map(({ key, label }) => button('plus', esc(label), 'data-prompt-variable="' + esc(key) + '"')).join('') + button('plus', '新增变量', 'data-new-variable');
     }
     function currentRange() {
       const selection = global.getSelection();
@@ -66,26 +78,68 @@
       const selection = global.getSelection();
       selection?.removeAllRanges(); selection?.addRange(range);
     }
-    function insert(label, edit) {
+    function insert(variable) {
       let range = currentRange() || savedRange;
       if (!range || !editor.contains(range.commonAncestorContainer)) {
         range = document.createRange(); range.selectNodeContents(editor); range.collapse(false);
       }
       range.deleteContents();
-      const chip = token(label), after = document.createTextNode('');
+      const chip = token(variable), after = document.createTextNode('');
       range.insertNode(chip); chip.after(after);
-      if (edit) {
-        const text = chip.querySelector('.sw-prompt-variable-text');
-        text.focus(); range.selectNodeContents(text);
-      } else {
-        editor.focus(); range.setStart(after, 0); range.collapse(true);
-      }
+      editor.focus(); range.setStart(after, 0); range.collapse(true);
       selectRange(range); rememberRange(); refresh();
     }
-    const text = String(initialValue || ''), pattern = /【([^【】\r\n]+)】/g;
+    function openVariable(variable) {
+      rememberRange();
+      editing = variable || null;
+      labelInput.value = editing?.label || '';
+      panel.querySelector('#swVariableHelp').textContent = editing
+        ? '保存配置时，会同步更新 SQL 中引用此变量的位置。'
+        : '输入中文名，同一技能内的变量名不能重复。';
+      error.classList.add('hidden');
+      panel.classList.remove('hidden');
+      labelInput.focus();
+    }
+    function applyVariable() {
+      const label = labelInput.value.trim();
+      let reason = '';
+      if (!label || (label !== editing?.label && !/\p{Script=Han}/u.test(label))) reason = '请填写中文变量名，例如采购品类。';
+      else if (!Store.validSqlVariableName(label)) reason = '变量名不能包含大括号、【】或换行。';
+      else if (variables.some((variable) => variable !== editing && variable.label === label)) reason = '此变量名已存在。';
+      if (reason) {
+        error.textContent = reason;
+        error.classList.remove('hidden');
+        return false;
+      }
+      panel.classList.add('hidden');
+      if (editing) {
+        const chips = [...editor.querySelectorAll('[data-prompt-key]')].filter((chip) => chip.dataset.promptKey === editing.key);
+        // Pasted occurrences share the same mapping as the inserted chips.
+        const nodes = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+        const to = '【' + label + '】';
+        while (nodes.nextNode()) {
+          const node = nodes.currentNode;
+          if (!node.parentElement.closest('[data-prompt-key]')) {
+            const text = node.data.replace(/【([^【】\r\n]+)】/g, (token, name) => name.trim() === editing.label ? to : token);
+            if (text !== node.data) node.data = text;
+          }
+        }
+        editing.label = label;
+        chips.forEach((chip) => updateToken(chip, editing));
+        refresh();
+        (chips[0] || editor).focus();
+      } else {
+        const variable = Store.createPromptVariable(label, variables);
+        variables.push(variable);
+        insert(variable);
+      }
+      return true;
+    }
+    const text = String(skill.userPrompt || ''), pattern = /【([^【】\r\n]+)】/g;
     let cursor = 0, match;
     while ((match = pattern.exec(text))) {
-      editor.append(document.createTextNode(text.slice(cursor, match.index)), token(match[1]));
+      const variable = variables.find(({ label }) => label === match[1].trim());
+      editor.append(document.createTextNode(text.slice(cursor, match.index)), variable ? token(variable) : document.createTextNode(match[0]));
       cursor = match.index + match[0].length;
     }
     editor.append(document.createTextNode(text.slice(cursor)));
@@ -94,39 +148,40 @@
     editor.addEventListener('mouseup', rememberRange);
     editor.addEventListener('paste', (event) => {
       event.preventDefault();
-      const insideVariable = event.target.closest?.('.sw-prompt-variable-text');
-      const pasted = event.clipboardData.getData('text/plain');
-      document.execCommand('insertText', false, insideVariable ? pasted.replace(/[【】\r\n]/g, '') : pasted);
+      document.execCommand('insertText', false, event.clipboardData.getData('text/plain'));
       rememberRange(); refresh();
     });
-    editor.addEventListener('keydown', (event) => {
-      const text = event.target.closest?.('.sw-prompt-variable-text');
-      if (!text || event.key !== 'Enter' || event.isComposing) return;
-      event.preventDefault();
-      const chip = text.closest('.sw-prompt-variable');
-      let after = chip.nextSibling;
-      if (!after || after.nodeType !== Node.TEXT_NODE) { after = document.createTextNode(''); chip.after(after); }
-      editor.focus();
-      const range = document.createRange(); range.setStart(after, 0); range.collapse(true);
-      selectRange(range); rememberRange();
-    });
-    editor.addEventListener('focusout', (event) => {
-      const text = event.target.closest?.('.sw-prompt-variable-text');
-      if (!text) return;
-      text.textContent = text.textContent.replace(/[【】\r\n]/g, '').trim() || '自定义';
-      refresh();
+    editor.addEventListener('click', (event) => {
+      const chip = event.target.closest('[data-prompt-key]');
+      if (chip) openVariable(variables.find(({ key }) => key === chip.dataset.promptKey));
     });
     toolbar.addEventListener('mousedown', (event) => { if (event.target.closest('button')) event.preventDefault(); });
     toolbar.addEventListener('click', (event) => {
       const trigger = event.target.closest('button');
-      if (trigger) insert(trigger.dataset.promptVariable || '自定义', trigger.hasAttribute('data-new-variable'));
+      if (!trigger) return;
+      const variable = variables.find(({ key }) => key === trigger.dataset.promptVariable);
+      if (variable) insert(variable);
+      else openVariable();
+    });
+    panel.querySelector('[data-variable-cancel]').onclick = () => { panel.classList.add('hidden'); editor.focus(); };
+    panel.querySelector('[data-variable-apply]').onclick = applyVariable;
+    panel.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' || event.isComposing || event.target.tagName !== 'INPUT') return;
+      event.preventDefault(); applyVariable();
     });
     refresh();
     return {
       value,
+      variables: activeVariables,
       validate() {
+        if (!panel.classList.contains('hidden') && !applyVariable()) return false;
         const prompt = value();
-        if (prompt && prompt.length <= 2000) return true;
+        if (prompt && prompt.length <= 2000) {
+          const unknown = Store.promptLabels(prompt).find((label) => !variables.some((variable) => variable.label === label));
+          if (!unknown) return true;
+          message('请通过“新增变量”添加「' + unknown + '」。');
+          return false;
+        }
         editor.setAttribute('aria-invalid', 'true'); editor.focus();
         message(prompt ? '业务端预置提示词不能超过 2000 字。' : '请填写业务端预置提示词。');
         return false;
@@ -140,7 +195,7 @@
     if (skill.enabled) return message('请先停用技能，再修改基本信息。');
     const form = `<form id="swBasicForm" class="sw-form"><div class="sw-note">以下配置由模板解析生成，可校正后保存。</div><label>技能名称 <em>*</em><input name="name" maxlength="60" required value="${esc(skill.name)}"></label><label>技能说明 <em>*</em><textarea name="desc" rows="3" maxlength="300" required>${esc(skill.desc)}</textarea></label><label>技能分类 <em>*</em><select name="category"><option ${skill.category === '经营报告' ? 'selected' : ''}>经营报告</option><option ${skill.category === '专项分析' ? 'selected' : ''}>专项分析</option></select></label><fieldset><legend>适用分析主题 <em>*</em></legend><input type="search" id="swThemeSearch" placeholder="搜索分析主题"><div class="sw-options">${Store.themes.map((t) => `<label data-theme="${esc(t)}"><input type="checkbox" name="themes" value="${esc(t)}" ${skill.themes.includes(t) ? 'checked' : ''}>${esc(t)}</label>`).join('')}</div><p class="hidden" id="swThemeEmpty">未找到匹配的分析主题</p></fieldset><div class="sw-prompt-field"><label id="swPromptLabel">业务端预置提示词 <em>*</em></label><div id="swPromptVariables" class="sw-prompt-variables" role="group" aria-label="插入提示词变量"></div><div id="swUserPrompt" class="sw-prompt-editor" contenteditable="true" tabindex="0" role="textbox" aria-multiline="true" aria-required="true" aria-labelledby="swPromptLabel" aria-describedby="swPromptHelp swPromptCount" data-placeholder="填写选中技能后自动填入的默认任务，可插入变量" spellcheck="true"></div><div id="swPromptCount" class="sw-prompt-count"></div><small id="swPromptHelp">浅蓝色变量可点击修改、删除，也可通过上方按钮插入。选中技能后整段填入业务端输入框，用户可以自由修改。</small></div></form>`;
     const { host, close } = modal('基本信息', skill.reportTemplate?.name || skill.name, form, button('back', '取消', 'data-close') + button('save', '保存配置', 'id="swBasicSave"', 'primary-btn'), { drawer: true });
-    const prompt = promptEditor(host, skill.userPrompt);
+    const prompt = promptEditor(host, skill);
     host.querySelector('#swThemeSearch').addEventListener('input', (e) => {
       let visible = 0;
       host.querySelectorAll('[data-theme]').forEach((el) => { const match = el.dataset.theme.includes(e.target.value.trim()); el.classList.toggle('hidden', !match); if (match) visible++; });
@@ -153,15 +208,18 @@
       if (!selected.length) return message('请至少选择一个分析主题。');
       if (!prompt.validate()) return;
       try {
+        let updatedParts = 0;
         Store.update(id, (s) => {
           if (s.enabled) throw new Error('技能已启用，请先停用后再修改基本信息。');
-          s.name = fd.get('name').trim(); s.desc = fd.get('desc').trim(); s.category = fd.get('category'); s.userPrompt = prompt.value();
-          s.testParams = Store.normalizeTestParams(s, s.testParams);
+          if (s.userPrompt !== skill.userPrompt || JSON.stringify(s.promptVariables) !== JSON.stringify(skill.promptVariables)) throw new Error('预置提示词已被其他窗口修改，请重新打开基本信息。');
+          updatedParts = Store.updatePromptVariables(s, prompt.value(), prompt.variables());
+          s.name = fd.get('name').trim(); s.desc = fd.get('desc').trim(); s.category = fd.get('category');
           const changed = JSON.stringify(s.themes) !== JSON.stringify(selected);
           s.themes = selected;
           if (changed) s.parts.forEach((p) => { if (!selected.includes(p.theme)) { p.theme = selected[0]; Store.invalidate(s, p.id); } });
         });
-        close(); onSaved?.(); message('基本信息已保存。');
+        close(); onSaved?.();
+        message(updatedParts ? `已保存，并更新 ${updatedParts} 项内容的 SQL，请重新测试确认。` : '基本信息已保存。');
       } catch (e) { message(e); }
     };
   }

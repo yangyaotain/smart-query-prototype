@@ -71,8 +71,15 @@
     return html + escapeHTML(source.slice(lastIndex));
   }
 
+  function replaceOutsideVariables(text, pattern, replacement) {
+    var combined = new RegExp('(\\$\\{[^{}\\r\\n]+\\})|' + pattern.source, pattern.flags);
+    return text.replace(combined, function (match, variable, group) {
+      return variable || replacement(group);
+    });
+  }
+
   function formatSQL(sql) {
-    var text = String(sql || '').replace(/\s+/g, ' ').trim();
+    var text = replaceOutsideVariables(String(sql || ''), /\s+/g, function () { return ' '; }).trim();
     if (!text) return '';
 
     [
@@ -81,11 +88,11 @@
       'JOIN', 'LIMIT', 'OFFSET', 'UNION'
     ].forEach(function (keyword) {
       var pattern = keyword.replace(/\s+/g, '\\s+');
-      text = text.replace(new RegExp('\\s+' + pattern + '\\s+', 'ig'), '\n' + keyword + ' ');
+      text = replaceOutsideVariables(text, new RegExp('\\s+' + pattern + '\\s+', 'ig'), function () { return '\n' + keyword + ' '; });
     });
 
-    text = text.replace(/\s+(AND|OR)\s+/ig, '\n  $1 ');
-    text = text.replace(/,\s*/g, ',\n  ');
+    text = replaceOutsideVariables(text, /\s+(AND|OR)\s+/ig, function (word) { return '\n  ' + word + ' '; });
+    text = replaceOutsideVariables(text, /,\s*/g, function () { return ',\n  '; });
     return text.replace(/^\n+/, '').split('\n').map(function (line) {
       return line.replace(/\s+$/g, '');
     }).join('\n');

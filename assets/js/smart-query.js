@@ -1323,17 +1323,18 @@ function removeSelectedReference(key) {
 
 referenceModalMask?.addEventListener("click", closeReferencePicker);
 
-function readQuestionEditorText() {
-  if (!questionInput) return "";
+function readQuestionEditorText(editor = questionInput, readVariable) {
+  if (!editor) return "";
   const readNode = (node) => {
     if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || "";
     if (node.nodeType !== Node.ELEMENT_NODE) return "";
     if (node.matches("[data-skill-tag]")) return "";
     if (node.tagName === "BR") return "\n";
+    if (readVariable && node.dataset.sqlParam) return readVariable(node);
     const content = Array.from(node.childNodes).map(readNode).join("");
     return /^(DIV|P)$/.test(node.tagName) ? `${content}\n` : content;
   };
-  return Array.from(questionInput.childNodes)
+  return Array.from(editor.childNodes)
     .map(readNode)
     .join("")
     .replace(/\u00a0/g, " ")
@@ -1362,7 +1363,7 @@ function createSkillTag(skill) {
   return tag;
 }
 
-function appendPromptTemplate(container, template, withHints) {
+function appendPromptTemplate(container, template, withHints, variables = [], values = {}) {
   const text = String(template || "");
   if (!withHints) {
     if (text) container.appendChild(document.createTextNode(text));
@@ -1376,16 +1377,47 @@ function appendPromptTemplate(container, template, withHints) {
     if (match.index > cursor) {
       container.appendChild(document.createTextNode(text.slice(cursor, match.index)));
     }
+    const label = match[1].trim();
+    const variable = variables.find((item) => item.label === label);
+    const value = variable && Object.hasOwn(values, variable.key) ? values[variable.key].value : "";
     const hint = document.createElement("span");
     hint.className = "composer-prompt-hint";
-    hint.dataset.promptHint = match[1];
-    hint.textContent = match[1];
+    hint.dataset.promptHint = label;
+    if (variable) hint.dataset.sqlParam = variable.key;
+    hint.textContent = value || label;
+    hint.classList.toggle("is-filled", !!value);
     container.appendChild(hint);
     cursor = tokenPattern.lastIndex;
   }
   if (cursor < text.length) {
     container.appendChild(document.createTextNode(text.slice(cursor)));
   }
+}
+
+function readSkillPrompt(editor, variables) {
+  const hints = [...editor.querySelectorAll("[data-sql-param]")];
+  const values = new Map();
+  for (const hint of hints) {
+    const value = hint.textContent.replace(/\u00a0/g, " ").trim();
+    if (!value || value === hint.dataset.promptHint) continue;
+    const key = hint.dataset.sqlParam;
+    if (values.has(key) && values.get(key) !== value) throw new Error("请让同一变量「" + hint.dataset.promptHint + "」的填写值保持一致。");
+    values.set(key, value);
+  }
+  const question = readQuestionEditorText(editor);
+  const settings = window.SkillCatalogStore.parameterSettings(variables, ({ key }) => values.get(key), question);
+  const promptDraft = readQuestionEditorText(editor, (node) => "【" + node.dataset.promptHint + "】");
+  return { settings, promptDraft };
+}
+
+function selectEmptySkillVariable(event) {
+  const hint = event.target.closest("[data-sql-param]");
+  if (!hint || (hint.textContent && hint.textContent !== hint.dataset.promptHint)) return;
+  const range = document.createRange();
+  range.selectNodeContents(hint);
+  const selection = window.getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(range);
 }
 
 function syncQuestionEditorEmptyState() {
@@ -1410,7 +1442,7 @@ function setQuestionEditorContent(text, options = {}) {
     const skill = SKILL_DEFINITIONS[selectedSkillKey];
     if (skill) questionInput.appendChild(createSkillTag(skill));
   }
-  appendPromptTemplate(questionInput, text, withHints);
+  appendPromptTemplate(questionInput, text, withHints, SKILL_DEFINITIONS[selectedSkillKey]?.promptVariables);
   syncQuestionEditorEmptyState();
 }
 
@@ -1427,22 +1459,23 @@ function ensureSelectedSkillTag() {
   }
 }
 
-function normalizeEditedPromptHints() {
-  if (!questionInput) return;
-  questionInput.querySelectorAll("[data-prompt-hint]").forEach((hint) => {
+function normalizeEditedPromptHints(editor = questionInput) {
+  if (!editor) return;
+  editor.querySelectorAll("[data-prompt-hint]").forEach((hint) => {
     const current = hint.textContent || "";
     if (!current) {
-      hint.remove();
+      if (hint.dataset.sqlParam) hint.classList.remove("is-filled");
+      else hint.remove();
       return;
     }
     hint.classList.toggle("is-filled", current !== hint.dataset.promptHint);
   });
 }
 
-function placeQuestionCaretAtEnd() {
-  if (!questionInput) return;
+function placeQuestionCaretAtEnd(editor = questionInput) {
+  if (!editor) return;
   const range = document.createRange();
-  range.selectNodeContents(questionInput);
+  range.selectNodeContents(editor);
   range.collapse(false);
   const selection = window.getSelection();
   selection?.removeAllRanges();
@@ -1824,6 +1857,7 @@ function hydrateSkillsFromAdminStore() {
         definition.desc = item.desc;
         definition.placeholder = `请继续描述本次${item.name || "技能"}要求`;
         definition.contentParts = item.parts || [];
+        definition.promptVariables = item.promptVariables;
         definition.reportTemplate = item.reportTemplate || null;
       }
     } else {
@@ -1836,6 +1870,7 @@ function hydrateSkillsFromAdminStore() {
         prompt: item.userPrompt || `请使用“${item.name || "当前技能"}”完成分析。你可以继续修改这段内容，补充时间、范围、重点和输出要求。`,
         placeholder: `可补充“${item.name || "该技能"}”的分析重点和输出要求`,
         contentParts: item.parts || [],
+        promptVariables: item.promptVariables,
         reportTemplate: item.reportTemplate || null
       };
     }
@@ -1864,6 +1899,7 @@ function validateSelectedSkill() {
     return false;
   }
   selected.contentParts = managed.parts;
+  selected.promptVariables = managed.promptVariables;
   selected.reportTemplate = managed.reportTemplate;
   selected.category = managed.category;
   selected.desc = managed.desc;
@@ -1902,7 +1938,8 @@ function buildSpecialAnalysisFileProfile(run) {
     : extractTimeKeyword(prompt);
   const org = prompt.match(/(?:华东|华南|华北|华中|西南|西北|东北)(?:区域|地区|区)?|华润建材科技|全公司|全集团|总部/)?.[0] || "";
   const reportName = `${period}${org}${title}`.replace(/[\\/:*?"<>|\r\n]/g, "");
-  const scope = [period, org].filter(Boolean).join("、");
+  const results = run.contentParts?.length ? executeSkillContent(run) : [];
+  const scope = skillBindingSummary(results) || [period, org].filter(Boolean).join("、");
   return {
     type: "word",
     name: `${reportName}.docx`,
@@ -1914,16 +1951,38 @@ function buildSpecialAnalysisFileProfile(run) {
   };
 }
 
+function skillExecutionSettings(run) {
+  const prompt = String(run.prompt || "");
+  const monthMatch = prompt.match(/(20\d{2})[年\-/](\d{1,2})/);
+  const month = monthMatch ? `${monthMatch[1]}-${monthMatch[2].padStart(2, "0")}` : new Date().toISOString().slice(0, 7);
+  const org = prompt.match(/(?:华东|华南|华北|西南|华中)(?:区域|地区|区)?/)?.[0] || "华润建材科技";
+  const settings = run.settings;
+  if (!settings) return { month, org, promptVariables: run.promptVariables };
+  return {
+    ...settings,
+    month: Object.hasOwn(settings.sqlValues, "report_month") ? window.SkillCatalogStore.normalizeReportMonth(settings.month) : month,
+    org: Object.hasOwn(settings.sqlValues, "org_name") ? settings.org : org
+  };
+}
+
+function executeSkillContent(run) {
+  const settings = skillExecutionSettings(run);
+  return run.contentParts.map((part) => {
+    try { return { part, result: window.SkillCatalogStore.runDemo(part, settings, run.contentParts) }; }
+    catch (error) { return { part, result: { text: error.message, rows: [], ok: false } }; }
+  });
+}
+
+function skillBindingSummary(results) {
+  const bindings = new Map(results.flatMap(({ result }) => (result.bindings || []).map((binding) => [binding.key, binding])));
+  return [...bindings.values()].map(({ label, value }) => label + " " + value).join("、");
+}
+
 function buildSkillReportProfile(run) {
   const title = getSkillAnswerTitle(run);
   if (run.contentParts?.length) {
-    const monthMatch = String(run.prompt).match(/(20\d{2})[年\-/](\d{1,2})/);
-    const month = monthMatch ? `${monthMatch[1]}-${monthMatch[2].padStart(2, '0')}` : new Date().toISOString().slice(0, 7);
-    const org = String(run.prompt).match(/(?:华东|华南|华北|西南|华中)(?:区域|地区|区)?/)?.[0] || '华润建材科技';
-    const results = run.contentParts.map((part) => {
-      try { return { part, result: window.SkillCatalogStore.runDemo(part, { month, org }, run.contentParts) }; }
-      catch (error) { return { part, result: { text: error.message, rows: [], ok: false } }; }
-    });
+    const results = executeSkillContent(run);
+    const bindings = skillBindingSummary(results);
     const metrics = results.filter((r) => r.part.type === 'metric').slice(0, 4);
     const charts = results.filter((r) => r.part.type === 'chart').slice(0, 3);
     const analyses = results.filter((r) => r.part.type === 'analysis');
@@ -1934,12 +1993,12 @@ function buildSkillReportProfile(run) {
       progress: Object.entries({ metric: '指标', chart: '图表', analysis: '分析模块' }).map(([type, name]) => { const group = results.filter((r) => r.part.type === type); return [name, `${group.length ? Math.round(group.filter((r) => r.result.ok).length / group.length * 100) : 100}%`, '100%']; }),
       contributions: charts.map(({ part, result }) => { const max = Math.max(...result.rows.map((row) => row.value), 1); return [part.name, result.rows.map((row) => [row.category, String(row.value), `${row.value / max * 100}%`])]; }),
       tasks: {
-        summary: `已读取“${run.reportTemplate?.name || title}”及 ${run.contentParts.length} 项已确认配置。根据本次问题使用 ${month}、${org} 作为查询参数，以下为示例数据生成内容；Word 的原有格式由模板保留。`,
+        summary: `已读取“${run.reportTemplate?.name || title}”及 ${run.contentParts.length} 项已确认配置。${bindings ? '本次查询参数为' + bindings + '。' : ''}以下为示例数据生成内容，Word 格式沿用原模板。`,
         overview: analyses[0]?.result.text || metrics.map((r) => `${r.part.name}：${r.result.text}`).join('；'),
         risks: [1, 2, 3].map((i) => analyses[i]?.result.text || '当前模板没有更多对应分析内容。'),
         plans: [4, 5, 6].map((i) => analyses[i]?.result.text || '当前模板没有更多对应分析内容。')
       },
-      steps: [['读取技能模板', '读取原 Word 模板、内容位置及已确认配置。'], ['识别查询参数', `将 ${month}、${org} 绑定到预置 SQL 参数。`], ['执行指标与图表查询', '按每个内容项的 SQL 获取示例结果并生成图表。'], ['生成模块分析', '依据引用数据和各模块提示词生成分析文字。'], ['回填模板内容', '按绑定位置回填内容，保留原 Word 样式与版式。']]
+      steps: [['读取技能模板', '读取原 Word 模板、内容位置及已确认配置。'], ['识别查询参数', bindings ? '绑定本次查询参数：' + bindings : '按已确认的 SQL 配置准备查询。'], ['执行指标与图表查询', '按每个内容项的 SQL 获取示例结果并生成图表。'], ['生成模块分析', '依据引用数据和各模块提示词生成分析文字。'], ['回填模板内容', '按绑定位置回填内容，保留原 Word 样式与版式。']]
     };
   }
   if (run.key === "campaign") {
@@ -2401,6 +2460,22 @@ function runQuestion(edit = null, options = {}) {
     ? window.IndicatorChat?.resolve(inputText, previousIndicator, context.themes) : null;
   const previousSkill = edit?.turn.skillRun;
   if (!edit && !ctx && !context.references.length && !validateSelectedSkill()) return;
+  const selectedSkill = !edit && selectedSkillKey !== "general" ? SKILL_DEFINITIONS[selectedSkillKey] : null;
+  const skillConfig = previousSkill || selectedSkill;
+  let promptBinding = null;
+  if (!ctx && !context.references.length && skillConfig?.contentParts?.length) {
+    try {
+      if (!options.scheduled && skillConfig.promptVariables?.length && (!edit || edit.promptEditor)) {
+        promptBinding = readSkillPrompt(edit?.promptEditor || questionInput, skillConfig.promptVariables);
+      }
+      const settings = skillExecutionSettings({ prompt: inputText, promptVariables: skillConfig.promptVariables, ...promptBinding });
+      window.SkillCatalogStore.validateSkillSqlParams(skillConfig.contentParts, settings);
+    } catch (error) {
+      showToast(error.message);
+      (edit?.promptEditor || questionInput)?.focus();
+      return error.message;
+    }
+  }
   closeQuestionEditor();
   if (edit) {
     if (edit.message !== currentChatMessage) {
@@ -2465,13 +2540,14 @@ function runQuestion(edit = null, options = {}) {
     answerTitle = activeReferenceRun.answerTitle;
     activeSkillRun = null;
   } else if (previousSkill || (!edit && selectedSkillKey !== "general")) {
-    const selectedSkill = SKILL_DEFINITIONS[selectedSkillKey];
-    activeSkillRun = previousSkill ? { ...previousSkill, prompt: inputText } : {
+    activeSkillRun = previousSkill ? { ...previousSkill, prompt: inputText, ...promptBinding } : {
       key: selectedSkillKey,
       skillId: selectedSkill?.id || selectedSkillKey,
       category: selectedSkill?.category,
       prompt: inputText,
       contentParts: selectedSkill?.contentParts || [],
+      promptVariables: selectedSkill?.promptVariables || [],
+      ...promptBinding,
       reportTemplate: selectedSkill?.reportTemplate || null
     };
     mode = "template";
@@ -2591,13 +2667,27 @@ answerBlock.addEventListener("click", (event) => {
   const stack = button.closest(".question-stack");
   const form = document.getElementById("questionEditTemplate").content.firstElementChild.cloneNode(true);
   form.querySelector(".question-edit-note").classList.toggle("hidden", message === currentChatMessage);
-  const editor = form.querySelector("textarea");
-  editor.value = turn.question;
+  let editor = form.querySelector("textarea");
+  const run = turn.skillRun;
+  if (run?.promptDraft && run.promptVariables?.length) {
+    const promptEditor = document.createElement("div");
+    promptEditor.className = "question-edit-prompt";
+    promptEditor.contentEditable = "plaintext-only";
+    promptEditor.setAttribute("role", "textbox");
+    promptEditor.setAttribute("aria-label", "编辑问题");
+    promptEditor.setAttribute("aria-multiline", "true");
+    appendPromptTemplate(promptEditor, run.promptDraft, true, run.promptVariables, run.settings?.sqlValues);
+    editor.replaceWith(promptEditor);
+    editor = promptEditor;
+    editor.addEventListener("input", () => normalizeEditedPromptHints(editor));
+    editor.addEventListener("click", selectEmptySkillVariable);
+  } else editor.value = turn.question;
   stack.querySelector(".bubble").classList.add("hidden");
   stack.querySelector(".question-actions").classList.add("hidden");
   stack.prepend(form);
   editor.focus();
-  editor.setSelectionRange(editor.value.length, editor.value.length);
+  if (editor.matches("textarea")) editor.setSelectionRange(editor.value.length, editor.value.length);
+  else placeQuestionCaretAtEnd(editor);
 });
 
 answerBlock.addEventListener("submit", (event) => {
@@ -2606,14 +2696,15 @@ answerBlock.addEventListener("submit", (event) => {
   event.preventDefault();
   const message = form.closest(".chat-message");
   const turn = questionTurns.get(message);
-  const editor = form.querySelector("textarea");
-  const question = editor.value.trim();
+  const promptEditor = form.querySelector(".question-edit-prompt");
+  const editor = promptEditor || form.querySelector("textarea");
+  const question = promptEditor ? readQuestionEditorText(promptEditor) : editor.value.trim();
   if (!question) {
     showToast("请输入问题");
     editor.focus();
     return;
   }
-  if (turn) runQuestion({ message, turn, question });
+  if (turn) runQuestion({ message, turn, question, promptEditor });
 });
 
 answerBlock.addEventListener("keydown", (event) => {
@@ -7135,6 +7226,7 @@ function handleQuestionPaste(event) {
 }
 
 if (questionInput) {
+  questionInput.addEventListener("click", selectEmptySkillVariable);
   document.addEventListener("selectionchange", () => {
     if (document.activeElement === questionInput) rememberQuestionSelection();
   });
@@ -7244,7 +7336,8 @@ document.querySelectorAll(".chip").forEach((chip) => {
     const text = chip.textContent.trim();
     if (!text) return;
     const currentText = readQuestionEditorText();
-    setQuestionEditorContent(currentText ? `${currentText} ${text}` : text);
+    if (questionInput.querySelector("[data-sql-param]")) insertQuestionAtCaret(" " + text, null);
+    else setQuestionEditorContent(currentText ? `${currentText} ${text}` : text);
     focusQuestionComposer();
     placeQuestionCaretAtEnd();
     handleQuestionInput();
@@ -7909,7 +8002,7 @@ function insertScheduledConversationContext(payload) {
   aiContent.insertBefore(context, thinkingBox);
 }
 
-function completeScheduledTrialRecord(payload) {
+function completeScheduledTrialRecord(payload, parameterError) {
   if (payload.mode !== "trial" || !payload.taskId || !payload.recordId) return;
   window.setTimeout(() => {
     try {
@@ -7918,13 +8011,14 @@ function completeScheduledTrialRecord(payload) {
       const task = tasks.find((item) => item.id === payload.taskId);
       const record = task?.records?.find((item) => item.id === payload.recordId);
       if (!record || record.status !== "running") return;
-      record.status = "success";
+      record.status = parameterError ? "failed" : "success";
       record.endedAt = window.ScheduledTaskForm?.dateTimeText(new Date()) || "刚刚";
-      record.duration = "4秒";
-      record.summary = `${payload.name || "定时任务"}试运行完成，已在独立问数会话中生成分析结果。`;
+      record.duration = parameterError ? "0秒" : "4秒";
+      if (parameterError) record.error = parameterError;
+      else record.summary = `${payload.name || "定时任务"}试运行完成，已在独立问数会话中生成分析结果。`;
       localStorage.setItem(SCHEDULED_TASK_STORE_KEY, JSON.stringify(tasks));
     } catch (error) {}
-  }, 4500);
+  }, parameterError ? 0 : 4500);
 }
 
 (function restoreBoardReferenceHandoff() {
@@ -7989,9 +8083,10 @@ function completeScheduledTrialRecord(payload) {
   handleQuestionInput();
   prependScheduledHistory(payload);
   window.setTimeout(() => {
-    runQuestion(null, { thinkingDuration: 3000 });
+    const parameterError = runQuestion(null, { thinkingDuration: 3000, scheduled: true });
+    completeScheduledTrialRecord(payload, parameterError);
+    if (parameterError) return;
     insertScheduledConversationContext(payload);
-    completeScheduledTrialRecord(payload);
     showToast(payload.mode === "trial" ? "已创建独立会话并开始试运行" : "已打开定时任务执行会话");
   }, 0);
 })();

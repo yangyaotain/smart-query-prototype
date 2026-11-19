@@ -6,19 +6,18 @@
   const PUBLISHED_SAMPLE_MARKER = `${KEY}-published-samples-20260914`;
   const FAILED_SAMPLE_TRIM_MARKER = `${KEY}-failed-samples-20260916`;
   const clone = (value) => JSON.parse(JSON.stringify(value));
-  let reloadResetHandled = false;
   const themes = ['成交与节资', '采购方式与品类', '供应商管理', '采购效能与闲废', '销售分析', '客户分析', '库存分析', '活动分析'];
   const today = () => new Date().toLocaleDateString('sv-SE');
-  const parameterSQL = 'WHERE report_month = :report_month\n  AND org_name = :org_name';
   const DEFAULT_ANALYSIS_PROMPT = '结合当前内容前文已配置的指标和图表结果，解释本期采购表现、主要变化与需关注的问题。只使用已提供的数据，缺失依据时明确说明，不推断无依据的原因。控制在 200 字以内。';
   const MULTI_SQL_PROMPT = '请结合各 SQL 查询返回的成交金额、成交项目数和平均项目金额，综合分析本期采购规模和项目金额特征，并给出两条后续关注建议。仅使用查询结果，不将缺失数据视为 0；没有上期或目标数据时，不判断增长、下降或是否达标，不推断变化原因。控制在 200 字以内。';
   // Recognize only the previous built-in example when upgrading saved prototype data.
   const LEGACY_MULTI_SQL_PROMPT = '请基于成交金额 {{成交金额.value}} 万元、成交项目数 {{成交项目数.value}} 项、平均项目金额 {{平均项目金额.value}} 万元/项，综合分析本期采购规模和项目金额特征，并给出两条后续关注建议。仅使用查询结果，不将缺失数据视为 0；没有上期或目标数据时，不判断增长、下降或是否达标，不推断变化原因。控制在 200 字以内。';
-  function analysisSqlExamples() {
+  function analysisSqlExamples(variables) {
+    const filter = reportSqlFilter(variables);
     return [
-      { id: 'sql-amount', name: '成交金额', unit: '万元', sql: `SELECT ROUND(SUM(transaction_amount) / 10000, 2) AS value\nFROM procurement_transactions\n${parameterSQL};` },
-      { id: 'sql-count', name: '成交项目数', unit: '项', sql: `SELECT COUNT(*) AS value\nFROM procurement_transactions\n${parameterSQL};` },
-      { id: 'sql-average', name: '平均项目金额', unit: '万元/项', sql: `SELECT ROUND(SUM(transaction_amount) / NULLIF(COUNT(*), 0) / 10000, 2) AS value\nFROM procurement_transactions\n${parameterSQL};` }
+      { id: 'sql-amount', name: '成交金额', unit: '万元', sql: `SELECT ROUND(SUM(transaction_amount) / 10000, 2) AS value\nFROM procurement_transactions${filter};` },
+      { id: 'sql-count', name: '成交项目数', unit: '项', sql: `SELECT COUNT(*) AS value\nFROM procurement_transactions${filter};` },
+      { id: 'sql-average', name: '平均项目金额', unit: '万元/项', sql: `SELECT ROUND(SUM(transaction_amount) / NULLIF(COUNT(*), 0) / 10000, 2) AS value\nFROM procurement_transactions${filter};` }
     ];
   }
   function analysisQueries(part) {
@@ -201,11 +200,12 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     else part.managedIndicators = part.managedIndicators.map((indicator) => ({ ...indicator, aggregation: sqlAggregation(part.sql), definition: indicator.definition || part.definition }));
     return part;
   }
-  function preparePart(part, index = 0) {
+  function preparePart(part, index = 0, variables) {
     const type = part.type || 'metric';
+    const filter = reportSqlFilter(variables);
     const sql = type === 'chart'
-      ? `SELECT procurement_method AS category,\n  SUM(transaction_amount) / 10000 AS value\nFROM procurement_transactions\n${parameterSQL}\nGROUP BY procurement_method\nORDER BY value DESC;`
-      : `SELECT ${/项目|数量/.test(part.name) ? 'COUNT(*)' : /率|占比|环比/.test(part.name) ? 'AVG(rate_value)' : 'SUM(transaction_amount) / 10000'} AS value\nFROM procurement_transactions\n${parameterSQL};`;
+      ? `SELECT procurement_method AS category,\n  SUM(transaction_amount) / 10000 AS value\nFROM procurement_transactions${filter}\nGROUP BY procurement_method\nORDER BY value DESC;`
+      : `SELECT ${/项目|数量/.test(part.name) ? 'COUNT(*)' : /率|占比|环比/.test(part.name) ? 'AVG(rate_value)' : 'SUM(transaction_amount) / 10000'} AS value\nFROM procurement_transactions${filter};`;
     const prepared = {
       id: part.id || `part-${index + 1}`, type, name: part.name || '待识别内容', theme: themes[0],
       definition: `按报告月份和组织范围统计${part.name || '当前指标'}。`, sql: type === 'analysis' ? '' : sql,
@@ -225,6 +225,7 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
   const usesGenerationDate = (part) => part.type === 'analysis' && /(?:报告|本次).*生成(?:时间|日期)|生成(?:时间|日期)/.test(part.prompt || '');
   const hasAnalysisSql = (part) => analysisQueries(part).length > 0;
   const parameterCatalog = {
+    __proto__: null,
     report_month: { label: '报告月份', type: 'month', runtimeKey: 'month', hint: '最近有数据月份' },
     org_name: { label: '组织范围', type: 'text', runtimeKey: 'org', hint: '当前业务组织' },
     generated_at: { label: '报告生成时间', type: 'date', runtimeKey: 'generatedAt', hint: '当前日期' }
@@ -247,6 +248,125 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     if (key === 'generated_at') return today();
     return '';
   }
+  function promptLabels(prompt) {
+    return [...new Set([...String(prompt || '').matchAll(/【([^【】\r\n]+)】/g)].map((match) => match[1].trim()).filter(Boolean))];
+  }
+  function sqlVariableToken(name) {
+    return '${' + name + '}';
+  }
+  function validSqlVariableName(name) {
+    return !!name && name === name.trim() && !/[{}【】\p{Cc}\u2028\u2029]/u.test(name);
+  }
+  function reportSqlFilter(variables) {
+    const conditions = ['report_month', 'org_name'].map((key) => {
+      const name = variables?.find((variable) => variable.key === key)?.label;
+      return key + ' = ' + sqlVariableToken(validSqlVariableName(name) ? name : parameterCatalog[key].label);
+    });
+    return '\nWHERE ' + conditions.join('\n  AND ');
+  }
+  function availableParameterKey(label, used, index) {
+    const base = parameterKey(label, index);
+    let key = base;
+    for (let suffix = 2; used.has(key); suffix++) key = `${base}_${suffix}`;
+    return key;
+  }
+  function createPromptVariable(label, variables) {
+    return { label, key: availableParameterKey(label, new Set(variables.map(({ key }) => key)), variables.length) };
+  }
+  function normalizePromptVariables(skill) {
+    const labels = promptLabels(skill.userPrompt);
+    const saved = new Map((Array.isArray(skill.promptVariables) ? skill.promptVariables : []).map(({ key, label }) => [label, key]));
+    const used = new Set(labels.map((label) => saved.get(label)).filter(Boolean));
+    return labels.map((label, index) => {
+      let key = saved.get(label);
+      if (!key) {
+        key = availableParameterKey(label, used, index);
+        used.add(key);
+      }
+      return { key, label };
+    });
+  }
+  const legacySqlVariableName = /^[A-Za-z_]\w*$/;
+  function sqlVariableLookup(variables) {
+    const names = new Map(variables.map((variable) => [variable.key, variable]));
+    variables.forEach((variable) => {
+      if (!names.has(variable.label)) names.set(variable.label, variable);
+    });
+    return names;
+  }
+  function findSqlVariable(name, legacy, lookup) {
+    const variable = lookup.get(name);
+    return legacy && variable?.key !== name ? undefined : variable;
+  }
+  // Consume quoted literals, identifiers, and comments before looking for value placeholders.
+  const sqlTokens = () => /--[^\r\n]*|#[^\r\n]*|\/\*[\s\S]*?(?:\*\/|$)|'(?:''|\\[\s\S]|[^'\\])*'|"(?:""|\\[\s\S]|[^"\\])*"|`(?:``|[^`])*`|\$\{([^}\r\n]*)(\}|(?=\r?\n|$))|(?<!:):([A-Za-z_]\w*)/g;
+  function sqlReferences(sql) {
+    const references = [];
+    for (const [token, name, closing, legacyKey] of String(sql || '').matchAll(sqlTokens())) {
+      const quoted = /^(['"`])\$\{([^{}\r\n]+)\}\1$/.exec(token);
+      if (quoted) references.push({ token, name: quoted[2], quoted: true, valid: validSqlVariableName(quoted[2]) });
+      else if (name !== undefined || legacyKey) references.push({
+        token, name: legacyKey || name, legacy: !!legacyKey, valid: !!legacyKey || (!!closing && validSqlVariableName(name))
+      });
+    }
+    return references;
+  }
+  function rewritePartSql(part, lookup, targetByKey, targetLookup = lookup) {
+    const queries = part.type === 'analysis' ? analysisQueries(part) : [part];
+    let changed = false, previousSignature;
+    for (const query of queries) {
+      if (!query.sql) continue;
+      const sql = query.sql.replace(sqlTokens(), (token, name, closing, legacyKey) => {
+        if (!legacyKey && (!closing || !validSqlVariableName(name))) return token;
+        const variable = findSqlVariable(legacyKey || name, !!legacyKey, lookup);
+        if (!variable) return token;
+        const target = targetByKey.get(variable.key);
+        return validSqlVariableName(target) && findSqlVariable(target, false, targetLookup)?.key === variable.key
+          ? sqlVariableToken(target)
+          : token;
+      });
+      if (sql === query.sql) continue;
+      if (!changed && part.type === 'analysis' && part.result?.params) previousSignature = signature(part, part.result.params);
+      query.sql = sql;
+      changed = true;
+    }
+    if (previousSignature && part.result.signature === previousSignature) part.result.signature = signature(part, part.result.params);
+    return changed;
+  }
+  function partQueries(part) {
+    return part.type === 'analysis' ? analysisQueries(part) : [{ name: '', sql: part.sql }];
+  }
+  function sqlVariableUsages(parts, key, lookup) {
+    return parts.flatMap((part) => partQueries(part).filter((query) => sqlReferences(query.sql).some(({ valid, quoted, name, legacy }) =>
+      valid && !quoted && findSqlVariable(name, legacy, lookup)?.key === key))
+      .map((query) => query.name ? `${part.name} / ${query.name}` : part.name));
+  }
+  function updatePromptVariables(skill, prompt, variables) {
+    const lookup = sqlVariableLookup(skill.promptVariables);
+    const nextNames = new Map(variables.map(({ key, label }) => [key, label]));
+    const renamed = new Map();
+    for (const { key, label } of skill.promptVariables) {
+      const nextName = nextNames.get(key);
+      if (nextName) {
+        if (nextName !== label) renamed.set(key, nextName);
+        continue;
+      }
+      const usages = sqlVariableUsages(skill.parts, key, lookup);
+      if (usages.length) throw new Error(`「${label}」仍被以下 SQL 引用：${usages.join('、')}`);
+    }
+    let updatedParts = 0;
+    if (renamed.size) {
+      const targetLookup = sqlVariableLookup(variables);
+      skill.parts.forEach((part) => {
+        if (!rewritePartSql(part, lookup, renamed, targetLookup)) return;
+        invalidate(skill, part.id);
+        updatedParts++;
+      });
+    }
+    skill.userPrompt = prompt;
+    skill.promptVariables = variables;
+    return updatedParts;
+  }
   function normalizeTestParams(skill, current = skill?.testParams) {
     const definitions = new Map();
     const add = (key, label, usage) => {
@@ -259,11 +379,18 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
       }
       definitions.set(key, { key, label: label || known.label || key, type: known.type || 'text', runtimeKey: known.runtimeKey || key, hint: known.hint || '请填写测试值', required: true, usage: [usage] });
     };
-    const labels = [...String(skill?.userPrompt || '').matchAll(/【([^【】\r\n]+)】/g)].map((match) => match[1].trim()).filter(Boolean);
-    [...new Set(labels)].forEach((label, index) => add(parameterKey(label, index), label, '业务端变量'));
-    (skill?.parts || []).forEach((part) => {
-      const sql = part.type === 'analysis' ? analysisQueries(part).map((query) => query.sql).join('\n') : part.sql;
-      for (const match of String(sql || '').matchAll(/:([a-zA-Z_]\w*)/g)) add(match[1], parameterCatalog[match[1]]?.label || match[1], `SQL :${match[1]}`);
+    const promptVariables = normalizePromptVariables(skill);
+    const lookup = sqlVariableLookup(promptVariables);
+    promptVariables.forEach(({ key, label }) => add(key, label, '业务端变量'));
+    (skill.parts || []).flatMap(partQueries).forEach(({ sql }) => {
+      for (const { token, name, legacy, valid, quoted } of sqlReferences(sql)) {
+        if (!valid || quoted) continue;
+        const variable = findSqlVariable(name, legacy, lookup);
+        if (variable || legacySqlVariableName.test(name)) {
+          const key = variable?.key || name;
+          add(key, variable?.label || parameterCatalog[key]?.label || key, `SQL ${token}`);
+        }
+      }
     });
     if ((skill?.parts || []).some(usesGenerationDate)) add('generated_at', parameterCatalog.generated_at.label, '内容生成');
     const saved = Array.isArray(current) ? current : [];
@@ -272,13 +399,27 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
       return { ...definition, value: previous?.value ?? parameterDefault(definition.key) };
     });
   }
+  function parameterSettings(definitions, readValue, question) {
+    const settings = { month: '', org: '', generatedAt: '', variables: Object.create(null), requiredKeys: [], question, sqlValues: Object.create(null) };
+    definitions.forEach((parameter) => {
+      const { key, label, usage } = parameter;
+      const value = String(readValue(parameter) ?? '').trim();
+      const runtimeKey = parameterCatalog[key]?.runtimeKey;
+      if (runtimeKey) settings[runtimeKey] = value;
+      else if (!Object.hasOwn(settings, key)) Object.defineProperty(settings, key, { value, enumerable: true });
+      settings.variables[label] = value;
+      settings.sqlValues[key] = { label, value };
+      if (!usage || usage.includes('业务端变量')) settings.requiredKeys.push(key);
+    });
+    return settings;
+  }
   function generationDate(params) {
     const date = params.generatedAt ? new Date(params.generatedAt) : new Date();
     if (Number.isNaN(date.getTime())) throw new Error('报告生成日期无效，请重新测试。');
     return date;
   }
   function sampleParts() {
-    const parts = (global.SkillTemplateSample || []).map(preparePart);
+    const parts = (global.SkillTemplateSample || []).map((part, index) => preparePart(part, index));
     const pending = new Set();
     for (const part of parts) {
       part.confirmed = pending.has(part.type);
@@ -366,15 +507,19 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
   function isReady(s) {
     return s.parseStatus === 'completed' && !!s.name?.trim() && !!s.desc?.trim() && !!s.category && !!s.userPrompt?.trim() && s.themes?.length > 0 && s.parts?.length > 0 && s.parts.every((p) => p.confirmed && p.prompt?.trim());
   }
-  function normalizeSkill(source) {
+  function normalizeSkill(source, onSqlMigration) {
     const result = clone(source);
     const migrateSampleChartPrompt = result.reportTemplate?.source === 'sample';
+    result.promptVariables = normalizePromptVariables(result);
+    const variableNames = new Map(result.promptVariables.map(({ key, label }) => [key, label]));
+    const lookup = sqlVariableLookup(result.promptVariables);
+    let sqlMigrated = false;
     ['executionPrompt', 'reportContentPrompt', 'reportFormatPrompt', 'reportPrompt', 'configSources', 'draftConfig', 'workflowStatus'].forEach((key) => delete result[key]);
     if (result.reportTemplate) ['generatedContentPrompt', 'generatedFormatPrompt', 'generatedPrompt'].forEach((key) => delete result.reportTemplate[key]);
     result.parts = (result.parts || []).map((part) => {
-      const prepared = preparePart(part);
+      const prepared = preparePart(part, 0, result.promptVariables);
       if (migrateSampleChartPrompt && !result.enabled && prepared.id === 'part-25' && !Array.isArray(part.sqlQueries) && !String(part.sql || '').trim() && prepared.prompt === DEFAULT_ANALYSIS_PROMPT) {
-        Object.assign(prepared, { name: '采购规模综合分析（多 SQL 示例）', sqlQueries: analysisSqlExamples(), prompt: MULTI_SQL_PROMPT, confirmed: false, result: null, revision: prepared.revision + 1 });
+        Object.assign(prepared, { name: '采购规模综合分析（多 SQL 示例）', sqlQueries: analysisSqlExamples(result.promptVariables), prompt: MULTI_SQL_PROMPT, confirmed: false, result: null, revision: prepared.revision + 1 });
       }
       if (prepared.type === 'analysis' && prepared.prompt === LEGACY_MULTI_SQL_PROMPT) {
         Object.assign(prepared, { prompt: MULTI_SQL_PROMPT, confirmed: false, result: null, revision: prepared.revision + 1 });
@@ -384,6 +529,7 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
       delete prepared.dependencies;
       delete prepared.missingDependencies;
       if (prepared.type === 'analysis' && /^依据引用数据/.test(prepared.prompt || '')) prepared.prompt = prepared.prompt.replace(/^依据引用数据/, '结合当前内容前文已配置的指标和图表结果');
+      if (variableNames.size && rewritePartSql(prepared, lookup, variableNames)) sqlMigrated = true;
       return prepared;
     });
     if (!result.contentConfigVersion) {
@@ -398,10 +544,11 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     result.testParams = normalizeTestParams(result, result.testParams);
     result.schemaVersion = 2;
     if (!isReady(result)) result.enabled = false;
+    if (sqlMigrated) onSqlMigration?.();
     return result;
   }
   function save(skills) {
-    const normalized = skills.map(normalizeSkill);
+    const normalized = skills.map((skill) => normalizeSkill(skill));
     localStorage.setItem(KEY, JSON.stringify(normalized));
     return normalized;
   }
@@ -448,18 +595,14 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     localStorage.setItem(FAILED_SAMPLE_TRIM_MARKER, '1');
     return result;
   }
-  function resetPrototypeDataOnReload() {
-    if (reloadResetHandled) return;
-    reloadResetHandled = true;
-    const navigation = global.performance?.getEntriesByType?.('navigation')?.[0];
-    if (navigation?.type !== 'reload') return;
-    localStorage.removeItem(KEY);
-    localStorage.removeItem('smart-query-skill-catalog-v1');
-  }
   function load() {
-    resetPrototypeDataOnReload();
     const raw = localStorage.getItem(KEY);
-    if (raw !== null) return trimFailedStatusSamples(migrateStatusSampleLayout(seedPublishedSamples(seedStatusSamples(JSON.parse(raw).map(normalizeSkill)))));
+    if (raw !== null) {
+      let sqlMigrated = false;
+      const normalized = JSON.parse(raw).map((skill) => normalizeSkill(skill, () => { sqlMigrated = true; }));
+      if (sqlMigrated && localStorage.getItem(KEY) === raw) localStorage.setItem(KEY, JSON.stringify(normalized));
+      return trimFailedStatusSamples(migrateStatusSampleLayout(seedPublishedSamples(seedStatusSamples(normalized))));
+    }
     const legacyRaw = localStorage.getItem('smart-query-skill-catalog-v1');
     if (legacyRaw) return trimFailedStatusSamples(migrateStatusSampleLayout(seedPublishedSamples(seedStatusSamples(save(JSON.parse(legacyRaw).map((old) => {
       const data = { ...old, ...(old.draftConfig || {}) };
@@ -482,9 +625,11 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     return normalizeSkill(skill);
   }
   function signature(part, params, parts) {
-    if (part.type !== 'analysis') return JSON.stringify([part.revision, params]);
+    // Existing test signatures already include the variable names and values.
+    const { sqlValues, ...settings } = params;
+    if (part.type !== 'analysis') return JSON.stringify([part.revision, settings]);
     const configuration = [analysisQueries(part), part.prompt];
-    return usesGenerationDate(part) && !hasAnalysisSql(part) ? JSON.stringify([part.revision, generationDate(params).toLocaleDateString('sv-SE'), params.question || '', configuration]) : JSON.stringify([part.revision, params, configuration]);
+    return usesGenerationDate(part) && !hasAnalysisSql(part) ? JSON.stringify([part.revision, generationDate(params).toLocaleDateString('sv-SE'), params.question || '', configuration]) : JSON.stringify([part.revision, settings, configuration]);
   }
   function removePart(skill, id) {
     const part = skill.parts.find((p) => p.id === id);
@@ -504,16 +649,56 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
   function validateQuerySql(sql) {
     if (!/^\s*SELECT\b(?!\s+FROM\b)[\s\S]+?\bFROM\s+[^\s;]/i.test(sql)) throw new Error('SQL 应包含 SELECT 查询字段和 FROM 数据来源，请修改后重新测试。');
   }
-  function simulateAnalysisQuery(query, params) {
-    for (const match of query.sql.matchAll(/:([a-zA-Z_]\w*)/g)) {
-      const key = parameterCatalog[match[1]]?.runtimeKey || match[1];
-      if (!String(params[key] ?? '').trim()) throw new Error(`SQL Tab「${query.name}」：请补充参数 :${match[1]} 的测试值。`);
-      if (match[1] === 'report_month' && !/^\d{4}-(0[1-9]|1[0-2])$/.test(params[key])) throw new Error(`SQL Tab「${query.name}」：报告月份应为 YYYY-MM 格式。`);
+  function normalizeReportMonth(value) {
+    const match = /^(\d{4})\s*[-/年]\s*(0?[1-9]|1[0-2])\s*月?$/.exec(value);
+    return match ? `${match[1]}-${match[2].padStart(2, '0')}` : '';
+  }
+  function bindingVariables(params) {
+    if (params.promptVariables) return params.promptVariables;
+    if (params.sqlValues) {
+      return (params.requiredKeys || []).map((key) => ({ key, label: params.sqlValues[key]?.label || key }));
     }
+    return Object.entries(parameterCatalog)
+      .filter(([key, { runtimeKey }]) => params.requiredKeys?.includes(key) ?? Object.hasOwn(params, runtimeKey))
+      .map(([key, { label }]) => ({ key, label }));
+  }
+  function bindSql(sql, params, context = '') {
+    const lookup = sqlVariableLookup(bindingVariables(params));
+    const bindings = sqlReferences(sql).map(({ token, name, legacy, valid, quoted }) => {
+      if (quoted) throw new Error(`${context}请移除 SQL 变量 ${token} 外的引号。`);
+      if (!valid) throw new Error(`${context}SQL 变量 ${token} 格式有误，请使用 ` + '${变量名}。');
+      const variable = findSqlVariable(name, legacy, lookup);
+      const legacyName = legacy || legacySqlVariableName.test(name);
+      if (!variable && !legacyName) throw new Error(`${context}SQL 变量 ${token} 未在业务端预置提示词中配置。`);
+      const key = variable?.key || name;
+      const mapped = params.sqlValues && Object.hasOwn(params.sqlValues, key) ? params.sqlValues[key] : null;
+      const known = parameterCatalog[key];
+      const runtimeKey = known?.runtimeKey || key;
+      const hasRuntimeValue = Object.hasOwn(params, runtimeKey);
+      // Plain-text report callers still supply built-in values directly.
+      const plainRuntime = !!known && !params.sqlValues && hasRuntimeValue;
+      const label = variable?.label || mapped?.label || known?.label || name;
+      const value = mapped?.value ?? ((legacyName || plainRuntime) && hasRuntimeValue ? String(params[runtimeKey] ?? '').trim() : '');
+      if (!value) throw new Error(`${context}请填写变量「${label}」(${token})。`);
+      const boundValue = key === 'report_month' ? normalizeReportMonth(value) : value;
+      if (!boundValue) throw new Error(`${context}「${label}」请填写有效月份，例如 2026-10。`);
+      return { key, label, value: boundValue };
+    });
+    // Keep runtime values separate from the query text, including strings with quotes.
+    const statement = String(sql || '').replace(sqlTokens(), (token, variable, closing, legacy) => variable !== undefined || legacy ? '?' : token);
+    return { statement, bindings };
+  }
+  function validateSkillSqlParams(parts, params) {
+    parts.forEach((part) => partQueries(part).forEach((query) => {
+      bindSql(query.sql, params, `「${part.name}${query.name ? ` / ${query.name}` : ''}」：`);
+    }));
+  }
+  function simulateAnalysisQuery(query, params) {
+    const { statement, bindings } = bindSql(query.sql, params, `SQL「${query.name}」：`);
     // Static prototype: simulate the demonstrated aggregate expressions only.
-    const expression = query.sql.slice(0, query.sql.search(/\bFROM\b/i));
+    const expression = statement.slice(0, statement.search(/\bFROM\b/i));
     let amount = 176896300, count = 1126, value;
-    if (/status\s*<>\s*'cancelled'/i.test(query.sql)) { amount *= 0.96; count = 1081; }
+    if (/status\s*<>\s*'cancelled'/i.test(statement)) { amount *= 0.96; count = 1081; }
     if (/SUM\s*\(\s*transaction_amount\s*\)/i.test(expression)) {
       value = amount;
       if (/COUNT\s*\(\s*\*\s*\)/i.test(expression)) value /= count;
@@ -529,7 +714,7 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     const decimals = round ? Number(round[1]) : Number.isInteger(value) ? 0 : 2;
     value = Number(value.toFixed(decimals));
     const text = value.toLocaleString('zh-CN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + (query.unit ? ` ${query.unit}` : '');
-    return { id: query.id, name: query.name.trim(), value, unit: query.unit, text };
+    return { id: query.id, name: query.name.trim(), value, unit: query.unit, text, bindings };
   }
   function runDemo(part, params, parts) {
     if (!part.name.trim() || !part.theme) throw new Error('请补充内容名称和分析主题。');
@@ -544,16 +729,14 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
       const text = format === 'YYYY-MM-DD' ? `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}` : format && !/D/.test(format) ? `${year} 年 ${month} 月` : `${year} 年 ${month} 月 ${day} 日`;
       return { ok: true, demo: true, rows, text, at: date.toISOString(), params: clone(params), signature: signature(part, params, parts), stale: false };
     }
-    const requiredKeys = new Set(params.requiredKeys || ['report_month', 'org_name']);
-    if (requiredKeys.has('report_month') && !/^\d{4}-\d{2}$/.test(params.month)) throw new Error('请填写格式正确的报告月份。');
-    if (requiredKeys.has('org_name') && !params.org?.trim()) throw new Error('请填写组织范围。');
+    let sql = part.sql, bindings = [];
     if (part.type !== 'analysis') {
-      validateQuerySql(part.sql);
-      if (!/:report_month\b/.test(part.sql) || !/:org_name\b/.test(part.sql)) throw new Error('SQL 缺少 :report_month 或 :org_name 参数绑定。');
-      if (!/^[a-zA-Z_]\w*$/.test(part.field) || !new RegExp(`\\bAS\\s+${part.field}\\b`, 'i').test(part.sql)) throw new Error('查询结果中未找到回填字段，请核对 SQL 别名。');
+      validateQuerySql(sql);
+      ({ statement: sql, bindings } = bindSql(sql, params));
+      if (!/^[a-zA-Z_]\w*$/.test(part.field) || !new RegExp(`\\bAS\\s+${part.field}\\b`, 'i').test(sql)) throw new Error('查询结果中未找到回填字段，请核对 SQL 别名。');
     }
     let value = Number(part.sampleValue ?? 17689.63);
-    if (/status\s*<>\s*'cancelled'/i.test(part.sql)) value *= 0.96;
+    if (/status\s*<>\s*'cancelled'/i.test(sql)) value *= 0.96;
     const precision = [...part.prompt.matchAll(/([0-6零一二两三四五六])\s*位小数/g)].pop();
     const requestedDecimals = precision ? ('零一二三四五六'.includes(precision[1]) ? '零一二三四五六'.indexOf(precision[1]) : precision[1] === '两' ? 2 : Number(precision[1])) : part.decimals;
     const decimals = Math.max(0, Math.min(6, Number(requestedDecimals) || 0));
@@ -565,6 +748,7 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
       let evidence;
       if (analysisSql) {
         queryResults = analysisQueries(part).map((query) => simulateAnalysisQuery(query, params));
+        bindings = queryResults.flatMap((query) => query.bindings);
         evidence = queryResults.map((query) => `${query.name}为${query.text}`);
       } else {
         const currentIndex = parts.findIndex((p) => p.id === part.id);
@@ -579,21 +763,21 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
       if (limit && text.length > Number(limit[1])) text = text.slice(0, Math.max(30, Number(limit[1])) - 1) + '。';
     }
     if (part.type === 'chart') {
-      if (!/^[a-zA-Z_]\w*$/.test(part.categoryField) || !new RegExp(`\\bAS\\s+${part.categoryField}\\b`, 'i').test(part.sql)) throw new Error('SQL 中未找到图表分类字段，请核对字段映射。');
-      if (/ORDER BY\s+\w+\s+ASC/i.test(part.sql)) rows.reverse();
-      const limit = part.sql.match(/LIMIT\s+(\d+)/i);
+      if (!/^[a-zA-Z_]\w*$/.test(part.categoryField) || !new RegExp(`\\bAS\\s+${part.categoryField}\\b`, 'i').test(sql)) throw new Error('SQL 中未找到图表分类字段，请核对字段映射。');
+      if (/ORDER BY\s+\w+\s+ASC/i.test(sql)) rows.reverse();
+      const limit = sql.match(/LIMIT\s+(\d+)/i);
       if (limit) rows.splice(Number(limit[1]));
     }
-    return { ok: true, demo: true, rows: analysisSql ? queryResults.map(({ value }) => ({ value })) : rows, queryResults, text, at: new Date().toISOString(), params: clone(params), signature: signature(part, params, parts), stale: false };
+    return { ok: true, demo: true, rows: analysisSql ? queryResults.map(({ value }) => ({ value })) : rows, queryResults, bindings, text, at: new Date().toISOString(), params: clone(params), signature: signature(part, params, parts), stale: false };
   }
-  function aiEdit(part, request) {
+  function aiEdit(part, request, variables) {
     const next = clone(part);
     if (part.type === 'metric') {
       if (/取消|作废/.test(request)) next.sql = next.sql.replace(/;\s*$/, '') + (/status\s*<>/.test(next.sql) ? ';' : "\n  AND status <> 'cancelled';");
       else if (/平均|均值/.test(request)) next.sql = next.sql.replace(/SUM\(/ig, 'AVG(');
       else if (/求和|合计|总额/.test(request)) next.sql = next.sql.replace(/AVG\(/ig, 'SUM(');
       else if (/小数|精度/.test(request)) { const m = request.match(/([0-6一二两三四五六零])\s*位/); next.decimals = m ? ('零一二三四五六'.includes(m[1]) ? '零一二三四五六'.indexOf(m[1]) : m[1] === '两' ? 2 : Number(m[1])) : 2; }
-      else if (/SQL|修复|报错|错误/.test(request)) next.sql = preparePart({ name: part.name, type: part.type }).sql;
+      else if (/SQL|修复|报错|错误/.test(request)) next.sql = preparePart({ name: part.name, type: part.type }, 0, variables).sql;
       next.prompt = `${part.prompt}\n调整要求：${request}`;
     } else {
       next.prompt = `${part.prompt}\n调整要求：${request}`;
@@ -602,5 +786,5 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     }
     return { next: syncPartMetadata(next, true), reply: `已更新${part.type === 'analysis' ? '提示词' : '提示词及相关配置'}并回填到上方配置。请重新测试，查看结果后确认此项。` };
   }
-  global.SkillCatalogStore = { key: KEY, load, save, update, clone, themes, isReady, preparePart, syncPartMetadata, normalizeSkill, normalizeTestParams, invalidate, signature, runDemo, aiEdit, sampleParts, sampleOutline, usesGenerationDate, hasAnalysisSql, analysisQueries, analysisSqlExamples, removePart };
+  global.SkillCatalogStore = { key: KEY, load, save, update, clone, themes, isReady, preparePart, syncPartMetadata, normalizeSkill, normalizeTestParams, promptLabels, createPromptVariable, updatePromptVariables, validSqlVariableName, sqlVariableToken, parameterSettings, validateSkillSqlParams, normalizeReportMonth, invalidate, signature, runDemo, aiEdit, sampleParts, sampleOutline, usesGenerationDate, hasAnalysisSql, analysisQueries, analysisSqlExamples, removePart };
 })(window);
