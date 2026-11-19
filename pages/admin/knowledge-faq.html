@@ -121,7 +121,7 @@
     .ik-field input:focus,
     .ik-field textarea:focus,
     .ik-select:focus {
-      background: #fff;
+      background-color: #fff;
       border-color: var(--primary-border);
       box-shadow: 0 0 0 3px rgba(var(--primary-rgb), .08);
     }
@@ -663,6 +663,90 @@
       border-color: #cbd5e1;
     }
 
+    .ik-dir-picker {
+      position: relative;
+    }
+
+    .ik-dir-trigger {
+      height: 36px;
+      overflow: hidden;
+      text-align: left;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      background-color: #fff;
+      border-color: #cbd5e1;
+    }
+
+    .ik-dir-trigger.is-placeholder {
+      color: #64748b;
+    }
+
+    .ik-dir-trigger[aria-invalid="true"] {
+      border-color: #ef4444;
+    }
+
+    .ik-dir-required {
+      color: #dc2626;
+    }
+
+    .ik-dir-panel {
+      position: absolute;
+      inset: calc(100% + 4px) 0 auto;
+      z-index: 1;
+      padding-top: 4px;
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .ik-dir-panel .ik-search {
+      margin: 4px 8px 0;
+    }
+
+    .ik-dir-panel .ik-search input {
+      padding-left: 30px;
+    }
+
+    .ik-dir-panel .ik-tree {
+      max-height: min(188px, var(--ik-dir-options-space, 188px));
+    }
+
+    .ik-dir-panel .ik-empty {
+      padding: 14px 8px;
+    }
+
+    .ik-dir-toggle,
+    .ik-dir-option {
+      padding: 0;
+      color: inherit;
+      font: inherit;
+      background: transparent;
+      border: 0;
+      border-radius: 4px;
+    }
+
+    .ik-dir-toggle {
+      width: 20px;
+      height: 24px;
+    }
+
+    .ik-dir-option {
+      display: flex;
+      flex: 1;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      height: 100%;
+      text-align: left;
+    }
+
+    .ik-dir-toggle:focus-visible,
+    .ik-dir-option:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: -2px;
+    }
+
     .ik-view {
       display: grid;
       grid-template-columns: 92px 1fr;
@@ -855,6 +939,20 @@
           <input type="text" id="ikFormSynonym" maxlength="80" placeholder="多个同义词用顿号或逗号分隔" />
         </div>
         <div class="ik-field is-full">
+          <label for="ikFormDir" id="ikFormDirLabel">所属目录 <span class="ik-dir-required" aria-hidden="true">*</span></label>
+          <div class="ik-dir-picker" id="ikDirPicker">
+            <button type="button" class="ik-select ik-dir-trigger is-placeholder" id="ikFormDir" aria-expanded="false" aria-controls="ikDirPanel" aria-labelledby="ikFormDirLabel ikFormDirValue"><span id="ikFormDirValue">请选择所属目录</span></button>
+            <div class="ik-dir-panel" id="ikDirPanel" hidden>
+              <div class="ik-search">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                <input type="search" id="ikDirSearch" placeholder="搜索目录" aria-label="搜索目录" autocomplete="off" />
+              </div>
+              <div class="ik-tree" id="ikDirOptions"></div>
+              <div class="ik-empty" id="ikDirEmpty" role="status" hidden>未找到匹配目录</div>
+            </div>
+          </div>
+        </div>
+        <div class="ik-field is-full">
           <label>状态</label>
           <div class="ik-form-switch">
             <button type="button" class="ik-switch is-on" id="ikFormStatus" aria-label="状态开关"></button>
@@ -976,6 +1074,8 @@
       pageSize: 8,
       editMode: 'add',
       editId: '',
+      formDirId: '',
+      formDirCollapsedIds: new Set(),
       formEnabled: true,
       ctxTarget: null,
       nameMode: 'add',
@@ -1039,16 +1139,20 @@
       return list;
     }
 
+    function getVisibleTree(keyword) {
+      return IK_TREE.map(function (node) {
+        const matchesParent = node.name.toLowerCase().includes(keyword);
+        const children = (node.children || []).filter(function (child) {
+          return matchesParent || child.name.toLowerCase().includes(keyword);
+        });
+        return { node, children, matchesParent };
+      }).filter(function (branch) { return branch.matchesParent || branch.children.length; });
+    }
+
     function renderTree() {
       const rootEl = document.getElementById('ikTree');
       const kw = IK_STATE.treeKeyword.trim().toLowerCase();
       const countByDir = function (id) { return getRowsInDir(id).length; };
-      const matches = function (node) {
-        if (!kw) return true;
-        return node.name.toLowerCase().includes(kw) || (node.children || []).some(function (child) {
-          return child.name.toLowerCase().includes(kw);
-        });
-      };
       const row = function (node, level, hasChild) {
         const active = IK_STATE.activeDirId === node.id ? ' is-active' : '';
         const empty = hasChild ? '' : ' is-empty';
@@ -1059,15 +1163,12 @@
           + '<span class="ik-tree-count">' + countByDir(node.id) + '</span>'
           + '</div>';
       };
-      const roots = IK_TREE.filter(matches).map(function (node) {
-        const childList = kw ? (node.children || []).filter(function (child) {
-          return child.name.toLowerCase().includes(kw) || node.name.toLowerCase().includes(kw);
-        }) : (node.children || []);
+      const roots = getVisibleTree(kw).map(function ({ node, children }) {
         const collapsed = !kw && IK_STATE.collapsedIds.has(node.id) ? ' is-collapsed' : '';
         return '<div class="ik-tree-group' + collapsed + '" data-id="' + escapeHTML(node.id) + '">'
-          + row(node, 1, childList.length > 0)
+          + row(node, 1, children.length > 0)
           + '<div class="ik-tree-children">'
-          + childList.map(function (child) { return row(child, 2, false); }).join('')
+          + children.map(function (child) { return row(child, 2, false); }).join('')
           + '</div>'
           + '</div>';
       }).join('');
@@ -1134,13 +1235,63 @@
       return prefix + Date.now().toString(36) + Math.floor(Math.random() * 1000).toString(36);
     }
 
-    function getDefaultDirForNew() {
-      if (IK_STATE.activeDirId !== 'all') {
-        const found = findDir(IK_STATE.activeDirId);
-        if (found && found.level === 2) return found.node.id;
-        if (found && found.node.children && found.node.children[0]) return found.node.children[0].id;
+    function getDirPath(found) {
+      return found.parent ? found.parent.name + ' / ' + found.node.name : found.node.name;
+    }
+
+    function setFormDir(id) {
+      const found = findDir(id);
+      const trigger = document.getElementById('ikFormDir');
+      const path = found ? getDirPath(found) : '';
+      IK_STATE.formDirId = found ? id : '';
+      document.getElementById('ikFormDirValue').textContent = path || '请选择所属目录';
+      trigger.title = path;
+      trigger.classList.toggle('is-placeholder', !found);
+      trigger.removeAttribute('aria-invalid');
+    }
+
+    function renderFormDirs() {
+      const keyword = document.getElementById('ikDirSearch').value.trim().toLowerCase();
+      const option = function (node, toggle = '') {
+        const selected = node.id === IK_STATE.formDirId;
+        return '<div class="ik-tree-row' + (selected ? ' is-active' : '') + '">' + toggle
+          + '<button type="button" class="ik-dir-option" data-dir-id="' + escapeHTML(node.id) + '" aria-pressed="' + selected + '">'
+          + '<span class="ik-tree-name">' + keywordHighlight.html(node.name, keyword) + '</span>'
+          + (selected ? '<span aria-hidden="true">✓</span>' : '') + '</button></div>';
+      };
+      const branches = getVisibleTree(keyword).map(function ({ node, children }) {
+        const collapsed = !keyword && IK_STATE.formDirCollapsedIds.has(node.id);
+        const toggle = children.length
+          ? '<button type="button" class="ik-dir-toggle ik-tree-toggle" data-toggle-dir="' + escapeHTML(node.id)
+            + '" aria-label="' + escapeHTML(node.name) + '的子目录" aria-expanded="' + !collapsed + '">' + IK_ICONS.chev + '</button>'
+          : '<span class="ik-dir-toggle ik-tree-toggle is-empty" aria-hidden="true"></span>';
+        return '<div class="ik-tree-group' + (collapsed ? ' is-collapsed' : '') + '">'
+          + option(node, toggle)
+          + (children.length ? '<div class="ik-tree-children">' + children.map(function (child) { return option(child); }).join('') + '</div>' : '')
+          + '</div>';
+      });
+      document.getElementById('ikDirOptions').innerHTML = branches.join('');
+      document.getElementById('ikDirEmpty').hidden = branches.length > 0;
+    }
+
+    function setDirPickerOpen(open) {
+      const panel = document.getElementById('ikDirPanel');
+      const search = document.getElementById('ikDirSearch');
+      panel.hidden = !open;
+      document.getElementById('ikFormDir').setAttribute('aria-expanded', String(open));
+      if (open) {
+        const selected = findDir(IK_STATE.formDirId);
+        IK_STATE.formDirCollapsedIds = new Set(IK_STATE.collapsedIds);
+        if (selected && selected.parent) IK_STATE.formDirCollapsedIds.delete(selected.parent.id);
+        search.value = '';
+        renderFormDirs();
+        search.focus();
+        const options = document.getElementById('ikDirOptions');
+        const bodyBottom = panel.closest('.modal-body').getBoundingClientRect().bottom;
+        const availableHeight = bodyBottom - options.getBoundingClientRect().top - 8;
+        options.style.setProperty('--ik-dir-options-space', Math.max(64, availableHeight) + 'px');
+        options.scrollTop = 0;
       }
-      return IK_TREE[0].children[0].id;
     }
 
     function setFormStatus(enabled) {
@@ -1153,6 +1304,7 @@
       IK_STATE.editMode = mode;
       IK_STATE.editId = row ? row.id : '';
       document.getElementById('ikEditTitle').textContent = mode === 'add' ? '新增行业知识' : '编辑行业知识';
+      setFormDir(row ? row.dirId : IK_STATE.activeDirId);
       document.getElementById('ikFormBusiness').value = row ? row.business : '';
       document.getElementById('ikFormSynonym').value = row ? row.synonym : '';
       document.getElementById('ikFormExplain').value = row ? row.explain : '';
@@ -1163,6 +1315,7 @@
     }
 
     function closeEdit() {
+      setDirPickerOpen(false);
       document.getElementById('ikEditMask').classList.add('hidden');
       document.getElementById('ikEditModal').classList.add('hidden');
     }
@@ -1173,26 +1326,35 @@
       const explain = document.getElementById('ikFormExplain').value.trim();
       if (!business) return showToast('请填写业务定义');
       if (!synonym) return showToast('请填写同义词');
+      const dirId = IK_STATE.formDirId;
+      const dir = findDir(dirId);
+      if (!dir) {
+        const trigger = document.getElementById('ikFormDir');
+        trigger.setAttribute('aria-invalid', 'true');
+        trigger.focus();
+        return showToast('请选择所属目录');
+      }
       if (!explain) return showToast('请填写数据解释');
       if (IK_STATE.editMode === 'add') {
         IK_ROWS.unshift({
           id: nextId('k'),
-          dirId: getDefaultDirForNew(),
+          dirId,
           business,
           synonym,
           explain,
           enabled: IK_STATE.formEnabled
         });
-        showToast('行业知识已新增');
+        showToast('行业知识已新增至「' + getDirPath(dir) + '」');
       } else {
         const row = IK_ROWS.find(function (item) { return item.id === IK_STATE.editId; });
-        if (row) {
-          row.business = business;
-          row.synonym = synonym;
-          row.explain = explain;
-          row.enabled = IK_STATE.formEnabled;
-        }
-        showToast('行业知识已保存');
+        if (!row) return;
+        const moved = row.dirId !== dirId;
+        row.dirId = dirId;
+        row.business = business;
+        row.synonym = synonym;
+        row.explain = explain;
+        row.enabled = IK_STATE.formEnabled;
+        showToast(moved ? '行业知识已移至「' + getDirPath(dir) + '」' : '行业知识已保存');
       }
       closeEdit();
       renderTable();
@@ -1330,6 +1492,35 @@
     }
 
     function bindEvents() {
+      const dirPicker = document.getElementById('ikDirPicker');
+      const dirTrigger = document.getElementById('ikFormDir');
+      const dirPanel = document.getElementById('ikDirPanel');
+      const dirSearch = document.getElementById('ikDirSearch');
+
+      dirTrigger.addEventListener('click', function () { setDirPickerOpen(dirPanel.hidden); });
+      dirSearch.addEventListener('input', renderFormDirs);
+      dirPanel.addEventListener('click', function (e) {
+        const option = e.target.closest('[data-dir-id]');
+        if (option) {
+          setFormDir(option.dataset.dirId);
+          setDirPickerOpen(false);
+          dirTrigger.focus();
+          return;
+        }
+        const toggle = e.target.closest('[data-toggle-dir]');
+        if (!toggle) return;
+        const collapsed = toggle.closest('.ik-tree-group').classList.toggle('is-collapsed');
+        toggle.setAttribute('aria-expanded', String(!collapsed));
+        if (!dirSearch.value.trim()) {
+          const id = toggle.dataset.toggleDir;
+          if (collapsed) IK_STATE.formDirCollapsedIds.add(id);
+          else IK_STATE.formDirCollapsedIds.delete(id);
+        }
+      });
+      dirPicker.addEventListener('focusout', function (e) {
+        if (!dirPanel.hidden && e.relatedTarget && !dirPicker.contains(e.relatedTarget)) setDirPickerOpen(false);
+      });
+
       document.getElementById('ikTree').addEventListener('click', function (e) {
         const row = e.target.closest('.ik-tree-row[data-id]');
         if (!row) return;
@@ -1455,6 +1646,7 @@
         if (e.key === 'Enter') saveNameModal();
       });
       document.getElementById('ikEditModal').addEventListener('click', function (e) {
+        if (!dirPanel.hidden && !dirPicker.contains(e.target)) setDirPickerOpen(false);
         const act = e.target.closest('[data-act]') && e.target.closest('[data-act]').dataset.act;
         if (act === 'cancel') closeEdit();
         if (act === 'save') saveEdit();
@@ -1477,6 +1669,12 @@
       document.getElementById('ikConfirmMask').addEventListener('click', closeConfirm);
       document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') {
+          if (!dirPanel.hidden) {
+            e.preventDefault();
+            setDirPickerOpen(false);
+            dirTrigger.focus();
+            return;
+          }
           closeNameModal();
           closeEdit();
           closeView();
