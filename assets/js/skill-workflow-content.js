@@ -550,19 +550,19 @@
       { label: '读取当前标注配置', detail: `指标：${part.name}` },
       { label: '解析提示词与查询参数', detail: settingsText(settings) },
       { label: '校验 SQL 与字段映射', detail: `检查回填字段 ${part.field || 'value'}` },
-      { label: '执行数据查询', detail: '等待查询结果返回' },
+      { label: '执行数据查询', detail: executionDestination(part) },
       { label: '格式化指标结果', detail: `按提示词处理单位和数值格式` }
     ];
     if (part.type === 'chart') return [
       { label: '读取当前标注配置', detail: `图表：${part.name}` },
       { label: '解析提示词与查询参数', detail: settingsText(settings) },
-      { label: '校验并执行 SQL', detail: '检查分类字段和数值字段' },
+      { label: '校验并执行 SQL', detail: executionDestination(part) },
       { label: '整理图表数据', detail: '按提示词处理排序和展示数量' },
       { label: '生成图表预览', detail: '按提示词生成图表类型、坐标轴和展示样式' }
     ];
     const date = Store.usesGenerationDate(part);
     let source = { label: '识别所需业务内容', detail: '根据提示词识别已配置的指标和图表结果' };
-    if (Store.hasAnalysisSql(part)) source = { label: '校验并模拟执行多个 SQL', detail: `逐项校验 ${Store.analysisQueries(part).length} 段查询，汇总指标值并提供给统一提示词` };
+    if (Store.hasAnalysisSql(part)) source = { label: '校验并模拟执行 SQL', detail: Store.analysisQueries(part).map((query) => `${query.name} · ${executionDestination(query)}`).join('；') };
     else if (date) source = { label: '读取报告生成时间', detail: `本次测试值 ${settings.generatedAt}` };
     return [
       { label: '读取当前标注配置', detail: `自定义：${part.name}` },
@@ -596,15 +596,15 @@
   function enrichExecution(trace, part, result) {
     if (!result?.ok) return;
     const analysisSql = Store.hasAnalysisSql(part);
-    if (analysisSql) trace.steps[2].detail = `已汇总 ${result.queryResults.length} 个模拟指标：${result.queryResults.map((query) => `${query.name} ${query.text}`).join('；')}`;
+    if (analysisSql) trace.steps[2].detail = result.queryResults.map((query, index) => `${query.name} ${query.text} · ${executionDestination(Store.analysisQueries(part)[index])}`).join('；');
     if (Store.usesGenerationDate(part)) {
       if (!analysisSql) trace.steps[2].detail = `已读取 ${new Date(result.at).toLocaleString('zh-CN', { hour12: false })}`;
       trace.steps[3].detail = `生成结果：${result.text}`;
     } else if (part.type === 'metric') {
-      trace.steps[3].detail = `查询完成，返回 ${result.rows.length} 条数据`;
+      trace.steps[3].detail = `${executionDestination(part)} · 返回 ${result.rows.length} 条数据`;
       trace.steps[4].detail = `生成结果：${result.text}`;
     } else if (part.type === 'chart') {
-      trace.steps[2].detail = `查询完成，返回 ${result.rows.length} 条数据`;
+      trace.steps[2].detail = `${executionDestination(part)} · 返回 ${result.rows.length} 条数据`;
       trace.steps[3].detail = `已整理 ${result.rows.length} 个图表数据点`;
     } else {
       trace.steps[3].detail = `已生成 ${result.text.length} 字内容`;
@@ -717,6 +717,79 @@
     if (!queries.some((query) => query.id === activeSqlId)) activeSqlId = queries[0]?.id || '';
     return queries.find((query) => query.id === activeSqlId);
   }
+  function currentSqlQuery() {
+    return draft.type === 'analysis' ? activeSqlQuery() : draft;
+  }
+  function databaseLabel(theme) {
+    return theme?.database ? `${theme.database.name} · ${theme.database.type}` : '';
+  }
+  function executionDestination(query) {
+    const theme = Store.executionTheme(query);
+    return theme?.database ? `${theme.name} · ${databaseLabel(theme)}` : '等待配置执行主题和库';
+  }
+  function executionFields(query) {
+    const themes = Store.executionThemeOptions();
+    const disabled = (theme) => theme.status === 'disabled' || !theme.database;
+    const themeLabel = (theme) => `${theme.name}${theme.status === 'disabled' ? '（已禁用）' : !theme.database ? '（未绑定执行库）' : ''}`;
+    let picker;
+    if (themes.length > 10) {
+      const options = themes.map((theme) => `<button type="button" data-execution-choice="${esc(theme.id)}" data-execution-search-text="${esc(`${theme.name} ${databaseLabel(theme)}`)}" ${disabled(theme) ? 'disabled' : ''}>${UI.icon('document')}<span>${esc(themeLabel(theme))}</span></button>`).join('');
+      picker = `<details class="sw-execution-dropdown" data-execution-dropdown>
+        <summary aria-labelledby="swExecutionThemeLabel swExecutionThemeValue" aria-describedby="swExecutionHint"><span id="swExecutionThemeValue" data-execution-value></span></summary>
+        <div class="sw-execution-options">
+          <input type="search" data-execution-search aria-label="搜索执行主题" placeholder="搜索主题或执行库">
+          <div class="sw-execution-list">${options}<p class="sw-help" data-execution-empty hidden>没有匹配的执行主题</p></div>
+        </div>
+      </details>`;
+    } else {
+      const options = themes.map((theme) => `<option value="${esc(theme.id)}" ${theme.id === query.executionThemeId ? 'selected' : ''} ${disabled(theme) ? 'disabled' : ''}>${esc(themeLabel(theme))}</option>`).join('');
+      picker = `<select data-execution-theme aria-labelledby="swExecutionThemeLabel" aria-describedby="swExecutionHint" aria-required="true">
+        <option value="" data-execution-placeholder disabled>请选择执行主题</option>${options}
+      </select>`;
+    }
+    return `<div class="sw-sql-execution" data-execution-fields>
+      <div class="sw-field"><span id="swExecutionThemeLabel">执行主题 <em>*</em></span>${picker}</div>
+      <label class="sw-field">执行库<input data-execution-database readonly placeholder="随执行主题自动带出"></label>
+      <p class="sw-help" id="swExecutionHint" data-execution-hint></p>
+    </div>`;
+  }
+  function refreshExecutionFields(rebuild = false) {
+    let controls = $('swConfigFields').querySelector('[data-execution-fields]');
+    const query = draft && currentSqlQuery();
+    if (!controls || !query) return;
+    if (rebuild) {
+      controls.outerHTML = executionFields(query);
+      controls = $('swConfigFields').querySelector('[data-execution-fields]');
+    }
+    const theme = Store.executionTheme(query);
+    const placeholder = query.executionThemeId && !theme ? '原执行主题已删除' : '请选择执行主题';
+    const select = controls.querySelector('[data-execution-theme]');
+    if (select) {
+      select.querySelector('[data-execution-placeholder]').textContent = placeholder;
+      select.value = theme?.id || '';
+    }
+    const value = controls.querySelector('[data-execution-value]');
+    if (value) {
+      value.textContent = theme?.name || placeholder;
+      controls.querySelectorAll('[data-execution-choice]').forEach((option) => {
+        option.setAttribute('aria-pressed', String(option.dataset.executionChoice === theme?.id));
+      });
+    }
+    const database = controls.querySelector('[data-execution-database]');
+    database.value = database.title = databaseLabel(theme);
+    controls.querySelector('[data-execution-hint]').textContent = theme?.status === 'disabled' ? '当前主题已禁用，请重新选择。'
+      : theme && !theme.database ? '当前主题未绑定执行库，请重新选择。'
+      : theme ? query.executionThemeManual ? '执行库由所选主题带出。' : 'AI 已根据 SQL 推荐执行主题，可手动调整。'
+      : String(query.sql || '').trim() ? '请为当前 SQL 选择执行主题。' : '输入 SQL 后自动推荐执行主题。';
+  }
+  function setExecutionTheme(themeId) {
+    const query = currentSqlQuery();
+    if (!query || query.executionThemeId === themeId) return;
+    query.executionThemeId = themeId;
+    query.executionThemeManual = true;
+    refreshExecutionFields();
+    markConfigDirty();
+  }
   function analysisSqlMarkup() {
     const queries = Store.analysisQueries(draft), active = activeSqlQuery();
     return `<div class="sw-sql-heading"><span>SQL 配置（选填）<small>共 ${queries.length} 项</small></span>${button('plus', '新增 SQL', 'data-sql-query-action="add"', 'secondary-btn')}</div>` +
@@ -725,7 +798,7 @@
       '<p class="sw-help">每个 Tab 独立查询，下方提示词统一分析全部指标。示例使用报告月份和组织范围；成交项目数沿用一行一项目的示例口径。</p>';
   }
   function sqlQueryEditor(query) {
-    return window.SmartQuerySqlEditor.render({ value: query.sql, bind: 'analysisSql', minLines: 6, ariaLabel: `${query.name || '当前指标'} SQL`, placeholder: '编写查询语句，使用 AS value 返回指标值' }) + sqlVariableHelp();
+    return executionFields(query) + window.SmartQuerySqlEditor.render({ value: query.sql, bind: 'analysisSql', minLines: 6, ariaLabel: `${query.name || '当前指标'} SQL`, placeholder: '编写查询语句，使用 AS value 返回指标值' }) + sqlVariableHelp();
   }
   function sqlVariableHelp() {
     const variables = skill.promptVariables.map(({ label }) => button('plus',
@@ -747,6 +820,7 @@
     const panel = $('swSqlQueryPanel');
     panel.setAttribute('aria-labelledby', `swSqlTab-${query.id}`);
     panel.innerHTML = sqlQueryEditor(query);
+    refreshExecutionFields();
   }
   function beginSqlTabRename(tab) {
     if (busy || tab.parentElement.querySelector('[data-sql-rename-id]')) return;
@@ -777,10 +851,15 @@
       }
     }
     delete input.dataset.sqlRenameId; input.remove(); tab.hidden = false;
-    if (changed) markConfigDirty();
+    if (changed) {
+      Store.syncExecutionTheme(query, draft, true);
+      if (query.id === activeSqlId) refreshExecutionFields();
+      markConfigDirty();
+    }
   }
   function renderAnalysisSql() {
     $('swAnalysisSql').innerHTML = analysisSqlMarkup();
+    refreshExecutionFields();
   }
   function markConfigDirty() {
     dirty = true;
@@ -814,8 +893,9 @@
       ariaLabel: draft.type === 'analysis' ? '当前内容 SQL（选填）' : '当前内容 SQL',
       placeholder: draft.type === 'analysis' ? '请输入 SQL，留空时沿用提示词生成流程' : undefined
     });
-    $('swConfigFields').innerHTML = (draft.type === 'analysis' ? `<div class="sw-field sw-analysis-sql" id="swAnalysisSql">${analysisSqlMarkup()}</div>` : `<div class="sw-field"><span>SQL 配置</span>${sqlEditor}${sqlVariableHelp()}</div>`) +
+    $('swConfigFields').innerHTML = (draft.type === 'analysis' ? `<div class="sw-field sw-analysis-sql" id="swAnalysisSql">${analysisSqlMarkup()}</div>` : `<div class="sw-field"><span>SQL 配置</span>${executionFields(draft)}${sqlEditor}${sqlVariableHelp()}</div>`) +
       field('提示词', 'prompt', draft.prompt, { textarea: true, rows: draft.type === 'analysis' ? 7 : draft.type === 'chart' ? 9 : 5 });
+    refreshExecutionFields();
     $('swAIInput').value = '';
     $('swAIInput').placeholder = draft.type === 'metric' ? '例如：排除已取消订单，并保留两位小数' : draft.type === 'chart' ? '例如：改为横向柱状图，X轴显示成交金额，展示前10项并显示数据标签' : Store.usesGenerationDate(draft) ? '例如：将生成日期改为 YYYY-MM-DD 格式' : '例如：重点解释节资率下降，控制在 200 字以内';
     renderChat(); renderResult(); status();
@@ -868,7 +948,7 @@
   }
   function saveDraft() {
     if (!draft || !dirty) return true;
-    if (!draft.name.trim() || !draft.theme) { message('请填写内容名称并选择分析主题。'); return false; }
+    if (!draft.name.trim()) { message('请填写内容名称。'); return false; }
     if (draft.type === 'metric' && (!Number.isInteger(Number(draft.decimals)) || draft.decimals < 0 || draft.decimals > 6)) { message('小数位应为 0 至 6 的整数。'); return false; }
     try {
       const edited = Store.clone(draft);
@@ -887,6 +967,7 @@
         positionedSqlInputs.delete(input);
         window.SmartQuerySqlEditor.sync(input);
       }
+      refreshExecutionFields();
       renderHeader(); renderIndex(); syncMarks(); renderResult(); status(); return true;
     } catch (e) { fail(e); return false; }
   }
@@ -1059,8 +1140,8 @@
     const request = $('swAIInput').value.trim();
     if (!request || !draft || busy || !saveDraft()) return;
     const captured = Store.clone(draft);
-    const sqlContext = captured.type === 'analysis' ? Store.analysisQueries(captured).map((query) => `${query.name}（${query.unit || '无单位'}）：\n${query.sql}`).join('\n\n') : captured.sql;
-    const context = `${captured.name}\n分析主题：${captured.theme}\nSQL：${sqlContext || '无'}\n提示词：${captured.prompt || '无'}\n参数：${JSON.stringify(params())}\n测试结果：${captured.result ? captured.result.ok ? captured.result.text : captured.result.error : '尚未测试'}\n数据口径：${captured.definition}`;
+    const sqlContext = captured.type === 'analysis' ? Store.analysisQueries(captured).map((query) => `${query.name}（${query.unit || '无单位'} · ${executionDestination(query)}）：\n${query.sql}`).join('\n\n') : `${executionDestination(captured)}\n${captured.sql}`;
+    const context = `${captured.name}\nSQL：${sqlContext || '无'}\n提示词：${captured.prompt || '无'}\n参数：${JSON.stringify(params())}\n测试结果：${captured.result ? captured.result.ok ? captured.result.text : captured.result.error : '尚未测试'}\n数据口径：${captured.definition}`;
     lock(true); $('swAIInput').value = '';
     draft.messages.push({ role: 'user', text: request, context }); renderChat();
     $('swChat').insertAdjacentHTML('beforeend', '<div class="sw-chat-message is-assistant">正在理解问题并修改配置…</div>');
@@ -1325,20 +1406,42 @@
   document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && drawingMode) { event.preventDefault(); setDrawingMode(false); } });
   $('swConfigFields').addEventListener('input', (e) => {
     if (!draft || busy) return;
-    if (e.isTrusted && e.target.matches('.sq-sql-input')) positionedSqlInputs.add(e.target);
-    if (draft.type === 'analysis' && e.target.dataset.bind === 'analysisSql') {
-      const query = activeSqlQuery();
+    if (e.target.matches('[data-execution-search]')) {
+      const keyword = e.target.value.trim().toLowerCase();
+      const dropdown = e.target.closest('[data-execution-dropdown]');
+      const options = [...dropdown.querySelectorAll('[data-execution-choice]')];
+      options.forEach((option) => { option.hidden = !option.dataset.executionSearchText.toLowerCase().includes(keyword); });
+      dropdown.querySelector('[data-execution-empty]').hidden = options.some((option) => !option.hidden);
+      return;
+    }
+    if (e.target.matches('.sq-sql-input')) {
+      if (e.isTrusted) positionedSqlInputs.add(e.target);
+      const query = currentSqlQuery();
       if (!query) return;
       query.sql = e.target.value;
+      Store.syncExecutionTheme(query, draft, true);
+      refreshExecutionFields();
       markConfigDirty(); return;
     }
-    const key = e.target.dataset.field || e.target.dataset.bind;
-    if (!['sql', 'prompt'].includes(key)) return;
-    draft[key] = e.target.value;
+    if (e.target.dataset.field !== 'prompt') return;
+    draft.prompt = e.target.value;
     markConfigDirty();
   });
+  $('swConfigFields').addEventListener('change', (event) => {
+    if (!busy && draft && event.target.matches('[data-execution-theme]')) setExecutionTheme(event.target.value);
+  });
   $('swConfigFields').addEventListener('click', (event) => {
+    const summary = event.target.closest('[data-execution-dropdown] summary');
+    if (busy && summary) event.preventDefault();
     if (!draft || busy) return;
+    const choice = event.target.closest('[data-execution-choice]');
+    if (choice && !choice.disabled) {
+      setExecutionTheme(choice.dataset.executionChoice);
+      const dropdown = choice.closest('[data-execution-dropdown]');
+      dropdown.open = false;
+      dropdown.querySelector('summary').focus();
+      return;
+    }
     if (event.target.matches('.sq-sql-input')) {
       positionedSqlInputs.add(event.target);
       return;
@@ -1391,6 +1494,13 @@
     if (event.target.matches('[data-sql-rename-id]')) finishSqlTabRename(event.target);
   });
   $('swConfigFields').addEventListener('keydown', (event) => {
+    const dropdown = event.target.closest('[data-execution-dropdown][open]');
+    if (dropdown && event.key === 'Escape') {
+      event.preventDefault();
+      dropdown.open = false;
+      dropdown.querySelector('summary').focus();
+      return;
+    }
     const movesSqlCaret = /^(Arrow(Left|Right|Up|Down)|Home|End|PageUp|PageDown|Tab)$/.test(event.key)
       || ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a');
     if (event.target.matches('.sq-sql-input') && movesSqlCaret) {
@@ -1413,6 +1523,13 @@
     const next = event.key === 'Home' ? 0 : event.key === 'End' ? queries.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + queries.length) % queries.length;
     activateSqlQuery(queries[next].id); $('swAnalysisSql').querySelector('[aria-selected="true"]').focus();
   });
+  document.addEventListener('click', (event) => {
+    const dropdown = $('swConfigFields').querySelector('[data-execution-dropdown][open]');
+    if (dropdown && !dropdown.contains(event.target)) dropdown.open = false;
+  });
+  $('swConfigFields').addEventListener('toggle', (event) => {
+    if (event.target.matches('[data-execution-dropdown][open]') && !busy) event.target.querySelector('[data-execution-search]').focus();
+  }, true);
   $('swTestPrompt').addEventListener('input', () => {
     if (busy || globalTest) return;
     try {
@@ -1461,8 +1578,13 @@
   $('swBack').onclick = (e) => { if (busy || globalTest || !saveDraft()) { e.preventDefault(); if (busy || globalTest) message(globalTest ? '全局测试仍在执行，请完成后返回。' : '当前操作正在执行，请稍候。'); } };
   window.addEventListener('beforeunload', (e) => { if (dirty || busy || globalTest) { e.preventDefault(); e.returnValue = ''; } });
   window.addEventListener('storage', (e) => {
-    if (e.key !== Store.key) return;
-    if (dirty || busy || globalTest || drawingMode || document.querySelector('#swRegionForm,[data-content-modal]')) { message('其他窗口已更新技能；当前修改保留，请完成操作后核对。'); return; }
+    const themesChanged = e.key === window.AnalysisThemeCatalog.key;
+    if (e.key !== Store.key && !themesChanged) return;
+    if (dirty || busy || globalTest || drawingMode || document.querySelector('#swRegionForm,[data-content-modal]')) {
+      if (themesChanged && !busy) refreshExecutionFields(true);
+      message(themesChanged ? '分析主题已更新，请核对当前 SQL 的执行主题和执行库。' : '其他窗口已更新技能；当前修改保留，请完成操作后核对。');
+      return;
+    }
     const next = Store.load().find((s) => s.id === id);
     if (!next) { message('技能已在其他窗口删除。'); location.href = 'knowledge-skill.html'; return; }
     if (next.enabled) { message('技能已启用，内容配置已关闭。'); location.href = 'knowledge-skill.html'; return; }

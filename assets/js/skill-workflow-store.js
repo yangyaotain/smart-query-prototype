@@ -6,6 +6,7 @@
   const PUBLISHED_SAMPLE_MARKER = `${KEY}-published-samples-20260914`;
   const FAILED_SAMPLE_TRIM_MARKER = `${KEY}-failed-samples-20260916`;
   const clone = (value) => JSON.parse(JSON.stringify(value));
+  const ThemeCatalog = global.AnalysisThemeCatalog;
   const themes = ['成交与节资', '采购方式与品类', '供应商管理', '采购效能与闲废', '销售分析', '客户分析', '库存分析', '活动分析'];
   const today = () => new Date().toLocaleDateString('sv-SE');
   const DEFAULT_ANALYSIS_PROMPT = '结合当前内容前文已配置的指标和图表结果，解释本期采购表现、主要变化与需关注的问题。只使用已提供的数据，缺失依据时明确说明，不推断无依据的原因。控制在 200 字以内。';
@@ -32,7 +33,10 @@
       if (!name) throw new Error(`SQL Tab「${label}」：指标名称不能为空。`);
       if (names.has(name)) throw new Error(`SQL Tab「${name}」：指标名称重复，请修改后重新测试。`);
       names.add(name);
-      try { validateQuerySql(query.sql); } catch (error) { throw new Error(`SQL Tab「${label}」：${error.message}`); }
+      try {
+        validateQuerySql(query.sql);
+        validateExecutionTheme(query);
+      } catch (error) { throw new Error(`SQL「${label}」：${error.message}`); }
       if (!/\bAS\s+value\b/i.test(query.sql)) throw new Error(`SQL Tab「${label}」：查询结果需使用 AS value 作为指标值别名。`);
     });
   }
@@ -136,22 +140,76 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
 空状态：无数据月份保留断点，不使用 0 补齐；查询无结果时显示“暂无图表数据”。`
   };
   function chartPrompt(part) { return chartPromptCatalog[part?.id] || DEFAULT_CHART_PROMPT; }
-  const tableCatalog = {
-    procurement_transactions: { label: '采购交易明细', databaseName: '运营指标库', databaseType: 'ClickHouse' },
-    non_bidding_project_info: { label: '非招项目信息', databaseName: '运营指标库', databaseType: 'ClickHouse' },
-    bidding_project_info: { label: '招标项目信息', databaseName: '运营指标库', databaseType: 'ClickHouse' },
-    platform_service_fee_detail: { label: '平台服务费明细', databaseName: '运营指标库', databaseType: 'ClickHouse' },
-    sales_order: { label: '销售订单', databaseName: '销售业务库', databaseType: 'MySQL' },
-    inventory_snapshot: { label: '库存快照', databaseName: '库存分析库', databaseType: 'Oracle' }
-  };
   function sqlTables(sql) {
-    const tables = [], pattern = /\b(?:FROM|JOIN)\s+([`"\[]?[a-zA-Z_]\w*(?:\.[`"\[]?[a-zA-Z_]\w*)?[`"\]]?)/ig;
-    for (const match of String(sql || '').matchAll(pattern)) {
-      const physicalName = match[1].replace(/[`"\[\]]/g, '');
-      const name = physicalName.split('.').pop();
-      if (!tables.some((table) => table.physicalName === physicalName)) tables.push({ physicalName, name });
+    const identifier = '(?:`[^`]+`|"[^"]+"|\\[[^\\]]+\\]|[a-zA-Z_]\\w*)';
+    const tableIdentifier = `${identifier}(?:\\s*\\.\\s*${identifier})*`;
+    const pattern = new RegExp(`\\b(?:FROM|JOIN)\\s+(${tableIdentifier})`, 'ig');
+    const nextTable = new RegExp(`^\\s*(?:(?:AS\\s+)?${identifier}\\s*)?,\\s*(${tableIdentifier})`, 'i');
+    const query = String(sql || '').replace(/'(?:''|\\[\s\S]|[^'\\])*'|--[^\r\n]*|\/\*[\s\S]*?\*\//g, ' ');
+    const tables = [];
+    for (const source of query.matchAll(pattern)) {
+      let rest = query.slice(source.index + source[0].length);
+      for (let match = source; match; match = rest.match(nextTable)) {
+        const physicalName = match[1].replace(/[`"\[\]]/g, '').replace(/\s*\.\s*/g, '.');
+        const name = physicalName.split('.').pop();
+        if (!tables.some((table) => table.physicalName === physicalName)) tables.push({ physicalName, name });
+        if (match !== source) rest = rest.slice(match[0].length);
+      }
     }
     return tables;
+  }
+  function executionThemeOptions() {
+    return ThemeCatalog.executionThemes();
+  }
+  function executionTheme(query) {
+    return executionThemeOptions().find((theme) => theme.id === query.executionThemeId);
+  }
+  function missingThemeTables(theme, tables) {
+    const names = new Set(theme.tables.map((table) => table.name.toLowerCase()));
+    return tables.filter((table) => !names.has(table.name.toLowerCase()));
+  }
+  function suggestExecutionTheme(query, part) {
+    const tables = sqlTables(query.sql);
+    if (!tables.length) return '';
+    const candidates = executionThemeOptions().filter((theme) => theme.database && theme.status !== 'disabled' && !missingThemeTables(theme, tables).length);
+    if (candidates.length === 1) return candidates[0].id;
+    const scored = candidates.map((theme) => {
+      const keywords = theme.keywords.split('|').filter(Boolean);
+      const scoreTitle = (value) => {
+        const title = String(value || '');
+        return keywords.filter((word) => title.includes(word)).length + (title.includes(theme.name) ? 3 : 0);
+      };
+      return { theme, score: scoreTitle(part.name) + (query === part ? 0 : 3 * scoreTitle(query.name)) };
+    });
+    const best = Math.max(0, ...scored.map(({ score }) => score));
+    const likely = best ? scored.filter(({ score }) => score === best).map(({ theme }) => theme) : candidates;
+    if (likely.length === 1) return likely[0].id;
+    return likely.find((theme) => theme.name === part.theme)?.id || '';
+  }
+  function syncExecutionTheme(query, part, sqlChanged = false) {
+    if (!Object.hasOwn(query, 'executionThemeId') || (sqlChanged && !query.executionThemeManual)) {
+      query.executionThemeId = suggestExecutionTheme(query, part);
+    }
+  }
+  function validateExecutionTheme(query) {
+    if (!query.executionThemeId) throw new Error('请选择执行主题。');
+    const theme = executionTheme(query);
+    if (!theme) throw new Error('已选执行主题已删除，请重新选择。');
+    if (theme.status === 'disabled') throw new Error(`执行主题「${theme.name}」已禁用，请重新选择。`);
+    if (!theme.database) throw new Error(`执行主题「${theme.name}」未绑定执行库，请调整主题。`);
+    const missing = missingThemeTables(theme, sqlTables(query.sql));
+    if (missing.length) throw new Error(`执行主题「${theme.name}」的关联模型不包含表 ${missing.map((table) => table.physicalName).join('、')}。`);
+  }
+  function executionSnapshot(part) {
+    return (part.type === 'analysis' ? analysisQueries(part) : [part]).map((query) => {
+      const theme = executionTheme(query);
+      const available = !!theme?.database && theme.status !== 'disabled';
+      const missing = available ? missingThemeTables(theme, sqlTables(query.sql)).map((table) => table.physicalName) : [];
+      return [query.executionThemeId || '', available ? theme.database.id : '', missing];
+    });
+  }
+  function executionReady(snapshot) {
+    return snapshot.every(([themeId, databaseId, missing]) => themeId && databaseId && !missing.length);
   }
   function sqlAggregation(sql) {
     const match = String(sql || '').match(/\b(SUM|COUNT|AVG|MAX|MIN)\s*\(/i);
@@ -180,21 +238,19 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
   }
   function syncPartMetadata(part, refreshIndicators = false) {
     if (!part || part.type === 'analysis') {
-      if (part) { delete part.executionSource; part.managedIndicators = []; }
+      if (part) {
+        analysisQueries(part).forEach((query) => syncExecutionTheme(query, part));
+        delete part.executionSource;
+        part.managedIndicators = [];
+      }
       return part;
     }
-    const storedTables = part.executionSource?.tables || [];
-    const tables = sqlTables(part.sql).map((table) => {
-      const catalog = tableCatalog[table.name];
-      const stored = storedTables.find((item) => item.physicalName === table.physicalName || item.name === table.name);
-      return { ...table, label: catalog?.label || stored?.label || table.name };
-    });
-    const catalogSource = tables.map((table) => tableCatalog[table.name]).find(Boolean);
-    const sameStoredTables = tables.length && tables.every((table) => storedTables.some((item) => item.physicalName === table.physicalName || item.name === table.name));
+    syncExecutionTheme(part, part);
+    const theme = executionTheme(part);
     part.executionSource = {
-      databaseName: catalogSource?.databaseName || (sameStoredTables ? part.executionSource?.databaseName : '') || '待识别执行库',
-      databaseType: catalogSource?.databaseType || (sameStoredTables ? part.executionSource?.databaseType : '') || '',
-      tables
+      databaseName: theme?.database?.name || '待识别执行库',
+      databaseType: theme?.database?.type || '',
+      tables: sqlTables(part.sql).map((table) => ({ ...table, label: theme?.tables.find((item) => item.name.toLowerCase() === table.name.toLowerCase())?.alias || table.name }))
     };
     if (refreshIndicators || !Array.isArray(part.managedIndicators) || !part.managedIndicators.length) part.managedIndicators = inferredManagedIndicators(part);
     else part.managedIndicators = part.managedIndicators.map((indicator) => ({ ...indicator, aggregation: sqlAggregation(part.sql), definition: indicator.definition || part.definition }));
@@ -214,7 +270,11 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
       confirmed: false, revision: 1, messages: [], result: null, ...clone(part)
     };
     if (type === 'analysis') {
-      prepared.sqlQueries = analysisQueries(prepared).map((query, queryIndex) => ({ id: String(query.id || `sql-${queryIndex + 1}`), name: String(query.name ?? `SQL ${queryIndex + 1}`), sql: String(query.sql || ''), unit: String(query.unit || '') }));
+      prepared.sqlQueries = analysisQueries(prepared).map((query, queryIndex) => ({
+        id: String(query.id || `sql-${queryIndex + 1}`), name: String(query.name ?? `SQL ${queryIndex + 1}`), sql: String(query.sql || ''), unit: String(query.unit || ''),
+        ...(typeof query.executionThemeId === 'string' ? { executionThemeId: query.executionThemeId } : {}),
+        ...(query.executionThemeManual ? { executionThemeManual: true } : {})
+      }));
       prepared.sql = '';
     }
     return syncPartMetadata(prepared);
@@ -505,7 +565,7 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     ];
   }
   function isReady(s) {
-    return s.parseStatus === 'completed' && !!s.name?.trim() && !!s.desc?.trim() && !!s.category && !!s.userPrompt?.trim() && s.themes?.length > 0 && s.parts?.length > 0 && s.parts.every((p) => p.confirmed && p.prompt?.trim());
+    return s.parseStatus === 'completed' && !!s.name?.trim() && !!s.desc?.trim() && !!s.category && !!s.userPrompt?.trim() && s.themes?.length > 0 && s.parts?.length > 0 && s.parts.every((p) => p.confirmed && p.prompt?.trim() && executionReady(executionSnapshot(p)));
   }
   function normalizeSkill(source, onSqlMigration) {
     const result = clone(source);
@@ -530,6 +590,19 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
       delete prepared.missingDependencies;
       if (prepared.type === 'analysis' && /^依据引用数据/.test(prepared.prompt || '')) prepared.prompt = prepared.prompt.replace(/^依据引用数据/, '结合当前内容前文已配置的指标和图表结果');
       if (variableNames.size && rewritePartSql(prepared, lookup, variableNames)) sqlMigrated = true;
+      syncPartMetadata(prepared);
+      const execution = executionSnapshot(prepared);
+      if (execution.length || part.executionContext) {
+        prepared.executionContext = execution.length ? JSON.stringify(execution) : '';
+        if (part.executionContext !== prepared.executionContext) {
+          sqlMigrated = true;
+          if (part.executionContext !== undefined || prepared.result || !executionReady(execution)) {
+            prepared.revision += 1;
+            prepared.confirmed = false;
+            if (prepared.result) prepared.result.stale = true;
+          }
+        }
+      }
       return prepared;
     });
     if (!result.contentConfigVersion) {
@@ -627,8 +700,9 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
   function signature(part, params, parts) {
     // Existing test signatures already include the variable names and values.
     const { sqlValues, ...settings } = params;
-    if (part.type !== 'analysis') return JSON.stringify([part.revision, settings]);
+    if (part.type !== 'analysis') return JSON.stringify([part.revision, settings, part.executionContext]);
     const configuration = [analysisQueries(part), part.prompt];
+    if (hasAnalysisSql(part)) configuration.push(part.executionContext);
     return usesGenerationDate(part) && !hasAnalysisSql(part) ? JSON.stringify([part.revision, generationDate(params).toLocaleDateString('sv-SE'), params.question || '', configuration]) : JSON.stringify([part.revision, settings, configuration]);
   }
   function removePart(skill, id) {
@@ -717,7 +791,7 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     return { id: query.id, name: query.name.trim(), value, unit: query.unit, text, bindings };
   }
   function runDemo(part, params, parts) {
-    if (!part.name.trim() || !part.theme) throw new Error('请补充内容名称和分析主题。');
+    if (!part.name.trim()) throw new Error('请补充内容名称。');
     if (!part.prompt.trim()) throw new Error('请先补充当前内容的提示词。');
     const analysisSql = hasAnalysisSql(part);
     if (part.type === 'analysis') validateAnalysisQueries(part);
@@ -732,6 +806,7 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     let sql = part.sql, bindings = [];
     if (part.type !== 'analysis') {
       validateQuerySql(sql);
+      validateExecutionTheme(part);
       ({ statement: sql, bindings } = bindSql(sql, params));
       if (!/^[a-zA-Z_]\w*$/.test(part.field) || !new RegExp(`\\bAS\\s+${part.field}\\b`, 'i').test(sql)) throw new Error('查询结果中未找到回填字段，请核对 SQL 别名。');
     }
@@ -784,7 +859,8 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
       if (part.type === 'chart' && /升序|降序/.test(request)) next.sql = next.sql.replace(/ORDER BY[^;]+/i, `ORDER BY value ${/升序/.test(request) ? 'ASC' : 'DESC'}`);
       if (part.type === 'chart' && /前\s*(\d+|十)/.test(request)) { const m = request.match(/前\s*(\d+|十)/); next.sql = next.sql.replace(/\s+LIMIT\s+\d+/i, '').replace(/;?\s*$/, `\nLIMIT ${m[1] === '十' ? 10 : Math.min(100, Number(m[1]))};`); }
     }
+    if (next.sql !== part.sql) syncExecutionTheme(next, next, true);
     return { next: syncPartMetadata(next, true), reply: `已更新${part.type === 'analysis' ? '提示词' : '提示词及相关配置'}并回填到上方配置。请重新测试，查看结果后确认此项。` };
   }
-  global.SkillCatalogStore = { key: KEY, load, save, update, clone, themes, isReady, preparePart, syncPartMetadata, normalizeSkill, normalizeTestParams, promptLabels, createPromptVariable, updatePromptVariables, validSqlVariableName, sqlVariableToken, parameterSettings, validateSkillSqlParams, normalizeReportMonth, invalidate, signature, runDemo, aiEdit, sampleParts, sampleOutline, usesGenerationDate, hasAnalysisSql, analysisQueries, analysisSqlExamples, removePart };
+  global.SkillCatalogStore = { key: KEY, load, save, update, clone, themes, isReady, preparePart, syncPartMetadata, normalizeSkill, normalizeTestParams, promptLabels, createPromptVariable, updatePromptVariables, validSqlVariableName, sqlVariableToken, parameterSettings, validateSkillSqlParams, normalizeReportMonth, invalidate, signature, runDemo, aiEdit, sampleParts, sampleOutline, usesGenerationDate, hasAnalysisSql, analysisQueries, analysisSqlExamples, removePart, executionThemeOptions, executionTheme, syncExecutionTheme };
 })(window);

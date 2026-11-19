@@ -252,6 +252,23 @@ button.sw-mark { position:absolute; z-index:1; min-width:6px; min-height:6px; }
 .sw-sql-tab-delete:hover { color:#c73838; background:#fff0ee; }
 .sw-sql-tab-delete:focus-visible { outline:2px solid var(--focus-border); outline-offset:1px; }
 .sw-analysis-sql input.sw-sql-tab-name { display:block; width:160px; height:38px; padding:7px 24px 7px 10px; border:1px solid var(--focus-border); border-radius:6px 6px 0 0; color:var(--heading); background:white; font-family:inherit; font-size:var(--font-size-control,13px); outline:2px solid var(--focus-ring); outline-offset:-2px; }
+.sw-sql-execution { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px 10px; margin-bottom:8px; }
+.sw-sql-execution .sw-field,.sw-sql-execution .sw-help { margin:0; min-width:0; }
+.sw-sql-execution .sw-help { grid-column:1 / -1; }
+.sw-sql-execution em { color:#c73838; font-style:normal; }
+.sw-sql-execution input[readonly] { background:var(--primary-panel-bg); }
+.sw-execution-dropdown { position:relative; min-width:0; }
+.sw-execution-dropdown summary { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:37px; padding:7px 10px; border:1px solid var(--border); border-radius:7px; background:#fff; color:var(--text); font-size:var(--font-size-control,13px); cursor:pointer; }
+.sw-execution-dropdown summary span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sw-execution-dropdown summary::after { content:''; flex:none; width:6px; height:6px; border-right:1px solid currentColor; border-bottom:1px solid currentColor; transform:rotate(45deg); }
+.sw-execution-options { position:absolute; z-index:5; top:calc(100% + 4px); left:0; width:min(280px,calc(100% + 72px)); padding:6px; border:1px solid var(--border); border-radius:7px; background:white; box-shadow:0 6px 18px rgb(15 23 42 / 12%); }
+.sw-execution-list { max-height:200px; overflow:auto; margin-top:4px; }
+.sw-execution-list button { display:flex; align-items:center; gap:6px; width:100%; padding:7px 6px; border:0; border-radius:5px; text-align:left; color:var(--text); background:transparent; cursor:pointer; }
+.sw-execution-list button svg { width:14px; height:14px; flex:none; fill:none; stroke:currentColor; stroke-width:1.7; }
+.sw-execution-list button:hover:not(:disabled),.sw-execution-list button[aria-pressed="true"] { color:var(--primary); background:var(--primary-soft); }
+.sw-execution-list button:disabled { color:var(--muted); cursor:default; }
+.sw-execution-list button[hidden] { display:none; }
+.sw-execution-list .sw-help { padding:8px 6px; }
 .sw-sql-empty { padding:18px 14px; border:1px dashed var(--border); border-radius:8px; background:#f8fafc; color:var(--muted); font-size:13px; line-height:1.7; }
 .sw-sql-help { display:grid; gap:7px; margin-top:8px; min-width:0; color:var(--muted); font-size:12px; line-height:1.55; }
 .sw-sql-help p { margin:0; }

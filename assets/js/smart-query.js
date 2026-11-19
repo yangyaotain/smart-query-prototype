@@ -98,6 +98,7 @@ const currentChatMessage = answerBlock?.querySelector(".current-chat-message");
 const questionTurns = new WeakMap();
 const conversationSnapshots = new WeakMap();
 const queryConfirmationForm = document.getElementById("queryConfirmationForm");
+const queryConfirmationOptions = document.getElementById("queryConfirmationOptions");
 const queryConfirmationReply = queryConfirmationForm.elements.customReply;
 const queryConfirmationSend = queryConfirmationForm.querySelector('[type="submit"]');
 const reopenQueryConfirmation = document.getElementById("reopenQueryConfirmation");
@@ -475,7 +476,9 @@ const themeDescMap = {
 };
 
 const themeOptionNames = Object.keys(themeDescMap);
-const selectedThemes = new Set(["销售分析"]);
+const ALL_THEMES = "全部主题";
+const DEFAULT_THEME = "销售分析";
+const selectedThemes = new Set([DEFAULT_THEME]);
 
 const qaThinkingSteps = [
   ["识别业务意图", "识别问题类型、业务对象和时间范围。"],
@@ -697,11 +700,26 @@ const boardRevisionDraft3 = createBoardDraft(
   boardRevisionDraft2
 );
 
-const SALES_CONFIRMATION_METRICS = {
-  received: { label: "实收金额", values: [2400, 2550, 2700, 2630, 2860, 3000] },
-  ordered: { label: "下单金额", values: [2680, 2800, 3070, 3020, 3210, 3460] }
+const QUERY_CONFIRMATION_MONTHS = ["5月", "6月", "7月", "8月", "9月", "10月"];
+const REVENUE_THEME_QUESTION = "近 6 个月的收入趋势如何？";
+const QUERY_CONFIRMATIONS = {
+  sales: {
+    title: "本次华东区销售额趋势按什么口径统计？",
+    prompt: "已识别华东区和近 6 个月的时间范围。下单金额和实收金额会得出不同的结果，查询已暂停，等待你确认统计口径。",
+    metrics: {
+      received: { label: "实收金额", hint: "推荐 · 用于看实际回款", aliases: ["实际回款"], values: [2400, 2550, 2700, 2630, 2860, 3000] },
+      ordered: { label: "下单金额", hint: "用于看订单规模", aliases: ["订单金额"], values: [2680, 2800, 3070, 3020, 3210, 3460] }
+    }
+  },
+  theme: {
+    title: "你想看哪个主题下的收入指标？",
+    prompt: "我在全部主题中匹配到两项收入指标。请选择本次要查看的主题和指标。",
+    metrics: {
+      salesFee: { theme: "销售分析", label: "招标平台服务费", hint: "查看招标业务的平台服务费收入", aliases: ["平台服务费"], values: [142, 156, 172, 164, 181, 190] },
+      financeRevenue: { theme: "财务分析", label: "总收入", hint: "查看平台各项业务的合计收入", aliases: ["平台总收入"], values: [410, 428, 451, 475, 502, 528] }
+    }
+  }
 };
-const SALES_CONFIRMATION_MONTHS = ["5月", "6月", "7月", "8月", "9月", "10月"];
 
 const HISTORY_SCENARIOS = {
   ...QueryAttachments.scenarios,
@@ -715,6 +733,13 @@ const HISTORY_SCENARIOS = {
     mode: "qa",
     sentAt: "08:39",
     confirmation: { status: "pending" }
+  },
+  revenueThemeConfirmation: {
+    question: REVENUE_THEME_QUESTION,
+    mode: "qa",
+    sentAt: "08:41",
+    context: { themes: themeOptionNames, references: [], attachments: [], followup: null },
+    confirmation: { kind: "theme", status: "pending" }
   },
   guidedSales: {
     question: "近6个月华东区销售额趋势如何？",
@@ -1650,40 +1675,53 @@ function runSuggestedQuestion(text) {
 }
 
 function handleThemeChange(theme) {
-  if (!themeDescMap[theme]) return;
+  if (theme !== ALL_THEMES && !Object.hasOwn(themeDescMap, theme)) return;
   selectedThemes.clear();
-  selectedThemes.add(theme);
+  (theme === ALL_THEMES ? themeOptionNames : [theme]).forEach((name) => selectedThemes.add(name));
   syncThemeSelection();
 }
 
 function getSelectedThemeList() {
   const themes = Array.from(selectedThemes).filter((theme) => themeDescMap[theme]);
-  return themes.length ? themes : ["销售分析"];
+  return themes.length ? themes : [DEFAULT_THEME];
+}
+
+function hasAllThemes(themes = getSelectedThemeList()) {
+  return themeOptionNames.every((theme) => themes.includes(theme));
 }
 
 function getThemeSummary(themes) {
+  if (hasAllThemes(themes)) return ALL_THEMES;
   if (themes.length <= 2) return themes.join("、");
   return `${themes.slice(0, 2).join("、")}等${themes.length}个`;
 }
 
 function renderThemeOptions() {
   if (!themeSelectOptions) return;
+  const focusedTheme = themeSelectOptions.contains(document.activeElement) ? document.activeElement.dataset.themeOption : null;
   const selected = getSelectedThemeList();
-  themeSelectOptions.innerHTML = themeOptionNames.map((theme) => {
-    const isSelected = selected.includes(theme);
+  const allSelected = hasAllThemes(selected);
+  themeSelectOptions.innerHTML = [ALL_THEMES, ...themeOptionNames].map((theme) => {
+    const isAllOption = theme === ALL_THEMES;
+    const isSelected = isAllOption ? allSelected : selected.includes(theme);
+    const isMixed = isAllOption && selected.length > 0 && !allSelected;
+    const checkedState = isMixed ? "mixed" : String(isSelected);
+    const checkPath = isMixed ? "M6 12h12" : "M5 12l4 4L19 6";
     return `
-      <button type="button" class="theme-select-option${isSelected ? " selected" : ""}" role="option" aria-selected="${isSelected}" onclick="toggleThemeOption('${escapeHtml(theme)}', event)">
-        <span class="theme-option-check"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4L19 6"/></svg></span>
+      <button type="button" class="theme-select-option${isSelected ? " selected" : ""}" role="checkbox" aria-checked="${checkedState}" data-theme-option="${escapeHtml(theme)}" onclick="toggleThemeOption('${escapeHtml(theme)}', event)">
+        <span class="theme-option-check"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${checkPath}"/></svg></span>
         <span>${escapeHtml(theme)}</span>
       </button>
     `;
   }).join("");
+  if (focusedTheme) themeSelectOptions.querySelector(`[data-theme-option="${CSS.escape(focusedTheme)}"]`)?.focus();
 }
 
 function syncThemeSelection() {
   const themes = getSelectedThemeList();
   const summary = getThemeSummary(themes);
   if (themeSelectText) themeSelectText.textContent = summary;
+  document.getElementById("composerThemeText").textContent = summary;
   renderThemeOptions();
   window.SmartQueryContext?.render(themes);
 }
@@ -1704,14 +1742,14 @@ function closeThemeDropdown() {
 
 function toggleThemeOption(theme, event) {
   event?.stopPropagation();
-  if (!themeDescMap[theme]) return;
+  if (theme === ALL_THEMES) {
+    handleThemeChange(hasAllThemes() ? DEFAULT_THEME : ALL_THEMES);
+    return;
+  }
+  if (!Object.hasOwn(themeDescMap, theme)) return;
   const selected = selectedThemes.has(theme);
   if (selected && selectedThemes.size <= 1) {
     showToast("至少保留一个分析主题");
-    return;
-  }
-  if (!selected && selectedThemes.size >= themeOptionNames.length - 1) {
-    showToast("分析主题不能全选，请至少保留一个未选主题");
     return;
   }
   if (selected) selectedThemes.delete(theme);
@@ -2572,6 +2610,18 @@ function runQuestion(edit = null, options = {}) {
     setQuestionEditorContent("");
     clearFollowupContext();
   }
+  const confirmation = mode === "qa" && !ctx && !context.references.length && !context.attachments?.length
+    ? matchRevenueThemeQuestion(submittedQuestion, context.themes) : null;
+  if (confirmation) {
+    if (!activeConversationItem) createConversationItem(submittedQuestion, ALL_THEMES);
+    conversationChanged = true;
+    renderCompletedHistoryTurn({ question: submittedQuestion, sentAt: new Date().toISOString(), mode, answerTitle, context, confirmation });
+    if (!edit) QueryAttachments.clearPending();
+    if (confirmation.status === "pending") focusQueryConfirmation();
+    else focusQuestionComposer();
+    requestAnimationFrame(scrollToQueryConfirmation);
+    return;
+  }
   startAnswerSimulation({
     mode,
     questionText: submittedQuestion,
@@ -3147,6 +3197,28 @@ function hasPendingQueryConfirmation() {
   return questionTurns.get(currentChatMessage)?.confirmation?.status === "pending";
 }
 
+function resolveRevenueMetric(text) {
+  const candidates = Object.entries(QUERY_CONFIRMATIONS.theme.metrics).filter(([, metric]) => (
+    [metric.theme, metric.label, ...metric.aliases].some((name) => text.includes(name))
+  ));
+  return candidates.length === 1 ? candidates[0][0] : "";
+}
+
+function matchRevenueThemeQuestion(question, themes) {
+  if (!hasAllThemes(themes)) return null;
+  const match = question.trim().match(/^(?:近|最近|过去)\s*(?:6|六)\s*个月\s*的?\s*(.+?)\s*趋势(?:如何|怎么样)?[？?。]?$/);
+  if (!match) return null;
+  const subject = match[1].trim();
+  if (!/收入|服务费/.test(subject)) return null;
+  const metric = resolveRevenueMetric(subject);
+  if (metric) return { kind: "theme", status: "confirmed", metric, automatic: true };
+  return /^(?:平台)?收入(?:的)?$/.test(subject) ? { kind: "theme", status: "pending" } : null;
+}
+
+function getQueryConfirmationConfig(confirmation) {
+  return QUERY_CONFIRMATIONS[confirmation.kind || "sales"];
+}
+
 function syncQueryConfirmationPanel(confirmation) {
   const pending = confirmation?.status === "pending";
   const collapsed = pending && Boolean(confirmation.collapsed);
@@ -3165,25 +3237,36 @@ function renderQueryConfirmation(confirmation) {
 
   const message = queryConfirmationNote.querySelector("p");
   const badge = queryConfirmationNote.querySelector(".feedback-status");
+  const config = getQueryConfirmationConfig(confirmation);
   badge.classList.toggle("pending", pending);
   badge.classList.toggle("done", confirmation.status === "confirmed");
   if (pending) {
-    message.textContent = "已识别华东区和近 6 个月的时间范围。下单金额和实收金额会得出不同的结果，查询已暂停，等待你确认统计口径。";
-    queryConfirmationPrompt.querySelector("p").textContent = queryConfirmationForm.querySelector("legend").textContent;
+    message.textContent = confirmation.error || config.prompt;
+    queryConfirmationPrompt.querySelector("p").textContent = config.title;
     badge.textContent = "待确认";
-    queryConfirmationForm.reset();
-    queryConfirmationForm.elements.salesMetric.value = confirmation.selection || "";
+    const options = [...Object.entries(config.metrics), ["cancelled", { label: "取消本次查询" }]];
+    queryConfirmationOptions.innerHTML = `<legend id="queryConfirmationTitle">${escapeHtml(config.title)}</legend>${options.map(([key, option], index) => `
+      <label class="query-confirmation-option">
+        <span class="query-confirmation-number" aria-hidden="true">${index + 1}</span>
+        <span>${escapeHtml(option.theme ? `${option.theme} · ${option.label}` : option.label)}${option.hint ? ` <small>${escapeHtml(option.hint)}</small>` : ""}</span>
+        <input type="radio" name="queryMetric" value="${escapeHtml(key)}">
+      </label>`).join("")}`;
+    queryConfirmationForm.elements.queryMetric.value = confirmation.selection || "";
     queryConfirmationReply.value = confirmation.draft || "";
+    if (confirmation.error) queryConfirmationReply.setAttribute("aria-invalid", "true");
+    else queryConfirmationReply.removeAttribute("aria-invalid");
     queryConfirmationSend.disabled = !confirmation.selection && !queryConfirmationReply.value.trim();
     suggestPop.classList.add("hidden");
   } else if (confirmation.status === "confirmed") {
-    message.textContent = `已按${SALES_CONFIRMATION_METRICS[confirmation.metric].label}口径继续查询。`;
-    badge.textContent = `已确认口径 · ${SALES_CONFIRMATION_METRICS[confirmation.metric].label}`;
+    const { theme, label } = config.metrics[confirmation.metric];
+    message.textContent = theme ? `已按「${theme} · ${label}」查询近 6 个月的数据。` : `已按${label}口径继续查询。`;
+    badge.textContent = theme ? `${confirmation.automatic ? "已匹配" : "已确认主题"} · ${theme}` : `已确认口径 · ${label}`;
   } else if (confirmation.status === "custom") {
     message.textContent = `已收到你的口径「${confirmation.reply}」。当前示例只提供实收金额和下单金额的数据。`;
     badge.textContent = "已记录口径";
   } else {
-    message.textContent = confirmation.status === "skipped" ? "已跳过本次口径确认，未执行查询。" : "已取消本次查询。";
+    message.textContent = confirmation.status === "skipped"
+      ? (confirmation.kind === "theme" ? "已跳过主题确认，本次查询已结束。" : "已跳过本次口径确认，未执行查询。") : "已取消本次查询。";
     badge.textContent = confirmation.status === "skipped" ? "已跳过" : "已取消";
   }
 }
@@ -3194,29 +3277,37 @@ function renderConfirmedQueryResult(confirmation) {
     return;
   }
 
-  const { label, values } = SALES_CONFIRMATION_METRICS[confirmation.metric];
+  const { label, values, theme } = getQueryConfirmationConfig(confirmation).metrics[confirmation.metric];
+  const region = theme ? "" : "华东区";
   const format = new Intl.NumberFormat("zh-CN");
   const growth = ((values.at(-1) / values[0] - 1) * 100).toFixed(1);
   resultCard.classList.add("is-confirmation-result");
-  resultTitle.textContent = `华东区近 6 个月${label}趋势`;
-  resultTitle.nextElementSibling.textContent = "销售分析 · 2026 年 5–10 月 · 模拟数据";
-  aiConclusion.textContent = `华东区${label}从 5 月的 ${format.format(values[0])} 万元增至 10 月的 ${format.format(values.at(-1))} 万元，增长 ${growth}%。8 月小幅回落，9 月恢复增长。`;
+  resultTitle.textContent = `${region}近 6 个月${label}趋势`;
+  resultTitle.nextElementSibling.textContent = `${theme || "销售分析"} · 2026 年 5–10 月 · 模拟数据`;
+  const changeNote = values.every((value, index) => index === 0 || value > values[index - 1])
+    ? "各月持续增长。" : "8 月小幅回落，9 月恢复增长。";
+  aiConclusion.textContent = `${region}${label}从 5 月的 ${format.format(values[0])} 万元增至 10 月的 ${format.format(values.at(-1))} 万元，增长 ${growth}%。${changeNote}`;
   tableResult.querySelector("table").innerHTML = `<thead><tr><th>月份</th><th class="num">${label}（万元）</th><th class="num">环比增长</th></tr></thead><tbody>${values.map((value, index) => {
     const previous = values[index - 1];
     const change = previous ? `${value >= previous ? "+" : ""}${((value / previous - 1) * 100).toFixed(1)}%` : "—";
-    return `<tr><td>${SALES_CONFIRMATION_MONTHS[index]}</td><td class="num">${format.format(value)}</td><td class="num">${change}</td></tr>`;
+    return `<tr><td>${QUERY_CONFIRMATION_MONTHS[index]}</td><td class="num">${format.format(value)}</td><td class="num">${change}</td></tr>`;
   }).join("")}</tbody>`;
-  qaChartHeading.textContent = `华东区${label}月度趋势`;
+  qaChartHeading.textContent = `${region}${label}月度趋势`;
   chartResult.classList.remove("hidden");
   setResultView("line", false);
 }
 
 function updateQueryConfirmationDraft(event) {
   if (!hasPendingQueryConfirmation()) return;
-  const options = queryConfirmationForm.elements.salesMetric;
-  if (event.target.name === "salesMetric") queryConfirmationReply.value = "";
+  const options = queryConfirmationForm.elements.queryMetric;
+  if (event.target.name === "queryMetric") queryConfirmationReply.value = "";
   else if (queryConfirmationReply.value.trim()) options.value = "";
   const confirmation = questionTurns.get(currentChatMessage).confirmation;
+  if (confirmation.error) {
+    delete confirmation.error;
+    queryConfirmationReply.removeAttribute("aria-invalid");
+    queryConfirmationNote.querySelector("p").textContent = getQueryConfirmationConfig(confirmation).prompt;
+  }
   confirmation.selection = options.value;
   confirmation.draft = queryConfirmationReply.value;
   queryConfirmationSend.disabled = !confirmation.selection && !confirmation.draft.trim();
@@ -3226,16 +3317,29 @@ function updateQueryConfirmationDraft(event) {
 function finishQueryConfirmation(decision) {
   if (!hasPendingQueryConfirmation()) return;
   const turn = questionTurns.get(currentChatMessage);
+  const { kind } = turn.confirmation;
+  const { metrics } = getQueryConfirmationConfig(turn.confirmation);
   const reply = queryConfirmationReply.value.trim();
-  const choice = decision || queryConfirmationForm.elements.salesMetric.value;
+  const choice = decision || queryConfirmationForm.elements.queryMetric.value;
   let metric;
-  if (Object.hasOwn(SALES_CONFIRMATION_METRICS, choice)) metric = choice;
-  else if (!choice && /^(?:按)?(?:实收金额|实际回款)(?:统计|查询)?[。！]?$/.test(reply)) metric = "received";
-  else if (!choice && /^(?:按)?(?:下单金额|订单金额)(?:统计|查询)?[。！]?$/.test(reply)) metric = "ordered";
   if (!choice && !reply) return;
+  if (Object.hasOwn(metrics, choice)) metric = choice;
+  else if (!choice && kind === "theme") {
+    metric = resolveRevenueMetric(reply);
+    if (!metric) {
+      turn.confirmation.error = "请在候选项中选一个主题和指标，或回复具体名称，例如「财务分析的总收入」。";
+      queryConfirmationNote.querySelector("p").textContent = turn.confirmation.error;
+      queryConfirmationReply.setAttribute("aria-invalid", "true");
+      queryConfirmationReply.focus();
+      return;
+    }
+  } else if (!choice) {
+    const label = reply.replace(/^按|(?:统计|查询)?[。！]?$/g, "");
+    metric = Object.keys(metrics).find((key) => [metrics[key].label, ...metrics[key].aliases].includes(label));
+  }
 
-  turn.confirmation = metric ? { status: "confirmed", metric }
-    : { status: choice || "custom", reply };
+  turn.confirmation = metric ? { kind, status: "confirmed", metric }
+    : { kind, status: choice || "custom", reply };
   const badge = activeConversationItem?.querySelector("[data-confirmation-status]");
   if (badge) {
     badge.classList.add("hidden");
@@ -3289,18 +3393,12 @@ queryConfirmationForm.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !event.isComposing) setQueryConfirmationCollapsed(true);
 });
 reopenQueryConfirmation.addEventListener("click", () => setQueryConfirmationCollapsed(false));
-document.getElementById("salesConfirmationHistory").addEventListener("keydown", (event) => {
-  if (event.key !== "Enter" && event.key !== " ") return;
-  event.preventDefault();
-  event.currentTarget.click();
-  if (hasPendingQueryConfirmation()) focusQueryConfirmation();
-});
-
 document.getElementById("historyList").addEventListener("keydown", (event) => {
-  const item = event.target.closest("[data-indicator-history]");
+  const item = event.target.closest("[data-indicator-history], [data-query-confirmation-history]");
   if (!item || event.isComposing || (event.key !== "Enter" && event.key !== " ")) return;
   event.preventDefault();
   item.click();
+  if (item.hasAttribute("data-query-confirmation-history") && hasPendingQueryConfirmation()) focusQueryConfirmation();
 });
 
 function renderCompletedHistoryTurn(scenario, options = {}) {
@@ -3335,12 +3433,18 @@ function renderCompletedHistoryTurn(scenario, options = {}) {
 }
 
 function loadHistoryScenario(key, item) {
-  if (item === activeConversationItem) return;
+  const isRevenueThemeExample = key === "revenueThemeConfirmation";
+  if (item === activeConversationItem) {
+    if (isRevenueThemeExample && !hasAllThemes()) handleThemeChange(ALL_THEMES);
+    return;
+  }
   const scenario = HISTORY_SCENARIOS[key];
   const snapshot = conversationSnapshots.get(item);
   if (!scenario && !snapshot) return;
   resetChat();
   setActiveConversationItem(item);
+  const themes = snapshot?.at(-1)?.context?.themes || scenario?.context?.themes;
+  if (isRevenueThemeExample || (themes && hasAllThemes(themes))) handleThemeChange(ALL_THEMES);
   if (snapshot) {
     renderHistoryTurnSequence(snapshot);
     return;
@@ -3607,9 +3711,10 @@ function updateQuestionResultHeading(turn) {
   currentAnswerTitle = turn.answerTitle;
   resultTitle.textContent = turn.answerTitle;
   const reference = turn.context.references[0];
+  const theme = hasAllThemes(turn.context.themes) ? ALL_THEMES : turn.context.themes.join("、");
   resultTitle.nextElementSibling.textContent = turn.mode === "reference"
     ? `基于引用内容处理 · ${reference?.label || "引用"}：${reference?.name || "-"} · 当前对话`
-    : `分析主题：${turn.context.themes.join("、")} · 当前对话`;
+    : `分析主题：${theme} · 当前对话`;
 }
 
 function sendQuestionGuide() {
@@ -5892,8 +5997,8 @@ function bindChartResizeHandlerOnce() {
 
 function buildResultChartOption(type, confirmation) {
   if (confirmation?.status === "confirmed") {
-    const { label, values } = SALES_CONFIRMATION_METRICS[confirmation.metric];
-    const data = SALES_CONFIRMATION_MONTHS.map((name, index) => ({ name, value: values[index] }));
+    const { label, values } = getQueryConfirmationConfig(confirmation).metrics[confirmation.metric];
+    const data = QUERY_CONFIRMATION_MONTHS.map((name, index) => ({ name, value: values[index] }));
     return buildAxisChartOption(type, data, label);
   }
   if (type === "pie") return buildPieChartOption();

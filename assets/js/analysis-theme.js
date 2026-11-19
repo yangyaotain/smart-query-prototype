@@ -37,6 +37,10 @@
         { id: 's_inventory', name: '库存管理库', type: 'PostgreSQL' },
         { id: 's_logistics', name: '物流配送库', type: 'PostgreSQL' }
       ]
+    },
+    {
+      key: 'procurement', name: '采购域',
+      sources: [{ id: 's_metric', name: '运营指标库', type: 'ClickHouse' }]
     }
   ];
 
@@ -541,6 +545,21 @@
     }
   ];
 
+  MODELS.push({
+    id: 'm_procurement_operations', name: '采购运营模型', code: 'procurement_operations',
+    srcId: 's_metric', updatedAt: '2026-11-19', desc: '覆盖采购成交、项目和平台服务费，用于采购经营分析。',
+    tables: [
+      tbl('procurement_transactions', '采购交易明细', '采购项目及成交情况', 'fact', 1126, [
+        f('report_month', '报告月份', 'String'), f('org_name', '采购组织', 'String'),
+        f('procurement_method', '采购方式', 'String'), f('transaction_amount', '成交金额', 'Decimal(18,2)'),
+        f('rate_value', '比率', 'Decimal(8,4)'), f('status', '交易状态', 'String')
+      ]),
+      tbl('non_bidding_project_info', '非招项目信息', '非招标采购项目', 'fact', 780, [f('project_id', '项目编号', 'String', { pk: true })]),
+      tbl('bidding_project_info', '招标项目信息', '招标采购项目', 'fact', 346, [f('project_id', '项目编号', 'String', { pk: true })]),
+      tbl('platform_service_fee_detail', '平台服务费明细', '采购项目平台服务费', 'fact', 1126, [f('project_id', '项目编号', 'String'), f('service_fee', '服务费', 'Decimal(18,2)')])
+    ]
+  });
+
   // ---- 统一从 tables 派生表数 / 字段数（保证表格列与抽屉展示一致） ----
   MODELS.forEach(function (m) {
     m.tables = m.tables || [];
@@ -583,23 +602,23 @@
   ];
 
   // 分析主题（含 modelIds / indicatorIds 引用）
-  var THEMES = [
+  var DEFAULT_THEMES = [
     {
       id: 'th_sales', name: '销售分析',
       desc: '覆盖销售额、订单量、渠道转化、区域业绩、产品销售等核心经营指标，支撑销售管理层日常经营复盘。',
-      modelIds: ['m_sales_order', 'm_sales_item', 'm_sales_channel', 'm_customer', 'm_pay_order'],
-      indicatorIds: ['i_sales_amount', 'i_order_count', 'i_customer_count', 'i_avg_order_value']
+      modelIds: ['m_sales_order', 'm_sales_item', 'm_sales_channel'],
+      indicatorIds: ['i_sales_amount', 'i_order_count', 'i_customer_count', 'i_avg_order_value'], keywords: '销售|渠道|订单|业绩'
     },
     {
       id: 'th_customer', name: '客户分析',
       desc: '客户新增、复购、价值分层、流失预警等经营主题，结合客户标签与分群进行洞察。',
       modelIds: ['m_customer', 'm_customer_tag', 'm_customer_segment', 'm_customer_journey'],
-      indicatorIds: ['i_customer_count', 'i_new_customer', 'i_repurchase_rate', 'i_avg_order_value']
+      indicatorIds: ['i_customer_count', 'i_new_customer', 'i_repurchase_rate', 'i_avg_order_value'], keywords: '客户|复购|新客|流失'
     },
     {
       id: 'th_inventory', name: '库存分析',
       desc: '库存金额、周转天数、滞销品、缺货风险与采购建议，支撑供应链与运营决策。',
-      modelIds: ['m_inventory', 'm_inv_move', 'm_purchase', 'm_logistics'],
+      modelIds: ['m_inventory', 'm_inv_move', 'm_purchase'],
       indicatorIds: ['i_inventory_amount', 'i_delivery_rate']
     },
     {
@@ -611,8 +630,24 @@
     {
       id: 'th_marketing', name: '营销活动分析',
       desc: '活动触达人数、订单转化、ROI、券核销与人群效率，对接销售与客户主题。',
-      modelIds: ['m_sales_order', 'm_customer_segment', 'm_customer_tag'],
-      indicatorIds: ['i_sales_amount', 'i_customer_count', 'i_repurchase_rate']
+      modelIds: ['m_customer_segment', 'm_customer_tag'],
+      indicatorIds: ['i_sales_amount', 'i_customer_count', 'i_repurchase_rate'], keywords: '营销|活动|触达|核销'
+    },
+    {
+      id: 'th_procurement_deal', name: '成交与节资', desc: '分析采购成交规模、项目数、节资金额及节资率。',
+      modelIds: ['m_procurement_operations'], indicatorIds: [], keywords: '成交|节资|规模|金额|项目数'
+    },
+    {
+      id: 'th_procurement_category', name: '采购方式与品类', desc: '分析采购方式、品类及项目结构。',
+      modelIds: ['m_procurement_operations'], indicatorIds: [], keywords: '采购方式|采购品类|品类|招标|非招|询比|谈判'
+    },
+    {
+      id: 'th_procurement_supplier', name: '供应商管理', desc: '分析供应商参与及履约情况。',
+      modelIds: ['m_procurement_operations'], indicatorIds: [], keywords: '供应商|履约'
+    },
+    {
+      id: 'th_procurement_efficiency', name: '采购效能与闲废', desc: '分析采购效率、执行周期及闲废处置。',
+      modelIds: ['m_procurement_operations'], indicatorIds: [], keywords: '效能|效率|周期|闲废|处置|三率'
     }
   ];
 
@@ -648,6 +683,58 @@
       }
     }
     return null;
+  }
+
+  var catalogKey = 'smart-query-analysis-themes-v1';
+  var cachedRaw;
+  var cachedThemes;
+  var cachedExecutionThemes;
+
+  function themeDatabase(theme) {
+    var models = (theme?.modelIds || []).map(findModelById).filter(Boolean);
+    var sourceIds = new Set(models.map(function (model) { return model.srcId; }));
+    return sourceIds.size === 1 ? findSourceById(models[0].srcId)?.source || null : null;
+  }
+
+  function readThemes() {
+    var raw = localStorage.getItem(catalogKey);
+    if (raw !== cachedRaw) {
+      try { cachedThemes = JSON.parse(raw) || DEFAULT_THEMES; }
+      catch { cachedThemes = DEFAULT_THEMES; }
+      cachedRaw = raw;
+      cachedExecutionThemes = null;
+    }
+    return cachedThemes;
+  }
+
+  function executionThemes() {
+    var themes = readThemes();
+    if (cachedExecutionThemes) return cachedExecutionThemes;
+    cachedExecutionThemes = themes.map(function (theme) {
+      var models = theme.modelIds.map(findModelById).filter(Boolean);
+      return {
+        id: theme.id, name: theme.name, status: theme.status, keywords: theme.keywords || '',
+        database: themeDatabase(theme), tables: models.flatMap(function (model) { return model.tables; })
+      };
+    });
+    return cachedExecutionThemes;
+  }
+
+  window.AnalysisThemeCatalog = {
+    key: catalogKey,
+    executionThemes: executionThemes
+  };
+
+  if (!document.getElementById('atThemeList')) return;
+
+  var THEMES = structuredClone(readThemes());
+
+  function saveThemes() {
+    localStorage.setItem(catalogKey, JSON.stringify(THEMES));
+  }
+
+  function reloadThemes() {
+    THEMES.splice(0, THEMES.length, ...structuredClone(readThemes()));
   }
 
   function findIndicatorById(id) {
@@ -761,21 +848,13 @@
     }
     var mids = t.modelIds || [];
     var iids = t.indicatorIds || [];
-    var srcSet = {};
+    var database = themeDatabase(t);
     var fieldSum = 0;
-    var tableSum = 0;
     mids.forEach(function (id) {
       var m = findModelById(id);
       if (!m) return;
-      srcSet[m.srcId] = true;
       fieldSum += (m.fieldCount || 0);
-      tableSum += (m.tableCount || 0);
     });
-    iids.forEach(function (id) {
-      var it = findIndicatorById(id);
-      if (it && it.srcId) srcSet[it.srcId] = true;
-    });
-    var srcCnt = Object.keys(srcSet).length;
 
     var enabled = t.status !== 'disabled';
     var badgeCls = enabled ? 'at-detail-badge is-on' : 'at-detail-badge is-off';
@@ -795,11 +874,11 @@
       +     '</button>'
       +   '</h2>'
       +   '<p>' + escapeHTML(t.desc || '') + '</p>'
+      +   '<p>执行库：' + escapeHTML(database ? database.name + ' · ' + database.type : '未绑定 · 添加首个数据模型后自动绑定') + '</p>'
       + '</div>'
       + '<div class="at-detail-stats">'
       +   '<div class="at-stat"><strong>' + mids.length + '</strong><span>数据模型</span></div>'
       +   '<div class="at-stat"><strong>' + iids.length + '</strong><span>指标</span></div>'
-      +   '<div class="at-stat"><strong>' + srcCnt + '</strong><span>数据源</span></div>'
       +   '<div class="at-stat"><strong>' + fieldSum + '</strong><span>字段</span></div>'
       + '</div>';
   }
@@ -1250,6 +1329,7 @@
     if (srcIdx < dstIdx) dstIdx--;
     var insertAt = before ? dstIdx : dstIdx + 1;
     THEMES.splice(insertAt, 0, item);
+    saveThemes();
     renderThemeList();
     if (typeof showToast === 'function') showToast('已调整主题顺序');
   }
@@ -1362,6 +1442,7 @@
       state.activeThemeId = nt.id;
       if (typeof showToast === 'function') showToast('已新建主题：' + name);
     }
+    saveThemes();
     closeThemeForm();
     renderThemeList();
     renderDetail();
@@ -1477,6 +1558,7 @@
         okText: '确认禁用',
         onOk: function () {
           t.status = 'disabled';
+          saveThemes();
           renderDetail();
           if (typeof showToast === 'function') showToast('已禁用：' + t.name);
         }
@@ -1484,6 +1566,7 @@
     } else {
       // 禁用 → 启用：直接切换
       t.status = 'enabled';
+      saveThemes();
       renderDetail();
       if (typeof showToast === 'function') showToast('已启用：' + t.name);
     }
@@ -1496,6 +1579,7 @@
     }
     if (idx < 0) return;
     var t = THEMES.splice(idx, 1)[0];
+    saveThemes();
     if (state.activeThemeId === id) {
       state.activeThemeId = THEMES[0] ? THEMES[0].id : null;
     }
@@ -1512,11 +1596,12 @@
     if (!t || !m) return;
     showConfirm({
       title: '移除关联数据模型',
-      subtitle: '仅从当前主题移除此模型，模型本身不会被删除。',
+      subtitle: t.modelIds.length === 1 ? '移除最后一个模型后，当前主题将解除执行库绑定。' : '仅从当前主题移除此模型，模型本身不会被删除。',
       message: '确定要从"' + t.name + '"移除模型"' + m.name + '"吗？',
       okText: '确认移除',
       onOk: function () {
         t.modelIds = (t.modelIds || []).filter(function (x) { return x !== mid; });
+        saveThemes();
         renderThemeList();
         renderDetail();
         renderModels();
@@ -1536,6 +1621,7 @@
       okText: '确认移除',
       onOk: function () {
         t.indicatorIds = (t.indicatorIds || []).filter(function (x) { return x !== iid; });
+        saveThemes();
         renderThemeList();
         renderDetail();
         renderIndicators();
@@ -1552,7 +1638,7 @@
       return;
     }
     state.pickerSelected = {};
-    state.pickerActiveSrc = '';
+    state.pickerActiveSrc = themeDatabase(t)?.id || '';
     state.pickerSourceKw = '';
     state.pickerModelKw = '';
     var sSearch = $('#atpSourceSearch'); if (sSearch) sSearch.value = '';
@@ -1569,13 +1655,20 @@
     $('#atPickerModal').classList.add('hidden');
   }
 
+  function pickerDatabase(theme = findThemeById(state.activeThemeId)) {
+    var firstSelected = findModelById(Object.keys(state.pickerSelected)[0]);
+    return themeDatabase(theme) || (firstSelected && findSourceById(firstSelected.srcId)?.source);
+  }
+
   function renderPickerSources() {
     var box = $('#atpSourceList');
     if (!box) return;
+    var database = pickerDatabase();
     var kw = (state.pickerSourceKw || '').trim().toLowerCase();
     var html = DOMAINS.map(function (d) {
       var domainMatched = kw && d.name.toLowerCase().includes(kw);
       var sources = (d.sources || []).filter(function (s) {
+        if (database && s.id !== database.id) return false;
         if (!kw || domainMatched) return true;
         return s.name.toLowerCase().indexOf(kw) >= 0
           || (s.type || '').toLowerCase().indexOf(kw) >= 0;
@@ -1607,12 +1700,13 @@
     var box = $('#atpModelsList');
     if (!box) return;
     var t = findThemeById(state.activeThemeId);
+    var sourceId = pickerDatabase(t)?.id || state.pickerActiveSrc;
     var existing = {};
     (t && t.modelIds ? t.modelIds : []).forEach(function (id) { existing[id] = true; });
 
     var kw = (state.pickerModelKw || '').trim().toLowerCase();
     var rows = MODELS.filter(function (m) {
-      if (state.pickerActiveSrc && m.srcId !== state.pickerActiveSrc) return false;
+      if (sourceId && m.srcId !== sourceId) return false;
       if (!kw) return true;
       return (m.name || '').toLowerCase().indexOf(kw) >= 0
         || (m.code || '').toLowerCase().indexOf(kw) >= 0;
@@ -1655,6 +1749,11 @@
   function updatePickerMeta() {
     var n = Object.keys(state.pickerSelected).length;
     var el = $('#atpSelectedCount'); if (el) el.textContent = String(n);
+    var bound = themeDatabase(findThemeById(state.activeThemeId));
+    var selected = pickerDatabase();
+    $('#atPickerSubtitle').textContent = bound ? '当前执行库为「' + bound.name + '」，可添加该库下的多个模型。'
+      : selected ? '已选择「' + selected.name + '」下的模型。清空已选后可改选其他库。'
+      : '首次添加模型时绑定执行库，可多选同一个库下的模型。';
   }
 
   function bindPicker() {
@@ -1675,6 +1774,7 @@
       var srcItem = e.target.closest && e.target.closest('.atp-source-item');
       if (srcItem) {
         var sid = srcItem.getAttribute('data-sid');
+        if (pickerDatabase()) return;
         state.pickerActiveSrc = state.pickerActiveSrc === sid ? '' : sid;
         renderPickerSources();
         renderPickerModels();
@@ -1692,7 +1792,14 @@
       if (card && !card.classList.contains('is-disabled')) {
         var mid = card.getAttribute('data-mid');
         if (state.pickerSelected[mid]) delete state.pickerSelected[mid];
-        else state.pickerSelected[mid] = true;
+        else {
+          var model = findModelById(mid);
+          var database = pickerDatabase();
+          if (!model || (database && model.srcId !== database.id)) return;
+          state.pickerSelected[mid] = true;
+          state.pickerActiveSrc = model.srcId;
+        }
+        renderPickerSources();
         renderPickerModels();
         updatePickerMeta();
         return;
@@ -1700,6 +1807,7 @@
       // 清空
       if (e.target.id === 'atpClearAll') {
         state.pickerSelected = {};
+        renderPickerSources();
         renderPickerModels();
         updatePickerMeta();
       }
@@ -1725,11 +1833,17 @@
       if (typeof showToast === 'function') showToast('请先勾选要添加的数据模型');
       return;
     }
-    t.modelIds = (t.modelIds || []).slice();
-    var added = 0;
-    ids.forEach(function (id) {
-      if (t.modelIds.indexOf(id) < 0) { t.modelIds.push(id); added++; }
-    });
+    reloadThemes();
+    t = findThemeById(t.id);
+    var modelIds = [...new Set([...(t?.modelIds || []), ...ids])];
+    var sourceIds = new Set(modelIds.map(function (id) { return findModelById(id)?.srcId; }));
+    if (!t || sourceIds.size !== 1 || sourceIds.has(undefined)) {
+      if (typeof showToast === 'function') showToast('当前主题只能添加同一个执行库下的模型，请重新选择。');
+      return;
+    }
+    var added = modelIds.length - t.modelIds.length;
+    t.modelIds = modelIds;
+    saveThemes();
     closePicker();
     renderThemeList();
     renderDetail();
@@ -1952,6 +2066,7 @@
     ids.forEach(function (id) {
       if (t.indicatorIds.indexOf(id) < 0) { t.indicatorIds.push(id); added++; }
     });
+    saveThemes();
     closeIndicatorPicker();
     renderThemeList();
     renderDetail();
@@ -2056,6 +2171,20 @@
   }
 
   // ---------- 14) 启动 ----------
+  window.addEventListener('storage', function (event) {
+    if (event.key !== catalogKey) return;
+    reloadThemes();
+    closeConfirm();
+    closeThemeForm();
+    closePicker();
+    closeIndicatorPicker();
+    if (!findThemeById(state.activeThemeId)) state.activeThemeId = THEMES[0]?.id || null;
+    renderThemeList();
+    renderDetail();
+    renderModels();
+    renderIndicators();
+  });
+
   document.addEventListener('DOMContentLoaded', function () {
     renderThemeList();
     renderDetail();

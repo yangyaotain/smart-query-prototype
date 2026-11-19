@@ -631,7 +631,7 @@
   background: #fff;
 }
 
-.theme-select-option.selected .theme-option-check {
+.theme-select-option:is(.selected, [aria-checked="mixed"]) .theme-option-check {
   color: #fff;
   background: var(--primary);
   border-color: var(--primary);

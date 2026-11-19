@@ -6,7 +6,7 @@
   <title>智能问数 - 业务端</title>
   <link rel="stylesheet" href="../../assets/css/theme.css?v=20261110-keyword-highlight" />
   <link rel="stylesheet" href="../../assets/css/indicator-chat.css?v=20261118-natural-dialogue" />
-  <link rel="stylesheet" href="../../assets/css/business.css?v=20261118-chat-width" />
+  <link rel="stylesheet" href="../../assets/css/business.css?v=20261119-theme-checkboxes" />
   <link rel="stylesheet" href="../../assets/css/query-attachments.css?v=20261116-remove-icon" />
   <link rel="stylesheet" href="../../assets/css/skill-picker.css?v=20260914-skill-copy" />
   <link rel="stylesheet" href="../../assets/css/scheduled-tasks.css?v=20260914-skill-copy" />
@@ -145,7 +145,11 @@
           <strong title="对比销售明细与经营报告">对比销售明细与经营报告</strong>
           <span><em>Excel + PDF 核对</em><em>09:10</em></span>
         </div>
-        <div class="history-item" id="salesConfirmationHistory" role="button" tabindex="0" onclick="loadHistoryScenario('salesConfirmation', this)" oncontextmenu="openSideMenu(event, 'history')">
+        <div class="history-item" role="button" tabindex="0" data-query-confirmation-history onclick="loadHistoryScenario('revenueThemeConfirmation', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="近 6 个月的收入趋势如何？">近 6 个月的收入趋势如何？</strong>
+          <span><em>全部主题 · 08:41</em><em class="feedback-status pending" data-confirmation-status>待确认</em></span>
+        </div>
+        <div class="history-item" id="salesConfirmationHistory" role="button" tabindex="0" data-query-confirmation-history onclick="loadHistoryScenario('salesConfirmation', this)" oncontextmenu="openSideMenu(event, 'history')">
           <strong title="华东区销售额趋势 · 口径确认">华东区销售额趋势 · 口径确认</strong>
           <span><em>普通问数 · 08:39</em><em class="feedback-status pending" data-confirmation-status>待确认</em></span>
         </div>
@@ -1318,23 +1322,8 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
             </button>
           </div>
-          <fieldset>
-            <legend id="queryConfirmationTitle">本次华东区销售额趋势按什么口径统计？</legend>
-            <label class="query-confirmation-option">
-              <span class="query-confirmation-number" aria-hidden="true">1</span>
-              <span>实收金额 <small>推荐 · 用于看实际回款</small></span>
-              <input type="radio" name="salesMetric" value="received" />
-            </label>
-            <label class="query-confirmation-option">
-              <span class="query-confirmation-number" aria-hidden="true">2</span>
-              <span>下单金额 <small>用于看订单规模</small></span>
-              <input type="radio" name="salesMetric" value="ordered" />
-            </label>
-            <label class="query-confirmation-option">
-              <span class="query-confirmation-number" aria-hidden="true">3</span>
-              <span>取消本次查询</span>
-              <input type="radio" name="salesMetric" value="cancelled" />
-            </label>
+          <fieldset id="queryConfirmationOptions">
+            <legend id="queryConfirmationTitle">请确认本次查询范围</legend>
           </fieldset>
           <div class="query-confirmation-footer">
             <label class="query-confirmation-reply">
@@ -1351,7 +1340,7 @@
         </form>
         <div class="input-card">
           <div class="input-main">
-            <div class="theme-line">当前主题：<strong>销售分析</strong></div>
+            <div class="theme-line">当前主题：<strong id="composerThemeText">销售分析</strong></div>
             <div id="referencePreviewList" class="reference-preview-list hidden"></div>
             <div id="attachmentPreviewList" class="attachment-preview-list hidden"></div>
             <div id="followupContextChip" class="followup-chip hidden">
@@ -1431,12 +1420,12 @@
       <div class="context-header">
         <h3>分析主题</h3>
         <div class="theme-multi-select" id="themeSelectDropdown">
-          <button type="button" class="theme-select-trigger" id="themeSelectTrigger" aria-haspopup="listbox" aria-expanded="false" onclick="toggleThemeDropdown(event)">
+          <button type="button" class="theme-select-trigger" id="themeSelectTrigger" aria-controls="themeSelectOptions" aria-expanded="false" onclick="toggleThemeDropdown(event)">
             <svg class="theme-select-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h7"/></svg>
             <span id="themeSelectText">销售分析</span>
             <svg class="theme-select-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
           </button>
-          <div class="theme-select-menu hidden" id="themeSelectOptions" role="listbox" aria-multiselectable="true"></div>
+          <div class="theme-select-menu hidden" id="themeSelectOptions" role="group" aria-label="选择分析主题"></div>
         </div>
       </div>
       <div class="context-scroll">
@@ -1681,7 +1670,8 @@
   <script src="../../assets/js/dashboard-assets.js?v=20261118"></script>
   <script src="../../assets/js/common.js?v=20261110-keyword-highlight"></script>
   <script src="../../assets/js/skill-template-sample.js?v=20260911"></script>
-    <script src="../../assets/js/skill-workflow-store.js?v=20261119-cn-variables"></script>
+    <script src="../../assets/js/analysis-theme.js?v=20261119-execution-theme"></script>
+    <script src="../../assets/js/skill-workflow-store.js?v=20261119-execution-theme"></script>
   <script src="../../assets/js/skill-picker.js?v=20260914-skill-copy"></script>
   <script src="../../assets/js/scheduled-task-form.js?v=20260914-skill-copy"></script>
   <script src="../../assets/js/report-reference.js?v=20261109-ppt-report"></script>
@@ -1705,6 +1695,6 @@
   <script src="../../assets/js/smart-query-context.js?v=20261118-natural-dialogue"></script>
   <script src="../../assets/js/query-attachments.js?v=20261116-remove-icon"></script>
   <script src="../../assets/js/indicator-chat.js?v=20261118-natural-dialogue"></script>
-  <script src="../../assets/js/smart-query.js?v=20261119-cn-variables"></script>
+  <script src="../../assets/js/smart-query.js?v=20261119-theme-checkboxes"></script>
 </body>
 </html>
