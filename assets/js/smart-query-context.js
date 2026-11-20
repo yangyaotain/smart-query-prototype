@@ -232,7 +232,7 @@
       <dl><div><dt>同义词</dt><dd>${escape(item.synonyms || '暂无同义词')}</dd></div><div><dt>说明</dt><dd>${escape(item.desc || '暂无说明')}</dd></div>
       ${item.kind === 'metric' ? `<div><dt>相关维度</dt><dd class="sq-context-detail-tags">${dimensions.length ? dimensions.map((name) => `<span>${escape(name)}</span>`).join('') : '暂无相关维度'}</dd></div>` : ''}</dl>
       <div class="sq-context-detail-example"><span class="sq-context-example-label">示例问法</span><p>${escape(item.example || '暂无示例')}</p></div>
-      <p class="sq-context-insert-hint">双击名称插入问题${item.kind === 'metric' ? '；可在会话中直接描述指标维护要求。' : ''}</p>`;
+      <p class="sq-context-insert-hint">${item.kind === 'metric' ? '双击指标名称即可填入提问框。' : '双击维度名称即可填入提问框。'}</p>`;
     card.hidden = false;
     const anchor = row.getBoundingClientRect();
     const width = card.getBoundingClientRect().width;
