@@ -7,7 +7,8 @@
   <link rel="stylesheet" href="../../assets/css/admin.css">
   <link rel="stylesheet" href="../../assets/css/knowledge-skill.css">
   <link rel="stylesheet" href="../../assets/css/sql-editor.css?v=20260916-theme-fix">
-  <link rel="stylesheet" href="../../assets/css/skill-workflow.css?v=20261119-execution-theme">
+  <link rel="stylesheet" href="../../assets/css/query-attachments.css?v=20261123-skill-chat">
+  <link rel="stylesheet" href="../../assets/css/skill-workflow.css?v=20261123-reply-hover">
 </head>
 <body>
   <div class="admin-shell sw-content-shell">
@@ -50,7 +51,24 @@
             <div class="sw-config-scroll" id="swConfigScroll">
               <section class="sw-config-information"><div class="sw-section-title"><h3>配置信息</h3></div><div id="swConfigFields"></div></section>
               <section class="sw-section sw-test"><div class="sw-section-title"><h3>结果预览</h3><button type="button" class="primary-btn sw-button" id="swRun"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4v16l12-8L8 4"/></svg><span id="swRunText">测试</span></button></div><div id="swTestStatus" class="sw-execution-trace" role="status" aria-live="polite"></div><div id="swResult" class="sw-result" aria-live="polite"><div class="sw-empty">测试后在这里预览回填结果</div></div></section>
-              <section class="sw-section sw-ai"><div class="sw-section-title"><h3>AI 对话调整</h3></div><div id="swChat" class="sw-chat" role="log" aria-live="polite"></div><div class="sw-ai-compose"><textarea id="swAIInput" rows="3" maxlength="1200" placeholder="说明测试结果哪里不对，AI 将修改上方配置…" aria-label="AI 修改要求"></textarea><div><span>Ctrl + Enter 发送</span><button type="button" class="primary-btn sw-button" id="swAISend"><svg viewBox="0 0 24 24"><path d="M3 3l18 9-18 9 4-9-4-9M7 12h14"/></svg>发送</button></div></div></section>
+              <section class="sw-section sw-ai" aria-labelledby="swAITitle">
+                <div class="sw-section-title"><h3 id="swAITitle">AI 对话调整</h3></div>
+                <div id="swChat" class="sw-chat" role="log" aria-live="polite" tabindex="0" aria-label="配置调整消息"></div>
+                <div class="sw-ai-compose">
+                  <div id="attachmentPreviewList" class="attachment-preview-list hidden" aria-label="待发送附件"></div>
+                  <textarea id="swAIInput" rows="2" maxlength="1200" aria-label="AI 修改要求" aria-describedby="swAIHint" disabled></textarea>
+                  <div class="sw-ai-toolbar">
+                    <div class="sw-ai-tools">
+                      <button type="button" class="ghost-btn sw-button" id="swAIImage" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5C4 5.1 5.1 4 6.5 4h11C18.9 4 20 5.1 20 6.5v11c0 1.4-1.1 2.5-2.5 2.5h-11C5.1 20 4 18.9 4 17.5v-11Z"/><path d="M7 16l3.2-3.3 2.2 2.2 2.5-3.1L18 16H7Z M8.5 8.8h.01"/></svg>图片</button>
+                      <button type="button" class="ghost-btn sw-button" id="swAIFile" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 12.8l5.7-5.7a3 3 0 0 1 4.2 4.2l-7.1 7.1a5 5 0 0 1-7.1-7.1l7.4-7.4"/></svg>附件</button>
+                    </div>
+                    <span class="sw-ai-hint" id="swAIHint">Enter 发送 · Shift + Enter 换行</span>
+                    <button type="button" class="primary-btn sw-button" id="swAISend" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.2L20.2 4.8M20.2 4.8L14.8 20.4L11.4 13.1L4.5 9.8L20.2 4.8Z"/></svg><span>发送</span></button>
+                  </div>
+                  <input id="swAIImageInput" type="file" accept="image/*" multiple hidden>
+                  <input id="swAIFileInput" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt" multiple hidden>
+                </div>
+              </section>
             </div>
             <div class="sw-config-footer"><button type="button" class="secondary-btn sw-button" id="swSave"><svg viewBox="0 0 24 24"><path d="M5 3h12l4 4v14H3V3h2M7 3v6h10V3M7 21v-8h10v8"/></svg>保存配置</button><button type="button" class="primary-btn sw-button" id="swConfirmPart" disabled><svg viewBox="0 0 24 24"><path d="M5 12l4 4L20 5"/></svg>确认此项</button><button type="button" class="ghost-btn sw-button" id="swNext"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>下一未确认项</button><button type="button" class="sw-link sw-danger sw-button sw-delete-action" id="swDeletePart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M5 6l1 15h12l1-15M9 6V3h6v3"/></svg>删除此项</button></div>
           </section>
@@ -58,6 +76,37 @@
       </section>
     </main>
   </div>
+  <div id="attachmentPreviewOverlay" class="attachment-preview-overlay hidden" data-file-preview="../business/query-attachment-preview.html">
+    <section class="attachment-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="attachmentPreviewName" aria-describedby="attachmentPreviewMeta">
+      <header class="attachment-preview-head">
+        <div class="attachment-preview-title"><h3 id="attachmentPreviewName">文件预览</h3><p id="attachmentPreviewMeta">只读预览</p></div>
+        <div class="attachment-preview-actions">
+          <button class="ghost-btn sw-button" type="button" data-preview-action="download"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M5 16v5h14v-5"/></svg>下载文件</button>
+          <button class="ghost-btn sw-button" type="button" data-preview-action="close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>关闭</button>
+        </div>
+      </header>
+      <div id="attachmentPreviewContent" class="attachment-preview-content"></div>
+      <footer id="attachmentImageTools" class="attachment-image-tools hidden">
+        <button class="ghost-btn sw-button" type="button" data-preview-action="previous"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg>上一张</button>
+        <output id="attachmentImageCount" aria-label="图片序号">1 / 1</output>
+        <button class="ghost-btn sw-button" type="button" data-preview-action="next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg>下一张</button>
+        <button class="ghost-btn sw-button" type="button" data-preview-action="zoom-out"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5M7 10h6"/></svg>缩小</button>
+        <output id="attachmentZoomValue" aria-live="polite">100%</output>
+        <button class="ghost-btn sw-button" type="button" data-preview-action="zoom-in"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5M7 10h6m-3-3v6"/></svg>放大</button>
+        <button class="ghost-btn sw-button" type="button" data-preview-action="reset"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11a8 8 0 1 1 2 6M4 5v6h6"/></svg>还原</button>
+      </footer>
+    </section>
+  </div>
+  <template id="swAIQuestionEditTemplate">
+    <form class="sw-chat-edit">
+      <textarea rows="3" maxlength="1200" required aria-label="编辑问题"></textarea>
+      <p>按当前配置重新处理，已保存的问答会保留。</p>
+      <div class="sw-chat-edit-actions">
+        <button type="button" class="ghost-btn sw-button" data-sw-chat-action="cancel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>取消</button>
+        <button type="submit" class="primary-btn sw-button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11a8 8 0 1 1 2 6M4 5v6h6"/></svg>重新发送</button>
+      </div>
+    </form>
+  </template>
   <script src="../../assets/js/common.js?v=20261110-keyword-highlight"></script>
   <script src="../../assets/js/skill-template-sample.js?v=20260911"></script>
   <script src="../../assets/js/analysis-theme.js?v=20261119-execution-theme"></script>
@@ -67,6 +116,7 @@
   <script src="../../assets/js/skill-template-io.js?v=20260914-outline"></script>
   <script src="../../assets/js/skill-workflow-ui.js?v=20261119-cn-variables"></script>
   <script src="../../assets/js/sql-editor.js?v=20261119-cn-variables"></script>
-  <script src="../../assets/js/skill-workflow-content.js?v=20261119-execution-theme"></script>
+  <script src="../../assets/js/query-attachments.js?v=20261123-skill-chat"></script>
+  <script src="../../assets/js/skill-workflow-content.js?v=20261123-reply-hover"></script>
 </body>
 </html>

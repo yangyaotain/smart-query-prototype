@@ -9,6 +9,7 @@ window.QueryAttachments = (() => {
   const scripts = new Map();
   const isFilePage = document.body?.dataset.attachmentFilePage === "true";
   const previewTabs = new Map();
+  const uploadSession = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   let sequence = 0;
   let activeFiles = [];
   let activeIndex = 0;
@@ -26,7 +27,7 @@ window.QueryAttachments = (() => {
   const typeLabel = (file) => file.type === "image" ? "图片" : ({ docx: "Word", doc: "Word", xlsx: "Excel", xls: "Excel", pptx: "PPT", ppt: "PPT" }[extension(file)] || extension(file).toUpperCase());
 
   function register(file) {
-    if (!file.id) file.id = `query-attachment-${++sequence}`;
+    if (!file.id) file.id = `query-attachment-${uploadSession}-${++sequence}`;
     if (!files.has(file.id)) files.set(file.id, file);
     return files.get(file.id);
   }
@@ -75,11 +76,18 @@ window.QueryAttachments = (() => {
       chip.appendChild(remove);
       list.appendChild(chip);
     });
+    list.dispatchEvent(new Event("attachmentschange"));
   }
 
   function clearPending(discard = false) {
     if (discard) pending.forEach((file) => { URL.revokeObjectURL(file.url); files.delete(file.id); });
     pending.clear();
+    renderPending();
+  }
+
+  function restorePending(attachments) {
+    pending.clear();
+    attachments.forEach((file) => pending.set(file.id, register(file)));
     renderPending();
   }
 
@@ -127,7 +135,8 @@ window.QueryAttachments = (() => {
     // 在点击调用栈内同步开页，上传的 File 等新页就绪后再结构化传递。
     const token = `${Date.now()}-${++sequence}`;
     const query = file.file ? `transfer=${encodeURIComponent(token)}` : `file=${encodeURIComponent(file.id)}`;
-    const tab = window.open(`query-attachment-preview.html?${query}`, "_blank");
+    const page = overlay.dataset.filePreview || "query-attachment-preview.html";
+    const tab = window.open(`${page}?${query}`, "_blank");
     if (tab && file.file) {
       for (const [key, entry] of previewTabs) if (entry.tab.closed) previewTabs.delete(key);
       previewTabs.set(token, { tab, file });
@@ -389,5 +398,5 @@ window.QueryAttachments = (() => {
       if (file?.type === "file") showFile(file); else missing();
     }
   }
-  return { add, clearPending, getPending: () => Array.from(pending.values()), renderMessage, close, scenarios, comparisonFile, parseCsv };
+  return { add, clearPending, restorePending, getPending: () => Array.from(pending.values()), get: (id) => files.get(id), renderMessage, close, scenarios, comparisonFile, parseCsv };
 })();

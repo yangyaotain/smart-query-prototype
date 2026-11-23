@@ -1,6 +1,7 @@
 (function () {
   'use strict';
   const Store = window.SkillCatalogStore, UI = window.SkillWorkflowUI, IO = window.SkillTemplateIO;
+  const Attachments = window.QueryAttachments;
   const { esc, button, message } = UI;
   const $ = (id) => document.getElementById(id);
   const id = new URLSearchParams(location.search).get('id');
@@ -9,8 +10,15 @@
   let activeSqlId = '';
   const positionedSqlInputs = new WeakSet();
   let singleTest = null, globalTest = null, lastGlobalTestStatus = '';
+  let aiRun = null, aiFailure = null;
+  let lockedConfigControls = [];
+  const aiComposerDrafts = new Map();
+  const aiQuestions = new WeakMap();
+  const aiReplies = new WeakMap();
+  const questionClock = new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
   const executionRuns = new Map();
   const runIcon = 'M8 4v16l12-8L8 4', stopIcon = 'M7 7h10v10H7z';
+  const sendIcon = 'M4.5 19.2L20.2 4.8M20.2 4.8L14.8 20.4L11.4 13.1L4.5 9.8L20.2 4.8Z';
   let searchTerm = '';
   let failurePanel = null, failureSearchTerm = '';
   let drawingMode = false, drag = null;
@@ -611,6 +619,13 @@
       trace.steps[4].detail = '输出内容校验通过';
     }
   }
+  function executionTraceMarkup({ state, title, meta, open, icon, steps }) {
+    const stepMarks = { success: '✓', error: '!', stopped: '■' };
+    return `<details class="sw-trace is-${state}" ${open ? 'open' : ''}>
+      <summary><span class="sw-trace-summary-icon" aria-hidden="true">${icon}</span><span class="sw-trace-summary-text">${title}</span><span class="sw-trace-summary-meta">${meta}</span><svg class="sw-trace-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>
+      <div class="sw-trace-body">${steps.map((step, index) => `<div class="sw-trace-step is-${step.status}"><span class="sw-trace-step-icon" aria-hidden="true">${step.status === 'waiting' ? index + 1 : stepMarks[step.status] || ''}</span><div><strong>${esc(step.label)}</strong>${step.detail ? `<small>${esc(step.detail)}</small>` : ''}</div></div>`).join('')}</div>
+    </details>`;
+  }
   function renderExecutionTrace() {
     const host = $('swTestStatus');
     if (!draft) { host.innerHTML = ''; return; }
@@ -624,7 +639,7 @@
     const meta = state === 'queued' || state === 'cancelled' ? `共 ${trace.steps.length} 个步骤` : state === 'running' || state === 'stopped' ? `${completed}/${trace.steps.length} 个步骤${trace.durationMs ? ` · ${durationText(trace.durationMs)}` : ''}` : state === 'error' ? `第 ${failedIndex + 1} 步 · ${durationText(trace.durationMs)}` : `${trace.steps.length} 个步骤${trace.durationMs ? ` · ${durationText(trace.durationMs)}` : ''}`;
     const open = trace.expanded ?? (state === 'running' || state === 'error');
     const summaryIcon = state === 'success' ? '✓' : state === 'error' || state === 'stale' ? '!' : state === 'stopped' || state === 'cancelled' ? '■' : '';
-    host.innerHTML = `<details class="sw-trace is-${state}" ${open ? 'open' : ''}><summary><span class="sw-trace-summary-icon">${summaryIcon}</span><span class="sw-trace-summary-text">${titles[state] || '执行过程'}</span><span class="sw-trace-summary-meta">${meta}</span><svg class="sw-trace-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary><div class="sw-trace-body">${trace.steps.map((step, index) => `<div class="sw-trace-step is-${step.status}"><span class="sw-trace-step-icon">${step.status === 'success' ? '✓' : step.status === 'error' ? '!' : step.status === 'stopped' ? '■' : step.status === 'waiting' ? index + 1 : ''}</span><div><strong>${esc(step.label)}</strong><small>${esc(step.detail || '')}</small></div></div>`).join('')}</div></details>`;
+    host.innerHTML = executionTraceMarkup({ state, title: titles[state] || '执行过程', meta, open, icon: summaryIcon, steps: trace.steps });
     host.querySelector('details').addEventListener('toggle', (event) => { trace.expanded = event.currentTarget.open; });
   }
   async function executePart(part, settings, parts, mode = 'single', control) {
@@ -896,8 +911,8 @@
     $('swConfigFields').innerHTML = (draft.type === 'analysis' ? `<div class="sw-field sw-analysis-sql" id="swAnalysisSql">${analysisSqlMarkup()}</div>` : `<div class="sw-field"><span>SQL 配置</span>${executionFields(draft)}${sqlEditor}${sqlVariableHelp()}</div>`) +
       field('提示词', 'prompt', draft.prompt, { textarea: true, rows: draft.type === 'analysis' ? 7 : draft.type === 'chart' ? 9 : 5 });
     refreshExecutionFields();
-    $('swAIInput').value = '';
-    $('swAIInput').placeholder = draft.type === 'metric' ? '例如：排除已取消订单，并保留两位小数' : draft.type === 'chart' ? '例如：改为横向柱状图，X轴显示成交金额，展示前10项并显示数据标签' : Store.usesGenerationDate(draft) ? '例如：将生成日期改为 YYYY-MM-DD 格式' : '例如：重点解释节资率下降，控制在 200 字以内';
+    $('swAIInput').dataset.example = draft.type === 'metric' ? '例如：排除已取消的订单' : draft.type === 'chart' ? '例如：按成交金额降序展示前 10 项' : Store.usesGenerationDate(draft) ? '例如：将生成日期改为 YYYY-MM-DD 格式' : '例如：重点解释节资率下降，控制在 200 字以内';
+    syncAIComposer();
     renderChat(); renderResult(); status();
   }
   function status() {
@@ -942,9 +957,202 @@
     }
     $('swResult').innerHTML = html;
   }
+  function groupChatTurns(messages) {
+    const turns = [];
+    for (const message of messages) {
+      const previous = turns.at(-1);
+      if (message.role === 'user') {
+        if (message.appended && previous && !previous.answer) previous.questions.push(message);
+        else turns.push({ questions: [message] });
+      } else if (message.role === 'assistant' && previous && !previous.answer) previous.answer = message;
+    }
+    return turns;
+  }
+  function chatThinkingMarkup(answer, runningOpen, replyOnly = false) {
+    const legacyStopped = answer?.text?.startsWith('已停止生成');
+    const thinking = answer?.thinking;
+    const state = answer ? thinking?.state || (legacyStopped ? 'stopped' : 'success') : 'running';
+    const changed = thinking?.changed ?? !answer?.text?.startsWith('已收到图片或附件');
+    const stateLabels = { running: '处理中', success: '已完成', stopped: '已停止', error: '失败' };
+    const stateIcons = { running: '', success: '✓', stopped: '■', error: '!' };
+    const meta = [stateLabels[state], thinking?.durationMs ? durationText(thinking.durationMs) : ''].filter(Boolean).join(' · ');
+    const rephrased = replyOnly || thinking?.regenerated;
+    const steps = rephrased ? [
+      { status: 'success', label: '读取本轮问题和答复' },
+      { status: state, label: '重新生成回复' }
+    ] : [
+      { status: 'success', label: '读取当前内容配置' },
+      { status: state, label: '整理本轮调整要求' }
+    ];
+    if (!rephrased && state === 'success') steps.push({ status: 'success', label: changed ? '保存配置调整' : '等待补充调整要求' });
+    return executionTraceMarkup({ state, title: '思考过程', meta, open: state === 'running' && runningOpen, icon: stateIcons[state], steps });
+  }
+  function chatCopyButton(action, title) {
+    return `<button type="button" class="sw-chat-action sw-button" data-sw-chat-action="${action}" title="${title}" aria-label="${title}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg></button>`;
+  }
+  function chatQuestionMarkup(question, isFirst) {
+    const sentAt = question.sentAt ? new Date(question.sentAt) : null;
+    const time = sentAt && Number.isFinite(sentAt.getTime()) ? `<time datetime="${sentAt.toISOString()}" title="${esc(sentAt.toLocaleString('zh-CN', { hour12: false }))}">${questionClock.format(sentAt)}</time>` : '';
+    const copy = isFirst && question.text ? chatCopyButton('copy', '复制问题') : '';
+    const edit = isFirst ? button('edit', '', `data-sw-chat-action="edit" title="编辑问题" aria-label="编辑问题"${busy ? ' disabled' : ''}`, 'sw-chat-action') : '';
+    return `<div class="sw-chat-question">
+      ${question.attachments?.length ? '<div class="sw-chat-attachments"></div>' : ''}
+      <div class="sw-chat-question-display">${question.text ? `<div class="sw-chat-bubble">${question.appended ? '<span class="sw-chat-guide">追加要求</span>' : ''}${esc(question.text)}</div>` : ''}${time || copy || edit ? `<div class="sw-chat-question-actions">${time}${copy}${edit}</div>` : ''}</div>
+    </div>`;
+  }
+  function chatReplyMarkup(answer, open, replyOnly = false) {
+    const thinking = chatThinkingMarkup(answer, open, replyOnly);
+    if (replyOnly) return `${thinking}<div class="sw-chat-reply-actions"><button type="button" class="sw-chat-action sw-button" data-sw-chat-action="stop-reply" title="停止生成" aria-label="停止生成"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${stopIcon}"/></svg></button></div>`;
+    if (!answer) return thinking;
+    return `${thinking}<div class="sw-chat-reply"><div class="sw-chat-answer${answer.thinking?.state === 'error' ? ' is-error' : ''}">${esc(answer.text)}</div>
+      <div class="sw-chat-reply-actions">${chatCopyButton('copy-reply', '复制回复')}${button('reset', '', `data-sw-chat-action="regenerate" title="重新生成" aria-label="重新生成"${busy ? ' disabled' : ''}`, 'sw-chat-action')}</div></div>`;
+  }
   function renderChat() {
-    $('swChat').innerHTML = draft.messages.length ? draft.messages.map((m) => `<div class="sw-chat-message is-${m.role}"><strong>${m.role === 'user' ? '你' : 'AI 助手'}</strong>${esc(m.text)}${m.context ? `<details><summary>本次携带的上下文</summary>${esc(m.context)}</details>` : ''}</div>`).join('') : '<div class="sw-chat-message is-assistant"><strong>AI 助手</strong>测试后可直接描述问题，我会基于当前内容项调整配置。修改后请重新测试并确认。</div>';
-    $('swChat').scrollTop = $('swChat').scrollHeight;
+    const chat = $('swChat');
+    const runningOpen = chat.querySelector('.sw-chat-turn.is-running .sw-trace')?.open ?? true;
+    const turns = groupChatTurns(draft?.messages || []);
+    if (aiRun && !aiRun.replyOnly) turns.push({ questions: aiRun.messages, running: true });
+    if (aiFailure) turns.push(aiFailure);
+    chat.innerHTML = turns.map(({ questions, answer, running }) => `<article class="sw-chat-turn${running ? ' is-running' : ''}">
+      <div class="sw-chat-user" role="group" aria-label="我的提问"><div class="sw-chat-questions">${questions.map((question, index) => chatQuestionMarkup(question, index === 0)).join('')}</div><span class="sw-chat-user-avatar" aria-hidden="true">我</span></div>
+      ${answer || running ? `<div class="sw-chat-assistant" role="group" aria-label="AI 助手"><span class="sw-chat-avatar" aria-hidden="true">AI</span><div class="sw-chat-response">${chatReplyMarkup(answer, runningOpen)}</div></div>` : ''}
+    </article>`).join('');
+    chat.querySelectorAll('.sw-chat-turn').forEach((row, index) => {
+      const turn = turns[index], reply = row.querySelector('.sw-chat-response');
+      if (turn.answer && reply) aiReplies.set(reply, turn);
+    });
+    const questions = turns.flatMap((turn) => turn.questions);
+    chat.querySelectorAll('.sw-chat-question').forEach((row, index) => {
+      const question = questions[index];
+      aiQuestions.set(row, question);
+      const slot = row.querySelector('.sw-chat-attachments');
+      if (!slot) return;
+      const available = [];
+      question.attachments.forEach((file) => {
+        const entry = Attachments.get(file.id);
+        if (entry) { available.push(entry); return; }
+        const label = document.createElement('div');
+        label.className = 'sw-chat-expired';
+        label.textContent = `${file.name}（请重新上传后预览）`;
+        slot.appendChild(label);
+      });
+      Attachments.renderMessage(slot, available);
+    });
+    if (!turns.length && draft) chat.innerHTML = '<p class="sw-chat-intro">可以描述测试结果的问题，或添加图片和附件说明调整要求。</p>';
+    chat.scrollTop = chat.scrollHeight;
+  }
+  function closeAIQuestionEdit(restoreFocus = false) {
+    const form = $('swChat').querySelector('.sw-chat-edit');
+    if (!form) return;
+    const row = form.parentElement;
+    form.remove();
+    row.querySelector('.sw-chat-question-display').classList.remove('hidden');
+    if (restoreFocus) row.querySelector('[data-sw-chat-action="edit"]').focus({ preventScroll: true });
+  }
+  function openAIQuestionEdit(row, question) {
+    closeAIQuestionEdit();
+    const form = $('swAIQuestionEditTemplate').content.firstElementChild.cloneNode(true);
+    const editor = form.querySelector('textarea');
+    editor.value = question.text || '';
+    row.querySelector('.sw-chat-question-display').classList.add('hidden');
+    row.appendChild(form);
+    editor.focus();
+    editor.setSelectionRange(editor.value.length, editor.value.length);
+  }
+  async function copyAIChatText(text, trigger, success) {
+    try {
+      await navigator.clipboard.writeText(text);
+      message(success);
+      return;
+    } catch { /* Use the selection fallback on local preview pages. */ }
+    const field = document.createElement('textarea');
+    field.className = 'sw-chat-copy-field';
+    field.value = text; field.tabIndex = -1; field.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(field);
+    let copied = false;
+    try { field.select(); copied = document.execCommand('copy'); }
+    catch { /* The browser may restrict clipboard access. */ }
+    finally { field.remove(); if (trigger.isConnected) trigger.focus({ preventScroll: true }); }
+    message(copied ? success : '复制失败，请手动复制');
+  }
+  function regeneratedReply(turn, durationMs) {
+    const { answer, questions } = turn;
+    const previous = answer.thinking;
+    const fields = previous?.fields || answer.text.match(/^已更新([^。]+)。/)?.[1] || '';
+    const unapplied = previous?.unapplied || ['stopped', 'error'].includes(previous?.state) || answer.text.startsWith('已停止生成');
+    let text = '已收到本轮附件。请说明希望调整的配置或期望的结果。';
+    if (unapplied) text = '本轮要求尚未写入配置。可以编辑原问题并重新发送，继续调整。';
+    else if (fields || previous?.changed) {
+      text = `本轮已保存${fields || '当前内容项'}的调整。请在【结果预览】重新测试，核对结果后点击【确认此项】。`;
+    } else if (questions.some((question) => question.text)) {
+      text = '请在【配置信息】核对本轮要求对应的配置，并在【结果预览】验证结果。';
+    }
+    return { role: 'assistant', text, thinking: { state: 'success', regenerated: true, changed: Boolean(fields || previous?.changed), fields, unapplied, durationMs } };
+  }
+  async function regenerateAIReply(turn, host, trigger) {
+    if (!draft || busy) return;
+    const partId = draft.id, index = draft.messages.indexOf(turn.answer);
+    const expectedHistory = JSON.stringify(draft.messages);
+    const control = createExecutionControl('ai-reply'), startedAt = Date.now();
+    const wasOpen = host.querySelector('.sw-trace').open;
+    const focusStop = document.activeElement === trigger;
+    const previousAnswer = turn.answer;
+    aiRun = { control, replyOnly: true };
+    lock(true);
+    host.innerHTML = chatReplyMarkup(null, true, true);
+    if (focusStop) host.querySelector('[data-sw-chat-action="stop-reply"]').focus({ preventScroll: true });
+    try {
+      if (!await waitForExecution(2400, control)) { message('已停止重新生成'); return; }
+      const reply = regeneratedReply(turn, Date.now() - startedAt);
+      if (index >= 0) {
+        skill = updateSkill((current) => {
+          const part = current.parts.find((item) => item.id === partId);
+          if (!part || JSON.stringify(part.messages) !== expectedHistory) throw new Error('对话已在其他窗口更新，请刷新后重新生成。');
+          part.messages[index] = reply;
+        });
+        draft.messages[index] = reply;
+      }
+      turn.answer = reply;
+    } catch (error) { fail(error); }
+    finally {
+      const restoreFocus = host.contains(document.activeElement) || document.activeElement === $('swAISend');
+      aiRun = null; lock(false);
+      host.innerHTML = chatReplyMarkup(turn.answer, false);
+      if (turn.answer === previousAnswer && wasOpen) host.querySelector('.sw-trace').open = true;
+      if (restoreFocus) host.querySelector('[data-sw-chat-action="regenerate"]').focus({ preventScroll: true });
+    }
+  }
+  function syncAIComposer() {
+    const input = $('swAIInput'), send = $('swAISend');
+    const hasText = Boolean(input.value.trim());
+    const replyOnly = !!aiRun?.replyOnly;
+    const stopping = !!aiRun && (replyOnly || !hasText);
+    const label = aiRun ? stopping ? '停止生成' : '追加' : '发送';
+    input.disabled = !draft || replyOnly || (busy && !aiRun);
+    input.placeholder = aiRun ? '可继续补充本轮调整要求…' : draft ? input.dataset.example || '' : '选择内容项后开始调整';
+    $('swAIImage').disabled = $('swAIFile').disabled = !draft || busy;
+    $('attachmentPreviewList').inert = busy;
+    send.disabled = !stopping && (input.disabled || (!aiRun && !hasText && !Attachments.getPending().length));
+    send.classList.toggle('is-stop-action', stopping);
+    send.querySelector('path').setAttribute('d', stopping ? stopIcon : sendIcon);
+    send.querySelector('span').textContent = label;
+    $('swAIHint').textContent = replyOnly ? '正在重新生成回复' : aiRun ? 'Enter 追加 · Shift + Enter 换行' : 'Enter 发送 · Shift + Enter 换行';
+    $('swChat').querySelectorAll('[data-sw-chat-action="edit"], [data-sw-chat-action="regenerate"], .sw-chat-edit [type="submit"]').forEach((control) => { control.disabled = busy; });
+  }
+  function switchAIComposer(partId) {
+    if (selectedId === partId) return;
+    const input = $('swAIInput');
+    if (selectedId && skill.parts.some((part) => part.id === selectedId)) {
+      aiComposerDrafts.set(selectedId, { text: input.value, attachments: Attachments.getPending() });
+    } else if (selectedId) Attachments.clearPending(true);
+    const saved = aiComposerDrafts.get(partId);
+    aiComposerDrafts.delete(partId);
+    input.value = saved?.text || '';
+    aiFailure = null;
+    Attachments.restorePending(saved?.attachments || []);
+  }
+  function revealAIComposer() {
+    $('swAIInput').closest('.sw-ai-compose').scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
   function saveDraft() {
     if (!draft || !dirty) return true;
@@ -974,9 +1182,10 @@
   function selectPart(partId, locate = true) {
     if (busy) return message('当前操作正在执行，请稍候。');
     if (!saveDraft()) return;
+    switchAIComposer(partId);
     selectedId = partId;
     draft = Store.clone(skill.parts.find((p) => p.id === partId));
-    ['swAISend', 'swSave', 'swNext', 'swDeletePart', 'swAIInput'].forEach((key) => $(key).disabled = false);
+    ['swSave', 'swNext', 'swDeletePart'].forEach((key) => $(key).disabled = false);
     renderFields(); renderIndex(); syncMarks();
     $('swConfigScroll').scrollTop = 0;
     if (locate) {
@@ -1013,9 +1222,12 @@
   function lock(value) {
     if (value && drawingMode) setDrawingMode(false);
     busy = value;
-    $('swConfigFields').querySelectorAll('input,textarea,select,button').forEach((el) => el.disabled = value);
-    ['swRun', 'swRunAll', 'swConfirmAll', 'swAISend', 'swSave', 'swAIInput', 'swNext', 'swDeletePart'].forEach((key) => $(key).disabled = value);
+    if (value) lockedConfigControls = [...$('swConfigFields').querySelectorAll(':is(input,textarea,select,button):enabled')];
+    lockedConfigControls.forEach((control) => { control.disabled = value; });
+    if (!value) lockedConfigControls = [];
+    ['swRun', 'swRunAll', 'swConfirmAll', 'swSave', 'swNext', 'swDeletePart'].forEach((key) => $(key).disabled = value);
     $('swDrawRegion').disabled = value || !documentReady;
+    syncAIComposer();
     status(); renderGlobalTest(); updateTestParamLock(); renderConfirmationStats();
   }
   async function test() {
@@ -1136,30 +1348,100 @@
       renderGlobalTest(); renderHeader(); syncMarks();
     }
   }
-  async function sendAI() {
-    const request = $('swAIInput').value.trim();
-    if (!request || !draft || busy || !saveDraft()) return;
-    const captured = Store.clone(draft);
-    const sqlContext = captured.type === 'analysis' ? Store.analysisQueries(captured).map((query) => `${query.name}（${query.unit || '无单位'} · ${executionDestination(query)}）：\n${query.sql}`).join('\n\n') : `${executionDestination(captured)}\n${captured.sql}`;
-    const context = `${captured.name}\nSQL：${sqlContext || '无'}\n提示词：${captured.prompt || '无'}\n参数：${JSON.stringify(params())}\n测试结果：${captured.result ? captured.result.ok ? captured.result.text : captured.result.error : '尚未测试'}\n数据口径：${captured.definition}`;
-    lock(true); $('swAIInput').value = '';
-    draft.messages.push({ role: 'user', text: request, context }); renderChat();
-    $('swChat').insertAdjacentHTML('beforeend', '<div class="sw-chat-message is-assistant">正在理解问题并修改配置…</div>');
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+  function handleAISend(fromKeyboard = false) {
+    const input = $('swAIInput'), request = input.value.trim();
+    if ($('swAISend').disabled) return;
+    if (!aiRun) { runAIAdjustment(request, Attachments.getPending()); return; }
+    if (aiRun.replyOnly || !request) {
+      if (!fromKeyboard) requestExecutionStop(aiRun.control);
+      return;
+    }
+    const sentAt = new Date();
+    aiRun.messages.push({ role: 'user', text: request, appended: true, sentAt: sentAt.toISOString() });
+    aiRun.finishAt = Math.max(aiRun.finishAt, sentAt.getTime() + 3000);
+    input.value = '';
+    syncAIComposer(); renderChat();
+    input.focus({ preventScroll: true });
+    revealAIComposer();
+  }
+  async function runAIAdjustment(request, attachments, { fromEdit = false } = {}) {
+    if (!draft || busy || !saveDraft()) return;
+    const { id: partId, revision } = draft;
+    const startedAt = Date.now();
+    const input = $('swAIInput');
+    const composerDraft = fromEdit ? { text: input.value, attachments: Attachments.getPending() } : null;
+    const run = {
+      control: createExecutionControl('ai'), finishAt: startedAt + 6000,
+      messages: [{ role: 'user', text: request, sentAt: new Date(startedAt).toISOString(), attachments: attachments.map(({ id, name }) => ({ id, name })) }]
+    };
+    aiRun = run; aiFailure = null;
+    input.value = ''; Attachments.clearPending();
+    lock(true); renderChat();
+    input.focus({ preventScroll: true });
+    revealAIComposer();
+    let updated = false;
     try {
-      const response = Store.aiEdit(captured, request, skill.promptVariables);
+      while (!run.control.stopRequested && run.finishAt > Date.now()) {
+        await waitForExecution(run.finishAt - Date.now(), run.control);
+      }
       skill = updateSkill((s) => {
-        const index = s.parts.findIndex((p) => p.id === captured.id);
-        if (index < 0 || s.parts[index].revision !== captured.revision) throw new Error('当前配置已变化，本次 AI 修改未写入，请重新发送。');
-        const messages = [...s.parts[index].messages, { role: 'user', text: request, context }, { role: 'assistant', text: response.reply }].slice(-20);
-        if (response.next) { s.parts[index] = { ...response.next, messages }; Store.invalidate(s, captured.id); }
-        else s.parts[index].messages = messages;
+        const part = s.parts.find((p) => p.id === partId);
+        if (!part) throw new Error('当前内容项已被删除，请刷新页面。');
+        const requests = run.messages.map((entry) => entry.text).filter(Boolean);
+        let reply = '已收到图片或附件。请补充要调整的配置或预期结果。';
+        if (run.control.stopRequested) reply = '已停止生成，本轮 AI 修改未写入配置。';
+        else if (requests.length) {
+          if (part.revision !== revision) throw new Error('当前配置已被其他窗口更新，请刷新后重新发送。');
+          const next = requests.reduce((configuration, text) => Store.aiEdit(configuration, text, s.promptVariables).next, part);
+          const changed = [next.sql !== part.sql && 'SQL', next.prompt !== part.prompt && '提示词', next.decimals !== part.decimals && '小数位'].filter(Boolean);
+          reply = `已更新${changed.join('、')}。请在【结果预览】点击【测试】，核对结果后点击【确认此项】。`;
+          Object.assign(part, next);
+          Store.invalidate(s, part.id);
+          updated = true;
+        }
+        const thinking = { state: run.control.stopRequested ? 'stopped' : 'success', changed: updated, durationMs: Date.now() - startedAt };
+        const history = [...part.messages, ...run.messages, { role: 'assistant', text: reply, thinking }];
+        const firstQuestion = history.findIndex((entry, index) => index >= history.length - 20 && entry.role === 'user' && !entry.appended);
+        part.messages = history.slice(firstQuestion === -1 ? part.messages.length : firstQuestion);
       });
       draft = Store.clone(skill.parts.find((p) => p.id === selectedId)); dirty = false;
+    } catch (error) {
+      updated = false;
+      aiFailure = {
+        questions: run.messages,
+        answer: { text: `本轮调整未完成。${error?.message || String(error)}`, thinking: { state: 'error', durationMs: Date.now() - startedAt } }
+      };
+      if (!fromEdit) {
+        input.value = [...run.messages.map((entry) => entry.text), input.value].filter(Boolean).join('\n');
+        Attachments.restorePending(attachments);
+      }
+    } finally {
+      const returnFocus = document.activeElement === $('swAISend');
+      if (composerDraft) {
+        input.value = [composerDraft.text, input.value].filter(Boolean).join('\n');
+        Attachments.restorePending(composerDraft.attachments);
+      }
+      aiRun = null;
+      lock(false);
+      if (returnFocus) input.focus({ preventScroll: true });
+    }
+    if (updated || draft.revision !== revision) {
       renderFields(); renderHeader(); renderIndex(); syncMarks();
-      if (response.next) message('AI 修改已保存，请重新测试；关联内容也需重新确认。');
-    } catch (e) { fail(e); draft = captured; renderChat(); $('swAIInput').value = request; }
-    finally { lock(false); }
+    } else { renderChat(); renderResult(); }
+    if (updated) message('AI 修改已保存，请重新测试当前内容项。');
+  }
+  function addAIUploads(files, type = '') {
+    if (!draft || busy || !files.length) return;
+    const accepted = $('swAIFileInput').accept.split(',');
+    let rejected = 0;
+    files.forEach((file) => {
+      const image = file.type.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp|svg|avif|ico|tiff?|heic)$/i.test(file.name);
+      const extension = file.name.match(/\.[^.]+$/)?.[0].toLowerCase();
+      if (!image && (type === 'image' || !accepted.includes(extension))) { rejected += 1; return; }
+      Attachments.add(image ? 'image' : 'file', file);
+    });
+    if (rejected < files.length) revealAIComposer();
+    if (rejected) message(`${rejected} 个文件格式暂不支持，请选择图片或支持的附件格式。`);
   }
   function confirmPart() {
     if (busy || !draft || dirty || $('swConfirmPart').disabled) return;
@@ -1211,13 +1493,15 @@
     };
   }
   function emptyPart() {
+    aiComposerDrafts.delete(selectedId);
     draft = null; selectedId = null; dirty = false;
     $('swPartType').textContent = ''; $('swPartTitle').textContent = '请选择内容项';
     $('swPartStatus').textContent = ''; $('swPartStatus').className = 'sw-status';
     $('swConfigFields').innerHTML = '<div class="sw-empty">点击“框选新增”，在文档中补充内容项。</div>';
     $('swResult').innerHTML = '<div class="sw-empty">选择标注项后测试并预览结果</div>';
-    $('swChat').innerHTML = ''; $('swTestStatus').innerHTML = ''; $('swAIInput').value = '';
-    ['swRun', 'swAISend', 'swSave', 'swNext', 'swDeletePart', 'swConfirmPart', 'swAIInput'].forEach((key) => $(key).disabled = true);
+    aiFailure = null; $('swTestStatus').innerHTML = ''; $('swAIInput').value = '';
+    Attachments.clearPending(true); renderChat(); syncAIComposer();
+    ['swRun', 'swSave', 'swNext', 'swDeletePart', 'swConfirmPart'].forEach((key) => $(key).disabled = true);
     renderGlobalTest();
   }
   function deletePart() {
@@ -1566,9 +1850,67 @@
   $('swLocateConfirmed').onclick = () => locateFirstByConfirmation(true);
   $('swLocateUnconfirmed').onclick = () => locateFirstByConfirmation(false);
   $('swFailureTrigger').onclick = () => failurePanel ? closeFailurePanel() : openFailurePanel();
-  $('swConfirmAll').onclick = confirmAllParts; $('swAISend').onclick = sendAI; $('swConfirmPart').onclick = confirmPart;
+  $('swConfirmAll').onclick = confirmAllParts; $('swAISend').onclick = () => handleAISend(); $('swConfirmPart').onclick = confirmPart;
   $('swDeletePart').onclick = deletePart;
-  $('swAIInput').onkeydown = (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); sendAI(); } };
+  $('swChat').addEventListener('click', (event) => {
+    const control = event.target.closest('[data-sw-chat-action]');
+    if (!control) return;
+    const action = control.dataset.swChatAction;
+    if (action === 'cancel') { closeAIQuestionEdit(true); return; }
+    if (action === 'stop-reply') { requestExecutionStop(aiRun?.control); return; }
+    const replyHost = control.closest('.sw-chat-response');
+    const turn = aiReplies.get(replyHost);
+    if (turn) {
+      if (action === 'copy-reply') copyAIChatText(turn.answer.text, control, '已复制回复');
+      if (action === 'regenerate') regenerateAIReply(turn, replyHost, control);
+      return;
+    }
+    const row = control.closest('.sw-chat-question');
+    const question = aiQuestions.get(row);
+    if (!question) return;
+    if (action === 'copy' && question.text) copyAIChatText(question.text, control, '已复制问题');
+    if (action === 'edit' && !busy) openAIQuestionEdit(row, question);
+  });
+  $('swChat').addEventListener('submit', (event) => {
+    const form = event.target;
+    if (!form.matches('.sw-chat-edit')) return;
+    event.preventDefault();
+    const question = aiQuestions.get(form.parentElement);
+    if (busy || !question) return;
+    const editor = form.querySelector('textarea'), request = editor.value.trim();
+    if (!request) { message('请输入问题'); editor.focus(); return; }
+    runAIAdjustment(request, question.attachments || [], { fromEdit: true });
+  });
+  $('swChat').addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || event.isComposing || !event.target.closest('.sw-chat-edit')) return;
+    event.preventDefault(); event.stopPropagation();
+    closeAIQuestionEdit(true);
+  });
+  $('swAIInput').oninput = syncAIComposer;
+  $('swAIInput').onkeydown = (event) => {
+    if (event.key !== 'Enter' || event.shiftKey || event.isComposing || event.keyCode === 229) return;
+    event.preventDefault();
+    handleAISend(true);
+  };
+  $('swAIInput').onpaste = (event) => {
+    const data = event.clipboardData;
+    if (!data) return;
+    const items = Array.from(data.items || []).filter((item) => item.kind === 'file').map((item) => item.getAsFile()).filter(Boolean);
+    const files = items.length ? items : Array.from(data.files || []);
+    if (!files.length) return;
+    event.preventDefault();
+    if (busy) { message('当前对话暂不能添加附件，请在本轮结束后粘贴。'); return; }
+    addAIUploads(files);
+  };
+  [['swAIImage', 'swAIImageInput', 'image'], ['swAIFile', 'swAIFileInput', 'file']].forEach(([buttonId, inputId, type]) => {
+    const input = $(inputId);
+    $(buttonId).onclick = () => input.click();
+    input.onchange = () => {
+      addAIUploads(Array.from(input.files || []), type);
+      input.value = '';
+    };
+  });
+  $('attachmentPreviewList').addEventListener('attachmentschange', syncAIComposer);
   $('swNext').onclick = () => {
     if (!saveDraft()) return;
     const start = skill.parts.findIndex((p) => p.id === selectedId);
