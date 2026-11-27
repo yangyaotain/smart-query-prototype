@@ -579,10 +579,11 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     ];
   }
   function isReady(s) {
-    return s.parseStatus === 'completed' && !!s.name?.trim() && !!s.desc?.trim() && !!s.category && !!s.userPrompt?.trim() && s.themes?.length > 0 && s.parts?.length > 0 && s.parts.every((p) => p.confirmed && p.prompt?.trim() && executionReady(executionSnapshot(p)));
+    return !s.analysisJob && s.parseStatus === 'completed' && !!s.name?.trim() && !!s.desc?.trim() && !!s.category && !!s.userPrompt?.trim() && s.themes?.length > 0 && s.parts?.length > 0 && s.parts.every((p) => p.confirmed && p.prompt?.trim() && executionReady(executionSnapshot(p)));
   }
   function normalizeSkill(source, onSqlMigration) {
     const result = clone(source);
+    result.contentVersion = Number.isInteger(result.contentVersion) && result.contentVersion > 0 ? result.contentVersion : 1;
     result.themes = Array.isArray(result.themes) ? result.themes : [];
     delete result.documentConfig;
     const previousTest = result.lastGlobalTest;

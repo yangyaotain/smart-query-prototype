@@ -14,9 +14,11 @@
 .ks-page .ks-table th,.ks-page .ks-table td { padding:14px 10px; }
 .ks-page .ks-table td:first-child { max-width:250px; }
 .ks-page .ks-table .ks-skill-cell strong,.ks-page .ks-table .ks-skill-cell span { max-width:220px; }
+.ks-skill-cell>.word-file-icon { justify-self:center; }
 .ks-page .ks-filter-bar { flex-wrap:wrap; }
 .sw-parse-cell { min-width:0; }
 .sw-parse-cell small { display:block; font-size:12px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:6px; }
+.sw-parse-cell small.sw-error { color:#c73838; }
 .sw-status { display:inline-flex; gap:5px; align-items:center; border-radius:5px; padding:4px 7px; font-size:12px; white-space:nowrap; }
 .sw-status.is-confirmed { color:#19845d; background:#effaf4; }
 .sw-status.is-enabled,.sw-status.is-disabled { min-width:70px; justify-content:center; padding:4px 9px; border:1px solid; font-weight:600; }
@@ -79,6 +81,10 @@
 .sw-import-form .sw-upload input { margin:0; padding:0; height:100%; }
 .sw-import-form .sw-help { margin:0; }
 .sw-import-form fieldset>.sw-help { margin-top:12px; }
+.sw-source-file-row { display:flex; align-items:center; justify-content:space-between; gap:14px; }
+.sw-source-file-row>span { display:flex; align-items:center; gap:8px; min-width:0; flex:1; }
+.sw-source-file-row>.sw-button { flex:none; }
+.sw-source-file strong { min-width:0; overflow-wrap:anywhere; color:var(--heading); font-weight:500; }
 .sw-upload.is-disabled { cursor:not-allowed; background:var(--surface,#f8fafc); border-color:var(--border); color:var(--muted); }
 .sw-upload.is-disabled input { cursor:not-allowed; }
 .sw-options label:has(input:disabled) { color:var(--muted); cursor:not-allowed; }

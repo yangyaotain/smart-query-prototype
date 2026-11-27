@@ -77,7 +77,7 @@
     if (xml.length > 8 * 1024 * 1024) throw new Error('模板内容过大，请精简后重新导入。');
     return { zip, documentXML: xmlDocument(xml, 'Word 内容读取失败，请另存文档后重新导入。') };
   }
-  async function parseFile(file, selectedThemes) {
+  async function parseFile(file, selectedThemes, variables) {
     if (!Array.isArray(selectedThemes) || !selectedThemes.length) throw new Error('请至少选择一个分析主题后再提交。');
     const available = Store.executionThemeOptions(selectedThemes).filter((theme) => theme.status !== 'disabled' && theme.database);
     if (available.length !== selectedThemes.length) throw new Error('所选分析主题已失效或未绑定执行库，请重新选择。');
@@ -90,7 +90,7 @@
     function addPart(part) {
       const procurement = /采购|成交|节资|供应商|招标|询比|谈判|闲废|三率/.test(`${part.name} ${part.sourceText}`);
       const matched = available.find((theme) => theme.tables.some((table) => table.name === 'procurement_transactions') && procurement);
-      const prepared = Store.preparePart({ ...part, source: 'uploaded', allowedThemes: [...selectedThemes], theme: matched?.name || selectedThemes[0], ...(!matched && part.type !== 'analysis' ? { sql: '', executionThemeId: '' } : {}) }, parts.length);
+      const prepared = Store.preparePart({ ...part, source: 'uploaded', allowedThemes: [...selectedThemes], theme: matched?.name || selectedThemes[0], ...(!matched && part.type !== 'analysis' ? { sql: '', executionThemeId: '' } : {}) }, parts.length, variables);
       if (part.type === 'analysis') prepared.prompt = `仅在${selectedThemes.join('、')}主题范围内，结合当前内容前文已配置的指标和图表结果分析。只使用已提供的数据，缺失依据时明确说明，不推断无依据的原因。控制在 200 字以内。`;
       parts.push(prepared);
     }
@@ -132,5 +132,16 @@
     const { zip, documentXML } = await readWord(file);
     return parseOutline(zip, documentXML);
   }
-  global.SkillTemplateIO = { put: (id, file) => fileAction(id, file), get: (id) => fileAction(id), remove: (id) => fileAction(id, null, true), parseFile, outline };
+  async function sourceFile(skill) {
+    if (skill.reportTemplate?.source === 'sample' && skill.reportTemplate.downloadUrl) {
+      const response = await fetch(skill.reportTemplate.downloadUrl);
+      if (!response.ok) throw new Error('原 Word 文件不可用，请重新导入模板。');
+      const buffer = await response.arrayBuffer();
+      return new File([buffer], skill.reportTemplate.name, { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    }
+    const file = await fileAction(skill.id);
+    if (!file) throw new Error('未找到原 Word 文件，请重新导入模板。');
+    return file;
+  }
+  global.SkillTemplateIO = { put: (id, file) => fileAction(id, file), get: (id) => fileAction(id), remove: (id) => fileAction(id, null, true), parseFile, outline, sourceFile };
 })(window);

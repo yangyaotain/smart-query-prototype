@@ -3,6 +3,7 @@
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const paths = { plus: 'M12 5v14M5 12h14', upload: 'M12 16V3M7 8l5-5 5 5M4 15v6h16v-6', back: 'M19 12H5M11 6l-6 6 6 6', save: 'M5 3h12l4 4v14H3V3h2M7 3v6h10V3M7 21v-8h10v8', edit: 'M14 5l5 5M4 20l4-1L21 6l-4-4L4 15v5', document: 'M6 3h9l4 4v14H6V3M14 3v5h5M9 12h7M9 16h7', run: 'M8 4v16l12-8L8 4', check: 'M5 12l4 4L20 5', close: 'M6 6l12 12M18 6L6 18', search: 'M21 21l-5-5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0', reset: 'M4 4v6h6M4 10a8 8 0 1 1 1 8', trash: 'M3 6h18M5 6l1 15h12l1-15M9 6V3h6v3', chat: 'M3 4h18v13H8l-5 4V4M7 9h10M7 13h6', eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0', send: 'M3 3l18 9-18 9 4-9-4-9M7 12h14', list: 'M8 6h13M8 12h13M8 18h13M3 6h1M3 12h1M3 18h1', download: 'M12 3v12M7 10l5 5 5-5M4 17v4h16v-4' };
   const icon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${paths[name] || paths.document}"/></svg>`;
+  const wordFileIcon = () => '<span class="word-file-icon" role="img" aria-label="Word 文档"><b>W</b></span>';
   const button = (name, text, attrs = '', style = 'ghost-btn') => `<button type="button" class="${style} sw-button" ${attrs}>${icon(name)}${text}</button>`;
   function message(error) { global.showToast(error?.message || String(error)); }
   let activeClose = null;
@@ -192,8 +193,9 @@
     const Store = global.SkillCatalogStore;
     const skill = Store.load().find((s) => s.id === id);
     if (!skill || skill.parseStatus !== 'completed') return message('请等待模板解析完成。');
+    if (skill.analysisJob) return message('技能正在重新分析，请完成后再修改基本信息。');
     if (skill.enabled) return message('请先停用技能，再修改基本信息。');
-    const form = `<form id="swBasicForm" class="sw-form"><div class="sw-note">名称、说明、分类与预置提示词由模板解析生成，可校正后保存。</div><label>技能名称 <em>*</em><input name="name" maxlength="60" required value="${esc(skill.name)}"></label><label>技能说明 <em>*</em><textarea name="desc" rows="3" maxlength="300" required>${esc(skill.desc)}</textarea></label><label>技能分类 <em>*</em><select name="category"><option ${skill.category === '经营报告' ? 'selected' : ''}>经营报告</option><option ${skill.category === '专项分析' ? 'selected' : ''}>专项分析</option></select></label><fieldset><legend>适用分析主题</legend><div class="ks-tag-list sw-theme-readonly">${skill.themes.map((theme) => `<span class="ks-tag">${esc(theme)}</span>`).join('') || '<span class="sw-muted">未设置适用分析主题</span>'}</div><small>新增技能时已确定，模板解析与内容配置仅使用此范围内的主题。</small></fieldset><div class="sw-prompt-field"><label id="swPromptLabel">业务端预置提示词 <em>*</em></label><div id="swPromptVariables" class="sw-prompt-variables" role="group" aria-label="插入提示词变量"></div><div id="swUserPrompt" class="sw-prompt-editor" contenteditable="true" tabindex="0" role="textbox" aria-multiline="true" aria-required="true" aria-labelledby="swPromptLabel" aria-describedby="swPromptHelp swPromptCount" data-placeholder="填写选中技能后自动填入的默认任务，可插入变量" spellcheck="true"></div><div id="swPromptCount" class="sw-prompt-count"></div><small id="swPromptHelp">浅蓝色变量可点击修改、删除，也可通过上方按钮插入。选中技能后整段填入业务端输入框，用户可以自由修改。</small></div></form>`;
+    const form = `<form id="swBasicForm" class="sw-form"><div class="sw-note">名称、说明、分类与预置提示词由模板解析生成，可校正后保存。</div><label>技能名称 <em>*</em><input name="name" maxlength="60" required value="${esc(skill.name)}"></label><label>技能说明 <em>*</em><textarea name="desc" rows="3" maxlength="300" required>${esc(skill.desc)}</textarea></label><label>技能分类 <em>*</em><select name="category"><option ${skill.category === '经营报告' ? 'selected' : ''}>经营报告</option><option ${skill.category === '专项分析' ? 'selected' : ''}>专项分析</option></select></label><fieldset><legend>适用分析主题</legend><div class="ks-tag-list sw-theme-readonly">${skill.themes.map((theme) => `<span class="ks-tag">${esc(theme)}</span>`).join('') || '<span class="sw-muted">未设置适用分析主题</span>'}</div><small>主题范围由模板分析确定，可在技能列表通过【重新分析】调整。</small></fieldset><div class="sw-prompt-field"><label id="swPromptLabel">业务端预置提示词 <em>*</em></label><div id="swPromptVariables" class="sw-prompt-variables" role="group" aria-label="插入提示词变量"></div><div id="swUserPrompt" class="sw-prompt-editor" contenteditable="true" tabindex="0" role="textbox" aria-multiline="true" aria-required="true" aria-labelledby="swPromptLabel" aria-describedby="swPromptHelp swPromptCount" data-placeholder="填写选中技能后自动填入的默认任务，可插入变量" spellcheck="true"></div><div id="swPromptCount" class="sw-prompt-count"></div><small id="swPromptHelp">浅蓝色变量可点击修改、删除，也可通过上方按钮插入。选中技能后整段填入业务端输入框，用户可以自由修改。</small></div></form>`;
     const { host, close } = modal('基本信息', skill.reportTemplate?.name || skill.name, form, button('back', '取消', 'data-close') + button('save', '保存配置', 'id="swBasicSave"', 'primary-btn'), { drawer: true });
     const prompt = promptEditor(host, skill);
     host.querySelector('#swBasicSave').onclick = () => {
@@ -205,6 +207,7 @@
         let updatedParts = 0;
         Store.update(id, (s) => {
           if (s.enabled) throw new Error('技能已启用，请先停用后再修改基本信息。');
+          if (s.analysisJob || s.contentVersion !== skill.contentVersion) throw new Error('技能已重新分析，请重新打开基本信息。');
           if (s.userPrompt !== skill.userPrompt || JSON.stringify(s.promptVariables) !== JSON.stringify(skill.promptVariables)) throw new Error('预置提示词已被其他窗口修改，请重新打开基本信息。');
           updatedParts = Store.updatePromptVariables(s, prompt.value(), prompt.variables());
           s.name = fd.get('name').trim(); s.desc = fd.get('desc').trim(); s.category = fd.get('category');
@@ -214,5 +217,5 @@
       } catch (e) { message(e); }
     };
   }
-  global.SkillWorkflowUI = { esc, icon, button, modal, basic, message };
+  global.SkillWorkflowUI = { esc, icon, wordFileIcon, button, modal, basic, message };
 })(window);

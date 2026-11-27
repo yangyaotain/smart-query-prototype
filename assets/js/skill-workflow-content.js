@@ -4,6 +4,10 @@
   const runtimeId = sessionStorage.getItem(Store.runtimeKey);
   window.addEventListener('pageshow', () => {
     if (sessionStorage.getItem(Store.runtimeKey) !== runtimeId) location.replace('knowledge-skill.html');
+    else if (skill) {
+      const latest = Store.load().find((item) => item.id === id);
+      if (!latest || latest.analysisJob || latest.contentVersion !== openedContentVersion) location.replace('knowledge-skill.html');
+    }
   });
   const Attachments = window.QueryAttachments;
   const { esc, button, message } = UI;
@@ -52,7 +56,8 @@
     return true;
   }
   try { skill = Store.load().find((s) => s.id === id); } catch (e) { fail(e); }
-  if (!skill || skill.parseStatus !== 'completed') {
+  const openedContentVersion = skill?.contentVersion;
+  if (!skill || skill.parseStatus !== 'completed' || skill.analysisJob) {
     $('swWorkbench').innerHTML = '<div class="sw-empty">当前技能不存在或模板尚未解析完成，请返回列表查看。</div>';
     return;
   }
@@ -63,6 +68,8 @@
   function updateSkill(mutate) {
     return Store.update(id, (current) => {
       if (current.enabled) throw new Error('技能已启用，请先停用后再修改内容配置。');
+      if (current.analysisJob) throw new Error('技能正在重新分析，请完成后返回列表查看。');
+      if (current.contentVersion !== openedContentVersion) throw new Error('内容已重新分析，请返回列表打开最新配置。');
       mutate(current);
     });
   }
@@ -1935,6 +1942,7 @@
     const next = Store.load().find((s) => s.id === id);
     if (!next) { message('技能已在其他窗口删除。'); location.href = 'knowledge-skill.html'; return; }
     if (next.enabled) { message('技能已启用，内容配置已关闭。'); location.href = 'knowledge-skill.html'; return; }
+    if (next.analysisJob || next.contentVersion !== openedContentVersion) { message('技能已重新分析，请从列表查看最新配置。'); location.href = 'knowledge-skill.html'; return; }
     skill = next; renderManualMarks(); renderTestContext();
     const current = skill.parts.find((p) => p.id === selectedId) || skill.parts[0];
     if (current) selectPart(current.id, false);
