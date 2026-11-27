@@ -722,6 +722,9 @@ const QUERY_CONFIRMATIONS = {
 };
 
 const HISTORY_SCENARIOS = {
+  scheduledTaskSuccess: { scheduledHistory: "success" },
+  scheduledTaskFailed: { scheduledHistory: "failed" },
+  scheduledTaskEdit: { scheduledHistory: "edit" },
   ...QueryAttachments.scenarios,
   indicatorCreate: { indicatorHistory: "create" },
   indicatorEdit: { indicatorHistory: "edit" },
@@ -1087,6 +1090,7 @@ function sideMenuAction(action) {
 
 function startEditSideTitle() {
   if (!activeSideItem) return;
+  const editedSideItem = activeSideItem;
   const titleEl = activeSideItem.querySelector("strong");
   if (!titleEl) return;
 
@@ -1102,7 +1106,18 @@ function startEditSideTitle() {
     const nextTitle = input.value.trim() || oldTitle;
     const nextStrong = document.createElement("strong");
     nextStrong.textContent = nextTitle;
+    nextStrong.title = nextTitle;
     input.replaceWith(nextStrong);
+    if (editedSideItem.dataset.scheduledConversation) {
+      const item = editedSideItem;
+      const old = window.ScheduledTaskStore.loadConversations()[item.dataset.scheduledConversation];
+      const kind = item.dataset.scheduledConversation === "conversation-sales-config" ? "edit" : item.dataset.scheduledTask === "task-weekday-customer" ? "failed" : "success";
+      const turns = conversationSnapshots.get(item) || old?.turns || window.ScheduledTaskChat.history(kind);
+      window.ScheduledTaskStore.saveConversation(item.dataset.scheduledConversation, {
+        title: nextTitle, type: item.querySelector("em").textContent, taskId: item.dataset.scheduledTask,
+        time: item.querySelector("em:last-child").textContent, turns: turns
+      });
+    }
     showToast("标题已保存");
   };
 
@@ -1126,6 +1141,7 @@ function openDeleteConfirm() {
 
 function confirmDelete() {
   if (activeSideItem) {
+    if (activeSideItem.dataset.scheduledConversation) window.ScheduledTaskStore.saveConversation(activeSideItem.dataset.scheduledConversation, { deleted: true });
     if (activeSideItem === activeConversationItem) {
       setActiveConversationItem(null);
       conversationChanged = false;
@@ -2031,7 +2047,7 @@ function buildSkillReportProfile(run) {
       progress: Object.entries({ metric: '指标', chart: '图表', analysis: '分析模块' }).map(([type, name]) => { const group = results.filter((r) => r.part.type === type); return [name, `${group.length ? Math.round(group.filter((r) => r.result.ok).length / group.length * 100) : 100}%`, '100%']; }),
       contributions: charts.map(({ part, result }) => { const max = Math.max(...result.rows.map((row) => row.value), 1); return [part.name, result.rows.map((row) => [row.category, String(row.value), `${row.value / max * 100}%`])]; }),
       tasks: {
-        summary: `已读取“${run.reportTemplate?.name || title}”及 ${run.contentParts.length} 项已确认配置。${bindings ? '本次查询参数为' + bindings + '。' : ''}以下为示例数据生成内容，Word 格式沿用原模板。`,
+        summary: `已读取“${run.reportTemplate?.name || title}”及 ${run.contentParts.length} 项已确认内容配置。${bindings ? '本次查询参数为' + bindings + '。' : ''}Word 格式沿用原模板。`,
         overview: analyses[0]?.result.text || metrics.map((r) => `${r.part.name}：${r.result.text}`).join('；'),
         risks: [1, 2, 3].map((i) => analyses[i]?.result.text || '当前模板没有更多对应分析内容。'),
         plans: [4, 5, 6].map((i) => analyses[i]?.result.text || '当前模板没有更多对应分析内容。')
@@ -2494,6 +2510,16 @@ function runQuestion(edit = null, options = {}) {
   };
   const ctx = context.followup;
   const previousIndicator = edit?.turn.indicator || questionTurns.get(currentChatMessage)?.indicator;
+  const indicatorIntent = /指标/.test(inputText) && !/定时任务|任务配置|这个任务/.test(inputText);
+  const indicatorConfirmation = previousIndicator && /^(确认|取消|按|保存)/.test(inputText);
+  if (!options.scheduled && !ctx && !context.references.length && !context.attachments?.length && !indicatorIntent && !indicatorConfirmation) {
+    const previous = getScheduledConversationPlan(edit);
+    const plan = window.ScheduledTaskChat.resolve(inputText, activeConversationItem?.dataset.scheduledTask, previous);
+    if (plan) {
+      presentScheduledTaskChange(inputText, plan, edit);
+      return;
+    }
+  }
   const indicatorRun = !context.references.length && (selectedSkillKey === "general" || edit?.turn.mode === "indicator")
     ? window.IndicatorChat?.resolve(inputText, previousIndicator, context.themes) : null;
   const previousSkill = edit?.turn.skillRun;
@@ -2837,7 +2863,7 @@ function renderCompletedQaHistory(scenario, options = {}) {
   const profile = applyQaResultProfile(scenario.question, scenario.salesScope);
   insightBox?.classList.remove("hidden");
   if (aiConclusion) {
-    aiConclusion.textContent = profile.text;
+    aiConclusion.textContent = scenario.scheduledRecord?.summary || profile.text;
     aiConclusion.classList.toggle("hidden", profile.tableOnly);
   }
   conclusionTags?.classList.toggle("hidden", profile.tableOnly);
@@ -3394,7 +3420,7 @@ queryConfirmationForm.addEventListener("keydown", (event) => {
 });
 reopenQueryConfirmation.addEventListener("click", () => setQueryConfirmationCollapsed(false));
 document.getElementById("historyList").addEventListener("keydown", (event) => {
-  const item = event.target.closest("[data-indicator-history], [data-query-confirmation-history]");
+  const item = event.target.closest("[data-indicator-history], [data-query-confirmation-history], [data-scheduled-history]");
   if (!item || event.isComposing || (event.key !== "Enter" && event.key !== " ")) return;
   event.preventDefault();
   item.click();
@@ -3404,6 +3430,14 @@ document.getElementById("historyList").addEventListener("keydown", (event) => {
 function renderCompletedHistoryTurn(scenario, options = {}) {
   prepareCompletedHistoryTurn(scenario);
   const turn = questionTurns.get(currentChatMessage);
+  if (turn.scheduledChange) {
+    insightBox.classList.add("hidden");
+    resultTitle.textContent = "定时任务配置";
+    resultTitle.nextElementSibling.textContent = "会话修改 · " + (turn.scheduledChange.draft?.name || "关联任务不可用");
+    window.ScheduledTaskChat.render(document.getElementById("scheduledTaskChatResult"), turn.scheduledChange);
+    return;
+  }
+  if (turn.scheduledRecord && renderScheduledRecordHistory(turn)) return;
   if (turn.mode === "indicator") {
     insightBox?.classList.add("hidden");
     resultTitle.nextElementSibling.textContent = turn.indicator.historyExample
@@ -3447,6 +3481,12 @@ function loadHistoryScenario(key, item) {
   if (isRevenueThemeExample || (themes && hasAllThemes(themes))) handleThemeChange(ALL_THEMES);
   if (snapshot) {
     renderHistoryTurnSequence(snapshot);
+    return;
+  }
+  if (scenario.scheduledHistory) {
+    const turns = window.ScheduledTaskChat.history(scenario.scheduledHistory);
+    conversationSnapshots.set(item, turns);
+    renderHistoryTurnSequence(turns);
     return;
   }
   if (scenario.indicatorHistory) {
@@ -3546,6 +3586,7 @@ function saveActiveConversation() {
   const current = questionTurns.get(currentChatMessage);
   if (current) turns.push(current);
   conversationSnapshots.set(activeConversationItem, turns);
+  persistScheduledConversation(turns);
   conversationChanged = false;
 }
 
@@ -3640,6 +3681,7 @@ function stopAnswerSimulation(notify = true) {
   isThinking = false;
   aiConclusion?.classList.remove("typing-cursor");
   showStoppedAnswer();
+  if (turn?.scheduledExecution) completeScheduledTrialRecord(turn.scheduledExecution, "本次试运行已停止，未生成完整分析结果。", turn);
   updateSendButton();
   if (notify) showToast("已停止生成");
 }
@@ -3649,6 +3691,8 @@ function finishAnswerSimulation() {
   isAnswering = false;
   isThinking = false;
   cancelAnswerWork();
+  const turn = questionTurns.get(currentChatMessage);
+  if (turn?.scheduledExecution) completeScheduledTrialRecord(turn.scheduledExecution, null, turn);
   updateSendButton();
 }
 
@@ -3831,7 +3875,9 @@ function scheduleThinkingCompletion(turn, at) {
 
 function resetAnswerSimulation() {
   if (!thinkingBox || !resultCard) return;
+  currentChatMessage.querySelector(".schedule-trial-context")?.remove();
   document.getElementById("indicatorChatResult")?.classList.add("hidden");
+  document.getElementById("scheduledTaskChatResult")?.classList.add("hidden");
   stopThinkingElapsedTimer();
   thinkingElapsedSeconds = 0;
   updateThinkingElapsed();
@@ -3845,7 +3891,7 @@ function resetAnswerSimulation() {
   resultCard.classList.remove("is-confirmation-result");
   qaChartHeading.textContent = defaultQaChartHeading;
   aiConclusion.textContent = "";
-  aiConclusion.classList.remove("typing-cursor", "hidden", "attachment-preview-summary");
+  aiConclusion.classList.remove("typing-cursor", "hidden", "attachment-preview-summary", "scheduled-record-message", "is-failed");
   insightBox?.classList.remove("hidden");
   conclusionTags.classList.add("hidden");
   resultViewToolbar.classList.add("hidden");
@@ -8035,8 +8081,126 @@ ${body}
 }
 
 // ============== 定时任务衔接 ==============
-const SCHEDULED_TASK_STORE_KEY = "smart-query-scheduled-tasks-v1";
-const SCHEDULED_CONVERSATION_KEY = "smart-query-scheduled-conversation";
+const scheduledTaskStore = window.ScheduledTaskStore;
+window.ScheduledTaskChat.configure({ themes: themeOptionNames });
+
+function getScheduledConversationPlan(edit) {
+  if (edit?.turn.scheduledChange) return edit.turn.scheduledChange;
+  const turns = getArchivedQuestionTurns();
+  const current = questionTurns.get(currentChatMessage);
+  if (current) turns.push(current);
+  return turns.reverse().find(turn => turn.scheduledChange)?.scheduledChange || null;
+}
+
+function persistScheduledConversation(turns) {
+  const item = activeConversationItem;
+  if (!item?.dataset.scheduledConversation) return;
+  const tasks = window.ScheduledTaskStore.load();
+  const storedTurns = turns.map(turn => {
+    const execution = turn.scheduledExecution;
+    if (!execution) return turn;
+    const task = tasks.find(task => task.id === execution.taskId);
+    const record = task?.records.find(record => record.id === execution.recordId);
+    return record ? window.ScheduledTaskChat.recordTurn(task, record) : turn;
+  });
+  window.ScheduledTaskStore.saveConversation(item.dataset.scheduledConversation, {
+    title: item.querySelector("strong").textContent, type: item.querySelector("em").textContent,
+    taskId: item.dataset.scheduledTask, time: item.querySelector("em:last-child").textContent, turns: storedTurns
+  });
+}
+
+function hydrateScheduledConversations() {
+  const list = document.getElementById("historyList");
+  const saved = scheduledTaskStore.loadConversations();
+  Object.entries(saved).forEach(([id, data]) => {
+    let item = Array.from(list.querySelectorAll("[data-scheduled-conversation]")).find(node => node.dataset.scheduledConversation === id);
+    if (data.deleted) { item?.remove(); return; }
+    if (!Array.isArray(data.turns) || !data.turns.length) return;
+    if (!item) {
+      item = document.createElement("div");
+      item.className = "history-item";
+      item.setAttribute("role", "button"); item.tabIndex = 0;
+      item.innerHTML = '<strong></strong><span><em></em><em></em></span>';
+      item.addEventListener("click", () => loadHistoryScenario(null, item));
+      item.addEventListener("contextmenu", event => openSideMenu(event, "history"));
+      const anchor = list.querySelector(".history-item.pinned") || list.querySelector(".group-title");
+      if (anchor) anchor.insertAdjacentElement("afterend", item); else list.prepend(item);
+    }
+    item.dataset.scheduledHistory = "";
+    item.dataset.scheduledTask = data.taskId || "";
+    item.dataset.scheduledConversation = id;
+    item.querySelector("strong").textContent = data.title;
+    item.querySelector("strong").title = data.title;
+    item.querySelector("em").textContent = data.type;
+    item.querySelector("em:last-child").textContent = data.time || "刚刚";
+    conversationSnapshots.set(item, data.turns);
+  });
+  filterSideHistory();
+}
+
+function presentScheduledTaskChange(text, plan, edit) {
+  closeQuestionEditor();
+  const previous = getScheduledConversationPlan(edit);
+  if (edit && edit.message !== currentChatMessage) {
+    resetChat();
+  } else if (previous && ['pending', 'invalid'].includes(previous.status)) {
+    previous.status = 'superseded';
+    answerBlock.querySelectorAll('[data-scheduled-token]').forEach(card => {
+      if (card.dataset.scheduledToken === previous.token) window.ScheduledTaskChat.render(card, previous);
+    });
+  }
+  if (!activeConversationItem) createConversationItem("调整" + (plan.draft?.name || "定时任务配置"), "定时任务 · 配置修改");
+  if (plan.taskId) activeConversationItem.dataset.scheduledTask = plan.taskId;
+  if (!activeConversationItem.dataset.scheduledConversation) activeConversationItem.dataset.scheduledConversation = "scheduled-chat-" + Date.now() + "-" + Math.random().toString(16).slice(2, 8);
+  activeConversationItem.dataset.scheduledHistory = "";
+  if (plan.confirmRequested) window.ScheduledTaskChat.confirm(plan, activeConversationItem.dataset.scheduledConversation);
+  if (!edit || edit.message !== currentChatMessage) archiveCurrentMessageIfNeeded();
+  const turn = {
+    question: text, sentAt: new Date().toISOString(), mode: "scheduled", taskId: plan.taskId,
+    context: { themes: [plan.draft?.theme || "销售分析"], references: [], attachments: [], followup: null },
+    guides: [], scheduledChange: plan
+  };
+  renderCompletedHistoryTurn(turn);
+  setQuestionEditorContent(""); clearFollowupContext(); QueryAttachments.clearPending();
+  conversationChanged = true;
+  saveActiveConversation();
+  focusQuestionComposer(); scrollToAnswerBottom();
+  if (plan.status === "saved") showToast("任务配置已更新");
+}
+
+function openScheduledTaskConfiguration(taskId) {
+  const task = scheduledTaskStore.load().find(task => task.id === taskId);
+  if (!task) { showToast("该任务已删除，请返回任务列表查看"); return; }
+  const previous = getScheduledConversationPlan();
+  const continuing = previous?.taskId === task.id && ['pending', 'invalid'].includes(previous.status) && window.ScheduledTaskChat.equal(task, previous.base);
+  const basePlan = continuing ? previous : null;
+  const item = activeConversationItem;
+  window.ScheduledTaskForm.open({
+    mode: "edit", themes: themeOptionNames,
+    initial: { ...task, ...(continuing ? previous.draft : {}), records: task.records },
+    onSave: draft => {
+      if (activeConversationItem !== item) return;
+      const plan = window.ScheduledTaskChat.fromForm(task.id, draft, basePlan);
+      plan.confirmRequested = true;
+      presentScheduledTaskChange("修改“" + task.name + "”的任务配置并保存。", plan);
+    }
+  });
+}
+
+answerBlock.addEventListener("click", event => {
+  const button = event.target.closest("[data-scheduled-action]");
+  if (!button || isAnswering || replayingHistory || hasPendingQueryConfirmation()) return;
+  const action = button.dataset.scheduledAction;
+  if (action === "list") { saveActiveConversation(); goTo("scheduled-tasks.html"); return; }
+  const message = button.closest(".chat-message");
+  const turn = questionTurns.get(message);
+  const taskId = turn?.taskId || turn?.scheduledChange?.taskId || turn?.scheduledExecution?.taskId || activeConversationItem?.dataset.scheduledTask;
+  if (action === "edit") { openScheduledTaskConfiguration(taskId); return; }
+  if (message !== currentChatMessage || !turn?.scheduledChange || !['pending', 'invalid'].includes(turn.scheduledChange.status)) return;
+  const text = action === "confirm" ? "确认修改" : "取消修改";
+  const plan = window.ScheduledTaskChat.resolve(text, taskId, turn.scheduledChange);
+  if (plan) presentScheduledTaskChange(text, plan);
+});
 
 function getScheduledTaskDraft() {
   const composerPrompt = readQuestionEditorText().trim();
@@ -8058,16 +8222,9 @@ function getScheduledTaskDraft() {
 }
 
 function saveScheduledTaskFromComposer(task) {
-  let tasks = [];
-  try {
-    const stored = JSON.parse(localStorage.getItem(SCHEDULED_TASK_STORE_KEY) || "[]");
-    tasks = Array.isArray(stored) ? stored : [];
-    tasks.unshift(task);
-    localStorage.setItem(SCHEDULED_TASK_STORE_KEY, JSON.stringify(tasks));
-  } catch (error) {
-    showToast("定时任务创建失败，请稍后重试");
-    return;
-  }
+  const tasks = scheduledTaskStore.load();
+  tasks.unshift(task);
+  scheduledTaskStore.save(tasks);
   window.location.href = "scheduled-tasks.html";
 }
 
@@ -8093,7 +8250,12 @@ function findScheduledSkillKey(payload) {
 }
 
 function prependScheduledHistory(payload) {
-  createConversationItem(payload.name || "定时任务会话", payload.mode === "trial" ? "定时任务试运行" : "定时任务执行");
+  const item = Array.from(document.querySelectorAll('[data-scheduled-conversation]')).find(item => item.dataset.scheduledConversation === payload.conversationId);
+  if (item) setActiveConversationItem(item);
+  else createConversationItem(payload.name || "定时任务会话", payload.mode === "trial" ? "定时任务试运行" : "定时任务执行");
+  activeConversationItem.dataset.scheduledTask = payload.taskId;
+  activeConversationItem.dataset.scheduledConversation = payload.conversationId;
+  activeConversationItem.dataset.scheduledHistory = "";
 }
 
 function insertScheduledConversationContext(payload) {
@@ -8103,27 +8265,59 @@ function insertScheduledConversationContext(payload) {
   const context = document.createElement("div");
   context.className = "schedule-trial-context";
   context.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 7v5l3 2"></path></svg>' +
-    `<span><strong>${payload.mode === "trial" ? "定时任务试运行" : "定时任务执行记录"}</strong> · ${escapeHtml(payload.name || "未命名任务")} · ${escapeHtml(payload.theme || "销售分析")}</span>`;
+    `<span><strong>${payload.mode === "trial" ? "定时任务试运行" : "定时任务执行记录"}</strong> · ${escapeHtml(payload.name || "未命名任务")} · ${escapeHtml(payload.theme || "销售分析")}</span>` +
+    (payload.taskId ? '<button type="button" class="ghost-btn" data-scheduled-action="edit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5 5 5M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15z"/></svg><span>编辑配置</span></button>' : '');
   aiContent.insertBefore(context, thinkingBox);
 }
 
-function completeScheduledTrialRecord(payload, parameterError) {
+function renderScheduledRecordHistory(turn) {
+  const record = turn.scheduledRecord;
+  const labels = { success: "成功", failed: "失败", running: "执行中", skipped: "已跳过" };
+  insertScheduledConversationContext({ mode: "record", taskId: turn.taskId, name: record.name, theme: turn.context.themes.join("、") });
+  resultTitle.textContent = record.name + " · " + (labels[record.status] || record.status);
+  resultTitle.nextElementSibling.textContent = [record.trigger, record.startedAt, record.duration].filter(Boolean).join(" · ");
+  if (record.status === "success" && record.hasAnswer) return false;
+  insightBox.classList.remove("hidden");
+  aiConclusion.classList.add("scheduled-record-message");
+  aiConclusion.classList.toggle("is-failed", record.status === "failed");
+  aiConclusion.textContent = record.error || record.summary || (record.status === "running"
+    ? "任务正在执行中，完成后可在执行记录中查看结果。" : "本次运行未生成分析结果。");
+  return true;
+}
+
+function showScheduledRecordConversation(payload) {
+  const record = payload.record;
+  if (!record) return;
+  const turn = window.ScheduledTaskChat.recordTurn({ id: payload.taskId }, record);
+  activeConversationItem.dataset.scheduledTask = payload.taskId;
+  activeConversationItem.dataset.scheduledConversation = record.conversationId;
+  activeConversationItem.querySelector("em:last-child").textContent = record.startedAt;
+  conversationSnapshots.set(activeConversationItem, [turn]);
+  renderCompletedHistoryTurn(turn);
+  setQuestionEditorContent("");
+  conversationChanged = false;
+  requestAnimationFrame(scrollToAnswerBottom);
+}
+
+function completeScheduledTrialRecord(payload, parameterError, turn) {
   if (payload.mode !== "trial" || !payload.taskId || !payload.recordId) return;
-  window.setTimeout(() => {
-    try {
-      const tasks = JSON.parse(localStorage.getItem(SCHEDULED_TASK_STORE_KEY) || "[]");
-      if (!Array.isArray(tasks)) return;
-      const task = tasks.find((item) => item.id === payload.taskId);
-      const record = task?.records?.find((item) => item.id === payload.recordId);
-      if (!record || record.status !== "running") return;
-      record.status = parameterError ? "failed" : "success";
-      record.endedAt = window.ScheduledTaskForm?.dateTimeText(new Date()) || "刚刚";
-      record.duration = parameterError ? "0秒" : "4秒";
-      if (parameterError) record.error = parameterError;
-      else record.summary = `${payload.name || "定时任务"}试运行完成，已在独立问数会话中生成分析结果。`;
-      localStorage.setItem(SCHEDULED_TASK_STORE_KEY, JSON.stringify(tasks));
-    } catch (error) {}
-  }, parameterError ? 0 : 4500);
+  const tasks = scheduledTaskStore.load();
+  const task = tasks.find((item) => item.id === payload.taskId);
+  const record = task?.records?.find((item) => item.id === payload.recordId);
+  if (!record || record.status !== "running") return;
+  record.status = parameterError ? "failed" : "success";
+  record.endedAt = window.ScheduledTaskForm.dateTimeText(new Date());
+  record.duration = Math.max(1, Math.round((Date.now() - payload.executionStartedAt) / 1000)) + "秒";
+  if (parameterError) record.error = parameterError;
+  else {
+    const { scheduledExecution, ...answer } = turn;
+    record.turn = JSON.parse(JSON.stringify(answer));
+    record.summary = !aiConclusion.classList.contains("hidden") && aiConclusion.textContent.trim()
+      ? aiConclusion.textContent.trim() : payload.name + "试运行完成，已生成分析结果。";
+  }
+  scheduledTaskStore.save(tasks);
+  conversationChanged = true;
+  saveActiveConversation();
 }
 
 (function restoreBoardReferenceHandoff() {
@@ -8168,31 +8362,49 @@ function completeScheduledTrialRecord(payload, parameterError) {
   }, 0);
 })();
 
-(function restoreScheduledConversation() {
-  let payload = null;
-  try {
-    payload = JSON.parse(localStorage.getItem(SCHEDULED_CONVERSATION_KEY) || "null");
-    if (payload) localStorage.removeItem(SCHEDULED_CONVERSATION_KEY);
-  } catch (error) {}
+hydrateScheduledConversations();
+window.addEventListener("pagehide", saveActiveConversation);
 
+(function restoreScheduledConversation() {
+  const payload = scheduledTaskStore.take();
   const shouldOpenCreate = new URLSearchParams(window.location.search).get("createTask") === "1";
-  if (shouldOpenCreate) {
-    window.setTimeout(openScheduledTaskComposer, 0);
-  }
+  if (shouldOpenCreate) window.setTimeout(openScheduledTaskComposer, 0);
   if (!payload || !questionInput) return;
 
   resetChat();
   handleThemeChange(payload.theme || "销售分析");
+  prependScheduledHistory(payload);
+  if (payload.mode === "record") {
+    const saved = conversationSnapshots.get(activeConversationItem);
+    if (saved?.length) renderHistoryTurnSequence(saved);
+    else showScheduledRecordConversation(payload);
+    showToast("已打开定时任务执行会话");
+    return;
+  }
+
   selectSkill(findScheduledSkillKey(payload), null, true);
   setQuestionEditorContent(payload.prompt || "", { withHints: false });
   handleQuestionInput();
-  prependScheduledHistory(payload);
   window.setTimeout(() => {
+    payload.executionStartedAt = Date.now();
     const parameterError = runQuestion(null, { thinkingDuration: 3000, scheduled: true });
-    completeScheduledTrialRecord(payload, parameterError);
-    if (parameterError) return;
+    const turn = questionTurns.get(currentChatMessage);
+    if (parameterError || !turn || hasPendingQueryConfirmation()) {
+      const failure = parameterError || (hasPendingQueryConfirmation()
+        ? "任务指令需要补充确认信息，请完善任务配置后重新试运行。"
+        : "任务未能启动，请检查任务配置后重新试运行。");
+      completeScheduledTrialRecord(payload, failure);
+      const task = scheduledTaskStore.load().find((item) => item.id === payload.taskId);
+      const record = task?.records?.find((item) => item.id === payload.recordId);
+      if (record) showScheduledRecordConversation({ ...payload, record });
+      return;
+    }
+    if (isAnswering) turn.scheduledExecution = payload;
+    else completeScheduledTrialRecord(payload, null, turn);
     insertScheduledConversationContext(payload);
-    showToast(payload.mode === "trial" ? "已创建独立会话并开始试运行" : "已打开定时任务执行会话");
+    conversationChanged = true;
+    saveActiveConversation();
+    showToast("已创建独立会话并开始试运行");
   }, 0);
 })();
 

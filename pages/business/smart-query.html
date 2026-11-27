@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="../../assets/css/business.css?v=20261119-theme-checkboxes" />
   <link rel="stylesheet" href="../../assets/css/query-attachments.css?v=20261116-remove-icon" />
   <link rel="stylesheet" href="../../assets/css/skill-picker.css?v=20260914-skill-copy" />
-  <link rel="stylesheet" href="../../assets/css/scheduled-tasks.css?v=20260914-skill-copy" />
+  <link rel="stylesheet" href="../../assets/css/scheduled-tasks.css?v=20261127-task-chat" />
   <style>
     .question-stack { min-width: 0; max-width: 70%; }
     .question-stack .bubble { max-width: none; overflow-wrap: anywhere; }
@@ -112,6 +112,18 @@
         <div class="history-item active pinned" onclick="loadHistoryScenario('normal', this)" oncontextmenu="openSideMenu(event, 'history')">
           <strong title="近6个月华东区销售额趋势如何？">近6个月华东区销售额趋势如何？</strong>
           <span><em>普通问数</em><em>置顶 · 08:40</em></span>
+        </div>
+        <div class="history-item" role="button" tabindex="0" data-scheduled-history data-scheduled-task="task-sales-daily" data-scheduled-conversation="conversation-sales-config" onclick="loadHistoryScenario('scheduledTaskEdit', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="调整华东区销售简报的执行安排">调整华东区销售简报的执行安排</strong>
+          <span><em>定时任务 · 配置修改</em><em>09:22</em></span>
+        </div>
+        <div class="history-item" role="button" tabindex="0" data-scheduled-history data-scheduled-task="task-sales-daily" data-scheduled-conversation="conversation-sales-1" onclick="loadHistoryScenario('scheduledTaskSuccess', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="华东区每日销售简报">华东区每日销售简报</strong>
+          <span><em>定时任务 · 执行成功</em><em>09:00</em></span>
+        </div>
+        <div class="history-item" role="button" tabindex="0" data-scheduled-history data-scheduled-task="task-weekday-customer" data-scheduled-conversation="conversation-task-weekday-customer-run-customer-1" onclick="loadHistoryScenario('scheduledTaskFailed', this)" oncontextmenu="openSideMenu(event, 'history')">
+          <strong title="重点客户流失风险监测">重点客户流失风险监测</strong>
+          <span><em>定时任务 · 执行失败</em><em>08:30</em></span>
         </div>
         <div class="history-item" role="button" tabindex="0" data-indicator-history onclick="loadHistoryScenario('indicatorCreate', this)" oncontextmenu="openSideMenu(event, 'history')">
           <strong title="新增指标：平台服务费合计">新增指标：平台服务费合计</strong>
@@ -317,6 +329,7 @@
                   </div>
                   <div class="result-body">
                     <section id="indicatorChatResult" class="indicator-chat hidden" aria-label="指标维护结果"></section>
+                    <section id="scheduledTaskChatResult" class="indicator-chat hidden" aria-label="定时任务配置修改"></section>
                     <section id="insightBox" class="insight-box">
                       <p id="aiConclusion"></p>
                       <div id="conclusionTags" class="tag-row hidden"><span>持续增长</span><span>6月达到峰值</span><span>4-6月增长明显</span></div>
@@ -1671,9 +1684,11 @@
   <script src="../../assets/js/common.js?v=20261110-keyword-highlight"></script>
   <script src="../../assets/js/skill-template-sample.js?v=20260911"></script>
     <script src="../../assets/js/analysis-theme.js?v=20261119-execution-theme"></script>
-    <script src="../../assets/js/skill-workflow-store.js?v=20261119-execution-theme"></script>
+    <script src="../../assets/js/skill-workflow-store.js?v=20261127-content-config"></script>
   <script src="../../assets/js/skill-picker.js?v=20260914-skill-copy"></script>
+  <script src="../../assets/js/scheduled-task-store.js?v=20261127-task-chat"></script>
   <script src="../../assets/js/scheduled-task-form.js?v=20260914-skill-copy"></script>
+  <script src="../../assets/js/scheduled-task-chat.js?v=20261127-task-chat-buttons"></script>
   <script src="../../assets/js/report-reference.js?v=20261109-ppt-report"></script>
   <template id="questionEditTemplate">
     <form class="question-edit">
@@ -1695,6 +1710,6 @@
   <script src="../../assets/js/smart-query-context.js?v=20261118-natural-dialogue"></script>
   <script src="../../assets/js/query-attachments.js?v=20261116-remove-icon"></script>
   <script src="../../assets/js/indicator-chat.js?v=20261118-natural-dialogue"></script>
-  <script src="../../assets/js/smart-query.js?v=20261119-theme-checkboxes"></script>
+  <script src="../../assets/js/smart-query.js?v=20261127-content-config"></script>
 </body>
 </html>

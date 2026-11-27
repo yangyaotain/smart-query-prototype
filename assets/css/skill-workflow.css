@@ -75,6 +75,15 @@
 .sw-form legend { font-size:13px; padding:0 5px; }
 .sw-options { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
 .sw-options label { flex-direction:row; align-items:center; gap:8px; }
+.sw-import-form .sw-upload { display:flex; margin:0; min-height:156px; }
+.sw-import-form .sw-upload input { margin:0; padding:0; height:100%; }
+.sw-import-form .sw-help { margin:0; }
+.sw-import-form fieldset>.sw-help { margin-top:12px; }
+.sw-upload.is-disabled { cursor:not-allowed; background:var(--surface,#f8fafc); border-color:var(--border); color:var(--muted); }
+.sw-upload.is-disabled input { cursor:not-allowed; }
+.sw-options label:has(input:disabled) { color:var(--muted); cursor:not-allowed; }
+.sw-options label span { min-width:0; overflow-wrap:anywhere; }
+.sw-theme-readonly { margin:0 0 10px; }
 .sw-content-shell .admin-main { height:100vh; overflow:hidden; min-width:0; }
 .sw-content { display:flex; flex-direction:column; height:calc(100vh - 64px); padding:16px 20px 20px; min-height:0; gap:14px; }
 .sw-single-header { flex-wrap:nowrap; gap:18px; }

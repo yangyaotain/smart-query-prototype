@@ -77,13 +77,23 @@
     if (xml.length > 8 * 1024 * 1024) throw new Error('模板内容过大，请精简后重新导入。');
     return { zip, documentXML: xmlDocument(xml, 'Word 内容读取失败，请另存文档后重新导入。') };
   }
-  async function parseFile(file) {
+  async function parseFile(file, selectedThemes) {
+    if (!Array.isArray(selectedThemes) || !selectedThemes.length) throw new Error('请至少选择一个分析主题后再提交。');
+    const available = Store.executionThemeOptions(selectedThemes).filter((theme) => theme.status !== 'disabled' && theme.database);
+    if (available.length !== selectedThemes.length) throw new Error('所选分析主题已失效或未绑定执行库，请重新选择。');
     if (!/\.docx$/i.test(file.name)) throw new Error('仅支持 Word .docx 模板；.doc 文件请先另存为 .docx。');
     if (!file.size || file.size > 50 * 1024 * 1024) throw new Error('请选择非空且不超过 50 MB 的 Word 文件。');
     const { zip, documentXML } = await readWord(file);
     const paragraphs = [...documentXML.getElementsByTagNameNS('*', 'p')];
     const outline = await parseOutline(zip, documentXML);
     const parts = [];
+    function addPart(part) {
+      const procurement = /采购|成交|节资|供应商|招标|询比|谈判|闲废|三率/.test(`${part.name} ${part.sourceText}`);
+      const matched = available.find((theme) => theme.tables.some((table) => table.name === 'procurement_transactions') && procurement);
+      const prepared = Store.preparePart({ ...part, source: 'uploaded', allowedThemes: [...selectedThemes], theme: matched?.name || selectedThemes[0], ...(!matched && part.type !== 'analysis' ? { sql: '', executionThemeId: '' } : {}) }, parts.length);
+      if (part.type === 'analysis') prepared.prompt = `仅在${selectedThemes.join('、')}主题范围内，结合当前内容前文已配置的指标和图表结果分析。只使用已提供的数据，缺失依据时明确说明，不推断无依据的原因。控制在 200 字以内。`;
+      parts.push(prepared);
+    }
     let precedingText = '';
     let previous = '', chartIndex = 0;
     paragraphs.forEach((p, index) => {
@@ -93,11 +103,11 @@
       precedingText += rawText;
       const occurrenceOf = (token, prefix = before) => prefix.split(token).length - 1;
       if (p.getElementsByTagNameNS('*', 'drawing').length) {
-        parts.push(Store.preparePart({ type: 'chart', name: previous.slice(0, 32) || `图表 ${chartIndex + 1}`, sourceText: '模板图表', anchor: { kind: 'drawing', index: chartIndex++ } }, parts.length));
+        addPart({ type: 'chart', name: previous.slice(0, 32) || `图表 ${chartIndex + 1}`, sourceText: '模板图表', anchor: { kind: 'drawing', index: chartIndex++ } });
       }
       if (text.length > 70 && /分析|增长|下降|占比|建议|集中|成交|本月|采购|风险/.test(text)) {
         const occurrence = occurrenceOf(text);
-        parts.push(Store.preparePart({ type: 'analysis', name: previous.slice(0, 26) || `自定义内容 ${index + 1}`, sourceText: text, anchor: { kind: 'text', text, occurrence } }, parts.length));
+        addPart({ type: 'analysis', name: previous.slice(0, 26) || `自定义内容 ${index + 1}`, sourceText: text, anchor: { kind: 'text', text, occurrence } });
       } else {
         for (const match of text.matchAll(/(?:[+\-]?\d[\d,]*\.\d+(?:%|pp)?|\d+(?:%|亿元|万元|元|项|天)|\{\{[^{}]+\}\})/g)) {
           const token = match[0];
@@ -105,18 +115,17 @@
           const prefix = text.slice(Math.max(0, match.index - 22), match.index).trim();
           const name = prefix || previous.slice(0, 24) || `指标 ${parts.length + 1}`;
           const unit = token.match(/%|pp|亿元|万元|元|项|天/)?.[0] || '';
-          parts.push(Store.preparePart({ name, sourceText: token, unit, sampleValue: Number(token.replace(/[^\d.\-]/g, '')) || 0, anchor: { kind: 'text', text: token, occurrence } }, parts.length));
+          addPart({ name, sourceText: token, unit, sampleValue: Number(token.replace(/[^\d.\-]/g, '')) || 0, anchor: { kind: 'text', text: token, occurrence } });
         }
       }
       if (text && text.length < 60 && !/^[\d,%.\s]+$/.test(text)) previous = text;
     });
     const name = file.name.replace(/\.docx$/i, '');
-    const procurement = /采购|成交|节资|供应商/.test(paragraphs.map(textOf).join(' '));
     return {
       name, desc: `根据${name}的指标、图表及自定义内容，查询数据并回填原 Word 模板。`, category: /专项|专题/.test(name) ? '专项分析' : '经营报告',
-      themes: procurement ? Store.themes.slice(0, 4) : ['销售分析'],
+      themes: [...selectedThemes],
       userPrompt: `请生成【报告月份】【组织范围】的${name}，按模板更新指标、图表及分析内容。`,
-      parts: parts.map((part) => ({ ...part, theme: procurement ? Store.themes[0] : '销售分析' })), outline
+      parts, outline
     };
   }
   async function outline(file) {

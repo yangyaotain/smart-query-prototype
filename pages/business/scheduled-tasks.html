@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="../../assets/css/theme.css?v=20261110-keyword-highlight" />
   <link rel="stylesheet" href="../../assets/css/business.css" />
   <link rel="stylesheet" href="../../assets/css/skill-picker.css?v=20260914-skill-copy" />
-  <link rel="stylesheet" href="../../assets/css/scheduled-tasks.css?v=20260914-skill-copy" />
+  <link rel="stylesheet" href="../../assets/css/scheduled-tasks.css?v=20261127-task-chat" />
 </head>
 <body class="schedule-page-body">
   <header class="topbar">
@@ -147,8 +147,6 @@
     </section>
   </main>
 
-  <div id="resultModalMask" class="result-modal-mask hidden" onclick="closeResultModal()"></div>
-  <section id="resultModal" class="result-modal hidden" role="dialog" aria-modal="true"><div class="result-modal-head"><div><span id="resultModalStatus" class="record-status success">成功</span><h2 id="resultModalTitle">执行结果</h2><p id="resultModalMeta"></p></div><button type="button" onclick="closeResultModal()">×</button></div><div id="resultModalBody" class="result-modal-body"></div><div class="result-modal-foot"><button class="ghost-btn" type="button" onclick="closeResultModal()">关闭</button><button id="openConversationBtn" class="primary-btn" type="button" onclick="openRecordConversation()"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2 2h14a2 2 0 0 1 2 2z"></path></svg><span>打开问数会话</span></button></div></section>
   <div id="confirmMask" class="result-modal-mask hidden" onclick="closeTaskConfirm()"></div>
   <section id="confirmModal" class="task-confirm hidden" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmText"><span class="confirm-icon"><svg viewBox="0 0 24 24"><path d="M12 8v5"></path><path d="M12 17h.01"></path><path d="M4 20h16L12 4 4 20z"></path></svg></span><h3 id="confirmTitle">操作确认</h3><p id="confirmText"></p><div><button class="ghost-btn" type="button" onclick="closeTaskConfirm()">取消</button><button id="confirmActionBtn" class="primary-btn" type="button">确认</button></div></section>
   <div id="toast" class="toast hidden">操作成功</div>
@@ -156,9 +154,10 @@
   <script src="../../assets/js/common.js?v=20261110-keyword-highlight"></script>
   <script src="../../assets/js/skill-template-sample.js?v=20260911"></script>
   <script src="../../assets/js/analysis-theme.js?v=20261119-execution-theme"></script>
-  <script src="../../assets/js/skill-workflow-store.js?v=20261119-execution-theme"></script>
+  <script src="../../assets/js/skill-workflow-store.js?v=20261127-content-config"></script>
   <script src="../../assets/js/skill-picker.js?v=20260914-skill-copy"></script>
+  <script src="../../assets/js/scheduled-task-store.js?v=20261127-task-chat"></script>
   <script src="../../assets/js/scheduled-task-form.js?v=20260914-skill-copy"></script>
-  <script src="../../assets/js/scheduled-tasks.js?v=20261110-keyword-highlight"></script>
+  <script src="../../assets/js/scheduled-tasks.js?v=20261127-task-edit"></script>
 </body>
 </html>

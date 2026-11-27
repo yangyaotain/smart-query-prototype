@@ -1,6 +1,10 @@
 (function () {
   'use strict';
   const Store = window.SkillCatalogStore, UI = window.SkillWorkflowUI, IO = window.SkillTemplateIO;
+  const runtimeId = sessionStorage.getItem(Store.runtimeKey);
+  window.addEventListener('pageshow', () => {
+    if (sessionStorage.getItem(Store.runtimeKey) !== runtimeId) location.replace('knowledge-skill.html');
+  });
   const Attachments = window.QueryAttachments;
   const { esc, button, message } = UI;
   const $ = (id) => document.getElementById(id);
@@ -427,7 +431,7 @@
     if (meta.status === 'interrupted') return '全局测试中断，请重新执行。';
     const resolved = meta.failed > 0 && !meta.failedIds?.length ? ' · 失败项已处理' : '';
     if (meta.status === 'stopped') return `全局测试已停止 · 完成 ${meta.completed}/${meta.total} · 成功 ${meta.passed} · 未执行 ${Math.max(0, meta.total - meta.completed)}${meta.skipped ? ` · ${meta.skipped} 项配置已变化` : ''}${resolved}`;
-    return `全局测试完成 · 成功 ${meta.passed}${meta.skipped ? ` · ${meta.skipped} 项配置已变化` : ''}${resolved}`;
+    return `全局测试完成 · 成功 ${meta.passed}${meta.failed ? ` · 失败 ${meta.failed}` : ''}${meta.skipped ? ` · ${meta.skipped} 项配置已变化` : ''}${resolved}`;
   }
   function closeFailurePanel() {
     if (!failurePanel) return;
@@ -743,7 +747,7 @@
     return theme?.database ? `${theme.name} · ${databaseLabel(theme)}` : '等待配置执行主题和库';
   }
   function executionFields(query) {
-    const themes = Store.executionThemeOptions();
+    const themes = Store.executionThemeOptions(skill);
     const disabled = (theme) => theme.status === 'disabled' || !theme.database;
     const themeLabel = (theme) => `${theme.name}${theme.status === 'disabled' ? '（已禁用）' : !theme.database ? '（未绑定执行库）' : ''}`;
     let picker;
@@ -777,7 +781,7 @@
       controls = $('swConfigFields').querySelector('[data-execution-fields]');
     }
     const theme = Store.executionTheme(query);
-    const placeholder = query.executionThemeId && !theme ? '原执行主题已删除' : '请选择执行主题';
+    const placeholder = query.executionThemeId && !theme ? '原执行主题已失效' : '请选择执行主题';
     const select = controls.querySelector('[data-execution-theme]');
     if (select) {
       select.querySelector('[data-execution-placeholder]').textContent = placeholder;
@@ -794,12 +798,13 @@
     database.value = database.title = databaseLabel(theme);
     controls.querySelector('[data-execution-hint]').textContent = theme?.status === 'disabled' ? '当前主题已禁用，请重新选择。'
       : theme && !theme.database ? '当前主题未绑定执行库，请重新选择。'
-      : theme ? query.executionThemeManual ? '执行库由所选主题带出。' : 'AI 已根据 SQL 推荐执行主题，可手动调整。'
-      : String(query.sql || '').trim() ? '请为当前 SQL 选择执行主题。' : '输入 SQL 后自动推荐执行主题。';
+      : theme ? query.executionThemeManual ? '执行库由所选主题带出，仅可在技能适用范围内调整。' : 'AI 已在技能适用范围内推荐执行主题，可手动调整。'
+      : String(query.sql || '').trim() ? '请在技能适用范围内为当前 SQL 选择执行主题。' : '未匹配到所选主题的数据，请补充 SQL 并选择范围内的执行主题。';
   }
   function setExecutionTheme(themeId) {
     const query = currentSqlQuery();
     if (!query || query.executionThemeId === themeId) return;
+    if (!Store.executionThemeOptions(skill).some((theme) => theme.id === themeId && theme.status !== 'disabled' && theme.database)) return message('请选择技能适用范围内的可用执行主题。');
     query.executionThemeId = themeId;
     query.executionThemeManual = true;
     refreshExecutionFields();
@@ -1453,7 +1458,7 @@
       });
       draft = Store.clone(skill.parts.find((p) => p.id === selectedId));
       renderHeader(); renderIndex(); syncMarks(); status();
-      message(skill.parts.every((p) => p.confirmed) ? '全部内容已确认，可返回列表启用技能。' : '当前内容已确认。');
+      message(Store.isReady(skill) ? '全部内容已确认，可返回列表启用技能。' : '当前内容已确认。');
     } catch (e) { fail(e); }
   }
   function confirmAllParts() {
@@ -1552,7 +1557,7 @@
         $('swPageInfo').textContent = 'Word 原文件预览';
       }
       if (template.source === 'sample') renderOutline();
-      documentReady = true; renderManualMarks(); syncMarks(); status(); renderConfirmAll(); renderConfirmationStats(); updateOutlineActive();
+      documentReady = true; renderManualMarks(); syncMarks(); status(); renderHeader(); renderConfirmAll(); renderConfirmationStats(); updateOutlineActive();
       $('swDrawRegion').disabled = false;
       const selected = $('swDocument').querySelector(`[data-part-id="${CSS.escape(selectedId || '')}"]`);
       if (selected) selected.scrollIntoView({ block: 'center', inline: 'nearest' });
@@ -1651,7 +1656,7 @@
       saving = true;
       try {
         skill = updateSkill((s) => {
-          s.parts.push(Store.preparePart({ id: partId, type, name, theme: s.themes[0] || Store.themes[0], source: 'manual', sourceText: `第 ${anchor.page} 页手动框选区域`, anchor, confirmed: false, result: null, messages: [] }, 0, s.promptVariables));
+          s.parts.push(Store.preparePart({ id: partId, type, name, theme: s.themes[0] || '', allowedThemes: [...s.themes], source: 'manual', sourceText: `第 ${anchor.page} 页手动框选区域`, anchor, confirmed: false, result: null, messages: [] }, 0, s.promptVariables));
           s.enabled = false;
         });
         saving = false; close();
@@ -1765,7 +1770,7 @@
       const queries = draft.sqlQueries;
       let index = queries.length + 1;
       while (queries.some((query) => query.name.trim() === `指标 ${index}`)) index++;
-      const query = { id: `sql-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, name: `指标 ${index}`, sql: '', unit: '' };
+      const query = { id: `sql-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, name: `指标 ${index}`, sql: '', unit: '', allowedThemes: [...skill.themes] };
       queries.push(query); activeSqlId = query.id;
       renderAnalysisSql(); markConfigDirty(); $('swAnalysisSql').querySelector('[aria-selected="true"]').focus();
     }

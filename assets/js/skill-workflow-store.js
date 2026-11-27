@@ -5,6 +5,12 @@
   const STATUS_LAYOUT_MARKER = `${KEY}-status-layout-20260914`;
   const PUBLISHED_SAMPLE_MARKER = `${KEY}-published-samples-20260914`;
   const FAILED_SAMPLE_TRIM_MARKER = `${KEY}-failed-samples-20260916`;
+  const RUNTIME_MARKER = `${KEY}-runtime-20261127`;
+  // Keep the current walkthrough across page navigation, reset only on an actual reload.
+  if (!sessionStorage.getItem(RUNTIME_MARKER) || global.performance?.getEntriesByType('navigation')[0]?.type === 'reload') {
+    [KEY, STATUS_SAMPLE_MARKER, STATUS_LAYOUT_MARKER, PUBLISHED_SAMPLE_MARKER, FAILED_SAMPLE_TRIM_MARKER, 'smart-query-skill-catalog-v1'].forEach((key) => sessionStorage.removeItem(key));
+    sessionStorage.setItem(RUNTIME_MARKER, `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  }
   const clone = (value) => JSON.parse(JSON.stringify(value));
   const ThemeCatalog = global.AnalysisThemeCatalog;
   const themes = ['成交与节资', '采购方式与品类', '供应商管理', '采购效能与闲废', '销售分析', '客户分析', '库存分析', '活动分析'];
@@ -158,11 +164,12 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     }
     return tables;
   }
-  function executionThemeOptions() {
-    return ThemeCatalog.executionThemes();
+  function executionThemeOptions(scope) {
+    const selected = Array.isArray(scope) ? scope : scope?.allowedThemes || scope?.themes;
+    return ThemeCatalog.executionThemes().filter((theme) => !selected || selected.some((name) => (name === '活动分析' ? '营销活动分析' : name) === theme.name));
   }
   function executionTheme(query) {
-    return executionThemeOptions().find((theme) => theme.id === query.executionThemeId);
+    return executionThemeOptions(query).find((theme) => theme.id === query.executionThemeId);
   }
   function missingThemeTables(theme, tables) {
     const names = new Set(theme.tables.map((table) => table.name.toLowerCase()));
@@ -171,7 +178,7 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
   function suggestExecutionTheme(query, part) {
     const tables = sqlTables(query.sql);
     if (!tables.length) return '';
-    const candidates = executionThemeOptions().filter((theme) => theme.database && theme.status !== 'disabled' && !missingThemeTables(theme, tables).length);
+    const candidates = executionThemeOptions(part).filter((theme) => theme.database && theme.status !== 'disabled' && !missingThemeTables(theme, tables).length);
     if (candidates.length === 1) return candidates[0].id;
     const scored = candidates.map((theme) => {
       const keywords = theme.keywords.split('|').filter(Boolean);
@@ -187,6 +194,11 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     return likely.find((theme) => theme.name === part.theme)?.id || '';
   }
   function syncExecutionTheme(query, part, sqlChanged = false) {
+    if (Array.isArray(part.allowedThemes)) query.allowedThemes = [...part.allowedThemes];
+    if (query.executionThemeId && !executionTheme(query)) {
+      query.executionThemeId = suggestExecutionTheme(query, part);
+      query.executionThemeManual = false;
+    }
     if (!Object.hasOwn(query, 'executionThemeId') || (sqlChanged && !query.executionThemeManual)) {
       query.executionThemeId = suggestExecutionTheme(query, part);
     }
@@ -194,7 +206,7 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
   function validateExecutionTheme(query) {
     if (!query.executionThemeId) throw new Error('请选择执行主题。');
     const theme = executionTheme(query);
-    if (!theme) throw new Error('已选执行主题已删除，请重新选择。');
+    if (!theme) throw new Error('已选执行主题不在技能适用范围内或已删除，请重新选择。');
     if (theme.status === 'disabled') throw new Error(`执行主题「${theme.name}」已禁用，请重新选择。`);
     if (!theme.database) throw new Error(`执行主题「${theme.name}」未绑定执行库，请调整主题。`);
     const missing = missingThemeTables(theme, sqlTables(query.sql));
@@ -252,6 +264,7 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
       databaseType: theme?.database?.type || '',
       tables: sqlTables(part.sql).map((table) => ({ ...table, label: theme?.tables.find((item) => item.name.toLowerCase() === table.name.toLowerCase())?.alias || table.name }))
     };
+    if (part.source === 'uploaded' && !theme) { part.managedIndicators = []; return part; }
     if (refreshIndicators || !Array.isArray(part.managedIndicators) || !part.managedIndicators.length) part.managedIndicators = inferredManagedIndicators(part);
     else part.managedIndicators = part.managedIndicators.map((indicator) => ({ ...indicator, aggregation: sqlAggregation(part.sql), definition: indicator.definition || part.definition }));
     return part;
@@ -269,6 +282,7 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
       field: 'value', categoryField: 'category', unit: part.unit || '', decimals: 2,
       confirmed: false, revision: 1, messages: [], result: null, ...clone(part)
     };
+    if (Array.isArray(prepared.allowedThemes) && !Object.hasOwn(part, 'sql') && !executionThemeOptions(prepared).some((theme) => theme.status !== 'disabled' && theme.database && theme.tables.some((table) => table.name === 'procurement_transactions'))) prepared.sql = '';
     if (type === 'analysis') {
       prepared.sqlQueries = analysisQueries(prepared).map((query, queryIndex) => ({
         id: String(query.id || `sql-${queryIndex + 1}`), name: String(query.name ?? `SQL ${queryIndex + 1}`), sql: String(query.sql || ''), unit: String(query.unit || ''),
@@ -554,12 +568,12 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
       }),
       {
         id: 'skill-compliance-region', kind: 'monthly', code: 'compliance_region', name: '区域采购合规专项报告',
-        desc: '', category: '', themes: [], userPrompt: '', parts: [], parseStatus: 'parsing', enabled: false,
+        desc: '', category: '', themes: ['采购效能与闲废', '采购方式与品类'], userPrompt: '', parts: [], parseStatus: 'parsing', enabled: false,
         updated: today(), sort: 40, reportTemplate: { name: '区域采购合规专项报告模板.docx', type: 'DOCX', source: 'preset-status', size: 2846720 }
       },
       {
         id: 'skill-inventory-turnover', kind: 'monthly', code: 'inventory_turnover', name: '库存周转专项分析',
-        desc: '', category: '', themes: [], userPrompt: '', parts: [], parseStatus: 'failed', parseError: '未识别到有效的 Word 正文结构，请检查模板后重新导入。', enabled: false,
+        desc: '', category: '', themes: ['库存分析'], userPrompt: '', parts: [], parseStatus: 'failed', parseError: '未识别到有效的 Word 正文结构，请检查模板后重新导入。', enabled: false,
         updated: '2026-09-08', sort: 50, reportTemplate: { name: '库存周转专项分析模板.docx', type: 'DOCX', source: 'preset-status', size: 1763840 }
       }
     ];
@@ -569,6 +583,16 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
   }
   function normalizeSkill(source, onSqlMigration) {
     const result = clone(source);
+    result.themes = Array.isArray(result.themes) ? result.themes : [];
+    delete result.documentConfig;
+    const previousTest = result.lastGlobalTest;
+    if (previousTest && Object.hasOwn(previousTest, 'documentStatus')) {
+      previousTest.total = Math.max(0, previousTest.total - 1);
+      if (previousTest.documentStatus !== 'pending') previousTest.completed = Math.max(0, previousTest.completed - 1);
+      if (previousTest.documentStatus === 'passed') previousTest.passed = Math.max(0, previousTest.passed - 1);
+      if (previousTest.documentStatus === 'failed') previousTest.failed = Math.max(0, previousTest.failed - 1);
+      delete previousTest.documentStatus; delete previousTest.documentSignature;
+    }
     const migrateSampleChartPrompt = result.reportTemplate?.source === 'sample';
     result.promptVariables = normalizePromptVariables(result);
     const variableNames = new Map(result.promptVariables.map(({ key, label }) => [key, label]));
@@ -577,7 +601,7 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     ['executionPrompt', 'reportContentPrompt', 'reportFormatPrompt', 'reportPrompt', 'configSources', 'draftConfig', 'workflowStatus'].forEach((key) => delete result[key]);
     if (result.reportTemplate) ['generatedContentPrompt', 'generatedFormatPrompt', 'generatedPrompt'].forEach((key) => delete result.reportTemplate[key]);
     result.parts = (result.parts || []).map((part) => {
-      const prepared = preparePart(part, 0, result.promptVariables);
+      const prepared = preparePart({ ...part, allowedThemes: [...result.themes], theme: result.themes.includes(part.theme) ? part.theme : result.themes[0] || '' }, 0, result.promptVariables);
       if (migrateSampleChartPrompt && !result.enabled && prepared.id === 'part-25' && !Array.isArray(part.sqlQueries) && !String(part.sql || '').trim() && prepared.prompt === DEFAULT_ANALYSIS_PROMPT) {
         Object.assign(prepared, { name: '采购规模综合分析（多 SQL 示例）', sqlQueries: analysisSqlExamples(result.promptVariables), prompt: MULTI_SQL_PROMPT, confirmed: false, result: null, revision: prepared.revision + 1 });
       }
@@ -622,19 +646,19 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
   }
   function save(skills) {
     const normalized = skills.map((skill) => normalizeSkill(skill));
-    localStorage.setItem(KEY, JSON.stringify(normalized));
+    sessionStorage.setItem(KEY, JSON.stringify(normalized));
     return normalized;
   }
   function seedStatusSamples(skills) {
-    if (localStorage.getItem(STATUS_SAMPLE_MARKER) === '1') return skills;
+    if (sessionStorage.getItem(STATUS_SAMPLE_MARKER) === '1') return skills;
     const existing = new Set(skills.map((skill) => skill.id));
     const additions = defaultSkills().filter((skill) => !existing.has(skill.id));
     const result = additions.length ? save([...skills, ...additions]) : skills;
-    localStorage.setItem(STATUS_SAMPLE_MARKER, '1');
+    sessionStorage.setItem(STATUS_SAMPLE_MARKER, '1');
     return result;
   }
   function seedPublishedSamples(skills) {
-    if (localStorage.getItem(PUBLISHED_SAMPLE_MARKER) === '1') return skills;
+    if (sessionStorage.getItem(PUBLISHED_SAMPLE_MARKER) === '1') return skills;
     const existing = new Set(skills.map((skill) => skill.id));
     const additions = additionalPublishedSkills().filter((skill) => !existing.has(skill.id));
     let result = skills;
@@ -644,11 +668,11 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
       result.splice(supplierIndex >= 0 ? supplierIndex + 1 : result.length, 0, ...additions);
       result = save(result);
     }
-    localStorage.setItem(PUBLISHED_SAMPLE_MARKER, '1');
+    sessionStorage.setItem(PUBLISHED_SAMPLE_MARKER, '1');
     return result;
   }
   function migrateStatusSampleLayout(skills) {
-    if (localStorage.getItem(STATUS_LAYOUT_MARKER) === '1') return skills;
+    if (sessionStorage.getItem(STATUS_LAYOUT_MARKER) === '1') return skills;
     const parsingSample = skills.find((skill) => skill.id === 'skill-compliance-region' && skill.reportTemplate?.source === 'preset-status');
     let changed = false;
     if (parsingSample?.parseStatus === 'failed' && /未找到已导入的 Word 原文件/.test(parsingSample.parseError || '')) {
@@ -657,26 +681,26 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
       changed = true;
     }
     const result = changed ? save(skills) : skills;
-    localStorage.setItem(STATUS_LAYOUT_MARKER, '1');
+    sessionStorage.setItem(STATUS_LAYOUT_MARKER, '1');
     return result;
   }
   function trimFailedStatusSamples(skills) {
-    if (localStorage.getItem(FAILED_SAMPLE_TRIM_MARKER) === '1') return skills;
+    if (sessionStorage.getItem(FAILED_SAMPLE_TRIM_MARKER) === '1') return skills;
     const failures = skills.filter((skill) => skill.parseStatus === 'failed' && skill.reportTemplate?.source === 'preset-status');
     const retained = failures.find((skill) => skill.id === 'skill-inventory-turnover') || failures[0];
     const result = failures.length > 1 ? save(skills.filter((skill) => skill.parseStatus !== 'failed' || skill.reportTemplate?.source !== 'preset-status' || skill.id === retained.id)) : skills;
-    localStorage.setItem(FAILED_SAMPLE_TRIM_MARKER, '1');
+    sessionStorage.setItem(FAILED_SAMPLE_TRIM_MARKER, '1');
     return result;
   }
   function load() {
-    const raw = localStorage.getItem(KEY);
+    const raw = sessionStorage.getItem(KEY);
     if (raw !== null) {
       let sqlMigrated = false;
       const normalized = JSON.parse(raw).map((skill) => normalizeSkill(skill, () => { sqlMigrated = true; }));
-      if (sqlMigrated && localStorage.getItem(KEY) === raw) localStorage.setItem(KEY, JSON.stringify(normalized));
+      if (sqlMigrated && sessionStorage.getItem(KEY) === raw) sessionStorage.setItem(KEY, JSON.stringify(normalized));
       return trimFailedStatusSamples(migrateStatusSampleLayout(seedPublishedSamples(seedStatusSamples(normalized))));
     }
-    const legacyRaw = localStorage.getItem('smart-query-skill-catalog-v1');
+    const legacyRaw = sessionStorage.getItem('smart-query-skill-catalog-v1');
     if (legacyRaw) return trimFailedStatusSamples(migrateStatusSampleLayout(seedPublishedSamples(seedStatusSamples(save(JSON.parse(legacyRaw).map((old) => {
       const data = { ...old, ...(old.draftConfig || {}) };
       const isSample = data.id === 'skill-monthly' && /monthly-procurement|采购快报/.test(`${data.reportTemplate?.name} ${data.reportTemplate?.downloadUrl}`);
@@ -684,10 +708,10 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
         : { ...data, parts: [], parseStatus: 'failed', parseError: '旧技能尚未绑定可解析的 Word 原文件，请重新导入模板。', enabled: false };
     }))))));
     const defaults = save(defaultSkills());
-    localStorage.setItem(STATUS_SAMPLE_MARKER, '1');
-    localStorage.setItem(STATUS_LAYOUT_MARKER, '1');
-    localStorage.setItem(PUBLISHED_SAMPLE_MARKER, '1');
-    localStorage.setItem(FAILED_SAMPLE_TRIM_MARKER, '1');
+    sessionStorage.setItem(STATUS_SAMPLE_MARKER, '1');
+    sessionStorage.setItem(STATUS_LAYOUT_MARKER, '1');
+    sessionStorage.setItem(PUBLISHED_SAMPLE_MARKER, '1');
+    sessionStorage.setItem(FAILED_SAMPLE_TRIM_MARKER, '1');
     return defaults;
   }
   function update(id, mutate) {
@@ -852,7 +876,7 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
       else if (/平均|均值/.test(request)) next.sql = next.sql.replace(/SUM\(/ig, 'AVG(');
       else if (/求和|合计|总额/.test(request)) next.sql = next.sql.replace(/AVG\(/ig, 'SUM(');
       else if (/小数|精度/.test(request)) { const m = request.match(/([0-6一二两三四五六零])\s*位/); next.decimals = m ? ('零一二三四五六'.includes(m[1]) ? '零一二三四五六'.indexOf(m[1]) : m[1] === '两' ? 2 : Number(m[1])) : 2; }
-      else if (/SQL|修复|报错|错误/.test(request)) next.sql = preparePart({ name: part.name, type: part.type }, 0, variables).sql;
+      else if (/SQL|修复|报错|错误/.test(request)) next.sql = preparePart({ name: part.name, type: part.type, allowedThemes: part.allowedThemes, theme: part.theme }, 0, variables).sql;
       next.prompt = `${part.prompt}\n调整要求：${request}`;
     } else {
       next.prompt = `${part.prompt}\n调整要求：${request}`;
@@ -862,5 +886,5 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
     if (next.sql !== part.sql) syncExecutionTheme(next, next, true);
     return { next: syncPartMetadata(next, true), reply: `已更新${part.type === 'analysis' ? '提示词' : '提示词及相关配置'}并回填到上方配置。请重新测试，查看结果后确认此项。` };
   }
-  global.SkillCatalogStore = { key: KEY, load, save, update, clone, themes, isReady, preparePart, syncPartMetadata, normalizeSkill, normalizeTestParams, promptLabels, createPromptVariable, updatePromptVariables, validSqlVariableName, sqlVariableToken, parameterSettings, validateSkillSqlParams, normalizeReportMonth, invalidate, signature, runDemo, aiEdit, sampleParts, sampleOutline, usesGenerationDate, hasAnalysisSql, analysisQueries, analysisSqlExamples, removePart, executionThemeOptions, executionTheme, syncExecutionTheme };
+  global.SkillCatalogStore = { key: KEY, runtimeKey: RUNTIME_MARKER, load, save, update, clone, themes, isReady, preparePart, syncPartMetadata, normalizeSkill, normalizeTestParams, promptLabels, createPromptVariable, updatePromptVariables, validSqlVariableName, sqlVariableToken, parameterSettings, validateSkillSqlParams, normalizeReportMonth, invalidate, signature, runDemo, aiEdit, sampleParts, sampleOutline, usesGenerationDate, hasAnalysisSql, analysisQueries, analysisSqlExamples, removePart, executionThemeOptions, executionTheme, syncExecutionTheme };
 })(window);
