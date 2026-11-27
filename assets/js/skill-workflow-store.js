@@ -573,7 +573,7 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
       },
       {
         id: 'skill-inventory-turnover', kind: 'monthly', code: 'inventory_turnover', name: '库存周转专项分析',
-        desc: '', category: '', themes: ['库存分析'], userPrompt: '', parts: [], parseStatus: 'failed', parseError: '未识别到有效的 Word 正文结构，请检查模板后重新导入。', enabled: false,
+        desc: '', category: '', themes: ['库存分析'], userPrompt: '', parts: [], parseStatus: 'failed', parseError: '未识别到有效的 Word 正文结构，请检查文档后重新分析。', enabled: false,
         updated: '2026-09-08', sort: 50, reportTemplate: { name: '库存周转专项分析模板.docx', type: 'DOCX', source: 'preset-status', size: 1763840 }
       }
     ];
@@ -583,6 +583,9 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
   }
   function normalizeSkill(source, onSqlMigration) {
     const result = clone(source);
+    ['parseError', 'reanalysisError'].forEach((key) => {
+      if (typeof result[key] === 'string') result[key] = result[key].replaceAll('重新导入模板', '上传文档后重新分析').replaceAll('重新导入', '重新分析');
+    });
     result.contentVersion = Number.isInteger(result.contentVersion) && result.contentVersion > 0 ? result.contentVersion : 1;
     result.themes = Array.isArray(result.themes) ? result.themes : [];
     delete result.documentConfig;
@@ -706,7 +709,7 @@ Y轴：项目采购成功率，单位为 %，显示范围为 98% 至 100%。
       const data = { ...old, ...(old.draftConfig || {}) };
       const isSample = data.id === 'skill-monthly' && /monthly-procurement|采购快报/.test(`${data.reportTemplate?.name} ${data.reportTemplate?.downloadUrl}`);
       return isSample ? { ...data, reportTemplate: defaultSkill().reportTemplate, parts: sampleParts(), parseStatus: 'completed', enabled: false }
-        : { ...data, parts: [], parseStatus: 'failed', parseError: '旧技能尚未绑定可解析的 Word 原文件，请重新导入模板。', enabled: false };
+        : { ...data, parts: [], parseStatus: 'failed', parseError: '旧技能尚未绑定可解析的 Word 原文件，请上传文档后重新分析。', enabled: false };
     }))))));
     const defaults = save(defaultSkills());
     sessionStorage.setItem(STATUS_SAMPLE_MARKER, '1');

@@ -1550,7 +1550,7 @@
         $('swPageInfo').textContent = `原模板 · 共 ${template.pages} 页`;
       } else {
         const file = await IO.get(id);
-        if (!file) throw new Error('本地原文件不可用，请返回列表重新导入模板。');
+        if (!file) throw new Error('本地原文件不可用，请返回列表通过【重新分析】上传文档。');
         if (!skill.outline.length && IO.outline) {
           const extracted = await IO.outline(file);
           if (extracted.length) skill = updateSkill((current) => { current.outline = extracted; });

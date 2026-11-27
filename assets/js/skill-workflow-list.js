@@ -40,13 +40,13 @@
         const confirmed = s.parts.filter((p) => p.confirmed).length;
         const total = s.parts.length;
         const complete = s.parseStatus === 'completed';
-        const progress = s.analysisJob ? '<span class="sw-status is-parsing"><i class="sw-spinner"></i>重新分析中</span><small>完成后更新主题及内容配置</small>' : s.parseStatus === 'parsing' ? '<span class="sw-status is-parsing"><i class="sw-spinner"></i>解析中</span><small>识别模板内容与执行配置</small>' : s.parseStatus === 'failed' ? `<span class="sw-status is-error">解析失败</span><small title="${esc(s.parseError)}">${esc(s.parseError)}</small>` : `<span class="sw-status ${confirmed === total && total ? 'is-confirmed' : 'is-pending'}">${confirmed === total && total ? '已确认' : '待确认'} · ${confirmed}/${total} 项</span><div class="sw-progress"><i style="width:${total ? confirmed / total * 100 : 0}%"></i></div>${s.reanalysisError ? `<small class="sw-error" title="${esc(s.reanalysisError)}">重新分析失败 · 原配置已保留</small>` : ''}`;
+        const progress = s.analysisJob ? '<span class="sw-status is-parsing"><i class="sw-spinner"></i>重新分析中</span><small>完成后更新主题及内容配置</small>' : s.parseStatus === 'parsing' ? '<span class="sw-status is-parsing"><i class="sw-spinner"></i>解析中</span><small>识别模板内容与执行配置</small>' : s.parseStatus === 'failed' ? `<span class="sw-status is-error">解析失败</span><small title="${esc(s.reanalysisError || s.parseError)}">${esc(s.reanalysisError || s.parseError)}</small>` : `<span class="sw-status ${confirmed === total && total ? 'is-confirmed' : 'is-pending'}">${confirmed === total && total ? '已确认' : '待确认'} · ${confirmed}/${total} 项</span><div class="sw-progress"><i style="width:${total ? confirmed / total * 100 : 0}%"></i></div>${s.reanalysisError ? `<small class="sw-error" title="${esc(s.reanalysisError)}">重新分析失败 · 原配置已保留</small>` : ''}`;
         const enabledStatus = `<span class="sw-status ${s.enabled ? 'is-enabled' : 'is-disabled'}">${s.enabled ? '已启用' : '已停用'}</span>`;
         const actions = s.analysisJob ? '' : s.enabled
           ? button('close', '停用', `data-action="status" data-id="${esc(s.id)}"`, 'sw-status-action is-disable-action')
           : complete
             ? button('edit', '基本信息', `data-action="basic" data-id="${esc(s.id)}"`, 'sw-link') + button('document', '内容配置', `data-action="content" data-id="${esc(s.id)}"`, 'sw-link') + button('reset', '重新分析', `data-action="reanalyze" data-id="${esc(s.id)}"`, 'sw-link') + (Store.isReady(s) ? button('check', '启用', `data-action="status" data-id="${esc(s.id)}"`, 'sw-status-action is-enable-action') : '')
-            : s.parseStatus === 'failed' ? button('reset', '重新导入', `data-action="retry" data-id="${esc(s.id)}"`, 'sw-link') : '';
+            : s.parseStatus === 'failed' ? button('reset', '重新分析', `data-action="reanalyze" data-id="${esc(s.id)}"`, 'sw-link') : '';
         const deleteAction = s.enabled || s.analysisJob ? '' : button('trash', '删除', `data-action="delete" data-id="${esc(s.id)}"`, 'sw-link sw-danger');
         const codeMatches = pattern?.test(s.code || '');
         const detail = codeMatches ? s.code : (s.reportTemplate?.name || '待导入 Word 模板');
@@ -67,7 +67,7 @@
       if (!source || (!source.analysisJob && source.parseStatus !== 'parsing')) return;
       job = source.analysisJob || null;
       const file = await IO.get(job ? job.fileKey : id);
-      if (!file) throw new Error('未找到原 Word 文件，请重新导入模板。');
+      if (!file) throw new Error('未找到原 Word 文件，请上传文档后重新分析。');
       const started = Date.now();
       const parsed = await IO.parseFile(file, job ? job.themes : source.themes, job ? source.promptVariables : undefined);
       if (job && !parsed.parts.length) throw new Error('未识别到可配置的内容，请检查 Word 模板后重试。');
@@ -81,9 +81,10 @@
         Store.update(id, (s) => {
           if (s.analysisJob?.id !== job.id || s.contentVersion !== job.baseVersion) throw new Error('分析任务已变化，请返回列表查看。');
           s.themes = [...job.themes]; s.parts = parsed.parts; s.outline = parsed.outline;
+          ['name', 'desc', 'category', 'userPrompt'].forEach((key) => { if (!s[key]?.trim()) s[key] = parsed[key]; });
           s.reportTemplate = { name: file.name, type: 'DOCX', source: 'uploaded', size: file.size };
-          s.contentVersion += 1; s.enabled = false;
-          delete s.analysisJob; delete s.reanalysisError; delete s.lastGlobalTest;
+          s.contentVersion += 1; s.enabled = false; s.parseStatus = 'completed';
+          delete s.analysisJob; delete s.reanalysisError; delete s.parseError; delete s.lastGlobalTest;
         });
         message('重新分析已完成，请测试并确认新的内容配置。');
       } else Store.update(id, (s) => {
@@ -97,7 +98,7 @@
             if (job) {
               if (s.analysisJob?.id !== job.id) return;
               delete s.analysisJob; s.reanalysisError = e.message || '重新分析失败，请重试。';
-            } else { s.parseStatus = 'failed'; s.parseError = e.message || '文档解析失败，请重新导入。'; }
+            } else { s.parseStatus = 'failed'; s.parseError = e.message || '文档解析失败，请重新分析。'; }
           });
         } catch (saveError) { message(saveError); }
       }
@@ -106,18 +107,21 @@
       parsing.delete(id); render();
     }
   }
-  function upload(retryId, reanalyze = false) {
+  function upload(skillId) {
+    const original = skillId ? Store.load().find((s) => s.id === skillId) : null;
+    if (skillId && !original) return message('技能已不存在，请返回列表查看。');
+    const reanalyze = !!original;
     let selected = null, busy = false, requireFile = !reanalyze;
-    const original = retryId ? Store.load().find((s) => s.id === retryId) : null;
+    let checkingOriginal = reanalyze && original.parseStatus === 'failed', originalFile = null;
     const options = Store.themes.map((name) => ({ ...(Store.executionThemeOptions([name])[0] || { status: 'disabled', database: null }), name }));
     const themeChoices = options.map((theme) => {
       const unavailable = theme.status === 'disabled' || !theme.database;
       return `<label data-theme="${esc(theme.name)}"><input type="checkbox" name="themes" value="${esc(theme.name)}" ${!unavailable && original?.themes.includes(theme.name) ? 'checked' : ''} ${unavailable ? 'disabled' : ''}><span>${esc(theme.name)}${unavailable ? theme.status === 'disabled' ? '（已禁用）' : '（未绑定执行库）' : ''}</span></label>`;
     }).join('');
-    const title = reanalyze ? '重新分析' : retryId ? '重新导入模板' : '新增技能';
+    const title = reanalyze ? '重新分析' : '新增技能';
     const note = reanalyze ? '重新分析将重新生成内容配置，原有人工调整、测试结果和确认状态将被重置。分析失败时保留原配置。' : '系统将基于所选主题的关联数据模型与指标解析模板。未匹配的内容保留为待配置项；后续可通过重新分析调整主题范围。';
     const source = reanalyze ? `<div class="sw-note sw-source-file" id="swSourceFile"><div class="sw-source-file-row"><span>${wordFileIcon()}<strong id="swSourceName">${esc(original.reportTemplate?.name || 'Word 模板')}</strong></span>${button('trash', '删除文档', 'id="swRemoveFile"', 'sw-link sw-danger')}</div></div>` : '';
-    const body = `<div class="sw-form sw-import-form"><fieldset><legend>适用分析主题 <em>*</em></legend><input type="search" id="swThemeSearch" placeholder="搜索分析主题" aria-label="搜索分析主题"><div class="sw-options">${themeChoices}</div><p class="sw-help hidden" id="swThemeEmpty">未找到匹配的分析主题</p><p class="sw-help" id="swThemeCount" aria-live="polite"></p></fieldset><div class="sw-note">${note}</div>${source}<label class="sw-upload is-disabled${reanalyze ? ' hidden' : ''}" id="swDrop" aria-disabled="true"><input type="file" id="swFile" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" disabled><span class="sw-upload-icon">${icon('upload')}</span><strong id="swFileLabel">请先选择适用分析主题</strong><span>支持 .docx，单个文件不超过 50 MB</span></label><p class="sw-help">${reanalyze ? '技能编号、名称、说明、分类与预置提示词保持不变。' : '技能名称、说明、分类与预置提示词在解析后生成，可在基本信息中修改。'}</p></div><p id="swUploadError" class="sw-error" role="alert"></p>`;
+    const body = `<div class="sw-form sw-import-form"><fieldset><legend>适用分析主题 <em>*</em></legend><input type="search" id="swThemeSearch" placeholder="搜索分析主题" aria-label="搜索分析主题"><div class="sw-options">${themeChoices}</div><p class="sw-help hidden" id="swThemeEmpty">未找到匹配的分析主题</p><p class="sw-help" id="swThemeCount" aria-live="polite"></p></fieldset><div class="sw-note">${note}</div>${source}<label class="sw-upload is-disabled${reanalyze ? ' hidden' : ''}" id="swDrop" aria-disabled="true"><input type="file" id="swFile" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" disabled><span class="sw-upload-icon">${icon('upload')}</span><strong id="swFileLabel">请先选择适用分析主题</strong><span>支持 .docx，单个文件不超过 50 MB</span></label><p class="sw-help">${reanalyze ? '保留技能编号与已填写的基本信息，缺失内容将在分析后自动补全。' : '技能名称、说明、分类与预置提示词在解析后生成，可在基本信息中修改。'}</p></div><p id="swUploadError" class="sw-error" role="alert"></p>`;
     const { host, close } = UI.modal(title, reanalyze ? '调整分析主题，重新分析当前 Word 模板。' : '先选择适用分析主题，再导入 Word 模板。', body, button('back', '取消', 'data-close') + button(reanalyze ? 'run' : 'upload', reanalyze ? '开始分析' : '提交', 'id="swUploadSubmit" disabled', 'primary-btn'), { onClose: () => !busy });
     const selectedThemes = () => [...host.querySelectorAll('input[name="themes"]:checked:not(:disabled)')].map((input) => input.value);
     function updateState() {
@@ -135,7 +139,7 @@
         host.querySelector('#swRemoveFile').disabled = busy;
         drop.classList.toggle('hidden', hasFile);
       }
-      host.querySelector('#swUploadSubmit').disabled = busy || (requireFile && !selected) || !count;
+      host.querySelector('#swUploadSubmit').disabled = busy || checkingOriginal || (requireFile && !selected) || !count;
     }
     function select(file) {
       const error = !file ? '请选择模板。' : !/\.docx$/i.test(file.name) ? '仅支持 .docx；旧版 Word .doc 请另存为 .docx 后导入。' : !file.size || file.size > 50 * 1024 * 1024 ? '请选择非空且不超过 50 MB 的文件。' : '';
@@ -163,24 +167,31 @@
     drop.ondragleave = () => drop.classList.remove('is-dragging');
     drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove('is-dragging'); if (!busy && selectedThemes().length) select(e.dataTransfer.files[0]); };
     updateState();
+    if (checkingOriginal) {
+      IO.sourceFile(original).then((file) => { originalFile = file; }).catch(() => {
+        if (requireFile) return;
+        requireFile = true;
+        host.querySelector('#swUploadError').textContent = '原 Word 文件不可用，请上传文档后开始分析。';
+      }).finally(() => { checkingOriginal = false; updateState(); });
+    }
     host.querySelector('#swUploadSubmit').onclick = async () => {
       const themes = selectedThemes();
-      if ((requireFile && !selected) || !themes.length || busy) return;
+      if ((requireFile && !selected) || !themes.length || busy || checkingOriginal) return;
       if (Store.executionThemeOptions(themes).filter((theme) => theme.status !== 'disabled' && theme.database).length !== themes.length) {
         host.querySelector('#swUploadError').textContent = '所选分析主题已失效或未绑定执行库，请重新打开后选择。'; return;
       }
       busy = true; updateState();
       host.querySelectorAll('input[name="themes"], #swThemeSearch').forEach((input) => { input.disabled = true; });
-      const id = retryId || `skill-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const id = skillId || `skill-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       let stagedKey = '';
       try {
         if (reanalyze) {
-          let file = selected;
+          let file = selected || (!requireFile ? originalFile : null);
           if (!file) {
             try { file = await IO.sourceFile(original); }
             catch (_) {
               requireFile = true;
-              throw new Error('原 Word 文件不可用，请重新导入模板后开始分析。');
+              throw new Error('原 Word 文件不可用，请上传文档后开始分析。');
             }
           }
           if (sessionStorage.getItem(Store.runtimeKey) !== runtimeId) { location.replace('knowledge-skill.html'); return; }
@@ -189,7 +200,7 @@
           await IO.put(stagedKey, file);
           Store.update(id, (s) => {
             if (s.enabled) throw new Error('请先停用技能，再重新分析。');
-            if (s.analysisJob || s.parseStatus !== 'completed' || s.contentVersion !== original.contentVersion) throw new Error('技能配置已变化，请重新打开后操作。');
+            if (s.analysisJob || !['completed', 'failed'].includes(s.parseStatus) || s.contentVersion !== original.contentVersion) throw new Error('技能配置已变化，请重新打开后操作。');
             s.analysisJob = { id: jobId, fileKey: stagedKey, themes: [...themes], baseVersion: s.contentVersion };
             delete s.reanalysisError;
           });
@@ -199,8 +210,7 @@
         if (sessionStorage.getItem(Store.runtimeKey) !== runtimeId) { location.replace('knowledge-skill.html'); return; }
         const skills = Store.load();
         const record = { id, kind: 'monthly', code: `word_${Date.now()}`, name: selected.name.replace(/\.docx$/i, ''), desc: '', category: '', themes, userPrompt: '', parts: [], parseStatus: 'parsing', enabled: false, updated: new Date().toLocaleDateString('sv-SE'), sort: Date.now(), reportTemplate: { name: selected.name, type: 'DOCX', source: 'uploaded', size: selected.size } };
-        const index = skills.findIndex((s) => s.id === id);
-        if (index >= 0) skills[index] = record; else skills.unshift(record);
+        skills.unshift(record);
         Store.save(skills); busy = false; close(); render();
       } catch (e) {
         if (stagedKey) { try { await IO.remove(stagedKey); } catch (_) { /* Ignore an unused staging file. */ } }
@@ -231,8 +241,8 @@
     if (skill.analysisJob) return message('技能正在重新分析，请完成后再操作。');
     if (action === 'reanalyze') {
       if (skill.enabled) return message('请先停用技能，再重新分析。');
-      if (skill.parseStatus !== 'completed') return message('请等待模板解析完成。');
-      return upload(id, true);
+      if (!['completed', 'failed'].includes(skill.parseStatus)) return message('请等待模板解析完成。');
+      return upload(id);
     }
     if (action === 'basic' || action === 'content') {
       if (skill.enabled) return message('请先停用技能，再修改配置。');
@@ -240,7 +250,6 @@
       if (action === 'basic') return UI.basic(id, render);
       location.href = `knowledge-skill-edit.html?id=${encodeURIComponent(id)}`; return;
     }
-    if (action === 'retry') return skill.enabled || skill.parseStatus !== 'failed' ? render() : upload(id);
     if (action === 'delete' && skill.enabled) return message('请先停用技能，再删除。');
     if (action === 'status' && !skill.enabled && !Store.isReady(skill)) return message('请补全基本信息，并在内容配置中测试、确认所有内容后再启用。');
     if (action !== 'delete' && action !== 'status') return;

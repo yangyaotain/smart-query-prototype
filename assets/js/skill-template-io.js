@@ -32,7 +32,7 @@
     const stylesEntry = zip.file('word/styles.xml');
     const styles = new Map();
     if (stylesEntry) {
-      const stylesXML = xmlDocument(await stylesEntry.async('string'), 'Word 标题样式读取失败，请另存文档后重新导入。');
+      const stylesXML = xmlDocument(await stylesEntry.async('string'), 'Word 标题样式读取失败，请另存并上传文档后重新分析。');
       [...stylesXML.getElementsByTagNameNS('*', 'style')].forEach((style) => {
         if ((valueOf(child(style, 'type')) || style.getAttributeNS(wordNamespace, 'type')) === 'character') return;
         const id = style.getAttributeNS(wordNamespace, 'styleId') || style.getAttribute('w:styleId') || style.getAttribute('styleId');
@@ -74,8 +74,8 @@
     const entry = zip.file('word/document.xml');
     if (!entry) throw new Error('文件不是有效的 Word 文档，或文件已损坏。');
     const xml = await entry.async('string');
-    if (xml.length > 8 * 1024 * 1024) throw new Error('模板内容过大，请精简后重新导入。');
-    return { zip, documentXML: xmlDocument(xml, 'Word 内容读取失败，请另存文档后重新导入。') };
+    if (xml.length > 8 * 1024 * 1024) throw new Error('模板内容过大，请精简并上传文档后重新分析。');
+    return { zip, documentXML: xmlDocument(xml, 'Word 内容读取失败，请另存并上传文档后重新分析。') };
   }
   async function parseFile(file, selectedThemes, variables) {
     if (!Array.isArray(selectedThemes) || !selectedThemes.length) throw new Error('请至少选择一个分析主题后再提交。');
@@ -135,12 +135,12 @@
   async function sourceFile(skill) {
     if (skill.reportTemplate?.source === 'sample' && skill.reportTemplate.downloadUrl) {
       const response = await fetch(skill.reportTemplate.downloadUrl);
-      if (!response.ok) throw new Error('原 Word 文件不可用，请重新导入模板。');
+      if (!response.ok) throw new Error('原 Word 文件不可用，请上传文档后重新分析。');
       const buffer = await response.arrayBuffer();
       return new File([buffer], skill.reportTemplate.name, { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
     }
     const file = await fileAction(skill.id);
-    if (!file) throw new Error('未找到原 Word 文件，请重新导入模板。');
+    if (!file) throw new Error('未找到原 Word 文件，请上传文档后重新分析。');
     return file;
   }
   global.SkillTemplateIO = { put: (id, file) => fileAction(id, file), get: (id) => fileAction(id), remove: (id) => fileAction(id, null, true), parseFile, outline, sourceFile };
